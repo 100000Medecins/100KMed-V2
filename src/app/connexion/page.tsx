@@ -1,0 +1,202 @@
+'use client'
+
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Navbar from '@/components/layout/Navbar'
+import Footer from '@/components/layout/Footer'
+import Button from '@/components/ui/Button'
+import { useAuth } from '@/components/providers/AuthProvider'
+import { ShieldCheck, Mail } from 'lucide-react'
+
+function ConnexionContent() {
+  const { signInWithPSC, signInWithEmail, signUpWithEmail, user, loading } = useAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const redirect = searchParams.get('redirect')
+  const errorParam = searchParams.get('error')
+  const modeParam = searchParams.get('mode')
+
+  const [mode, setMode] = useState<'choice' | 'login' | 'register'>(
+    modeParam === 'register' ? 'register' : modeParam === 'login' ? 'login' : 'choice'
+  )
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(errorParam ? 'Une erreur est survenue lors de la connexion.' : null)
+  const [submitting, setSubmitting] = useState(false)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  // Si déjà connecté, rediriger
+  useEffect(() => {
+    if (user && !loading) {
+      router.replace(redirect || '/mon-compte/mes-evaluations')
+    }
+  }, [user, loading, redirect, router])
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    setSubmitting(true)
+
+    if (mode === 'login') {
+      const result = await signInWithEmail(email, password)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        router.push(redirect || '/mon-compte/mes-evaluations')
+      }
+    } else {
+      const result = await signUpWithEmail(email, password)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')
+      }
+    }
+
+    setSubmitting(false)
+  }
+
+  return (
+    <div className="max-w-md mx-auto px-6 py-20">
+      <div className="bg-white rounded-card shadow-card p-8 text-center">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-accent-blue/10 flex items-center justify-center mb-6">
+          <ShieldCheck className="w-8 h-8 text-accent-blue" />
+        </div>
+
+        <h1 className="text-2xl font-bold text-navy mb-2">Connexion</h1>
+        <p className="text-gray-500 text-sm mb-8">
+          Connectez-vous pour accéder à votre espace.
+        </p>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-6">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 text-green-600 text-sm p-3 rounded-xl mb-6">
+            {success}
+          </div>
+        )}
+
+        {mode === 'choice' && (
+          <div className="space-y-3">
+            <Button
+              variant="primary"
+              className="w-full justify-center"
+              onClick={signInWithPSC}
+            >
+              Se connecter avec Pro Santé Connect
+            </Button>
+
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">ou</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            <button
+              onClick={() => setMode('login')}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-navy hover:bg-gray-50 transition-colors"
+            >
+              <Mail className="w-4 h-4" />
+              Se connecter avec un email
+            </button>
+
+            <button
+              onClick={() => setMode('register')}
+              className="w-full text-sm text-accent-blue hover:underline mt-2"
+            >
+              Créer un compte
+            </button>
+          </div>
+        )}
+
+        {(mode === 'login' || mode === 'register') && (
+          <form onSubmit={handleEmailSubmit} className="space-y-4 text-left">
+            <div>
+              <label className="block text-sm font-medium text-navy mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="votre@email.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-navy mb-1">Mot de passe</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="6 caractères minimum"
+              />
+            </div>
+
+            <Button
+              variant="primary"
+              className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              {mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+            </Button>
+
+            <div className="flex items-center justify-between text-xs pt-2">
+              <button
+                type="button"
+                onClick={() => { setMode('choice'); setError(null); setSuccess(null) }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                Retour
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setSuccess(null) }}
+                className="text-accent-blue hover:underline"
+              >
+                {mode === 'login' ? 'Créer un compte' : 'Déjà inscrit ? Se connecter'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <p className="text-xs text-gray-400 mt-6">
+          En vous connectant, vous acceptez nos{' '}
+          <a href="/cgu" className="text-accent-blue hover:underline">CGU</a>
+          {' '}et notre{' '}
+          <a href="/rgpd" className="text-accent-blue hover:underline">politique de confidentialité</a>.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function ConnexionPage() {
+  return (
+    <>
+      <Navbar />
+      <main className="pt-[72px] min-h-screen bg-surface-light">
+        <Suspense
+          fallback={
+            <div className="max-w-md mx-auto px-6 py-20">
+              <div className="bg-white rounded-card shadow-card p-8 text-center animate-pulse">
+                <div className="mx-auto w-16 h-16 rounded-2xl bg-gray-100 mb-6" />
+                <div className="h-6 bg-gray-100 rounded w-32 mx-auto mb-8" />
+                <div className="h-10 bg-gray-100 rounded-xl" />
+              </div>
+            </div>
+          }
+        >
+          <ConnexionContent />
+        </Suspense>
+      </main>
+      <Footer />
+    </>
+  )
+}
