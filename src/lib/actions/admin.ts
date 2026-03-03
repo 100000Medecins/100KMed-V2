@@ -184,53 +184,6 @@ async function syncCritereComments(
   }
 }
 
-async function syncNotesRedac(
-  supabase: ReturnType<typeof createServiceRoleClient>,
-  solutionId: string,
-  notesJson: string
-) {
-  let items: Array<{ identifiant_tech: string; note_base5: number | null; avis: string | null }> = []
-  try {
-    items = JSON.parse(notesJson)
-  } catch {
-    return
-  }
-
-  for (const item of items) {
-    if (!item.identifiant_tech) continue
-
-    // Convertir note /5 → note /10 pour stockage en base
-    const noteBase10 = item.note_base5 != null ? Math.round(item.note_base5 * 2 * 10) / 10 : null
-
-    // Chercher une entrée existante
-    const { data: existing } = await supabase
-      .from('notes_redac')
-      .select('id')
-      .eq('id_solution', solutionId)
-      .eq('identifiant_tech', item.identifiant_tech)
-      .maybeSingle()
-
-    if (existing) {
-      await supabase
-        .from('notes_redac')
-        .update({
-          note: noteBase10,
-          avis: item.avis,
-        })
-        .eq('id', existing.id)
-    } else {
-      await supabase
-        .from('notes_redac')
-        .insert({
-          id_solution: solutionId,
-          identifiant_tech: item.identifiant_tech,
-          note: noteBase10,
-          avis: item.avis,
-        })
-    }
-  }
-}
-
 export async function createSolution(formData: FormData) {
   await assertAdmin()
 
@@ -253,7 +206,7 @@ export async function createSolution(formData: FormData) {
     await syncGalerie(supabase, inserted.id, galerieJson)
   }
 
-  // Synchroniser les avis par critère
+  // Synchroniser les avis par critère (le trigger DB recalcule evaluation_redac_note)
   const criteresJson = formData.get('criteres_avis_json') as string
   if (criteresJson) {
     await syncCritereComments(supabase, inserted.id, criteresJson)
@@ -285,16 +238,10 @@ export async function updateSolution(id: string, formData: FormData) {
     await syncGalerie(supabase, id, galerieJson)
   }
 
-  // Synchroniser les avis par critère
+  // Synchroniser les avis par critère (le trigger DB recalcule evaluation_redac_note)
   const criteresJson = formData.get('criteres_avis_json') as string
   if (criteresJson) {
     await syncCritereComments(supabase, id, criteresJson)
-  }
-
-  // Synchroniser les notes_redac
-  const notesRedacJson = formData.get('notes_redac_json') as string
-  if (notesRedacJson) {
-    await syncNotesRedac(supabase, id, notesRedacJson)
   }
 
   revalidatePath('/admin', 'layout')
@@ -375,6 +322,24 @@ export async function updateCategorie(id: string, formData: FormData) {
   revalidatePath('/admin', 'layout')
   revalidatePath('/solutions', 'layout')
   redirect('/admin/categories')
+}
+
+export async function toggleCategorieActif(id: string, actif: boolean) {
+  await assertAdmin()
+
+  const supabase = createServiceRoleClient()
+
+  const { error } = await supabase
+    .from('categories')
+    .update({ actif })
+    .eq('id', id)
+
+  if (error) {
+    return { error: `Erreur : ${error.message}` }
+  }
+
+  revalidatePath('/admin/categories')
+  revalidatePath('/solutions', 'layout')
 }
 
 export async function deleteCategorie(id: string, force = false) {

@@ -34,7 +34,7 @@ export default function SolutionFilters({ tags, selectedTagIds, categorieId }: S
   if (tags.length === 0) return null
 
   return (
-    <div>
+    <div className="md:sticky md:top-24">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-navy">Filtrer par fonctionnalité</h3>
         {selectedTagIds.length > 0 && (
@@ -46,14 +46,14 @@ export default function SolutionFilters({ tags, selectedTagIds, categorieId }: S
           </button>
         )}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTagIds.includes(tag.id)
           return (
             <button
               key={tag.id}
               onClick={() => toggleTag(tag.id)}
-              className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
+              className={`text-sm px-3 py-1.5 rounded-full border transition-colors text-left ${
                 isSelected
                   ? 'bg-navy text-white border-navy'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-navy hover:text-navy'

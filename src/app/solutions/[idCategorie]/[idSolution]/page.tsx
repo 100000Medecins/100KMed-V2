@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { getSolutionBySlug, getSolutions, getNotesRedac } from '@/lib/db/solutions'
 import { getAllResultats } from '@/lib/db/resultats'
-import { getAvisUtilisateursPaginated, computeAggregatedResultats } from '@/lib/db/evaluations'
+import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNoteUtilisateurs } from '@/lib/db/evaluations'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
 
@@ -48,11 +48,12 @@ export default async function SolutionPage({ params }: PageProps) {
     notFound()
   }
 
-  // Fetch résultats, notes rédac et avis paginés en parallèle (par UUID)
-  let [resultats, notesRedac, avisPagines] = await Promise.all([
+  // Fetch résultats, notes rédac, avis paginés et note utilisateurs en parallèle (par UUID)
+  let [resultats, notesRedac, avisPagines, noteUtilisateursData] = await Promise.all([
     getAllResultats(solution.id),
     getNotesRedac(solution.id),
     getAvisUtilisateursPaginated(solution.id, { page: 1, limit: 10, tri: 'date' }),
+    getAverageNoteUtilisateurs(solution.id),
   ])
 
   // Fallback : si la table resultats est vide, calculer depuis les évaluations
@@ -89,6 +90,7 @@ export default async function SolutionPage({ params }: PageProps) {
           notesRedac={notesRedac}
           avisPagines={avisPagines}
           autreSolutions={autreSolutions}
+          noteUtilisateursData={noteUtilisateursData}
         />
       </main>
       <Footer />

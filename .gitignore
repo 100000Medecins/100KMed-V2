@@ -4,3 +4,6 @@ out
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# Firebase credentials (secret)
+scripts/*firebase*.json

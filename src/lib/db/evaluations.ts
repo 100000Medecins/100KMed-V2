@@ -152,6 +152,7 @@ export async function getAvisUtilisateursPaginated(
       scores,
       moyenne_utilisateur,
       last_date_note,
+      temps_precedente_solution,
       user:users(pseudo, portrait, specialite, mode_exercice)
     `, { count: 'exact' })
     .eq('solution_id', solutionId)
@@ -170,6 +171,7 @@ export async function getAvisUtilisateursPaginated(
     .filter(Boolean)
 
   const durations: Record<string, number | null> = {}
+  const ancienUtilisateurs: Record<string, boolean> = {}
   if (userIds.length > 0) {
     const { data: usageData } = await supabase
       .from('solutions_utilisees')
@@ -183,6 +185,7 @@ export async function getAvisUtilisateursPaginated(
       const fin = usage.date_fin ? new Date(usage.date_fin) : new Date()
       const months = (fin.getFullYear() - debut.getFullYear()) * 12 + (fin.getMonth() - debut.getMonth())
       durations[usage.user_id] = months
+      ancienUtilisateurs[usage.user_id] = !!usage.date_fin
     }
   }
 
@@ -197,13 +200,33 @@ export async function getAvisUtilisateursPaginated(
       id: row.id as string,
       userId,
       user: row.user as UserRow | null,
-      moyenne: row.moyenne_utilisateur as number | null,
+      moyenne: (() => {
+        const m = row.moyenne_utilisateur as number | null
+        return m != null && m > 5 ? Math.round((m / 2) * 10) / 10 : m
+      })(),
       date: row.last_date_note as string | null,
       commentaire,
-      dureeMois: durations[userId] ?? null,
-      scores: Object.fromEntries(
-        Object.entries(scores).filter(([k]) => k !== 'commentaire')
-      ) as Record<string, number | null>,
+      dureeMois: (() => {
+        // Priorité : temps_precedente_solution (années → mois)
+        const tps = row.temps_precedente_solution as string | null
+        if (tps && tps !== '-1') {
+          if (tps === '3+') return 36
+          const n = parseInt(tps, 10)
+          if (!isNaN(n) && n > 0) return n * 12
+        }
+        // Fallback : calcul depuis solutions_utilisees
+        return durations[userId] ?? null
+      })(),
+      ancienUtilisateur: ancienUtilisateurs[userId] ?? false,
+      scores: (() => {
+        const entries = Object.entries(scores).filter(([k]) => k !== 'commentaire')
+        // Détecte si les scores sont sur 0-10 (ancien Firebase) : au moins une valeur > 5
+        const isOldScale = entries.some(([, v]) => typeof v === 'number' && v > 5)
+        const divisor = isOldScale ? 2 : 1
+        return Object.fromEntries(
+          entries.map(([k, v]) => [k, typeof v === 'number' ? Math.round((v / divisor) * 10) / 10 : null])
+        ) as Record<string, number | null>
+      })(),
     }
   })
 
@@ -235,6 +258,59 @@ export async function getDureeUtilisationSolution(solutionId: string, userId: st
     (fin.getMonth() - debut.getMonth())
 
   return diffMonths
+}
+
+const CRITERES_PRINCIPAUX = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix']
+
+/**
+ * Calcule la note moyenne utilisateurs à partir des scores individuels.
+ * Gère les deux échelles : 0-10 (ancien Firebase) et 0-5 (nouveau formulaire).
+ * La note globale = moyenne des moyennes par critère de chaque évaluation.
+ */
+export async function getAverageNoteUtilisateurs(
+  solutionId: string
+): Promise<{ note: number | null; total: number; distribution: Record<string, number> }> {
+  if (!UUID_RE.test(solutionId)) return { note: null, total: 0, distribution: {} }
+
+  const supabase = createServiceRoleClient()
+  const { data: evaluations, error } = await supabase
+    .from('evaluations')
+    .select('scores')
+    .eq('solution_id', solutionId)
+    .not('last_date_note', 'is', null)
+
+  if (error || !evaluations || evaluations.length === 0) return { note: null, total: 0, distribution: {} }
+
+  const allNotes: number[] = []
+  const distribution: Record<string, number> = {}
+
+  for (const ev of evaluations) {
+    const scores = (ev.scores || {}) as Record<string, unknown>
+    const entries = Object.entries(scores).filter(([k]) => k !== 'commentaire')
+    const isOldScale = entries.some(([, v]) => typeof v === 'number' && v > 5)
+    const divisor = isOldScale ? 2 : 1
+
+    const critereValues: number[] = []
+    for (const key of CRITERES_PRINCIPAUX) {
+      const raw = scores[key]
+      if (typeof raw === 'number' && raw > 0) {
+        critereValues.push(raw / divisor)
+      }
+    }
+
+    if (critereValues.length > 0) {
+      const avgForEval = critereValues.reduce((s, v) => s + v, 0) / critereValues.length
+      allNotes.push(avgForEval)
+      const bucket = String(Math.min(5, Math.max(1, Math.round(avgForEval))))
+      distribution[bucket] = (distribution[bucket] || 0) + 1
+    }
+  }
+
+  const note = allNotes.length > 0
+    ? Math.round((allNotes.reduce((s, v) => s + v, 0) / allNotes.length) * 10) / 10
+    : null
+
+  return { note, total: evaluations.length, distribution }
 }
 
 /**

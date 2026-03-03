@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Plus, Pencil } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import DeleteCategorieButton from '@/components/admin/DeleteCategorieButton'
+import ToggleCategorieActif from '@/components/admin/ToggleCategorieActif'
 
 async function getAllCategoriesAdmin() {
   const supabase = createServiceRoleClient()
@@ -73,15 +74,12 @@ export default async function AdminCategoriesPage() {
                     {cat.intro || '—'}
                   </td>
                   <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        cat.actif
-                          ? 'bg-green-50 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {cat.actif ? 'Active' : 'Inactive'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <ToggleCategorieActif categorieId={cat.id} actif={cat.actif ?? false} />
+                      <span className={`text-xs font-medium ${cat.actif ? 'text-green-700' : 'text-gray-400'}`}>
+                        {cat.actif ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">

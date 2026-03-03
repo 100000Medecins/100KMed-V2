@@ -88,16 +88,22 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
 
         {/* Filtres + liste */}
         <section className="max-w-7xl mx-auto px-6 py-10">
-          <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
-            <SolutionFilters
-              tags={tags}
-              selectedTagIds={selectedTagIds}
-              categorieId={categorie.id}
-            />
-          </Suspense>
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Sidebar filtres */}
+            <aside className="w-full md:w-64 shrink-0">
+              <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
+                <SolutionFilters
+                  tags={tags}
+                  selectedTagIds={selectedTagIds}
+                  categorieId={categorie.id}
+                />
+              </Suspense>
+            </aside>
 
-          <div className="mt-8">
-            <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} />
+            {/* Grille solutions */}
+            <div className="flex-1 min-w-0">
+              <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} />
+            </div>
           </div>
         </section>
       </main>

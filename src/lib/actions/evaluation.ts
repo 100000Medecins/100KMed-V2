@@ -317,7 +317,8 @@ export async function submitEvaluation(
   solutionId: string,
   scores: Record<string, number | string | null>,
   moyenne: number,
-  dateDebut?: string | null
+  dateDebut?: string | null,
+  dateFin?: string | null
 ) {
   // Vérifier l'authentification via le server client (avec cookies)
   const authClient = await createServerClient()
@@ -368,6 +369,7 @@ export async function submitEvaluation(
       solution_id: solutionId,
       statut_evaluation: 'finalisee',
       date_debut: dateDebut || new Date().toISOString().split('T')[0],
+      date_fin: dateFin || null,
     })
   } else {
     await supabase
@@ -375,6 +377,7 @@ export async function submitEvaluation(
       .update({
         statut_evaluation: 'finalisee',
         ...(dateDebut ? { date_debut: dateDebut } : {}),
+        date_fin: dateFin || null,
       })
       .eq('id', existingSU[0].id)
   }

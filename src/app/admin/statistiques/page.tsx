@@ -18,24 +18,53 @@ import {
 /*  DATA FETCHING                                                      */
 /* ================================================================== */
 
+/** Récupère toutes les lignes d'une requête en paginant par lots de 1000. */
+async function fetchAll<T>(
+  query: ReturnType<ReturnType<typeof createServiceRoleClient>['from']>['select'] extends (...args: infer _A) => infer R ? R : never,
+): Promise<T[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const q = query as any
+  const PAGE = 1000
+  const all: T[] = []
+  let offset = 0
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await q.range(offset, offset + PAGE - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...(data as T[]))
+    if (data.length < PAGE) break
+    offset += PAGE
+  }
+  return all
+}
+
 async function getStats() {
   const supabase = createServiceRoleClient()
 
   // ── Evaluations (finalisées) ──
-  const { data: evaluations } = await supabase
-    .from('evaluations')
-    .select('id, solution_id, user_id, moyenne_utilisateur, last_date_note, scores, created_at')
-    .not('last_date_note', 'is', null)
-
-  const allEvals = evaluations ?? []
+  const allEvals = await fetchAll<{
+    id: string; solution_id: string | null; user_id: string | null
+    moyenne_utilisateur: number | null; last_date_note: string | null
+    scores: Record<string, number | null> | null; created_at: string | null
+  }>(
+    supabase
+      .from('evaluations')
+      .select('id, solution_id, user_id, moyenne_utilisateur, last_date_note, scores, created_at')
+      .not('last_date_note', 'is', null)
+  )
   const totalAvis = allEvals.length
 
   // ── Users ──
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, specialite, mode_exercice, densite_population, annee_naissance, is_actif, is_complete, created_at')
-
-  const allUsers = users ?? []
+  const allUsers = await fetchAll<{
+    id: string; specialite: string | null; mode_exercice: string | null
+    densite_population: string | null; annee_naissance: number | null
+    is_actif: boolean; is_complete: boolean; created_at: string | null
+  }>(
+    supabase
+      .from('users')
+      .select('id, specialite, mode_exercice, densite_population, annee_naissance, is_actif, is_complete, created_at')
+  )
   const totalUsers = allUsers.length
   const completedProfiles = allUsers.filter((u) => u.is_complete).length
 

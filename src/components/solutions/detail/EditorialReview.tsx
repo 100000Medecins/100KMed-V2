@@ -1,4 +1,5 @@
 import StarRating from '@/components/ui/StarRating'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 interface EditorialReviewProps {
   avisRedaction: string | null
@@ -31,7 +32,10 @@ export default function EditorialReview({
       </div>
 
       {avisRedaction && (
-        <p className="text-gray-600 leading-relaxed mb-6 whitespace-pre-line">{avisRedaction}</p>
+        <div
+          className="text-gray-600 leading-relaxed mb-6 whitespace-pre-line"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(avisRedaction) }}
+        />
       )}
 
       {(fortsList.length > 0 || faiblesList.length > 0) && (

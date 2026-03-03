@@ -195,43 +195,38 @@ export async function getAllSolutionIds() {
 }
 
 /**
- * Récupère les notes_redac pour une solution (page publique).
+ * Récupère les notes de la rédaction pour une solution (page publique).
+ * Source : table resultats + criteres, filtrés sur nom_capital non null.
  */
 export async function getNotesRedac(solutionId: string) {
   const supabase = await createServerClient()
 
-  const { data: notes, error } = await supabase
-    .from('notes_redac')
-    .select('*')
-    .eq('id_solution', solutionId)
-    .neq('identifiant_tech', '_note_globale')
-    .order('identifiant_tech', { ascending: true })
+  const { data, error } = await supabase
+    .from('resultats')
+    .select(`
+      id,
+      note_redac_base5,
+      avis_redac,
+      critere:criteres(nom_capital)
+    `)
+    .eq('solution_id', solutionId)
 
-  if (error || !notes) return []
+  if (error || !data) return []
 
-  const techIds = notes.map((n) => n.identifiant_tech)
-  const labelsMap = new Map<string, string>()
-  if (techIds.length > 0) {
-    const { data: criteres } = await supabase
-      .from('criteres')
-      .select('identifiant_tech, nom_court')
-      .in('identifiant_tech', techIds)
-    for (const c of criteres ?? []) {
-      if (c.identifiant_tech && c.nom_court) {
-        labelsMap.set(c.identifiant_tech, c.nom_court)
+  return data
+    .filter((r) => {
+      const c = (r.critere as unknown) as { nom_capital: string | null } | null
+      return c?.nom_capital != null
+    })
+    .map((r) => {
+      const c = (r.critere as unknown) as { nom_capital: string }
+      return {
+        id: r.id as string,
+        label: c.nom_capital,
+        note_base5: r.note_redac_base5 as number | null,
+        avis: r.avis_redac as string | null,
       }
-    }
-  }
-
-  return notes.map((n) => {
-    const note = n.note as number | null
-    return {
-      id: n.id as number,
-      label: labelsMap.get(n.identifiant_tech) ?? `Critère ${n.identifiant_tech}`,
-      note_base5: note != null ? Math.round((note / 2) * 10) / 10 : null,
-      avis: n.avis as string | null,
-    }
-  })
+    })
 }
 
 export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]

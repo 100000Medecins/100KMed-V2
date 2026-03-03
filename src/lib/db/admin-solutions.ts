@@ -70,48 +70,40 @@ export async function getSolutionByIdAdmin(id: string) {
 export type SolutionAdmin = Awaited<ReturnType<typeof getSolutionByIdAdmin>>
 
 /**
- * Récupère les notes_redac pour une solution.
- * Chaque entrée a un identifiant_tech (1-5) qu'on mappe au nom_court du critère.
+ * Récupère les résultats de la rédaction pour une solution (admin).
+ * Source : table resultats + criteres, filtrés sur nom_capital non null.
  */
-export async function getNotesRedacAdmin(solutionId: string) {
+export async function getResultatsRedacAdmin(solutionId: string) {
   const supabase = createServiceRoleClient()
 
-  // Récupérer les notes_redac de cette solution
-  const { data: notes, error } = await supabase
-    .from('notes_redac')
-    .select('*')
-    .eq('id_solution', solutionId)
-    .neq('identifiant_tech', '_note_globale')
-    .order('identifiant_tech', { ascending: true })
+  const { data, error } = await supabase
+    .from('resultats')
+    .select(`
+      id,
+      critere_id,
+      note_redac_base5,
+      avis_redac,
+      critere:criteres(nom_capital, nom_court)
+    `)
+    .eq('solution_id', solutionId)
 
-  if (error) return []
+  if (error || !data) return []
 
-  // Récupérer le mapping identifiant_tech -> nom_court depuis criteres
-  const techIds = (notes ?? []).map((n) => n.identifiant_tech)
-  let labelsMap = new Map<string, string>()
-  if (techIds.length > 0) {
-    const { data: criteres } = await supabase
-      .from('criteres')
-      .select('identifiant_tech, nom_court')
-      .in('identifiant_tech', techIds)
-    for (const c of criteres ?? []) {
-      if (c.identifiant_tech && c.nom_court) {
-        labelsMap.set(c.identifiant_tech, c.nom_court)
+  return data
+    .filter((r) => {
+      const c = (r.critere as unknown) as { nom_capital: string | null } | null
+      return c?.nom_capital != null
+    })
+    .map((r) => {
+      const c = (r.critere as unknown) as { nom_capital: string; nom_court: string | null }
+      return {
+        id: r.id as string,
+        critere_id: r.critere_id as string,
+        label: c.nom_capital,
+        note_redac_base5: r.note_redac_base5 as number | null,
+        avis_redac: r.avis_redac as string | null,
       }
-    }
-  }
-
-  return (notes ?? []).map((n) => {
-    const note = n.note as number | null
-    return {
-      id: n.id as number,
-      identifiant_tech: n.identifiant_tech as string,
-      label: labelsMap.get(n.identifiant_tech) ?? `Critère ${n.identifiant_tech}`,
-      note,
-      note_base5: note != null ? Math.round((note / 2) * 10) / 10 : null,
-      avis: n.avis as string | null,
-    }
-  })
+    })
 }
 
-export type NoteRedacAdmin = Awaited<ReturnType<typeof getNotesRedacAdmin>>[number]
+export type ResultatRedacAdmin = Awaited<ReturnType<typeof getResultatsRedacAdmin>>[number]

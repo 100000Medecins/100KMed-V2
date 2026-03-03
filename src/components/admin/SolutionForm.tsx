@@ -10,12 +10,11 @@ type Editeur = { id: string; nom: string }
 type GalerieImage = { id?: string; url: string; titre: string | null; ordre: number | null }
 
 type NoteRedacItem = {
-  id: number
-  identifiant_tech: string
+  id: string
+  critere_id: string
   label: string
-  note: number | null
-  note_base5: number | null
-  avis: string | null
+  note_redac_base5: number | null
+  avis_redac: string | null
 }
 
 interface SolutionFormProps {
@@ -84,9 +83,9 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [notesValues, setNotesValues] = useState<Record<string, { note: string; avis: string }>>(() => {
     const initial: Record<string, { note: string; avis: string }> = {}
     for (const n of notesRedac ?? []) {
-      initial[n.identifiant_tech] = {
-        note: n.note_base5 != null ? String(n.note_base5) : '',
-        avis: n.avis ?? '',
+      initial[n.critere_id] = {
+        note: n.note_redac_base5 != null ? String(n.note_redac_base5) : '',
+        avis: n.avis_redac ?? '',
       }
     }
     return initial
@@ -362,18 +361,18 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         >
           <input
             type="hidden"
-            name="notes_redac_json"
+            name="criteres_avis_json"
             value={JSON.stringify(
-              Object.entries(notesValues).map(([identifiant_tech, v]) => ({
-                identifiant_tech,
-                note_base5: v.note ? Number(v.note) : null,
-                avis: v.avis || null,
+              Object.entries(notesValues).map(([critere_id, v]) => ({
+                critere_id,
+                note_redac_base5: v.note ? Number(v.note) : null,
+                avis_redac: v.avis || null,
               }))
             )}
           />
           <div className="space-y-4">
             {notesRedac.map((n) => (
-              <div key={n.identifiant_tech} className="space-y-2">
+              <div key={n.critere_id} className="space-y-2">
                 <h3 className="text-sm font-semibold text-navy border-b border-gray-100 pb-2">
                   {n.label}
                 </h3>
@@ -381,11 +380,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                   <div>
                     <label className={labelClass}>Avis</label>
                     <textarea
-                      value={notesValues[n.identifiant_tech]?.avis ?? ''}
+                      value={notesValues[n.critere_id]?.avis ?? ''}
                       onChange={(e) =>
                         setNotesValues((prev) => ({
                           ...prev,
-                          [n.identifiant_tech]: { ...prev[n.identifiant_tech], avis: e.target.value },
+                          [n.critere_id]: { ...prev[n.critere_id], avis: e.target.value },
                         }))
                       }
                       rows={3}
@@ -400,11 +399,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                       min={0}
                       max={5}
                       step={0.1}
-                      value={notesValues[n.identifiant_tech]?.note ?? ''}
+                      value={notesValues[n.critere_id]?.note ?? ''}
                       onChange={(e) =>
                         setNotesValues((prev) => ({
                           ...prev,
-                          [n.identifiant_tech]: { ...prev[n.identifiant_tech], note: e.target.value },
+                          [n.critere_id]: { ...prev[n.critere_id], note: e.target.value },
                         }))
                       }
                       className={inputClass}

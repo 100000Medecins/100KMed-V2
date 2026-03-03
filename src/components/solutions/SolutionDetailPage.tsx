@@ -21,6 +21,7 @@ interface AvisPagine {
   date: string | null
   commentaire: string | null
   dureeMois: number | null
+  ancienUtilisateur?: boolean
   scores: Record<string, number | null>
 }
 
@@ -28,6 +29,7 @@ interface SolutionDetailPageProps {
   solution: SolutionWithRelations
   resultats: ResultatWithCritere[]
   notesRedac: NoteRedac[]
+  noteUtilisateursData?: { note: number | null; total: number }
   avisPagines?: {
     avis: AvisPagine[]
     total: number
@@ -41,21 +43,21 @@ export default function SolutionDetailPage({
   solution,
   resultats,
   notesRedac,
+  noteUtilisateursData,
   avisPagines,
   autreSolutions,
 }: SolutionDetailPageProps) {
   const categorieSlug = solution.categorie?.slug || ''
-  // Extraire les notes globales
-  const synthese = resultats.find(
-    (r) => r.critere?.type === 'general' || r.critere?.type === 'synthese'
+  // Ne garder que les critères avec un nom_capital non null
+  const filteredResultats = resultats.filter(
+    (r) => r.critere?.nom_capital != null
   )
-  const noteUtilisateurs = synthese?.moyenne_utilisateurs_base5
-    ? Number(synthese.moyenne_utilisateurs_base5)
-    : null
+  // Note utilisateurs calculée dynamiquement depuis les scores (gère l'échelle 0-10 et 0-5)
+  const noteUtilisateurs = noteUtilisateursData?.note ?? null
+  const nbEvaluations = noteUtilisateursData?.total ?? 0
   const noteRedaction = (solution as unknown as Record<string, unknown>).evaluation_redac_note != null
     ? Number((solution as unknown as Record<string, unknown>).evaluation_redac_note)
     : null
-  const nbEvaluations = synthese?.nb_notes ?? 0
 
   return (
     <section style={{ background: SVG_GRADIENT_BG }}>
@@ -94,8 +96,8 @@ export default function SolutionDetailPage({
 
               <div id="avis-utilisateurs">
                 <UserReviewsSection
-                  resultats={resultats}
-                  nbEvaluations={nbEvaluations}
+                  resultats={filteredResultats}
+                  noteUtilisateursData={noteUtilisateursData}
                 />
               </div>
 
@@ -114,7 +116,7 @@ export default function SolutionDetailPage({
               <div id="comparaison">
                 <ComparisonSection
                   solutionNom={solution.nom}
-                  resultats={resultats}
+                  resultats={filteredResultats}
                   autreSolutions={autreSolutions || []}
                 />
               </div>

@@ -6,7 +6,7 @@ import type { ResultatWithCritere } from '@/types/models'
 
 interface UserReviewsSectionProps {
   resultats: ResultatWithCritere[]
-  nbEvaluations: number
+  noteUtilisateursData?: { note: number | null; total: number; distribution: Record<string, number> }
 }
 
 /** Étoiles inline pour la carte de synthèse (sur fond vert) */
@@ -112,16 +112,11 @@ function RatingSummaryCard({
 
 export default function UserReviewsSection({
   resultats,
-  nbEvaluations,
+  noteUtilisateursData,
 }: UserReviewsSectionProps) {
-  // Extraire la synthèse pour la carte de notes
-  const synthese = resultats.find(
-    (r) => r.critere?.type === 'general' || r.critere?.type === 'synthese'
-  )
-  const averageRating = synthese?.moyenne_utilisateurs_base5
-    ? Number(synthese.moyenne_utilisateurs_base5)
-    : null
-  const distribution = (synthese?.repartition as Record<string, number>) || {}
+  const averageRating = noteUtilisateursData?.note ?? null
+  const totalReviews = noteUtilisateursData?.total ?? 0
+  const distribution = noteUtilisateursData?.distribution ?? {}
 
   // Critères individuels (hors synthèse et NPS)
   const userCriteres = resultats.filter(
@@ -139,7 +134,7 @@ export default function UserReviewsSection({
         <div className="mx-6 mb-6">
           <RatingSummaryCard
             averageRating={averageRating}
-            totalReviews={nbEvaluations}
+            totalReviews={totalReviews}
             distribution={distribution}
           />
         </div>

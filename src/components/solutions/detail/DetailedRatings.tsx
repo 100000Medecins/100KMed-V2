@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, Minus } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
+import { sanitizeHtml } from '@/lib/sanitize'
 import type { NoteRedac } from '@/lib/db/solutions'
 
 interface DetailedRatingsProps {
@@ -10,11 +11,11 @@ interface DetailedRatingsProps {
 }
 
 export default function DetailedRatings({ notesRedac }: DetailedRatingsProps) {
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   if (notesRedac.length === 0) return null
 
-  const toggle = (id: number) => {
+  const toggle = (id: string) => {
     setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -78,9 +79,10 @@ export default function DetailedRatings({ notesRedac }: DetailedRatingsProps) {
                 <div className="overflow-hidden">
                   <div className="px-6 pb-4">
                     <div className="bg-surface-light rounded-xl px-5 py-4">
-                      <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                        {note.avis}
-                      </p>
+                      <div
+                        className="text-sm text-gray-600 leading-relaxed whitespace-pre-line"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.avis!) }}
+                      />
                     </div>
                   </div>
                 </div>

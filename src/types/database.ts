@@ -325,30 +325,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notes_redac: {
-        Row: {
-          id: number
-          id_solution: string
-          identifiant_tech: string
-          note: number | null
-          avis: string | null
-        }
-        Insert: {
-          id?: number
-          id_solution: string
-          identifiant_tech: string
-          note?: number | null
-          avis?: string | null
-        }
-        Update: {
-          id?: number
-          id_solution?: string
-          identifiant_tech?: string
-          note?: number | null
-          avis?: string | null
-        }
-        Relationships: []
-      }
       resultats: {
         Row: {
           avis_redac: string | null

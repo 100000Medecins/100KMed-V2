@@ -38,6 +38,41 @@ interface DetailSection {
   questions: DetailQuestion[]
 }
 
+interface SubstepGroup {
+  label: string
+  sections: DetailSection[]
+}
+
+/** Regroupe les sections détaillées en sous-étapes : Avant / Pendant / Après / Pour finir */
+function getSubsteps(sections: DetailSection[]): SubstepGroup[] {
+  const hasAvant = sections.some(s => s.titre === 'Avant la consultation')
+
+  if (!hasAvant) {
+    // Catégories spécifiques : une seule sous-étape
+    return [{ label: 'Questions détaillées', sections }]
+  }
+
+  const avant = sections.filter(s => s.titre === 'Avant la consultation')
+  const pendant = sections.filter(s => s.titre.startsWith('Pendant la consultation'))
+  const apres = sections.filter(
+    s => s.titre === 'Après la consultation' || s.titre === 'Arrêt de travail et facturation'
+  )
+  const reste = sections.filter(
+    s =>
+      s.titre !== 'Avant la consultation' &&
+      !s.titre.startsWith('Pendant la consultation') &&
+      s.titre !== 'Après la consultation' &&
+      s.titre !== 'Arrêt de travail et facturation'
+  )
+
+  return [
+    { label: 'Avant la consultation', sections: avant },
+    { label: 'Pendant la consultation', sections: pendant },
+    { label: 'Après la consultation', sections: apres },
+    { label: 'Pour finir', sections: reste },
+  ].filter(g => g.sections.length > 0)
+}
+
 const SECTIONS_DETAILLEES: DetailSection[] = [
   {
     titre: 'Avant la consultation',
@@ -365,39 +400,76 @@ function SectionCollapsible({
 
 // ─── Indicateurs d'étapes ────────────────────────────────────────────────────
 
-function StepIndicator({ currentStep }: { currentStep: number }) {
-  const steps = [
-    { num: 1, label: 'Évaluation générale' },
-    { num: 2, label: 'Usage au quotidien (optionnel)' },
+function StepIndicator({
+  currentStep,
+  substepLabels,
+  canNavigate,
+  onStepClick,
+}: {
+  currentStep: number
+  substepLabels: string[]
+  canNavigate: boolean
+  onStepClick: (stepNum: number) => void
+}) {
+  const allSteps = [
+    { label: 'Évaluation générale', optional: false },
+    ...substepLabels.map(l => ({ label: l, optional: true })),
   ]
 
   return (
-    <div className="flex items-center gap-3 mb-6">
-      {steps.map((step, i) => (
-        <div key={step.num} className="flex items-center gap-3">
-          {i > 0 && <div className="w-8 h-px bg-gray-200" />}
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                currentStep === step.num
-                  ? 'bg-accent-blue text-white'
-                  : currentStep > step.num
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-500'
-              }`}
-            >
-              {currentStep > step.num ? '✓' : step.num}
+    <div className="flex flex-col mb-6">
+      {allSteps.map((step, i) => {
+        const stepNum = i + 1
+        const isActive = currentStep === stepNum
+        const isDone = currentStep > stepNum
+        const isLast = i === allSteps.length - 1
+        // Étape 1 toujours cliquable ; étapes suivantes si step 1 validé
+        const isClickable = stepNum === 1 || canNavigate
+        return (
+          <div key={i} className="flex items-stretch gap-3">
+            {/* Colonne gauche : cercle + trait vertical */}
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                disabled={!isClickable}
+                onClick={() => isClickable && onStepClick(stepNum)}
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0 ${
+                  isActive
+                    ? 'bg-accent-blue text-white'
+                    : isDone
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : isClickable
+                        ? 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {isDone ? '✓' : stepNum}
+              </button>
+              {!isLast && <div className="w-px flex-1 bg-gray-200 my-1" />}
             </div>
-            <span
-              className={`text-xs font-medium hidden sm:inline ${
-                currentStep === step.num ? 'text-navy' : 'text-gray-400'
-              }`}
-            >
-              {step.label}
-            </span>
+            {/* Label */}
+            <div className={`flex items-center ${isLast ? '' : 'pb-3'}`}>
+              <button
+                type="button"
+                disabled={!isClickable}
+                onClick={() => isClickable && onStepClick(stepNum)}
+                className={`text-xs font-medium text-left transition-colors ${
+                  isActive
+                    ? 'text-navy'
+                    : isDone && isClickable
+                      ? 'text-gray-500 hover:text-navy'
+                      : isClickable
+                        ? 'text-gray-400 hover:text-gray-600'
+                        : 'text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                {step.label}
+                {step.optional && <span className="font-normal"> (opt.)</span>}
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -414,6 +486,8 @@ export default function NoterPage({ params }: PageProps) {
   const [detailScores, setDetailScores] = useState<Record<string, number | null>>({})
   const [commentaire, setCommentaire] = useState('')
   const [dateDebut, setDateDebut] = useState<string>('')
+  const [dateFin, setDateFin] = useState<string>('')
+  const [plusUtilise, setPlusUtilise] = useState(false)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -486,6 +560,10 @@ export default function NoterPage({ params }: PageProps) {
               if (typeof existing.date_debut === 'string') {
                 setDateDebut(existing.date_debut)
               }
+              if (typeof existing.date_fin === 'string' && existing.date_fin) {
+                setDateFin(existing.date_fin)
+                setPlusUtilise(true)
+              }
             }
             setLoading(false)
           })
@@ -496,8 +574,17 @@ export default function NoterPage({ params }: PageProps) {
   const allRated = CRITERES.every((c) => scores[c.key] === null || (typeof scores[c.key] === 'number' && scores[c.key]! > 0))
 
   const sectionsDetail = getSectionsForCategorie(categorieSlug)
-  const totalQuestionsDetail = getTotalQuestions(sectionsDetail)
-  const detailRatedCount = Object.values(detailScores).filter((v) => v === null || (typeof v === 'number' && v > 0)).length
+  const substeps = getSubsteps(sectionsDetail)
+  const totalSteps = 1 + substeps.length
+
+  const substepIndex = Math.max(0, currentStep - 2)
+  const currentSubstepGroup = currentStep >= 2 ? substeps[substepIndex] : null
+  const isLastStep = currentStep === totalSteps
+
+  const currentSubstepQuestions = currentSubstepGroup?.sections.flatMap(s => s.questions) ?? []
+  const currentSubstepRated = currentSubstepQuestions.filter(
+    q => q.key in detailScores && (detailScores[q.key] === null || detailScores[q.key]! > 0)
+  ).length
 
   const handleSubmit = async () => {
     if (!user || !solution || !allRated) return
@@ -514,6 +601,9 @@ export default function NoterPage({ params }: PageProps) {
       if (dateDebut) {
         finalScores.date_debut = dateDebut
       }
+      if (plusUtilise && dateFin) {
+        finalScores.date_fin = dateFin
+      }
 
       // Calculer la moyenne uniquement sur les critères notés (exclure les NC)
       const numericValues = CRITERES
@@ -524,7 +614,13 @@ export default function NoterPage({ params }: PageProps) {
         : 0
 
       // Appeler la server action (bypass RLS)
-      await submitEvaluation(solution.id, finalScores, moyenne, dateDebut || null)
+      await submitEvaluation(
+        solution.id,
+        finalScores,
+        moyenne,
+        dateDebut || null,
+        plusUtilise ? (dateFin || null) : null
+      )
 
       router.push(`/solutions/${categorieSlug}/${solutionSlug}`)
     } catch (err) {
@@ -570,7 +666,15 @@ export default function NoterPage({ params }: PageProps) {
             <h1 className="text-xl font-bold text-navy mb-3">
               Évaluer {solution.nom}
             </h1>
-            <StepIndicator currentStep={currentStep} />
+            <StepIndicator
+              currentStep={currentStep}
+              substepLabels={substeps.map(s => s.label)}
+              canNavigate={allRated}
+              onStepClick={(stepNum) => {
+                setCurrentStep(stepNum)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+            />
           </div>
 
           {/* ─── Étape 1 : Critères principaux ─────────────────────── */}
@@ -613,14 +717,57 @@ export default function NoterPage({ params }: PageProps) {
                       <option key={year} value={year}>{year}</option>
                     ))}
                   </select>
+
+                  {/* Case à cocher : plus utilisé */}
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer w-fit">
+                    <input
+                      type="checkbox"
+                      checked={plusUtilise}
+                      onChange={(e) => {
+                        setPlusUtilise(e.target.checked)
+                        if (e.target.checked) {
+                          setDateFin(`${new Date().getFullYear()}-01-01`)
+                        } else {
+                          setDateFin('')
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 accent-accent-blue cursor-pointer"
+                    />
+                    <span className="text-sm text-gray-600">Je n&apos;utilise plus ce logiciel</span>
+                  </label>
+
+                  {/* Sélecteur d'année de fin (si coché) */}
+                  {plusUtilise && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">Depuis quelle année ne l&apos;utilisez-vous plus ?</p>
+                      <select
+                        value={dateFin ? dateFin.substring(0, 4) : new Date().getFullYear().toString()}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setDateFin(val ? `${val}-01-01` : '')
+                        }}
+                        className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      >
+                        {Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Résumé de la durée */}
                   {dateDebut && (
                     <p className="text-xs text-gray-400 mt-2">
                       {(() => {
                         const debutYear = parseInt(dateDebut.substring(0, 4))
-                        const currentYear = new Date().getFullYear()
-                        const diff = currentYear - debutYear
-                        if (diff < 1) return 'Moins d\'un an'
-                        return `${diff} an${diff > 1 ? 's' : ''} d'utilisation`
+                        const refYear = plusUtilise && dateFin
+                          ? parseInt(dateFin.substring(0, 4))
+                          : new Date().getFullYear()
+                        const diff = refYear - debutYear
+                        const duree = diff < 1 ? 'Moins d\'un an' : `${diff} an${diff > 1 ? 's' : ''}`
+                        return plusUtilise
+                          ? `${duree} d'utilisation (logiciel abandonné)`
+                          : `${duree} d'utilisation`
                       })()}
                     </p>
                   )}
@@ -697,20 +844,26 @@ export default function NoterPage({ params }: PageProps) {
             </>
           )}
 
-          {/* ─── Étape 2 : Questions détaillées (optionnelle) ──────── */}
-          {currentStep === 2 && (
+          {/* ─── Étapes 2+ : Sous-étapes détaillées (optionnelles) ── */}
+          {currentStep >= 2 && currentSubstepGroup && (
             <>
               <div className="mb-4">
                 <h2 className="text-base font-semibold text-navy mb-1">
-                  Étape 2 — Racontez-nous votre journée
+                  {currentSubstepGroup.label}
                 </h2>
                 <p className="text-xs text-gray-400">
-                  {detailRatedCount}/{totalQuestionsDetail} questions répondues
+                  {currentSubstepRated}/{currentSubstepQuestions.length} questions répondues
                 </p>
                 <div className="mt-3 h-1.5 bg-gray-200 rounded-full">
                   <div
                     className="h-1.5 bg-accent-blue rounded-full transition-all duration-500"
-                    style={{ width: `${(detailRatedCount / totalQuestionsDetail) * 100}%` }}
+                    style={{
+                      width: `${
+                        currentSubstepQuestions.length > 0
+                          ? (currentSubstepRated / currentSubstepQuestions.length) * 100
+                          : 0
+                      }%`,
+                    }}
                   />
                 </div>
               </div>
@@ -718,13 +871,13 @@ export default function NoterPage({ params }: PageProps) {
               {/* Intro narrative */}
               <div className="bg-blue-50 rounded-card p-4 mb-6">
                 <p className="text-xs text-blue-800 leading-relaxed">
-                  Cette étape est facultative, mais nous aide à mieux comprendre votre expérience au quotidien.
+                  Cette section est facultative, mais nous aide à mieux comprendre votre expérience au quotidien.
                 </p>
               </div>
 
-              {/* Sections détaillées (accordéons) */}
+              {/* Sections de la sous-étape courante (accordéons) */}
               <div className="space-y-3">
-                {sectionsDetail.map((section, idx) => (
+                {currentSubstepGroup.sections.map((section, idx) => (
                   <SectionCollapsible
                     key={section.titre}
                     section={section}
@@ -744,11 +897,11 @@ export default function NoterPage({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Actions étape 2 */}
+              {/* Navigation */}
               <div className="flex justify-between items-center mt-8">
                 <button
                   onClick={() => {
-                    setCurrentStep(1)
+                    setCurrentStep(prev => prev - 1)
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
                   className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
@@ -757,13 +910,38 @@ export default function NoterPage({ params }: PageProps) {
                   Retour
                 </button>
                 <div className="flex items-center gap-3">
-                  <Button
-                    variant="primary"
-                    onClick={handleSubmit}
-                    className={submitting ? 'opacity-50 pointer-events-none' : ''}
-                  >
-                    {submitting ? 'Envoi en cours...' : 'Soumettre mon évaluation'}
-                  </Button>
+                  {!isLastStep && (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={submitting}
+                      className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <SkipForward className="w-4 h-4" />
+                      Passer et soumettre
+                    </button>
+                  )}
+                  {isLastStep ? (
+                    <Button
+                      variant="primary"
+                      onClick={handleSubmit}
+                      className={submitting ? 'opacity-50 pointer-events-none' : ''}
+                    >
+                      {submitting ? 'Envoi en cours...' : 'Soumettre mon évaluation'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        setCurrentStep(prev => prev + 1)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                    >
+                      <span className="flex items-center gap-2">
+                        Suivant
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </>

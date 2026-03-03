@@ -23,6 +23,7 @@ interface Avis {
   date: string | null
   commentaire: string | null
   dureeMois: number | null
+  ancienUtilisateur?: boolean
   scores: Record<string, number | null>
 }
 
@@ -151,6 +152,11 @@ export default function ConfrereTestimonials({
                     {item.dureeMois != null && (
                       <p className="text-xs text-accent-blue mt-0.5">
                         {formatDuree(item.dureeMois)}
+                        {item.ancienUtilisateur && (
+                          <span className="ml-1.5 inline-block bg-gray-100 text-gray-500 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                            ancien utilisateur
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>
