@@ -1,15 +1,12 @@
 'use server'
 
-/**
- * Envoie un message de contact.
- * Remplace : mutation sendMessageContact
- *
- * TODO: Implémenter la vérification reCAPTCHA et l'envoi d'email.
- * Options pour l'envoi d'email :
- * - Resend (recommandé pour Next.js/Vercel)
- * - SendGrid (comme l'ancien backend)
- * - Supabase Edge Functions
- */
+import sgMail from '@sendgrid/mail'
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+
+const CONTACT_TO = 'david.azerad@100000medecins.org'
+const CONTACT_FROM = 'contact@100000medecins.org'
+
 export async function sendContactMessage(data: {
   nom: string
   prenom: string
@@ -18,28 +15,27 @@ export async function sendContactMessage(data: {
   message: string
   recaptchaToken: string
 }) {
-  // TODO: Vérifier le reCAPTCHA
-  // const recaptchaResult = await verifyRecaptcha(data.recaptchaToken)
-  // if (!recaptchaResult.success) {
-  //   return { status: 'ERROR', message: 'reCAPTCHA invalide' }
-  // }
+  const { nom, prenom, email, telephone, message } = data
 
-  // TODO: Envoyer l'email via Resend ou SendGrid
-  // await sendEmail({
-  //   to: process.env.CONTACT_EMAIL!,
-  //   subject: `Message de contact - ${data.nom} ${data.prenom}`,
-  //   html: `
-  //     <p>Nom: ${data.nom} ${data.prenom}</p>
-  //     <p>Email: ${data.email}</p>
-  //     <p>Téléphone: ${data.telephone || 'Non renseigné'}</p>
-  //     <p>Message: ${data.message}</p>
-  //   `,
-  // })
+  if (!nom || !prenom || !email || !message) {
+    throw new Error('Veuillez remplir tous les champs obligatoires.')
+  }
 
-  console.log('Contact message received:', {
-    nom: data.nom,
-    prenom: data.prenom,
-    email: data.email,
+  await sgMail.send({
+    to: CONTACT_TO,
+    from: { email: CONTACT_FROM, name: '100000médecins.org' },
+    replyTo: email,
+    subject: `Message de contact — ${prenom} ${nom}`,
+    html: `
+      <h2>Nouveau message de contact</h2>
+      <p><strong>Nom :</strong> ${nom}</p>
+      <p><strong>Prénom :</strong> ${prenom}</p>
+      <p><strong>Email :</strong> ${email}</p>
+      <p><strong>Téléphone :</strong> ${telephone || 'Non renseigné'}</p>
+      <hr />
+      <p><strong>Message :</strong></p>
+      <p>${message.replace(/\n/g, '<br />')}</p>
+    `,
   })
 
   return { status: 'SUCCESS', message: 'Message envoyé avec succès' }

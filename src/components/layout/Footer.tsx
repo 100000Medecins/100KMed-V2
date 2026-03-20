@@ -19,16 +19,16 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs">
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="/rgpd" className="hover:text-white transition-colors">
               Charte de confidentialité et cookies
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="/cgu" className="hover:text-white transition-colors">
               Conditions générales d&apos;utilisation
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="/transparence" className="hover:text-white transition-colors">
               Charte de transparence
             </a>
-            <a href="mailto:votreadresse@mail.fr" className="hover:text-white transition-colors">
+            <a href="/contact" className="hover:text-white transition-colors">
               Nous contacter
             </a>
           </div>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 
 export default function EditorCTA() {
@@ -11,9 +12,11 @@ export default function EditorCTA() {
           Référencez votre logiciel et faites-le découvrir à des milliers
           de professionnels de santé à la recherche de la meilleure solution.
         </p>
-        <Button variant="primary" showArrow>
-          Demander une démo
-        </Button>
+        <Link href="/contact">
+          <Button variant="primary" showArrow>
+            Nous contacter
+          </Button>
+        </Link>
       </div>
     </section>
   );

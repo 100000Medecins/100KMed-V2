@@ -81,7 +81,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
                     href={`/solutions/${active.slug}`}
                     className="inline-flex items-center gap-2 bg-navy text-white font-semibold px-6 py-3 rounded-full hover:bg-navy/90 transition-colors"
                   >
-                    Découvrir tous les {active.nom.toLowerCase()}
+                    Afficher plus de choix
                     <span aria-hidden="true">&rarr;</span>
                   </Link>
                 </div>
