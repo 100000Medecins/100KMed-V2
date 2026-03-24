@@ -213,6 +213,15 @@ export async function getNotesRedac(solutionId: string) {
 
   if (error || !data) return []
 
+  // Ordre d'affichage fixe des critères
+  const CRITERE_ORDER: Record<string, number> = {
+    'INTERFACE': 0,
+    'FONCTIONNALITÉS': 1,
+    'FIABILITE': 2,
+    'EDITEUR': 3,
+    'QUALITE/PRIX': 4,
+  }
+
   return data
     .filter((r) => {
       const c = (r.critere as unknown) as { nom_capital: string | null } | null
@@ -227,6 +236,7 @@ export async function getNotesRedac(solutionId: string) {
         avis: r.avis_redac as string | null,
       }
     })
+    .sort((a, b) => (CRITERE_ORDER[a.label] ?? 99) - (CRITERE_ORDER[b.label] ?? 99))
 }
 
 export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]

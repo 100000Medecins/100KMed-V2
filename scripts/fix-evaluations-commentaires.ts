@@ -19,7 +19,11 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
+import { createRequire } from 'module'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const require = createRequire(import.meta.url)
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') })
 
 const DRY_RUN = process.argv.includes('--dry-run')
@@ -162,10 +166,13 @@ async function main() {
 
     const currentScores = sbEval.scores
 
-    // Extraire le commentaire depuis Firebase (champ direct ou dans scores)
+    // Extraire le commentaire depuis Firebase (champ direct, scores.commentaire, ou clé critère Firebase)
+    const COMMENTAIRE_CRITERE_ID = 'XEMuh3cPWbJjS7KYmj0l'
     const commentaire: string | null =
       (typeof ev.commentaire === 'string' && ev.commentaire.trim() ? ev.commentaire.trim() : null) ||
-      (typeof ev.scores?.commentaire === 'string' && ev.scores.commentaire.trim() ? ev.scores.commentaire.trim() : null)
+      (typeof ev.scores?.commentaire === 'string' && ev.scores.commentaire.trim() ? ev.scores.commentaire.trim() : null) ||
+      (typeof ev.scores?.[COMMENTAIRE_CRITERE_ID] === 'string' && ev.scores[COMMENTAIRE_CRITERE_ID].trim()
+        ? ev.scores[COMMENTAIRE_CRITERE_ID].trim() : null)
 
     // Remapper les scores si nécessaire
     let newScores: Record<string, unknown> = { ...currentScores }

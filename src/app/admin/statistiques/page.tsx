@@ -234,7 +234,7 @@ async function getStats() {
 /*  SVG CHART COMPONENTS                                               */
 /* ================================================================== */
 
-const CHART_COLORS = ['#4A90D9', '#E8734A', '#22C55E', '#8B5CF6', '#F5A623', '#EF4444', '#14B8A6', '#6366F1', '#FF6B9D', '#84CC16']
+const CHART_COLORS = ['#1B2A4A', '#2A3F66', '#4A90D9', '#6BA3E0', '#8DB8E8', '#A8C8EE', '#C3D9F4', '#DEEAFA', '#EEF1F8', '#F7F8FC']
 
 /* ── Line Chart ────────────────────────────────────────────────────── */
 function LineChart({
@@ -345,7 +345,7 @@ function BarChartHorizontal({
 /* ── Rating Distribution (Vertical Bars) ───────────────────────────── */
 function RatingDistributionChart({ distribution }: { distribution: number[] }) {
   const max = Math.max(...distribution, 1)
-  const colors = ['#EF4444', '#F97316', '#F5A623', '#84CC16', '#22C55E']
+  const colors = ['#C3D9F4', '#8DB8E8', '#6BA3E0', '#4A90D9', '#1B2A4A']
 
   return (
     <div className="flex items-end gap-4 h-44 px-2">
@@ -363,7 +363,7 @@ function RatingDistributionChart({ distribution }: { distribution: number[] }) {
             />
           </div>
           <div className="flex items-center gap-0.5">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <Star className="w-3.5 h-3.5 fill-navy text-navy" />
             <span className="text-xs font-semibold text-gray-600">{i + 1}</span>
           </div>
         </div>
@@ -442,25 +442,19 @@ function KpiCard({
   icon,
   label,
   value,
-  bg,
   sub,
   suffix,
-  accent,
 }: {
   icon: React.ReactNode
   label: string
   value: string
-  bg: string
   sub: string
   suffix?: string
-  accent?: string
 }) {
   return (
-    <div className="bg-white rounded-card shadow-card p-5 relative overflow-hidden">
-      {/* Decorative accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 rounded-t-card" style={{ backgroundColor: accent ?? '#4A90D9' }} />
+    <div className="bg-white rounded-card shadow-card p-5">
       <div className="flex items-center gap-3 mb-3">
-        <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center`}>{icon}</div>
+        <div className="w-10 h-10 rounded-xl bg-surface-light flex items-center justify-center">{icon}</div>
         <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{label}</p>
       </div>
       <p className="text-3xl font-extrabold text-navy tracking-tight">
@@ -531,35 +525,27 @@ export default async function AdminStatistiquesPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          icon={<MessageSquare className="w-5 h-5 text-accent-blue" />}
+          icon={<MessageSquare className="w-5 h-5 text-navy" />}
           label="Total avis"
           value={stats.totalAvis.toLocaleString('fr-FR')}
-          bg="bg-accent-blue/10"
-          accent="#4A90D9"
           sub={`+${stats.recentCount} cette semaine · +${stats.thisMonthCount} ce mois`}
         />
         <KpiCard
-          icon={<Users className="w-5 h-5 text-emerald-500" />}
+          icon={<Users className="w-5 h-5 text-navy" />}
           label="Utilisateurs"
           value={stats.totalUsers.toLocaleString('fr-FR')}
-          bg="bg-emerald-50"
-          accent="#22C55E"
           sub={`${stats.completedProfiles} profils complétés (${stats.totalUsers > 0 ? Math.round((stats.completedProfiles / stats.totalUsers) * 100) : 0}%)`}
         />
         <KpiCard
-          icon={<Package className="w-5 h-5 text-violet-500" />}
+          icon={<Package className="w-5 h-5 text-navy" />}
           label="Solutions"
           value={String(stats.totalSolutions)}
-          bg="bg-violet-50"
-          accent="#8B5CF6"
           sub={`${stats.totalCategories} catégorie${stats.totalCategories > 1 ? 's' : ''} actives`}
         />
         <KpiCard
-          icon={<Star className="w-5 h-5 text-amber-500" />}
+          icon={<Star className="w-5 h-5 text-navy" />}
           label="Note moyenne"
           value={stats.avgRating.toFixed(1)}
-          bg="bg-amber-50"
-          accent="#F5A623"
           sub={`sur ${stats.totalAvis} évaluations`}
           suffix="/5"
         />
@@ -570,15 +556,15 @@ export default async function AdminStatistiquesPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Panel
-          icon={<TrendingUp className="w-5 h-5 text-accent-blue" />}
+          icon={<TrendingUp className="w-5 h-5 text-navy" />}
           title="Évaluations par mois"
           className="lg:col-span-2"
         >
-          <LineChart data={stats.evalMonths} color="#4A90D9" />
+          <LineChart data={stats.evalMonths} color="#1B2A4A" />
         </Panel>
 
         <Panel
-          icon={<BarChart3 className="w-5 h-5 text-amber-500" />}
+          icon={<BarChart3 className="w-5 h-5 text-navy" />}
           title="Distribution des notes"
         >
           <RatingDistributionChart distribution={stats.ratingDistribution} />
@@ -590,14 +576,14 @@ export default async function AdminStatistiquesPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Panel
-          icon={<Activity className="w-5 h-5 text-accent-orange" />}
+          icon={<Activity className="w-5 h-5 text-navy" />}
           title="Avis par catégorie"
         >
           <DonutChart data={stats.avisByCategorie} label="avis" />
         </Panel>
 
         <Panel
-          icon={<MessageSquare className="w-5 h-5 text-accent-blue" />}
+          icon={<MessageSquare className="w-5 h-5 text-navy" />}
           title="Top solutions (nb avis)"
         >
           {stats.topSolutions.length > 0 ? (
@@ -610,7 +596,7 @@ export default async function AdminStatistiquesPage() {
         </Panel>
 
         <Panel
-          icon={<Star className="w-5 h-5 text-rating-green" />}
+          icon={<Star className="w-5 h-5 text-navy" />}
           title="Meilleures notes"
         >
           {stats.topRated.length > 0 ? (
@@ -620,7 +606,6 @@ export default async function AdminStatistiquesPage() {
                 value: s.avg,
                 extra: `${s.avg.toFixed(1)}/5`,
               }))}
-              colors={['#22C55E', '#34D399', '#6EE7B7', '#A7F3D0', '#86EFAC', '#BBF7D0', '#D1FAE5', '#ECFDF5']}
             />
           ) : (
             <p className="text-sm text-gray-400 text-center py-8">Aucune donnée</p>
@@ -633,7 +618,7 @@ export default async function AdminStatistiquesPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Panel
-          icon={<Stethoscope className="w-5 h-5 text-accent-blue" />}
+          icon={<Stethoscope className="w-5 h-5 text-navy" />}
           title="Spécialités (top 10)"
         >
           {stats.usersBySpecialite.length > 0 ? (
@@ -646,7 +631,7 @@ export default async function AdminStatistiquesPage() {
         </Panel>
 
         <Panel
-          icon={<Briefcase className="w-5 h-5 text-violet-500" />}
+          icon={<Briefcase className="w-5 h-5 text-navy" />}
           title="Mode d'exercice"
         >
           <DonutChart data={stats.usersByMode} label="users" size={130} />
@@ -657,10 +642,10 @@ export default async function AdminStatistiquesPage() {
       {/*  ROW 5 — SIGNUPS TREND                                       */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <Panel
-        icon={<TrendingUp className="w-5 h-5 text-emerald-500" />}
+        icon={<TrendingUp className="w-5 h-5 text-navy" />}
         title="Inscriptions par mois"
       >
-        <LineChart data={stats.signupMonths} color="#22C55E" />
+        <LineChart data={stats.signupMonths} color="#4A90D9" />
       </Panel>
     </div>
   )

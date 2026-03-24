@@ -91,9 +91,10 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/admin/solutions/${solution.id}/modifier`}
-                        className="p-2 text-gray-400 hover:text-accent-blue hover:bg-accent-blue/10 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1 px-2 py-1.5 text-gray-400 hover:text-accent-blue hover:bg-accent-blue/10 rounded-lg transition-colors text-xs"
                         title="Modifier"
                       >
+                        Éditer
                         <Pencil className="w-4 h-4" />
                       </Link>
                       <DeleteSolutionButton solutionId={solution.id} nom={solution.nom} />

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
+import { resolveSpecialite } from '@/lib/constants/profil'
 
 // Map identifiant_tech → nom d'affichage
 const CRITERE_LABELS: Record<string, string> = {
@@ -147,7 +148,7 @@ export default function ConfrereTestimonials({
                     <p className="text-xs text-gray-400">
                       {item.user?.mode_exercice && `${item.user.mode_exercice}`}
                       {item.user?.mode_exercice && item.user?.specialite && ' · '}
-                      {item.user?.specialite}
+                      {resolveSpecialite(item.user?.specialite ?? null)}
                     </p>
                     {item.dureeMois != null && (
                       <p className="text-xs text-accent-blue mt-0.5">

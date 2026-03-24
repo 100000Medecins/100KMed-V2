@@ -13,7 +13,7 @@ export default function AdminHeader() {
           <span className="w-2.5 h-2.5 rounded-full bg-accent-pink" />
         </div>
         <span className="font-bold text-navy text-sm">
-          10000médecins<span className="text-gray-400 font-normal ml-1">Admin</span>
+          100000médecins<span className="text-gray-400 font-normal ml-1">Admin</span>
         </span>
       </Link>
       <form action={logoutAdmin}>

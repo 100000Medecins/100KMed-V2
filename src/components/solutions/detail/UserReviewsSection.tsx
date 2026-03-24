@@ -118,10 +118,20 @@ export default function UserReviewsSection({
   const totalReviews = noteUtilisateursData?.total ?? 0
   const distribution = noteUtilisateursData?.distribution ?? {}
 
-  // Critères individuels (hors synthèse et NPS)
-  const userCriteres = resultats.filter(
-    (r) => r.critere && r.critere.type !== 'synthese' && r.critere.type !== 'nps'
-  )
+  // Critères individuels (hors synthèse et NPS), triés dans un ordre fixe
+  const CRITERE_ORDER: Record<string, number> = {
+    'Interface utilisateur': 0,
+    'Fonctionnalités': 1,
+    'Fiabilité': 2,
+    'Éditeur': 3,
+    'Editeur': 3,
+    'Rapport qualité/prix': 4,
+  }
+  const userCriteres = resultats
+    .filter((r) => r.critere && r.critere.type !== 'synthese' && r.critere.type !== 'nps')
+    .sort((a, b) =>
+      (CRITERE_ORDER[a.critere?.nom_court || ''] ?? 99) - (CRITERE_ORDER[b.critere?.nom_court || ''] ?? 99)
+    )
 
   return (
     <section className="bg-white rounded-card shadow-card overflow-hidden">

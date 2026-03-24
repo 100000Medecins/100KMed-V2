@@ -15,10 +15,10 @@ interface SolutionHeroProps {
 }
 
 const anchors = [
-  { id: 'avis-redaction', label: 'Avis rédaction' },
-  { id: 'notes-detaillees', label: 'Notes détaillées' },
-  { id: 'avis-utilisateurs', label: 'Avis utilisateurs' },
+  { id: 'avis-redaction', label: 'Avis de la rédaction' },
   { id: 'galerie', label: 'Galerie' },
+  { id: 'notes-detaillees', label: 'Evaluation détaillée' },
+  { id: 'avis-utilisateurs', label: 'Notes utilisateurs' },
   { id: 'mot-editeur', label: 'Mot éditeur' },
 ]
 
