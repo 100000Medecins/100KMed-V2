@@ -1,0 +1,504 @@
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"timestamp":1771404381658,"hypothesisId":"H2,H4"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"timestamp":1771404381682,"hypothesisId":"H2,H4"}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"timestamp":1771404381680,"hypothesisId":"H1,H5"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"timestamp":1771404381723,"hypothesisId":"H2,H4"}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"timestamp":1771404381724,"hypothesisId":"H1,H5"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"timestamp":1771404381724,"hypothesisId":"H2,H4"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"timestamp":1771404381735,"hypothesisId":"H2,H4"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404381938}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"timestamp":1771404381937,"hypothesisId":"H1,H5"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404382592}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404382653}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404384761}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404384763}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"timestamp":1771404384761,"hypothesisId":"H1,H5"}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404384771}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404386040}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404386041}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404386042}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404386052}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404388152}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404388152}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404388162}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404388171}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404389249}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404389255}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404389255}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404389263}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404389785}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404389791}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404389791}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404389798}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404400159}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404400161}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404400162}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404400177}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404497393}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404497400}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404497401}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404497403}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404497403}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404497414}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404497429}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404554345}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404554347}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404557545}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404557545}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404560021}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404619445}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404619447}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404622492}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404622724}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404622724}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404622734}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404622747}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404625659}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404625671}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404625676}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404625676}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404628716}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404632760}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404638443}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404643043}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404643044}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404643403}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404643404}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404794750}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404794752}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404794853}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404794866}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404837635}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404837637}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404843424}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404843426}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404847517}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404847519}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404854436}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404854457}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404854516}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404854516}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404856785}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404856786}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404858820}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404860065}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404861986}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404861988}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404863538}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404863540}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404864548}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404865769}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404865770}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404869442}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404871570}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404871571}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404881504}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404881506}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404883375}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404885055}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404886819}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771404886821}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771404896972}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405291628}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405291629}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405291772}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405291782}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405303124}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405303136}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405303136}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405303144}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405303260}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405303260}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405303785}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405303785}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405303790}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405303790}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405303790}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405303998}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405303998}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405303999}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405303999}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405303999}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405304117}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405304117}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405320660}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405320661}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405386688}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405386689}
+{"location":"page.tsx:Home","message":"Home page render","data":{},"hypothesisId":"H4","timestamp":1771405391510}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405391516}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405395214}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405395215}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405395217}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405395484}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405395484}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405395484}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405395485}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405395486}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405395486}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405395582}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405395582}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405395681}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405395681}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405405634}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405405635}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405407445}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405411250}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405411251}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405573154}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405573154}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405573154}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405573154}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405573157}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405573157}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405573172}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405573173}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405573174}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405573174}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405573567}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405573568}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405573690}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405573691}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574035}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405574037}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574039}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405574040}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405574268}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405574268}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405574268}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405574269}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405574286}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405574286}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405574286}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405574286}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574795}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574797}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574798}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574799}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574799}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574800}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405574826}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405575625}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405575625}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405575626}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405575627}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405575629}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405575629}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405575648}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405575648}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405575728}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405575728}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405575855}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405575855}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405575855}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405575855}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405575862}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405575862}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405624198}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624199}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405624199}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624199}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624201}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624201}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405624221}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405624222}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624425}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624425}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624591}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624592}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624593}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624594}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624594}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624594}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405624719}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405624720}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405629752}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405629752}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405629752}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405629753}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405629755}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405629755}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405629771}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405629772}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405629967}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405629968}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405630124}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405630125}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405630128}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405630128}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405630128}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405630128}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405630240}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405630241}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405634783}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405634784}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405634784}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405634784}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405634785}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405634786}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405634793}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405634794}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405635006}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405635006}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405635115}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405635115}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405635116}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405635116}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405635155}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405635156}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405635255}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405635256}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405641656}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405641657}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405641657}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405641657}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405641658}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405641658}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405641671}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405641673}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405641872}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405641873}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405641974}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405641975}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405641975}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405641975}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405642025}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405642025}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405642454}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405642455}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405710826}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405710826}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405710827}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405710827}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405710828}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405710828}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405710829}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405710830}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405711157}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405711157}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405711268}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405711268}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405711269}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405711269}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405711406}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405711407}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405711504}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405711505}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405721203}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721207}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405721207}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721208}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721209}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721209}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405721218}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405721221}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721452}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721452}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721567}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721568}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721568}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721568}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721603}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721603}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405721703}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405721705}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405726361}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726362}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405726362}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726362}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726362}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726362}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405726365}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405726365}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726636}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726637}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726724}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726725}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726725}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726725}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726784}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726785}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405726874}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405726875}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405741611}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405741611}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405741611}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405741611}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405741612}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405741612}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405741612}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405741613}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405741828}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405741828}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405741963}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405741963}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405741967}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405741967}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405741967}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405741968}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405742052}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405742052}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405753571}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753571}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405753571}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753572}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753572}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753572}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405753578}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405753578}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753773}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753774}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753860}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753860}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753860}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753860}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753901}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753901}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405753997}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405753998}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405763153}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763154}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405763155}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763157}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763160}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763161}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405763186}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405763187}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763409}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763410}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763525}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763525}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763525}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763525}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763552}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763552}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405763657}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405763658}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771405795400}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795401}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405795401}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795401}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795402}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795402}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771405795403}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405795403}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795630}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795630}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795740}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795740}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795740}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795740}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795783}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795783}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771405795887}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771405795887}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771405795944}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406048300}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406048300}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406048301}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406048301}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406048303}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406048303}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406048533}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406048533}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406048707}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406048708}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406048829}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406048830}
+{"location":"page.tsx:Home","message":"Home page render","data":{},"hypothesisId":"H4","timestamp":1771406053635}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406053646}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406056696}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406056696}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406056697}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406057211}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406057212}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406057212}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406057212}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406057213}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406057213}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406057347}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406057347}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406057699}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406057699}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406057835}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406057836}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771406063165}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406063166}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771406064833}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406065737}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406065737}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406065738}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406065738}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406065740}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406065740}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771406065756}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406065756}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406065906}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406065906}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406066086}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406066086}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406066227}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406066228}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771406081112}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406082158}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406082159}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406082159}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406082160}
+{"location":"server.ts:createServiceRoleClient","message":"createServiceRoleClient entry","data":{"hasUrl":true,"hasServiceKey":true},"hypothesisId":"H1,H5","timestamp":1771406082678}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406221993}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406221994}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406221994}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406221996}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406221999}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406221999}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406222453}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406222453}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406222629}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406222630}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223004}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223006}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223006}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223007}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223029}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223030}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223030}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223042}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223042}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223044}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223074}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223081}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223087}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223089}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223095}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223096}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223105}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223105}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223113}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223113}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223129}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223129}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406223138}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406247115}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406247115}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406247115}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406247115}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406247116}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406247116}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406247314}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406247314}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406247467}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406247468}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406261665}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406261665}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406261665}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406261665}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406261666}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406261666}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406261900}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406261900}
+{"location":"server.ts:createServerClient","message":"createServerClient entry","data":{"hasUrl":true,"hasKey":true},"hypothesisId":"H1,H3","timestamp":1771406262054}
+{"location":"server.ts:createServerClient","message":"cookies() succeeded","data":{},"hypothesisId":"H3","timestamp":1771406262054}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406854161}
+{"location":"layout.tsx:RootLayout","message":"RootLayout render start","data":{"hasChildren":true},"hypothesisId":"H2,H4","timestamp":1771406854162}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406860186}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406864956}
+{"location":"solutions/page.tsx:SolutionsPage","message":"SolutionsPage entry","data":{"idCategorie":"logiciels-metiers"},"hypothesisId":"H4","timestamp":1771406869848}
