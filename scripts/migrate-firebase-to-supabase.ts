@@ -436,6 +436,7 @@ async function main() {
       contact_cp: d.contact?.cp || null,
       contact_ville: d.contact?.ville || null,
       contact_pays: d.contact?.pays || null,
+      created_at: toISOString(d.creation) || new Date().toISOString(),
     })
 
     if (profileError) {
@@ -486,7 +487,7 @@ async function main() {
     const key = `${ev.user_id}__${ev.solution_id}`
     evalMap.set(key, ev)
   }
-  const dedupedEvals = [...evalMap.values()]
+  const dedupedEvals = Array.from(evalMap.values())
   console.log(`  ℹ️  ${evaluations.length} → ${dedupedEvals.length} après déduplication`)
   await insertBatch('evaluations', dedupedEvals)
 
@@ -509,7 +510,7 @@ async function main() {
   // Dédupliquer par (user_id, solution_id)
   const suMap = new Map<string, any>()
   for (const su of solUtil) { suMap.set(`${su.user_id}__${su.solution_id}`, su) }
-  const dedupedSU = [...suMap.values()]
+  const dedupedSU = Array.from(suMap.values())
   console.log(`  ℹ️  ${solUtil.length} → ${dedupedSU.length} après déduplication`)
   await insertBatch('solutions_utilisees', dedupedSU)
 

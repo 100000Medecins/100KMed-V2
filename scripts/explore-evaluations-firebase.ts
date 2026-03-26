@@ -24,7 +24,7 @@ async function main() {
     for (const k of Object.keys(d)) allKeys.add(k)
   }
   console.log('\n📋 Champs présents dans les évaluations Firebase :')
-  for (const k of [...allKeys].sort()) console.log(`  - ${k}`)
+  for (const k of Array.from(allKeys).sort()) console.log(`  - ${k}`)
 
   // 2. Chercher commentaire (direct ou dans scores)
   let withCommentaire = 0

@@ -29,7 +29,7 @@ interface SolutionDetailPageProps {
   solution: SolutionWithRelations
   resultats: ResultatWithCritere[]
   notesRedac: NoteRedac[]
-  noteUtilisateursData?: { note: number | null; total: number }
+  noteUtilisateursData?: { note: number | null; total: number; distribution: Record<string, number> }
   avisPagines?: {
     avis: AvisPagine[]
     total: number

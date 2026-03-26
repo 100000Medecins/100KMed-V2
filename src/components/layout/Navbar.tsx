@@ -62,7 +62,7 @@ export default function Navbar() {
               <Button variant="ghost" href="/connexion" className="text-sm py-2.5 px-5">
                 Me connecter
               </Button>
-              <Button variant="primary" href="/connexion?mode=register" className="text-sm py-2.5 px-6">
+              <Button variant="primary" href="/connexion" className="text-sm py-2.5 px-6">
                 Évaluer un logiciel
               </Button>
             </>
@@ -100,7 +100,7 @@ export default function Navbar() {
                 </Button>
               ) : (
                 <>
-                  <Button variant="primary" href="/connexion?mode=register" className="w-full justify-center">
+                  <Button variant="primary" href="/connexion" className="w-full justify-center">
                     Évaluer un logiciel
                   </Button>
                   <Button variant="ghost" href="/connexion" className="w-full justify-center">

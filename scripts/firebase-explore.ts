@@ -49,7 +49,7 @@ async function exploreCollection(colRef: FirebaseFirestore.CollectionReference, 
     }
   }
   const firstKeys = Object.keys(data)
-  const extraKeys = [...allKeys].filter(k => !firstKeys.includes(k))
+  const extraKeys = Array.from(allKeys).filter(k => !firstKeys.includes(k))
   if (extraKeys.length > 0) {
     console.log(`${indent}  ℹ️  Champs additionnels dans d'autres docs: ${extraKeys.join(', ')}`)
   }

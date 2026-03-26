@@ -53,6 +53,7 @@ export async function GET(request: Request) {
             rpps: user.user_metadata?.preferred_username || null,
             nom: user.user_metadata?.family_name || null,
             prenom: user.user_metadata?.given_name || null,
+            specialite: user.user_metadata?.specialite || null,
           })
           // Nouveau profil → compléter le profil
           return NextResponse.redirect(`${origin}/completer-profil`)

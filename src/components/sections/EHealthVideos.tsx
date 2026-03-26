@@ -22,8 +22,8 @@ export default function EHealthVideos() {
         </div>
 
         <div className="text-center mt-14">
-          <Button variant="primary" showArrow>
-            Accéder aux articles
+          <Button variant="primary" showArrow href="/videos">
+            Regarder les vidéos
           </Button>
         </div>
       </div>

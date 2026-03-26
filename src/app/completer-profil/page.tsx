@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { completeProfile } from '@/lib/actions/user'
-import { SPECIALITES, MODES_EXERCICE, AVATARS } from '@/lib/constants/profil'
+import { SPECIALITES, MODES_EXERCICE, AVATARS, resolveSpecialite } from '@/lib/constants/profil'
 import { Check } from 'lucide-react'
 
 export default function CompleterProfilPage() {
@@ -21,6 +21,20 @@ export default function CompleterProfilPage() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Pré-remplir depuis les métadonnées PSC (given_name, family_name, specialite)
+  useEffect(() => {
+    if (!user?.user_metadata) return
+    const meta = user.user_metadata
+    if (meta.family_name && !nom) setNom(meta.family_name)
+    if (meta.given_name && !prenom) setPrenom(meta.given_name)
+    if (meta.specialite && !specialite) {
+      const resolved = resolveSpecialite(meta.specialite)
+      if (resolved && SPECIALITES.includes(resolved)) {
+        setSpecialite(resolved)
+      }
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isValid = nom.trim() && prenom.trim() && specialite && modeExercice
 

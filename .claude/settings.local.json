@@ -39,7 +39,21 @@
       "Bash(find:*)",
       "Bash(node -e:*)",
       "Bash(pip3 install:*)",
-      "Bash(/Library/Developer/CommandLineTools/usr/bin/python3:*)"
+      "Bash(/Library/Developer/CommandLineTools/usr/bin/python3:*)",
+      "Bash(npx ts-node scripts/fix-evaluations-commentaires.ts --dry-run)",
+      "Bash(npx ts-node scripts/fix-evaluations-commentaires.ts)",
+      "WebFetch(domain:smt.esante.gouv.fr)",
+      "WebFetch(domain:industriels.esante.gouv.fr)",
+      "WebFetch(domain:esante.gouv.fr)",
+      "WebFetch(domain:www.100000medecins.org)",
+      "WebFetch(domain:wallet.esw.esante.gouv.fr)",
+      "WebFetch(domain:wallet.esante.gouv.fr)",
+      "WebFetch(domain:auth.esw.esante.gouv.fr)",
+      "Bash(kill 74115 94374)",
+      "Bash(kill 645 99683)",
+      "Bash(wget -q -O /tmp/page.html --timeout=15 http://localhost:3000)",
+      "Read(//private/tmp/**)",
+      "Bash(gh auth:*)"
     ]
   }
 }
