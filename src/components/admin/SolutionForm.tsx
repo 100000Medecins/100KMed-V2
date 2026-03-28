@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react'
 import type { Database } from '@/types/database'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 
@@ -103,6 +103,34 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [bulkUploading, setBulkUploading] = useState(false)
   const galerieFileInputRef = useRef<HTMLInputElement>(null)
   const galerieBulkInputRef = useRef<HTMLInputElement>(null)
+  const dragIndexRef = useRef<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  function handleDragStart(index: number) {
+    dragIndexRef.current = index
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  function handleDrop(e: React.DragEvent, dropIndex: number) {
+    e.preventDefault()
+    const dragIndex = dragIndexRef.current
+    if (dragIndex === null || dragIndex === dropIndex) { setDragOverIndex(null); return }
+    const updated = [...galerie]
+    const [moved] = updated.splice(dragIndex, 1)
+    updated.splice(dropIndex, 0, moved)
+    setGalerie(updated.map((item, i) => ({ ...item, ordre: i })))
+    dragIndexRef.current = null
+    setDragOverIndex(null)
+  }
+
+  function handleDragEnd() {
+    dragIndexRef.current = null
+    setDragOverIndex(null)
+  }
 
   async function handleGalerieFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -546,7 +574,23 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         )}
 
         {galerie.map((img, index) => (
-          <div key={index} className="flex items-start gap-3 p-4 bg-surface-light rounded-xl">
+          <div
+            key={index}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+            className={`flex items-start gap-3 p-4 bg-surface-light rounded-xl transition-all ${dragOverIndex === index ? 'ring-2 ring-accent-blue bg-blue-50' : ''}`}
+          >
+            {/* Drag handle */}
+            <div
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              className="cursor-grab active:cursor-grabbing pt-3 text-gray-300 hover:text-gray-500 flex-shrink-0"
+              title="Glisser pour réordonner"
+            >
+              <GripVertical className="w-5 h-5" />
+            </div>
+
             {img.url && (
               <img
                 src={img.url}
@@ -577,31 +621,17 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                   {galerieUploadingIndex === index ? '⏳' : '⬆ Upload'}
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={img.titre ?? ''}
-                  onChange={(e) => {
-                    const updated = [...galerie]
-                    updated[index] = { ...updated[index], titre: e.target.value }
-                    setGalerie(updated)
-                  }}
-                  placeholder="Titre / description"
-                  className={inputClass}
-                />
-                <input
-                  type="number"
-                  value={img.ordre ?? 0}
-                  onChange={(e) => {
-                    const updated = [...galerie]
-                    updated[index] = { ...updated[index], ordre: Number(e.target.value) }
-                    setGalerie(updated)
-                  }}
-                  min={0}
-                  placeholder="Ordre"
-                  className={inputClass}
-                />
-              </div>
+              <input
+                type="text"
+                value={img.titre ?? ''}
+                onChange={(e) => {
+                  const updated = [...galerie]
+                  updated[index] = { ...updated[index], titre: e.target.value }
+                  setGalerie(updated)
+                }}
+                placeholder="Titre / description (alt)"
+                className={inputClass}
+              />
             </div>
             <button
               type="button"
