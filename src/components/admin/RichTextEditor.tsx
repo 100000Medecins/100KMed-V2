@@ -86,11 +86,12 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
   })
 
   if (!editor) return null
+  const ed = editor
 
   // ── Lien ──────────────────────────────────────────────
   function handleLinkButton() {
-    if (editor.isActive('link')) {
-      editor.chain().focus().unsetLink().run()
+    if (ed.isActive('link')) {
+      ed.chain().focus().unsetLink().run()
       setShowLinkBar(false)
       return
     }
@@ -101,7 +102,7 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
   function applyLink() {
     if (!linkUrl) return
     const href = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`
-    editor.chain().focus().setLink({ href }).run()
+    ed.chain().focus().setLink({ href }).run()
     setLinkUrl('')
     setShowLinkBar(false)
   }
@@ -114,22 +115,22 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
   function applyTable() {
     const rows = Math.max(1, parseInt(tableRows) || 3)
     const cols = Math.max(1, parseInt(tableCols) || 3)
-    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+    ed.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
     setShowTableBar(false)
   }
 
   // ── HTML source ────────────────────────────────────────
   function toggleHtmlSource() {
     if (!showHtmlSource) {
-      setHtmlSource(editor.getHTML())
+      setHtmlSource(ed.getHTML())
     } else {
-      editor.commands.setContent(htmlSource, true)
+      ed.commands.setContent(htmlSource, true)
     }
     setShowHtmlSource(s => !s)
   }
 
   function applyHtmlSource() {
-    editor.commands.setContent(htmlSource, true)
+    ed.commands.setContent(htmlSource, true)
     setShowHtmlSource(false)
   }
 
@@ -153,7 +154,7 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
         return
       }
 
-      editor.chain().focus().setImage({ src: json.url }).run()
+      ed.chain().focus().setImage({ src: json.url }).run()
     } catch {
       setUploadError('Erreur réseau lors de l\'upload')
     } finally {
@@ -199,37 +200,37 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
         <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b border-gray-200 bg-gray-50">
 
           {/* Formatage texte */}
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Gras">
+          <ToolbarButton onClick={() => ed.chain().focus().toggleBold().run()} active={ed.isActive('bold')} title="Gras">
             <strong>G</strong>
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italique">
+          <ToolbarButton onClick={() => ed.chain().focus().toggleItalic().run()} active={ed.isActive('italic')} title="Italique">
             <em>I</em>
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Souligné">
+          <ToolbarButton onClick={() => ed.chain().focus().toggleUnderline().run()} active={ed.isActive('underline')} title="Souligné">
             <span style={{ textDecoration: 'underline' }}>S</span>
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Barré">
+          <ToolbarButton onClick={() => ed.chain().focus().toggleStrike().run()} active={ed.isActive('strike')} title="Barré">
             <span style={{ textDecoration: 'line-through' }}>B</span>
           </ToolbarButton>
 
           <Divider />
 
           {/* Titres */}
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Titre H1">H1</ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Titre H2">H2</ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Titre H3">H3</ToolbarButton>
+          <ToolbarButton onClick={() => ed.chain().focus().toggleHeading({ level: 1 }).run()} active={ed.isActive('heading', { level: 1 })} title="Titre H1">H1</ToolbarButton>
+          <ToolbarButton onClick={() => ed.chain().focus().toggleHeading({ level: 2 }).run()} active={ed.isActive('heading', { level: 2 })} title="Titre H2">H2</ToolbarButton>
+          <ToolbarButton onClick={() => ed.chain().focus().toggleHeading({ level: 3 }).run()} active={ed.isActive('heading', { level: 3 })} title="Titre H3">H3</ToolbarButton>
 
           <Divider />
 
           {/* Listes */}
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Liste à puces">• Liste</ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Liste numérotée">1. Liste</ToolbarButton>
+          <ToolbarButton onClick={() => ed.chain().focus().toggleBulletList().run()} active={ed.isActive('bulletList')} title="Liste à puces">• Liste</ToolbarButton>
+          <ToolbarButton onClick={() => ed.chain().focus().toggleOrderedList().run()} active={ed.isActive('orderedList')} title="Liste numérotée">1. Liste</ToolbarButton>
 
           <Divider />
 
           {/* Lien */}
-          <ToolbarButton onClick={handleLinkButton} active={editor.isActive('link')} title={editor.isActive('link') ? 'Supprimer le lien' : 'Insérer un lien'}>
-            🔗 {editor.isActive('link') ? 'Supprimer lien' : 'Lien'}
+          <ToolbarButton onClick={handleLinkButton} active={ed.isActive('link')} title={ed.isActive('link') ? 'Supprimer le lien' : 'Insérer un lien'}>
+            🔗 {ed.isActive('link') ? 'Supprimer lien' : 'Lien'}
           </ToolbarButton>
 
           {/* Tableau */}
