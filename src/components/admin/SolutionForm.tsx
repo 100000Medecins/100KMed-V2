@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import type { Database } from '@/types/database'
 import RichTextEditor from '@/components/admin/RichTextEditor'
@@ -94,6 +94,30 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [description, setDescription] = useState(solution?.description ?? '')
   const [evaluationRedacAvis, setEvaluationRedacAvis] = useState(solution?.evaluation_redac_avis ?? '')
   const [motEditeur, setMotEditeur] = useState(solution?.mot_editeur ?? '')
+  const [logoUrl, setLogoUrl] = useState(solution?.logo_url ?? '')
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null)
+  const logoFileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoUploading(true)
+    setLogoUploadError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const json = await res.json()
+      if (!res.ok) { setLogoUploadError(json.error ?? 'Erreur lors de l\'upload'); return }
+      setLogoUrl(json.url)
+    } catch {
+      setLogoUploadError('Erreur réseau lors de l\'upload')
+    } finally {
+      setLogoUploading(false)
+      if (logoFileInputRef.current) logoFileInputRef.current.value = ''
+    }
+  }
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     general: true,
     apparence: false,
