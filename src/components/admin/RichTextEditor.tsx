@@ -124,13 +124,13 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
     if (!showHtmlSource) {
       setHtmlSource(ed.getHTML())
     } else {
-      ed.commands.setContent(htmlSource, true)
+      ed.commands.setContent(htmlSource)
     }
     setShowHtmlSource(s => !s)
   }
 
   function applyHtmlSource() {
-    ed.commands.setContent(htmlSource, true)
+    ed.commands.setContent(htmlSource)
     setShowHtmlSource(false)
   }
 
