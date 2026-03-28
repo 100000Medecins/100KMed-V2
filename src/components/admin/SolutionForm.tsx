@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import type { Database } from '@/types/database'
+import RichTextEditor from '@/components/admin/RichTextEditor'
 
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
@@ -90,6 +91,9 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     }
     return initial
   })
+  const [description, setDescription] = useState(solution?.description ?? '')
+  const [evaluationRedacAvis, setEvaluationRedacAvis] = useState(solution?.evaluation_redac_avis ?? '')
+  const [motEditeur, setMotEditeur] = useState(solution?.mot_editeur ?? '')
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     general: true,
     apparence: false,
@@ -106,6 +110,9 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   }
 
   function handleSubmit(formData: FormData) {
+    formData.set('description', description)
+    formData.set('evaluation_redac_avis', evaluationRedacAvis)
+    formData.set('mot_editeur', motEditeur)
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) setError(result.error)
@@ -147,13 +154,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           />
         </div>
         <div>
-          <label htmlFor="description" className={labelClass}>Description</label>
-          <textarea
-            id="description"
-            name="description"
-            defaultValue={solution?.description ?? ''}
-            rows={4}
-            className={textareaClass}
+          <label className={labelClass}>Description</label>
+          <RichTextEditor
+            initialContent={description}
+            onChange={setDescription}
+            minHeight={150}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -307,13 +312,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           <p className="text-xs text-gray-400 mt-1">Note affichée dans le héro et la section avis rédaction (0 à 5)</p>
         </div>
         <div>
-          <label htmlFor="evaluation_redac_avis" className={labelClass}>Avis de la rédaction</label>
-          <textarea
-            id="evaluation_redac_avis"
-            name="evaluation_redac_avis"
-            defaultValue={solution?.evaluation_redac_avis ?? ''}
-            rows={5}
-            className={textareaClass}
+          <label className={labelClass}>Avis de la rédaction</label>
+          <RichTextEditor
+            initialContent={evaluationRedacAvis}
+            onChange={setEvaluationRedacAvis}
+            minHeight={200}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -341,13 +344,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           </div>
         </div>
         <div>
-          <label htmlFor="mot_editeur" className={labelClass}>Mot de l&apos;éditeur</label>
-          <textarea
-            id="mot_editeur"
-            name="mot_editeur"
-            defaultValue={solution?.mot_editeur ?? ''}
-            rows={4}
-            className={textareaClass}
+          <label className={labelClass}>Mot de l&apos;éditeur</label>
+          <RichTextEditor
+            initialContent={motEditeur}
+            onChange={setMotEditeur}
+            minHeight={200}
           />
         </div>
       </Section>
@@ -379,17 +380,15 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_120px] gap-3">
                   <div>
                     <label className={labelClass}>Avis</label>
-                    <textarea
-                      value={notesValues[n.critere_id]?.avis ?? ''}
-                      onChange={(e) =>
+                    <RichTextEditor
+                      initialContent={notesValues[n.critere_id]?.avis ?? ''}
+                      onChange={(html) =>
                         setNotesValues((prev) => ({
                           ...prev,
-                          [n.critere_id]: { ...prev[n.critere_id], avis: e.target.value },
+                          [n.critere_id]: { ...prev[n.critere_id], avis: html },
                         }))
                       }
-                      rows={3}
-                      className={textareaClass}
-                      placeholder="Avis de la rédaction..."
+                      minHeight={120}
                     />
                   </div>
                   <div>

@@ -414,10 +414,10 @@ export async function updatePageStatique(id: string, formData: FormData) {
     .eq('id', id)
     .single()
 
-  revalidatePath('/admin/blog')
+  revalidatePath('/admin/pages')
   if (page?.slug) {
     revalidatePath(`/${page.slug}`)
   }
 
-  redirect('/admin/blog')
+  redirect('/admin/pages')
 }

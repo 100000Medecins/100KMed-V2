@@ -7,7 +7,7 @@ import { Package, FolderOpen, BarChart3, FileText } from 'lucide-react'
 const navItems = [
   { href: '/admin/solutions', label: 'Solutions', icon: Package },
   { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
-  { href: '/admin/blog', label: 'Blog', icon: FileText },
+  { href: '/admin/pages', label: 'Pages', icon: FileText },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
 

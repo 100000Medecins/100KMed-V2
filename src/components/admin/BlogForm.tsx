@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import type { Database } from '@/types/database'
+import RichTextEditor from '@/components/admin/RichTextEditor'
 
 type PageStatique = Database['public']['Tables']['pages_statiques']['Row']
 
@@ -19,8 +20,10 @@ const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 export default function BlogForm({ page, action }: BlogFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [contenu, setContenu] = useState(page.contenu ?? '')
 
   function handleSubmit(formData: FormData) {
+    formData.set('contenu', contenu)
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) setError(result.error)
@@ -79,19 +82,13 @@ export default function BlogForm({ page, action }: BlogFormProps) {
         />
       </div>
 
-      {/* Contenu HTML */}
+      {/* Contenu WYSIWYG */}
       <div>
-        <label htmlFor="contenu" className={labelClass}>Contenu (HTML)</label>
-        <textarea
-          id="contenu"
-          name="contenu"
-          defaultValue={page.contenu ?? ''}
-          rows={20}
-          className={`${textareaClass} font-mono text-xs`}
+        <label className={labelClass}>Contenu</label>
+        <RichTextEditor
+          initialContent={contenu}
+          onChange={setContenu}
         />
-        <p className="text-xs text-gray-400 mt-1.5">
-          Le contenu est rendu en HTML avec le style prose-custom. Utilisez les balises &lt;p&gt;, &lt;strong&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;h2&gt;, &lt;h3&gt;, &lt;blockquote&gt; etc.
-        </p>
       </div>
 
       {/* Actions */}
@@ -104,7 +101,7 @@ export default function BlogForm({ page, action }: BlogFormProps) {
           {isPending ? 'Enregistrement...' : 'Mettre à jour'}
         </button>
         <a
-          href="/admin/blog"
+          href="/admin/pages"
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"
         >
           Annuler

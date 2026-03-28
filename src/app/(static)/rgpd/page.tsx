@@ -1,13 +1,39 @@
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import { getPageBySlug } from '@/lib/db/pages'
 
 export const metadata: Metadata = {
   title: 'RGPD / Cookies — 100000médecins.org',
   description: 'Politique de confidentialité et gestion des cookies du site 100000medecins.org',
 }
 
-export default function RGPDPage() {
+export default async function RGPDPage() {
+  let dbPage = null
+  try {
+    dbPage = await getPageBySlug('rgpd')
+  } catch {
+    // Page non encore en DB, on affiche le contenu codé en dur
+  }
+
+  if (dbPage) {
+    return (
+      <>
+        <Navbar />
+        <main className="pt-[72px]">
+          <article className="max-w-3xl mx-auto px-6 py-16">
+            <h1 className="text-2xl font-bold text-navy mb-8">{dbPage.titre}</h1>
+            <div
+              className="space-y-8 text-sm text-gray-700 leading-relaxed prose-custom"
+              dangerouslySetInnerHTML={{ __html: dbPage.contenu || '' }}
+            />
+          </article>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
   return (
     <>
       <Navbar />
