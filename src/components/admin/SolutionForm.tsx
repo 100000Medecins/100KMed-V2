@@ -137,6 +137,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     formData.set('description', description)
     formData.set('evaluation_redac_avis', evaluationRedacAvis)
     formData.set('mot_editeur', motEditeur)
+    formData.set('logo_url', logoUrl)
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) setError(result.error)
@@ -228,15 +229,43 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             />
           </div>
           <div>
-            <label htmlFor="logo_url" className={labelClass}>URL du logo</label>
+            <label className={labelClass}>Logo</label>
             <input
-              id="logo_url"
-              type="text"
-              name="logo_url"
-              defaultValue={solution?.logo_url ?? ''}
-              placeholder="chemin ou https://..."
-              className={inputClass}
+              ref={logoFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={handleLogoFileChange}
             />
+            <div className="flex items-center gap-3">
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="w-14 h-14 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0"
+                />
+              )}
+              <div className="flex-1 space-y-2">
+                <input
+                  type="text"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://... ou coller une URL"
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={logoUploading}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {logoUploading ? '⏳ Upload...' : '⬆ Uploader un fichier'}
+                </button>
+              </div>
+            </div>
+            {logoUploadError && (
+              <p className="mt-1.5 text-xs text-red-500">{logoUploadError}</p>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
