@@ -98,6 +98,54 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null)
   const logoFileInputRef = useRef<HTMLInputElement>(null)
+  const [galerieUploadingIndex, setGalerieUploadingIndex] = useState<number | null>(null)
+  const [galerieUploadError, setGalerieUploadError] = useState<string | null>(null)
+  const [bulkUploading, setBulkUploading] = useState(false)
+  const galerieFileInputRef = useRef<HTMLInputElement>(null)
+  const galerieBulkInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleGalerieFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || galerieUploadingIndex === null) return
+    setGalerieUploadError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const json = await res.json()
+      if (!res.ok) { setGalerieUploadError(json.error ?? 'Erreur upload'); return }
+      const updated = [...galerie]
+      updated[galerieUploadingIndex] = { ...updated[galerieUploadingIndex], url: json.url }
+      setGalerie(updated)
+    } catch {
+      setGalerieUploadError('Erreur réseau lors de l\'upload')
+    } finally {
+      setGalerieUploadingIndex(null)
+      if (galerieFileInputRef.current) galerieFileInputRef.current.value = ''
+    }
+  }
+
+  async function handleBulkUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setBulkUploading(true)
+    setGalerieUploadError(null)
+    const newItems: GalerieImage[] = []
+    for (const file of files) {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: formData })
+        const json = await res.json()
+        if (res.ok) {
+          newItems.push({ url: json.url, titre: null, ordre: galerie.length + newItems.length })
+        }
+      } catch { /* continue */ }
+    }
+    if (newItems.length) setGalerie([...galerie, ...newItems])
+    setBulkUploading(false)
+    if (galerieBulkInputRef.current) galerieBulkInputRef.current.value = ''
+  }
 
   async function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -476,11 +524,38 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
       >
         <input type="hidden" name="galerie_json" value={JSON.stringify(galerie)} />
 
+        {/* Inputs fichiers cachés */}
+        <input
+          ref={galerieFileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+          className="hidden"
+          onChange={handleGalerieFileChange}
+        />
+        <input
+          ref={galerieBulkInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+          multiple
+          className="hidden"
+          onChange={handleBulkUpload}
+        />
+
+        {galerieUploadError && (
+          <p className="text-xs text-red-500">{galerieUploadError}</p>
+        )}
+
         {galerie.map((img, index) => (
           <div key={index} className="flex items-start gap-3 p-4 bg-surface-light rounded-xl">
-            <div className="flex-1 space-y-3">
-              <div>
-                <label className={labelClass}>URL de l&apos;image *</label>
+            {img.url && (
+              <img
+                src={img.url}
+                alt={img.titre || ''}
+                className="w-24 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+              />
+            )}
+            <div className="flex-1 space-y-2">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={img.url}
@@ -489,49 +564,45 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                     updated[index] = { ...updated[index], url: e.target.value }
                     setGalerie(updated)
                   }}
-                  placeholder="/images/solutions/... ou https://..."
+                  placeholder="https://..."
                   required
                   className={inputClass}
                 />
+                <button
+                  type="button"
+                  disabled={galerieUploadingIndex === index}
+                  onClick={() => { setGalerieUploadingIndex(index); galerieFileInputRef.current?.click() }}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
+                >
+                  {galerieUploadingIndex === index ? '⏳' : '⬆ Upload'}
+                </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Titre / alt</label>
-                  <input
-                    type="text"
-                    value={img.titre ?? ''}
-                    onChange={(e) => {
-                      const updated = [...galerie]
-                      updated[index] = { ...updated[index], titre: e.target.value }
-                      setGalerie(updated)
-                    }}
-                    placeholder="Description de l'image"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Ordre</label>
-                  <input
-                    type="number"
-                    value={img.ordre ?? 0}
-                    onChange={(e) => {
-                      const updated = [...galerie]
-                      updated[index] = { ...updated[index], ordre: Number(e.target.value) }
-                      setGalerie(updated)
-                    }}
-                    min={0}
-                    className={inputClass}
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={img.titre ?? ''}
+                  onChange={(e) => {
+                    const updated = [...galerie]
+                    updated[index] = { ...updated[index], titre: e.target.value }
+                    setGalerie(updated)
+                  }}
+                  placeholder="Titre / description"
+                  className={inputClass}
+                />
+                <input
+                  type="number"
+                  value={img.ordre ?? 0}
+                  onChange={(e) => {
+                    const updated = [...galerie]
+                    updated[index] = { ...updated[index], ordre: Number(e.target.value) }
+                    setGalerie(updated)
+                  }}
+                  min={0}
+                  placeholder="Ordre"
+                  className={inputClass}
+                />
               </div>
             </div>
-            {img.url && (
-              <img
-                src={img.url}
-                alt={img.titre || ''}
-                className="w-20 h-14 object-cover rounded-lg border border-gray-200 flex-shrink-0"
-              />
-            )}
             <button
               type="button"
               onClick={() => setGalerie(galerie.filter((_, i) => i !== index))}
@@ -543,14 +614,25 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length }])}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Ajouter une image
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length }])}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Ajouter manuellement
+          </button>
+          <button
+            type="button"
+            disabled={bulkUploading}
+            onClick={() => galerieBulkInputRef.current?.click()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            {bulkUploading ? 'Upload en cours...' : 'Uploader des images'}
+          </button>
+        </div>
       </Section>
 
       {/* Section 6 — Dates */}
