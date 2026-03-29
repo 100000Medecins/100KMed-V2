@@ -11,6 +11,8 @@ interface AuthContextType {
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
+  resetPassword: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -20,6 +22,8 @@ const AuthContext = createContext<AuthContextType>({
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
   signUpWithEmail: async () => ({ error: null }),
+  resetPassword: async () => ({ error: null }),
+  updatePassword: async () => ({ error: null }),
   signOut: async () => {},
 })
 
@@ -131,6 +135,22 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
+  const resetPassword = async (email: string) => {
+    if (!supabase) return { error: 'Supabase non configuré' }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
+    })
+    if (error) return { error: error.message }
+    return { error: null }
+  }
+
+  const updatePassword = async (password: string) => {
+    if (!supabase) return { error: 'Supabase non configuré' }
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return { error: error.message }
+    return { error: null }
+  }
+
   const signOut = async () => {
     if (!supabase) return
     await supabase.auth.signOut()
@@ -139,7 +159,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithPSC, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   )

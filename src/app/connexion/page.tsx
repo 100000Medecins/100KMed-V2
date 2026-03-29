@@ -9,14 +9,14 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { ShieldCheck, Mail } from 'lucide-react'
 
 function ConnexionContent() {
-  const { signInWithPSC, signInWithEmail, signUpWithEmail, user, loading } = useAuth()
+  const { signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, user, loading } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const redirect = searchParams.get('redirect')
   const errorParam = searchParams.get('error')
   const modeParam = searchParams.get('mode')
 
-  const [mode, setMode] = useState<'choice' | 'login' | 'register'>(
+  const [mode, setMode] = useState<'choice' | 'login' | 'register' | 'forgot'>(
     modeParam === 'register' ? 'register' : modeParam === 'login' ? 'login' : 'choice'
   )
   const [email, setEmail] = useState('')
@@ -37,6 +37,17 @@ function ConnexionContent() {
     setError(null)
     setSuccess(null)
     setSubmitting(true)
+
+    if (mode === 'forgot') {
+      const result = await resetPassword(email)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setSuccess('Un email de réinitialisation a été envoyé. Vérifiez votre boîte mail.')
+      }
+      setSubmitting(false)
+      return
+    }
 
     if (mode === 'login') {
       const result = await signInWithEmail(email, password)
@@ -114,6 +125,40 @@ function ConnexionContent() {
           </div>
         )}
 
+        {mode === 'forgot' && (
+          <form onSubmit={handleEmailSubmit} className="space-y-4 text-left">
+            <p className="text-sm text-gray-500 text-center">
+              Entrez votre email pour recevoir un lien de réinitialisation.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-navy mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="votre@email.com"
+              />
+            </div>
+            <Button
+              variant="primary"
+              className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              Envoyer le lien
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(null); setSuccess(null) }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Retour à la connexion
+              </button>
+            </div>
+          </form>
+        )}
+
         {(mode === 'login' || mode === 'register') && (
           <form onSubmit={handleEmailSubmit} className="space-y-4 text-left">
             <div>
@@ -163,6 +208,18 @@ function ConnexionContent() {
                 {mode === 'login' ? 'Créer un compte' : 'Déjà inscrit ? Se connecter'}
               </button>
             </div>
+
+            {mode === 'login' && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot'); setError(null); setSuccess(null) }}
+                  className="text-xs text-gray-400 hover:text-gray-600 hover:underline"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
+            )}
           </form>
         )}
 
