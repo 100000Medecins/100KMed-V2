@@ -7,6 +7,7 @@ import { completeProfile } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
 import { Check } from 'lucide-react'
+import { useRef } from 'react'
 
 export default function ProfilPage() {
   const { user } = useAuth()
@@ -20,6 +21,22 @@ export default function ProfilPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  // Email
+  const [newEmail, setNewEmail] = useState('')
+  const [emailSubmitting, setEmailSubmitting] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null)
+
+  // Mot de passe
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
+
+  const supabaseRef = useRef(createClient())
 
   // Charger le profil existant
   useEffect(() => {
@@ -66,6 +83,55 @@ export default function ProfilPage() {
       setError('Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError(null)
+    setEmailSuccess(null)
+    setEmailSubmitting(true)
+    const { error } = await supabaseRef.current.auth.updateUser({ email: newEmail })
+    setEmailSubmitting(false)
+    if (error) {
+      setEmailError(error.message)
+    } else {
+      setEmailSuccess('Un email de confirmation a été envoyé à votre nouvelle adresse.')
+      setNewEmail('')
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError(null)
+    setPasswordSuccess(null)
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Les mots de passe ne correspondent pas.')
+      return
+    }
+
+    setPasswordSubmitting(true)
+    // Vérifier le mot de passe actuel en tentant une reconnexion
+    const { error: signInError } = await supabaseRef.current.auth.signInWithPassword({
+      email: user!.email!,
+      password: currentPassword,
+    })
+    if (signInError) {
+      setPasswordError('Mot de passe actuel incorrect.')
+      setPasswordSubmitting(false)
+      return
+    }
+
+    const { error } = await supabaseRef.current.auth.updateUser({ password: newPassword })
+    setPasswordSubmitting(false)
+    if (error) {
+      setPasswordError(error.message)
+    } else {
+      setPasswordSuccess('Mot de passe mis à jour avec succès.')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
     }
   }
 
@@ -180,6 +246,81 @@ export default function ProfilPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Changer l'email */}
+        <div className="bg-white rounded-card shadow-card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-navy">Adresse email</h2>
+          <p className="text-xs text-gray-500">Email actuel : <span className="font-medium text-navy">{user?.email}</span></p>
+          <form onSubmit={handleEmailChange} className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nouvel email</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="nouveau@email.com"
+              />
+            </div>
+            {emailError && <p className="text-xs text-red-600">{emailError}</p>}
+            {emailSuccess && <p className="text-xs text-green-600">{emailSuccess}</p>}
+            <div className="flex justify-end">
+              <Button variant="primary" className={emailSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                {emailSubmitting ? 'Envoi...' : 'Changer l\'email'}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* Changer le mot de passe */}
+        <div className="bg-white rounded-card shadow-card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-navy">Mot de passe</h2>
+          <form onSubmit={handlePasswordChange} className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="••••••••"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="6 caractères minimum"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                placeholder="6 caractères minimum"
+              />
+            </div>
+            {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
+            {passwordSuccess && <p className="text-xs text-green-600">{passwordSuccess}</p>}
+            <div className="flex justify-end">
+              <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                {passwordSubmitting ? 'Mise à jour...' : 'Changer le mot de passe'}
+              </Button>
+            </div>
+          </form>
         </div>
 
         {/* Messages */}
