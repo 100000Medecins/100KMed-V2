@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import type { Database } from '@/types/database'
+import RichTextEditor from './RichTextEditor'
 
 type Categorie = Database['public']['Tables']['categories']['Row']
 
@@ -19,8 +20,10 @@ const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 export default function CategorieForm({ categorie, action }: CategorieFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [intro, setIntro] = useState(categorie?.intro ?? '')
 
   function handleSubmit(formData: FormData) {
+    formData.set('intro', intro)
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) setError(result.error)
@@ -58,17 +61,15 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
       </div>
 
       <div>
-        <label htmlFor="intro" className={labelClass}>Introduction</label>
-        <textarea
-          id="intro"
-          name="intro"
-          defaultValue={categorie?.intro ?? ''}
-          rows={3}
-          className={textareaClass}
+        <label className={labelClass}>Introduction</label>
+        <RichTextEditor
+          initialContent={intro}
+          onChange={setIntro}
+          minHeight={150}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
           <label htmlFor="icon" className={labelClass}>Icône (emoji)</label>
           <input
@@ -77,17 +78,6 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
             name="icon"
             defaultValue={categorie?.icon ?? ''}
             placeholder="💊"
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="position" className={labelClass}>Position</label>
-          <input
-            id="position"
-            type="number"
-            name="position"
-            min={0}
-            defaultValue={categorie?.position ?? ''}
             className={inputClass}
           />
         </div>

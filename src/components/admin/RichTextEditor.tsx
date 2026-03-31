@@ -9,7 +9,53 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { Image } from '@tiptap/extension-image'
+import Color from '@tiptap/extension-color'
+import TextStyle from '@tiptap/extension-text-style'
+import { Extension } from '@tiptap/core'
 import { useState, useRef } from 'react'
+
+// Extension personnalisée pour la taille de police
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (el) => el.style.fontSize || null,
+            renderHTML: (attrs) => {
+              if (!attrs.fontSize) return {}
+              return { style: `font-size: ${attrs.fontSize}` }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        (fontSize: string) =>
+        ({ chain }: any) => {
+          return chain().setMark('textStyle', { fontSize }).run()
+        },
+      unsetFontSize:
+        () =>
+        ({ chain }: any) => {
+          return chain().setMark('textStyle', { fontSize: null }).run()
+        },
+    } as any
+  },
+})
+
+const FONT_SIZES = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px']
+const COLORS = [
+  '#000000', '#1B2A4A', '#374151', '#6b7280',
+  '#ef4444', '#f97316', '#eab308', '#22c55e',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff',
+]
 
 interface Props {
   initialContent: string
@@ -57,6 +103,7 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
   const [tableCols, setTableCols] = useState('3')
   const [showHtmlSource, setShowHtmlSource] = useState(false)
   const [htmlSource, setHtmlSource] = useState('')
+  const [showColorPicker, setShowColorPicker] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -66,6 +113,9 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
     extensions: [
       StarterKit,
       Underline,
+      TextStyle,
+      Color,
+      FontSize,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-accent-blue underline cursor-pointer' } }),
       Table.configure({ resizable: false }),
       TableRow,
@@ -133,6 +183,29 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
     ed.commands.setContent(htmlSource)
     setShowHtmlSource(false)
   }
+
+  // ── Couleur ────────────────────────────────────────────
+  function applyColor(color: string) {
+    ed.chain().focus().setColor(color).run()
+    setShowColorPicker(false)
+  }
+
+  function removeColor() {
+    ed.chain().focus().unsetColor().run()
+    setShowColorPicker(false)
+  }
+
+  // ── Taille de police ───────────────────────────────────
+  function applyFontSize(size: string) {
+    if (size === '') {
+      ;(ed.chain().focus() as any).unsetFontSize().run()
+    } else {
+      ;(ed.chain().focus() as any).setFontSize(size).run()
+    }
+  }
+
+  // Détecter la couleur active
+  const activeColor = (ed.getAttributes('textStyle') as any).color as string | undefined
 
   // ── Image upload ───────────────────────────────────────
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -212,6 +285,57 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
           <ToolbarButton onClick={() => ed.chain().focus().toggleStrike().run()} active={ed.isActive('strike')} title="Barré">
             <span style={{ textDecoration: 'line-through' }}>B</span>
           </ToolbarButton>
+
+          <Divider />
+
+          {/* Couleur du texte */}
+          <div className="relative">
+            <button
+              type="button"
+              title="Couleur du texte"
+              onClick={() => setShowColorPicker(v => !v)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-200 transition-colors"
+            >
+              <span style={{ borderBottom: `3px solid ${activeColor || '#000'}` }}>A</span>
+              <span className="text-xs">▾</span>
+            </button>
+            {showColorPicker && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-2 w-36">
+                <div className="grid grid-cols-6 gap-1 mb-2">
+                  {COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      title={color}
+                      onClick={() => applyColor(color)}
+                      className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={removeColor}
+                  className="w-full text-xs text-gray-500 hover:text-gray-700 text-center py-0.5"
+                >
+                  Supprimer couleur
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Taille de police */}
+          <select
+            title="Taille de police"
+            onChange={(e) => applyFontSize(e.target.value)}
+            defaultValue=""
+            className="text-xs border border-gray-200 rounded-lg px-1.5 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent-blue/30 cursor-pointer"
+          >
+            <option value="">Taille</option>
+            {FONT_SIZES.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
 
           <Divider />
 

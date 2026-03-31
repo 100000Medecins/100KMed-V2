@@ -78,7 +78,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
               </h1>
             </div>
             {categorie.intro && (
-              <p className="text-gray-600 max-w-2xl">{categorie.intro}</p>
+              <div className="text-gray-600 max-w-2xl prose prose-sm" dangerouslySetInnerHTML={{ __html: categorie.intro }} />
             )}
             <p className="text-sm text-gray-400 mt-2">
               {solutions.length} solution{solutions.length > 1 ? 's' : ''} disponible{solutions.length > 1 ? 's' : ''}

@@ -324,6 +324,18 @@ export async function updateCategorie(id: string, formData: FormData) {
   redirect('/admin/categories')
 }
 
+export async function reorderCategories(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('categories').update({ position: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/categories')
+  revalidatePath('/solutions', 'layout')
+}
+
 export async function toggleCategorieActif(id: string, actif: boolean) {
   await assertAdmin()
 
