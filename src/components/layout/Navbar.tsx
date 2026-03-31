@@ -37,7 +37,7 @@ export default function Navbar() {
         isScrolled ? "bg-white/95 backdrop-blur-md shadow-nav" : "bg-white"
       }`}
     >
-      <nav className="max-w-7xl mx-auto px-6 flex items-center justify-between h-[72px]">
+      <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
         {/* Logo */}
         <a href="/" className="flex items-center gap-2.5 shrink-0">
           <div className="flex gap-0.5">
@@ -53,12 +53,12 @@ export default function Navbar() {
         </a>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center justify-center gap-6 min-w-0">
           {allNavItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors text-center"
             >
               {item.label}
             </a>
@@ -73,7 +73,7 @@ export default function Navbar() {
             </Button>
           ) : (
             <>
-              <Button variant="ghost" href="/connexion" className="text-sm py-2.5 px-5">
+              <Button variant="outline" href="/connexion" className="text-sm py-2.5 px-6">
                 Me connecter
               </Button>
               <Button variant="primary" href="/connexion" className="text-sm py-2.5 px-6">

@@ -62,6 +62,7 @@ export type Database = {
           criteres_recherche: string[] | null
           icon: string | null
           id: string
+          image_url: string | null
           intro: string | null
           nom: string
           position: number | null
@@ -78,6 +79,7 @@ export type Database = {
           criteres_recherche?: string[] | null
           icon?: string | null
           id?: string | null
+          image_url?: string | null
           intro?: string | null
           nom: string
           position?: number | null
@@ -93,6 +95,7 @@ export type Database = {
           criteres_recherche?: string[] | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           intro?: string | null
           nom?: string
           position?: number | null

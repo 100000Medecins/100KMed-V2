@@ -280,7 +280,7 @@ function extractCategorieFromFormData(formData: FormData) {
     slug,
     icon: (formData.get('icon') as string) || null,
     intro: (formData.get('intro') as string) || null,
-    position: formData.get('position') ? Number(formData.get('position')) : null,
+    image_url: (formData.get('image_url') as string) || null,
     actif: formData.get('actif') === 'on',
   }
 }
