@@ -108,7 +108,15 @@ export default function CategoriesList({ initialCategories }: { initialCategorie
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <ToggleCategorieActif categorieId={cat.id} actif={cat.actif ?? false} />
+                    <ToggleCategorieActif
+                      categorieId={cat.id}
+                      actif={cat.actif ?? false}
+                      onToggle={(newValue) =>
+                        setCategories((prev) =>
+                          prev.map((c) => c.id === cat.id ? { ...c, actif: newValue } : c)
+                        )
+                      }
+                    />
                     <span className={`text-xs font-medium ${cat.actif ? 'text-green-700' : 'text-gray-400'}`}>
                       {cat.actif ? 'Active' : 'Inactive'}
                     </span>
