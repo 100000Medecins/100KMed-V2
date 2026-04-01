@@ -281,7 +281,6 @@ function extractCategorieFromFormData(formData: FormData) {
     icon: (formData.get('icon') as string) || null,
     intro: (formData.get('intro') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
-    actif: formData.get('actif') === 'on',
   }
 }
 
@@ -432,4 +431,66 @@ export async function updatePageStatique(id: string, formData: FormData) {
   }
 
   redirect('/admin/pages')
+}
+
+// ────────────────────────────────────────────
+// Partenaires
+// ────────────────────────────────────────────
+
+export async function createPartenaire(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('partenaires').insert({
+    id: randomUUID(),
+    nom: formData.get('nom') as string,
+    logo_url: (formData.get('logo_url') as string) || null,
+    lien_url: (formData.get('lien_url') as string) || null,
+    actif: true,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+  redirect('/admin/partenaires')
+}
+
+export async function updatePartenaire(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('partenaires').update({
+    nom: formData.get('nom') as string,
+    logo_url: (formData.get('logo_url') as string) || null,
+    lien_url: (formData.get('lien_url') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+  redirect('/admin/partenaires')
+}
+
+export async function deletePartenaire(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('partenaires').delete().eq('id', id)
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+}
+
+export async function togglePartenaireActif(id: string, actif: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('partenaires').update({ actif }).eq('id', id)
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+}
+
+export async function reorderPartenaires(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('partenaires').update({ position: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
 }

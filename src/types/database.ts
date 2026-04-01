@@ -680,6 +680,33 @@ export type Database = {
         }
         Relationships: []
       }
+      partenaires: {
+        Row: {
+          id: string
+          nom: string
+          logo_url: string | null
+          lien_url: string | null
+          actif: boolean | null
+          position: number | null
+        }
+        Insert: {
+          id?: string
+          nom: string
+          logo_url?: string | null
+          lien_url?: string | null
+          actif?: boolean | null
+          position?: number | null
+        }
+        Update: {
+          id?: string
+          nom?: string
+          logo_url?: string | null
+          lien_url?: string | null
+          actif?: boolean | null
+          position?: number | null
+        }
+        Relationships: []
+      }
       pages_statiques: {
         Row: {
           id: string

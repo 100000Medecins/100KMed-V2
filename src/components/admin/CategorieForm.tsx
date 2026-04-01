@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import type { Database } from '@/types/database'
 import RichTextEditor from './RichTextEditor'
 
@@ -20,6 +20,9 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
   const [isPending, startTransition] = useTransition()
   const [intro, setIntro] = useState(categorie?.intro ?? '')
   const [imageUrl, setImageUrl] = useState(categorie?.image_url ?? '')
+  const [icon, setIcon] = useState(categorie?.icon ?? '')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
   const [imageUploading, setImageUploading] = useState(false)
   const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   const imageFileInputRef = useRef<HTMLInputElement>(null)
@@ -44,9 +47,20 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
     }
   }
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+    if (showEmojiPicker) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showEmojiPicker])
+
   function handleSubmit(formData: FormData) {
     formData.set('intro', intro)
     formData.set('image_url', imageUrl)
+    formData.set('icon', icon)
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) setError(result.error)
@@ -129,28 +143,53 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
         {imageUploadError && <p className="text-xs text-red-600 mt-1">{imageUploadError}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label htmlFor="icon" className={labelClass}>Icône (emoji)</label>
-          <input
-            id="icon"
-            type="text"
-            name="icon"
-            defaultValue={categorie?.icon ?? ''}
-            placeholder="💊"
-            className={inputClass}
-          />
-        </div>
-        <div className="flex items-end pb-1">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              name="actif"
-              defaultChecked={categorie?.actif ?? true}
-              className="w-5 h-5 rounded border-gray-300 text-accent-blue focus:ring-accent-blue/30"
-            />
-            <span className="text-sm font-medium text-navy">Active</span>
-          </label>
+      <div>
+        <label className={labelClass}>Icône (emoji)</label>
+        <input type="hidden" name="icon" value={icon} />
+        <div className="relative" ref={emojiPickerRef}>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((v) => !v)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-button border border-gray-200 bg-white text-sm hover:bg-gray-50 transition-colors"
+            >
+              {icon ? (
+                <><span className="text-xl">{icon}</span><span className="text-gray-500">Changer</span></>
+              ) : (
+                <span className="text-gray-400">Choisir une icône…</span>
+              )}
+            </button>
+            {icon && (
+              <button type="button" onClick={() => setIcon('')} className="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                Retirer
+              </button>
+            )}
+          </div>
+          {showEmojiPicker && (
+            <div className="absolute z-50 mt-2 p-3 bg-white rounded-2xl shadow-card border border-gray-100 w-72">
+              {[
+                { label: 'Médical', emojis: ['🩺','💊','🔬','🧬','🏥','💉','🩻','🩹','🧪','❤️‍🩹','🫀','🫁','🧠','🦷','👁️','🦴'] },
+                { label: 'Outils & Tech', emojis: ['💻','📱','⚙️','🔧','📋','📊','📈','🗂️','🖥️','⌨️','🖱️','📡','🔐','📲','🤖','⚡'] },
+                { label: 'Général', emojis: ['⭐','✅','📌','🎯','💡','🔔','📢','🗓️','📝','🤝','👨‍⚕️','👩‍⚕️','🏆','🎓','🌐','🔍'] },
+              ].map(({ label, emojis }) => (
+                <div key={label} className="mb-3 last:mb-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">{label}</p>
+                  <div className="grid grid-cols-8 gap-1">
+                    {emojis.map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => { setIcon(e); setShowEmojiPicker(false) }}
+                        className={`text-xl p-1 rounded-lg hover:bg-accent-blue/10 transition-colors ${icon === e ? 'bg-accent-blue/15 ring-1 ring-accent-blue/40' : ''}`}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
