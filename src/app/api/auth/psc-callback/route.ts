@@ -3,6 +3,21 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps } from '@/lib/auth/psc'
+import { resolveSpecialite } from '@/lib/constants/profil'
+
+function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
+  const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeSavoirFaire?: string; codeTypeSavoirFaire?: string }> } | undefined
+  const exercice = ref?.exercices?.[0]
+  if (!exercice || exercice.codeTypeSavoirFaire !== 'S') return null
+  return exercice.codeSavoirFaire ?? null
+}
+
+function extractModeExercice(userInfo: Record<string, unknown>): string | null {
+  const ref = userInfo.SubjectRefPro as { exercices?: Array<{ activities?: Array<{ codeModeExercice?: string }> }> } | undefined
+  const code = ref?.exercices?.[0]?.activities?.[0]?.codeModeExercice
+  const map: Record<string, string> = { L: 'Libéral', S: 'Salarié', B: 'Bénévole' }
+  return map[code ?? ''] ?? null
+}
 
 /**
  * GET /api/auth/psc-callback
@@ -26,11 +41,16 @@ export async function GET(request: Request) {
 
     // 2. Récupérer les infos utilisateur
     const userInfo = await getPscUserInfo(tokens.access_token)
+    console.log('[PSC] userInfo complet:', JSON.stringify(userInfo, null, 2))
+
     const rpps = extractRpps(userInfo)
     const email = userInfo.email || null
     const nom = userInfo.family_name || null
     const prenom = userInfo.given_name || null
     const sub = userInfo.sub
+    const specialiteCode = extractSpecialiteCode(userInfo)
+    const specialite = resolveSpecialite(specialiteCode)
+    const modeExercice = extractModeExercice(userInfo)
 
     if (!rpps && !sub) {
       console.error('[PSC] ni RPPS ni sub dans userInfo', userInfo)
@@ -83,11 +103,15 @@ export async function GET(request: Request) {
         rpps,
         nom,
         prenom,
+        specialite,
+        mode_exercice: modeExercice,
       })
     } else {
       await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
+        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub, specialite, mode_exercice: modeExercice },
       })
+      // Mettre à jour le profil avec les données PSC fraîches
+      await supabaseAdmin.from('users').update({ nom, prenom, specialite, mode_exercice: modeExercice }).eq('id', userId)
     }
 
     // 5. Générer un magic link

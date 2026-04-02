@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile } from '@/lib/actions/user'
-import { SPECIALITES, MODES_EXERCICE, AVATARS } from '@/lib/constants/profil'
+import { updateProfile } from '@/lib/actions/user'
+import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
 import { Check } from 'lucide-react'
 import { useRef } from 'react'
@@ -51,7 +51,10 @@ export default function ProfilPage() {
         if (data) {
           setNom(data.nom || '')
           setPrenom(data.prenom || '')
-          setSpecialite(data.specialite || '')
+          // Résoudre les codes SM vers libellés si nécessaire
+          const sp = data.specialite || ''
+          const resolved = SM_SPECIALITES[sp] ?? sp
+          setSpecialite(SPECIALITES.includes(resolved) ? resolved : sp)
           setModeExercice(data.mode_exercice || '')
           setSelectedAvatar(data.portrait || null)
         }
@@ -69,15 +72,20 @@ export default function ProfilPage() {
     setSuccess(false)
 
     try {
-      await completeProfile({
+      await updateProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
         specialite,
         mode_exercice: modeExercice,
-        portrait: selectedAvatar || undefined,
       })
+      if (selectedAvatar) {
+        const supabase = createClient()
+        await supabase.from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
+      }
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      setTimeout(() => setSuccess(false), 4000)
     } catch (err) {
       console.error('Erreur mise à jour profil:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
@@ -142,6 +150,16 @@ export default function ProfilPage() {
   return (
     <div>
       <h1 className="text-xl font-bold text-navy mb-6">Mon compte</h1>
+
+      {success && (
+        <div className="bg-green-50 text-green-700 text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" />
+          Profil mis à jour avec succès.
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm p-4 rounded-xl mb-6">{error}</div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Identité */}
@@ -216,35 +234,6 @@ export default function ProfilPage() {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Avatar */}
-        <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
-          <p className="text-xs text-gray-500">
-            Sélectionnez une image qui vous représente sur la plateforme.
-          </p>
-          <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
-            {AVATARS.map((avatar) => (
-              <button
-                key={avatar.id}
-                type="button"
-                onClick={() => setSelectedAvatar(avatar.url)}
-                className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
-                  selectedAvatar === avatar.url
-                    ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
-                    : 'border-transparent hover:border-gray-300'
-                }`}
-              >
-                <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
-                {selectedAvatar === avatar.url && (
-                  <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white drop-shadow" />
-                  </div>
-                )}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -323,15 +312,34 @@ export default function ProfilPage() {
           </form>
         </div>
 
-        {/* Messages */}
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
-        )}
-        {success && (
-          <div className="bg-green-50 text-green-600 text-sm p-3 rounded-xl">
-            Profil mis à jour avec succès.
+        {/* Avatar */}
+        <div className="bg-white rounded-card shadow-card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
+          <p className="text-xs text-gray-500">
+            Sélectionnez une image qui vous représente sur la plateforme.
+          </p>
+          <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
+            {AVATARS.map((avatar) => (
+              <button
+                key={avatar.id}
+                type="button"
+                onClick={() => setSelectedAvatar(avatar.url)}
+                className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
+                  selectedAvatar === avatar.url
+                    ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
+                    : 'border-transparent hover:border-gray-300'
+                }`}
+              >
+                <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
+                {selectedAvatar === avatar.url && (
+                  <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white drop-shadow" />
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Submit */}
         <div className="flex justify-end">

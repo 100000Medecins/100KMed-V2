@@ -4,6 +4,24 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { revalidatePath } from 'next/cache'
 
 /**
+ * Récupère le profil complet de l'utilisateur connecté depuis la table users.
+ */
+export async function getCurrentUserProfile() {
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return null
+
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('users')
+    .select('nom, prenom, specialite, mode_exercice, pseudo, contact_email, rpps, portrait')
+    .eq('id', user.id)
+    .single()
+
+  return data
+}
+
+/**
  * Crée le profil public.users après l'inscription email.
  * Utilise le service role car l'utilisateur n'a pas encore de session active
  * (email non confirmé) et le RLS bloquerait l'insertion.
@@ -42,6 +60,8 @@ export async function completeProfile(data: {
   prenom: string
   specialite: string
   mode_exercice: string
+  contact_email: string
+  pseudo?: string
   portrait?: string
 }) {
   const authClient = await createServerClient()
@@ -57,10 +77,11 @@ export async function completeProfile(data: {
     .update({
       nom: data.nom,
       prenom: data.prenom,
-      pseudo: `${data.prenom} ${data.nom.charAt(0)}.`,
+      pseudo: data.pseudo?.trim() || `${data.prenom} ${data.nom.charAt(0)}.`,
       role: 'medecin',
       specialite: data.specialite,
       mode_exercice: data.mode_exercice,
+      contact_email: data.contact_email,
       portrait: data.portrait || null,
       is_complete: true,
     })
