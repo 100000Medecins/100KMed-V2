@@ -4,8 +4,8 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { getCategorieBySlug } from '@/lib/db/categories'
-import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac } from '@/lib/db/solutions'
-import { getTags } from '@/lib/db/misc'
+import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere } from '@/lib/db/solutions'
+import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
 
@@ -28,7 +28,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-// Retourne vide : les pages seront générées on-demand via ISR
 export async function generateStaticParams() {
   return []
 }
@@ -41,26 +40,48 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
     notFound()
   }
 
-  // Récupérer les tags de filtre depuis l'URL
   const selectedTagIds = searchParams.tags?.split(',').filter(Boolean) || []
+  const tri = searchParams.tri || 'nom'
 
-  // Fetch solutions avec ou sans filtre tags (par UUID de la catégorie)
+  // Fetch solutions
   const solutions = selectedTagIds.length > 0
     ? await getSolutionsByTags(categorie.id, selectedTagIds)
     : await getSolutions({ categorieId: categorie.id })
 
-  // Fetch tous les tags de la catégorie pour les filtres
-  const tags = await getTags(categorie.id)
-
-  // Fetch les notes globales de la rédaction pour toutes les solutions
   const solutionIds = solutions.map((s) => s.id)
-  const notesGlobales = await getNotesGlobalesRedac(solutionIds)
 
-  // Enrichir les solutions avec la note de la rédaction
-  const solutionsAvecNotes = solutions.map((s) => ({
+  // Fetch tags, critères majeurs, notes rédac
+  const [tags, criteresMajeurs, notesRedac] = await Promise.all([
+    getTags(categorie.id),
+    getCriteresMajeurs(categorie.id),
+    getNotesGlobalesRedac(solutionIds),
+  ])
+
+  // Fetch notes utilisateurs si tri par utilisateurs ou par critère
+  const needsUserNotes = tri === 'note_utilisateurs'
+  const critereIdTri = tri.startsWith('critere_') ? tri.replace('critere_', '') : null
+
+  const [notesUtilisateurs, notesCritere] = await Promise.all([
+    needsUserNotes ? getNotesUtilisateursGlobales(solutionIds) : Promise.resolve({} as Record<string, number>),
+    critereIdTri ? getNotesCritere(solutionIds, critereIdTri) : Promise.resolve({} as Record<string, number>),
+  ])
+
+  // Enrichir et trier
+  let solutionsAvecNotes = solutions.map((s) => ({
     ...s,
-    noteRedacBase5: notesGlobales[s.id] || null,
+    noteRedacBase5: notesRedac[s.id] ?? null,
+    noteUtilisateursBase5: notesUtilisateurs[s.id] ?? null,
+    noteCritere: notesCritere[s.id] ?? null,
   }))
+
+  if (tri === 'note_redac') {
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) => (b.noteRedacBase5 ?? -1) - (a.noteRedacBase5 ?? -1))
+  } else if (tri === 'note_utilisateurs') {
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) => (b.noteUtilisateursBase5 ?? -1) - (a.noteUtilisateursBase5 ?? -1))
+  } else if (critereIdTri) {
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) => (b.noteCritere ?? -1) - (a.noteCritere ?? -1))
+  }
+  // default: ordre alphabétique déjà appliqué par getSolutions
 
   return (
     <>
@@ -104,7 +125,8 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                 <SolutionFilters
                   tags={tags}
                   selectedTagIds={selectedTagIds}
-                  categorieId={categorie.id}
+                  criteresMajeurs={criteresMajeurs}
+                  currentTri={tri}
                 />
               </Suspense>
             </aside>

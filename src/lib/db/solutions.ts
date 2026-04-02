@@ -242,6 +242,66 @@ export async function getNotesRedac(solutionId: string) {
 export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]
 
 /**
+ * Récupère la note moyenne utilisateurs pour une liste de solutions.
+ * Retourne un map solutionId -> moyenne_utilisateurs_base5.
+ */
+export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, moyenne_utilisateurs_base5')
+    .in('solution_id', solutionIds)
+    .not('moyenne_utilisateurs_base5', 'is', null)
+
+  if (error || !data) return {}
+
+  // Moyenne de toutes les notes utilisateurs par solution
+  const sums: Record<string, { total: number; count: number }> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const note = row.moyenne_utilisateurs_base5 as number
+    if (!sums[id]) sums[id] = { total: 0, count: 0 }
+    sums[id].total += note
+    sums[id].count += 1
+  }
+
+  const map: Record<string, number> = {}
+  for (const [id, { total, count }] of Object.entries(sums)) {
+    map[id] = total / count
+  }
+  return map
+}
+
+/**
+ * Récupère la note d'un critère spécifique (rédaction) pour une liste de solutions.
+ * Retourne un map solutionId -> note_redac_base5.
+ */
+export async function getNotesCritere(solutionIds: string[], critereId: string): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, note_redac_base5, moyenne_utilisateurs_base5')
+    .in('solution_id', solutionIds)
+    .eq('critere_id', critereId)
+
+  if (error || !data) return {}
+
+  const map: Record<string, number> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const note = (row.moyenne_utilisateurs_base5 ?? row.note_redac_base5) as number | null
+    if (note != null) map[id] = note
+  }
+  return map
+}
+
+/**
  * Récupère la note globale de la rédaction pour une liste de solutions.
  * Retourne un map solutionId -> note en base 5.
  */

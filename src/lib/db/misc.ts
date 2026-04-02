@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
-import type { Avatar, Video, Actualite, DocumentRow, Tag } from '@/types/models'
+import type { Avatar, Video, Actualite, DocumentRow, Tag, Critere } from '@/types/models'
 
 /**
  * Récupère tous les avatars disponibles.
@@ -119,6 +119,23 @@ export async function getTagsPrincipauxForSolution(solutionId: string) {
   if (error) throw error
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((row: any) => row.tag).filter(Boolean) as Tag[]
+}
+
+/**
+ * Récupère les critères majeurs (is_parent = true) d'une catégorie.
+ */
+export async function getCriteresMajeurs(categorieId: string): Promise<Critere[]> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('criteres')
+    .select('*')
+    .eq('categorie_id', categorieId)
+    .eq('is_parent', true)
+    .order('ordre', { ascending: true })
+
+  if (error) return []
+  return (data ?? []) as Critere[]
 }
 
 /**

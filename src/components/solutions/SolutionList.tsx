@@ -76,19 +76,17 @@ export default function SolutionList({ solutions, categorieSlug }: SolutionListP
 
             {/* Note */}
             <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-              {solution.resultat?.moyenne_utilisateurs_base5 ? (
+              {solution.noteUtilisateursBase5 ? (
                 <>
-                  <RatingBadge rating={solution.resultat.moyenne_utilisateurs_base5} />
-                  <StarRating rating={solution.resultat.moyenne_utilisateurs_base5} />
-                  <span className="text-xs text-gray-400">
-                    ({solution.resultat.nb_notes || 0})
-                  </span>
+                  <RatingBadge rating={solution.noteUtilisateursBase5} />
+                  <StarRating rating={solution.noteUtilisateursBase5} />
+                  <span className="text-xs text-gray-400">Utilisateurs</span>
                 </>
               ) : solution.noteRedacBase5 ? (
                 <>
                   <RatingBadge rating={solution.noteRedacBase5} />
                   <StarRating rating={solution.noteRedacBase5} />
-                  <span className="text-xs text-gray-400">Note de la rédaction</span>
+                  <span className="text-xs text-gray-400">Rédaction</span>
                 </>
               ) : (
                 <span className="text-xs text-gray-400">Pas encore noté</span>
