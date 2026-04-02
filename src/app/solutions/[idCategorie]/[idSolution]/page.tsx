@@ -41,12 +41,8 @@ export async function generateStaticParams() {
 }
 
 export default async function SolutionPage({ params }: PageProps) {
-  let solution
-  try {
-    solution = await getSolutionBySlug(params.idSolution)
-  } catch {
-    notFound()
-  }
+  const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
+  if (!solution) notFound()
 
   // Fetch résultats, notes rédac, avis paginés et note utilisateurs en parallèle (par UUID)
   let [resultats, notesRedac, avisPagines, noteUtilisateursData] = await Promise.all([

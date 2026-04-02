@@ -25,12 +25,8 @@ async function getCategorieByIdAdmin(id: string) {
 export default async function AdminEditCategoriePage({ params }: PageProps) {
   const { id } = await params
 
-  let categorie
-  try {
-    categorie = await getCategorieByIdAdmin(id)
-  } catch {
-    notFound()
-  }
+  const categorie = await getCategorieByIdAdmin(id).catch(() => null)
+  if (!categorie) notFound()
 
   const boundAction = updateCategorie.bind(null, id)
 

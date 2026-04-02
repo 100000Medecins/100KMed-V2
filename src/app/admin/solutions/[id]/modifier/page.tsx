@@ -14,13 +14,8 @@ interface PageProps {
 export default async function AdminEditSolutionPage({ params }: PageProps) {
   const { id } = await params
 
-  let solution
-  try {
-    solution = await getSolutionByIdAdmin(id)
-  } catch (err) {
-    console.error(`[admin] getSolutionByIdAdmin("${id}") failed:`, err)
-    notFound()
-  }
+  const solution = await getSolutionByIdAdmin(id).catch(() => null)
+  if (!solution) notFound()
 
   const [categories, editeurs, notesRedac] = await Promise.all([
     getCategories(),

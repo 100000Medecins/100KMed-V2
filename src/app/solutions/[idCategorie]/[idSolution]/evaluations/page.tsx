@@ -25,14 +25,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EvaluationsPage({ params, searchParams }: PageProps) {
-  let solution
-  let categorie
-  try {
-    solution = await getSolutionBySlug(params.idSolution)
-    categorie = await getCategorieBySlug(params.idCategorie)
-  } catch {
-    notFound()
-  }
+  const [solution, categorie] = await Promise.all([
+    getSolutionBySlug(params.idSolution).catch(() => null),
+    getCategorieBySlug(params.idCategorie).catch(() => null),
+  ])
+  if (!solution || !categorie) notFound()
 
   const critereTri = searchParams.tri || 'date'
   const limit = 10
