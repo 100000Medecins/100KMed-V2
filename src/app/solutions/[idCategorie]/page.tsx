@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { getCategorieBySlug } from '@/lib/db/categories'
-import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere } from '@/lib/db/solutions'
+import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
@@ -14,7 +14,7 @@ import SolutionSortBar from '@/components/solutions/SolutionSortBar'
 
 interface PageProps {
   params: { idCategorie: string }
-  searchParams: { tags?: string; tri?: string }
+  searchParams: { tags?: string; tri?: string; critere?: string; dir?: string }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -30,12 +30,22 @@ export async function generateStaticParams() {
   return []
 }
 
+const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
+  nom: 'asc',
+  note_redac: 'desc',
+  note_utilisateurs: 'desc',
+}
+
 export default async function SolutionsPage({ params, searchParams }: PageProps) {
   const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
   if (!categorie) notFound()
 
   const selectedTagIds = searchParams.tags?.split(',').filter(Boolean) || []
   const tri = searchParams.tri || 'nom'
+  const critereId = searchParams.critere || ''
+  const dir: 'asc' | 'desc' = (searchParams.dir === 'asc' || searchParams.dir === 'desc')
+    ? searchParams.dir
+    : DEFAULT_DIR[tri] ?? 'desc'
 
   // Fetch solutions
   const solutions = selectedTagIds.length > 0
@@ -44,38 +54,52 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
 
   const solutionIds = solutions.map((s) => s.id)
 
-  // Fetch tags, critères majeurs, notes rédac
-  const [tags, criteresMajeurs, notesRedac] = await Promise.all([
+  // Fetch en parallèle
+  const [tags, criteresMajeurs, notesRedac, nbNotesMap] = await Promise.all([
     getTags(categorie.id),
     getCriteresMajeurs(categorie.id),
     getNotesGlobalesRedac(solutionIds),
+    getNbNotesUtilisateurs(solutionIds),
   ])
 
-  // Fetch notes utilisateurs si tri par utilisateurs ou par critère
+  // Notes selon le tri demandé
   const needsUserNotes = tri === 'note_utilisateurs'
-  const critereIdTri = tri.startsWith('critere_') ? tri.replace('critere_', '') : null
+  const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
 
   const [notesUtilisateurs, notesCritere] = await Promise.all([
     needsUserNotes ? getNotesUtilisateursGlobales(solutionIds) : Promise.resolve({} as Record<string, number>),
-    critereIdTri ? getNotesCritere(solutionIds, critereIdTri) : Promise.resolve({} as Record<string, number>),
+    needsCritere ? getNotesCritere(solutionIds, critereId, tri === 'note_utilisateurs' ? 'utilisateurs' : 'redac') : Promise.resolve({} as Record<string, number>),
   ])
 
-  // Enrichir et trier
+  // Enrichir
   let solutionsAvecNotes = solutions.map((s) => ({
     ...s,
     noteRedacBase5: notesRedac[s.id] ?? null,
     noteUtilisateursBase5: notesUtilisateurs[s.id] ?? null,
     noteCritere: notesCritere[s.id] ?? null,
+    nbNotesUtilisateurs: nbNotesMap[s.id] ?? null,
   }))
 
-  if (tri === 'note_redac') {
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) => (b.noteRedacBase5 ?? -1) - (a.noteRedacBase5 ?? -1))
+  // Trier (direction appliquée)
+  const asc = dir === 'asc'
+  if (needsCritere) {
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
+      asc ? (a.noteCritere ?? -1) - (b.noteCritere ?? -1) : (b.noteCritere ?? -1) - (a.noteCritere ?? -1)
+    )
+  } else if (tri === 'note_redac') {
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
+      asc ? (a.noteRedacBase5 ?? -1) - (b.noteRedacBase5 ?? -1) : (b.noteRedacBase5 ?? -1) - (a.noteRedacBase5 ?? -1)
+    )
   } else if (tri === 'note_utilisateurs') {
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) => (b.noteUtilisateursBase5 ?? -1) - (a.noteUtilisateursBase5 ?? -1))
-  } else if (critereIdTri) {
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) => (b.noteCritere ?? -1) - (a.noteCritere ?? -1))
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
+      asc ? (a.noteUtilisateursBase5 ?? -1) - (b.noteUtilisateursBase5 ?? -1) : (b.noteUtilisateursBase5 ?? -1) - (a.noteUtilisateursBase5 ?? -1)
+    )
+  } else {
+    // tri nom
+    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
+      asc ? (a.nom || '').localeCompare(b.nom || '') : (b.nom || '').localeCompare(a.nom || '')
+    )
   }
-  // default: ordre alphabétique déjà appliqué par getSolutions
 
   return (
     <>
@@ -93,9 +117,6 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                 {categorie.intro && (
                   <div className="text-gray-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: categorie.intro }} />
                 )}
-                <p className="text-sm text-gray-400 mt-4">
-                  {solutions.length} solution{solutions.length > 1 ? 's' : ''} disponible{solutions.length > 1 ? 's' : ''}
-                </p>
               </div>
               {categorie.image_url && (
                 <div className="shrink-0 w-full md:w-80">
@@ -121,6 +142,8 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                     tags={tags}
                     selectedTagIds={selectedTagIds}
                     currentTri={tri}
+                    currentCritere={critereId}
+                    currentDir={dir}
                   />
                 </Suspense>
               </aside>
@@ -131,10 +154,12 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
               <SolutionSortBar
                 criteresMajeurs={criteresMajeurs}
                 currentTri={tri}
+                currentCritere={critereId}
+                currentDir={dir}
                 selectedTagIds={selectedTagIds}
                 count={solutionsAvecNotes.length}
               />
-              <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} />
+              <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} />
             </div>
           </div>
         </section>

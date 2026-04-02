@@ -3,13 +3,21 @@
 import { useRouter, usePathname } from 'next/navigation'
 import type { Tag } from '@/types/models'
 
+const DEFAULT_DIR: Record<string, string> = {
+  nom: 'asc',
+  note_redac: 'desc',
+  note_utilisateurs: 'desc',
+}
+
 interface SolutionFiltersProps {
   tags: Tag[]
   selectedTagIds: string[]
   currentTri: string
+  currentCritere: string
+  currentDir?: string
 }
 
-export default function SolutionFilters({ tags, selectedTagIds, currentTri }: SolutionFiltersProps) {
+export default function SolutionFilters({ tags, selectedTagIds, currentTri, currentCritere, currentDir }: SolutionFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -17,6 +25,8 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri }: So
     const params = new URLSearchParams()
     if (tagIds.length > 0) params.set('tags', tagIds.join(','))
     if (currentTri && currentTri !== 'nom') params.set('tri', currentTri)
+    if (currentCritere) params.set('critere', currentCritere)
+    if (currentDir && currentDir !== DEFAULT_DIR[currentTri]) params.set('dir', currentDir)
     const q = params.toString()
     return q ? `${pathname}?${q}` : pathname
   }

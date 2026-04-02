@@ -5,9 +5,10 @@ import RatingBadge from '@/components/ui/RatingBadge'
 interface SolutionListProps {
   solutions: any[]
   categorieSlug?: string
+  tri?: string
 }
 
-export default function SolutionList({ solutions, categorieSlug }: SolutionListProps) {
+export default function SolutionList({ solutions, categorieSlug, tri }: SolutionListProps) {
   if (solutions.length === 0) {
     return (
       <div className="text-center py-12">
@@ -75,23 +76,29 @@ export default function SolutionList({ solutions, categorieSlug }: SolutionListP
             )}
 
             {/* Note */}
-            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-              {solution.noteUtilisateursBase5 ? (
-                <>
-                  <RatingBadge rating={solution.noteUtilisateursBase5} />
-                  <StarRating rating={solution.noteUtilisateursBase5} />
-                  <span className="text-xs text-gray-400">Utilisateurs</span>
-                </>
-              ) : solution.noteRedacBase5 ? (
-                <>
-                  <RatingBadge rating={solution.noteRedacBase5} />
-                  <StarRating rating={solution.noteRedacBase5} />
-                  <span className="text-xs text-gray-400">Rédaction</span>
-                </>
-              ) : (
-                <span className="text-xs text-gray-400">Pas encore noté</span>
-              )}
-            </div>
+            {(() => {
+              const isUtilisateurs = tri === 'note_utilisateurs'
+              const displayNote = solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5) ?? solution.noteRedacBase5
+              const nbAvis: number | null = solution.nbNotesUtilisateurs ?? null
+              const noteLabel = isUtilisateurs && nbAvis
+                ? `${nbAvis} avis`
+                : isUtilisateurs
+                ? 'Utilisateurs'
+                : ''
+              return (
+                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                  {displayNote ? (
+                    <>
+                      <RatingBadge rating={displayNote} />
+                      <StarRating rating={displayNote} />
+                      {noteLabel && <span className="text-xs text-gray-400">{noteLabel}</span>}
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400">Pas encore noté</span>
+                  )}
+                </div>
+              )
+            })()}
           </Link>
         )
       })}

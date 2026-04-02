@@ -122,19 +122,39 @@ export async function getTagsPrincipauxForSolution(solutionId: string) {
 }
 
 /**
- * Récupère les critères majeurs (is_parent = true) d'une catégorie.
+ * Récupère les 5 critères majeurs (INTERFACE, FONCTIONNALITÉS, etc.)
+ * via les resultats des solutions de la catégorie.
  */
 export async function getCriteresMajeurs(categorieId: string): Promise<Critere[]> {
   const supabase = await createServerClient()
 
-  const { data, error } = await supabase
+  // Solutions de la catégorie
+  const { data: sols } = await supabase
+    .from('solutions')
+    .select('id, categorie:categories!inner(id)')
+    .eq('categorie.id', categorieId)
+    .limit(5)
+
+  if (!sols || sols.length === 0) return []
+
+  // Critère IDs dans les résultats de ces solutions
+  const { data: ress } = await supabase
+    .from('resultats')
+    .select('critere_id')
+    .in('solution_id', sols.map((s) => s.id))
+    .not('critere_id', 'is', null)
+
+  if (!ress || ress.length === 0) return []
+
+  const ids = Array.from(new Set(ress.map((r) => r.critere_id as string)))
+
+  // Critères avec nom_capital parmi ces IDs (sans .order() — colonne inexistante)
+  const { data } = await supabase
     .from('criteres')
     .select('*')
-    .eq('categorie_id', categorieId)
-    .eq('is_parent', true)
-    .order('ordre', { ascending: true })
+    .in('id', ids)
+    .not('nom_capital', 'is', null)
 
-  if (error) return []
   return (data ?? []) as Critere[]
 }
 

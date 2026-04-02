@@ -279,7 +279,11 @@ export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promi
  * Récupère la note d'un critère spécifique (rédaction) pour une liste de solutions.
  * Retourne un map solutionId -> note_redac_base5.
  */
-export async function getNotesCritere(solutionIds: string[], critereId: string): Promise<Record<string, number>> {
+export async function getNotesCritere(
+  solutionIds: string[],
+  critereId: string,
+  source: 'redac' | 'utilisateurs' = 'redac'
+): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
   const supabase = await createServerClient()
@@ -295,8 +299,36 @@ export async function getNotesCritere(solutionIds: string[], critereId: string):
   const map: Record<string, number> = {}
   for (const row of data) {
     const id = row.solution_id as string
-    const note = (row.moyenne_utilisateurs_base5 ?? row.note_redac_base5) as number | null
+    const note = source === 'utilisateurs'
+      ? (row.moyenne_utilisateurs_base5 ?? row.note_redac_base5) as number | null
+      : (row.note_redac_base5 ?? row.moyenne_utilisateurs_base5) as number | null
     if (note != null) map[id] = note
+  }
+  return map
+}
+
+/**
+ * Récupère le nombre max de notes utilisateurs par solution.
+ * Retourne un map solutionId -> nb_notes.
+ */
+export async function getNbNotesUtilisateurs(solutionIds: string[]): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, nb_notes')
+    .in('solution_id', solutionIds)
+    .not('nb_notes', 'is', null)
+
+  if (error || !data) return {}
+
+  const map: Record<string, number> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const n = row.nb_notes as number
+    if (!(id in map) || n > map[id]) map[id] = n
   }
   return map
 }
