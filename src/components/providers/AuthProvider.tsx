@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { createUserProfile } from '@/lib/actions/user'
+import { connectWithPsc } from '@/lib/auth/psc'
 import type { User } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -91,18 +92,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase])
 
   /**
-   * Connexion via Pro Santé Connect (PSC).
-   * Utilise le provider OIDC custom configuré dans Supabase.
+   * Connexion via Pro Santé Connect (PSC) — flux direct BAS.
+   * Redirige vers wallet.bas.psc.esante.gouv.fr/auth.
+   * Le retour est géré par /onboarding/signincallback.
    */
   const signInWithPSC = async () => {
-    if (!supabase) return
-    await supabase.auth.signInWithOAuth({
-      provider: 'keycloak' as any, // PSC utilise Keycloak sous le capot
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-        scopes: 'openid scope_all',
-      },
-    })
+    connectWithPsc()
   }
 
   const signInWithEmail = async (email: string, password: string) => {
