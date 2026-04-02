@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -9,8 +11,6 @@ import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
 import SolutionSortBar from '@/components/solutions/SolutionSortBar'
-
-export const revalidate = 1800 // ISR : 30 minutes
 
 interface PageProps {
   params: { idCategorie: string }

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
@@ -7,8 +9,6 @@ import { getAllResultats } from '@/lib/db/resultats'
 import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNoteUtilisateurs } from '@/lib/db/evaluations'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
-
-export const revalidate = 900 // ISR : 15 minutes
 
 interface PageProps {
   params: { idCategorie: string; idSolution: string }
