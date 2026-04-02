@@ -8,6 +8,7 @@ import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilis
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
+import SolutionSortBar from '@/components/solutions/SolutionSortBar'
 
 export const revalidate = 1800 // ISR : 30 minutes
 
@@ -17,14 +18,11 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  try {
-    const categorie = await getCategorieBySlug(params.idCategorie)
-    return {
-      title: `${categorie.nom} — Comparatif logiciels médicaux`,
-      description: categorie.intro || `Comparez les meilleurs logiciels de ${categorie.nom} grâce aux avis de médecins.`,
-    }
-  } catch {
-    return { title: 'Solutions' }
+  const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
+  if (!categorie) return { title: 'Solutions' }
+  return {
+    title: `${categorie.nom} — Comparatif logiciels médicaux`,
+    description: categorie.intro || `Comparez les meilleurs logiciels de ${categorie.nom} grâce aux avis de médecins.`,
   }
 }
 
@@ -33,12 +31,8 @@ export async function generateStaticParams() {
 }
 
 export default async function SolutionsPage({ params, searchParams }: PageProps) {
-  let categorie
-  try {
-    categorie = await getCategorieBySlug(params.idCategorie)
-  } catch {
-    notFound()
-  }
+  const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
+  if (!categorie) notFound()
 
   const selectedTagIds = searchParams.tags?.split(',').filter(Boolean) || []
   const tri = searchParams.tri || 'nom'
@@ -119,20 +113,27 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
         {/* Filtres + liste */}
         <section className="max-w-7xl mx-auto px-6 py-10">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar filtres */}
-            <aside className="w-full md:w-64 shrink-0">
-              <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
-                <SolutionFilters
-                  tags={tags}
-                  selectedTagIds={selectedTagIds}
-                  criteresMajeurs={criteresMajeurs}
-                  currentTri={tri}
-                />
-              </Suspense>
-            </aside>
+            {/* Sidebar filtres (tags uniquement) */}
+            {tags.length > 0 && (
+              <aside className="w-full md:w-52 shrink-0">
+                <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
+                  <SolutionFilters
+                    tags={tags}
+                    selectedTagIds={selectedTagIds}
+                    currentTri={tri}
+                  />
+                </Suspense>
+              </aside>
+            )}
 
             {/* Grille solutions */}
             <div className="flex-1 min-w-0">
+              <SolutionSortBar
+                criteresMajeurs={criteresMajeurs}
+                currentTri={tri}
+                selectedTagIds={selectedTagIds}
+                count={solutionsAvecNotes.length}
+              />
               <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} />
             </div>
           </div>
