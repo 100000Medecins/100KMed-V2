@@ -492,6 +492,87 @@ export async function togglePartenaireActif(id: string, actif: boolean) {
   revalidatePath('/')
 }
 
+// ────────────────────────────────────────────
+// Fonctionnalités (tags)
+// ────────────────────────────────────────────
+
+export async function toggleFonctionnalite(solutionId: string, tagId: string, enabled: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  if (enabled) {
+    const { data: existing } = await supabase
+      .from('solutions_tags')
+      .select('id')
+      .eq('id_solution', solutionId)
+      .eq('id_tag', tagId)
+      .maybeSingle()
+
+    if (existing) {
+      await supabase
+        .from('solutions_tags')
+        .update({ is_tag_principal: true })
+        .eq('id_solution', solutionId)
+        .eq('id_tag', tagId)
+    } else {
+      await supabase.from('solutions_tags').insert({
+        id_solution: solutionId,
+        id_tag: tagId,
+        is_tag_principal: true,
+      })
+    }
+  } else {
+    await supabase
+      .from('solutions_tags')
+      .delete()
+      .eq('id_solution', solutionId)
+      .eq('id_tag', tagId)
+  }
+
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function createFonctionnalite(categorieId: string | null, libelle: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const { data, error } = await supabase
+    .from('tags')
+    .insert({ id: randomUUID(), id_categorie: categorieId, libelle, is_tag_principal: true })
+    .select('id, libelle, ordre')
+    .single()
+
+  if (error) return { error: error.message }
+  revalidatePath('/solutions', 'layout')
+  return {
+    tag: {
+      id: data.id as string,
+      libelle: data.libelle as string | null,
+      ordre: data.ordre as number | null,
+      enabled: false,
+    },
+  }
+}
+
+export async function deleteFonctionnalite(tagId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('solutions_tags').delete().eq('id_tag', tagId)
+  await supabase.from('tags').delete().eq('id', tagId)
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function reorderFonctionnalites(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('tags').update({ ordre: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/solutions', 'layout')
+}
+
 export async function reorderPartenaires(orderedIds: string[]) {
   await assertAdmin()
   const supabase = createServiceRoleClient()

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getCategories } from '@/lib/db/categories'
 import { getEditeurs } from '@/lib/db/editeurs'
-import { getSolutionByIdAdmin, getResultatsRedacAdmin } from '@/lib/db/admin-solutions'
+import { getSolutionByIdAdmin, getResultatsRedacAdmin, getTagsForSolutionAdmin } from '@/lib/db/admin-solutions'
 import SolutionForm from '@/components/admin/SolutionForm'
 import { updateSolution } from '@/lib/actions/admin'
 
@@ -17,10 +17,11 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
   const solution = await getSolutionByIdAdmin(id).catch(() => null)
   if (!solution) notFound()
 
-  const [categories, editeurs, notesRedac] = await Promise.all([
+  const [categories, editeurs, notesRedac, tagsForSolution] = await Promise.all([
     getCategories(),
     getEditeurs(),
     getResultatsRedacAdmin(id),
+    getTagsForSolutionAdmin(id, solution.categorie_id),
   ])
 
   const boundAction = updateSolution.bind(null, id)
@@ -36,6 +37,8 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
           categories={categories}
           editeurs={editeurs}
           notesRedac={notesRedac}
+          tagsForSolution={tagsForSolution}
+          solutionId={id}
           action={boundAction}
         />
       </div>

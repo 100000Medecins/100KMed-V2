@@ -3,7 +3,9 @@
 import { useState, useTransition, useRef } from 'react'
 import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react'
 import type { Database } from '@/types/database'
+import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
 
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
@@ -33,6 +35,8 @@ interface SolutionFormProps {
   categories: Categorie[]
   editeurs: Editeur[]
   notesRedac?: NoteRedacItem[]
+  tagsForSolution?: TagForSolution[]
+  solutionId?: string
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
@@ -74,7 +78,7 @@ function Section({
   )
 }
 
-export default function SolutionForm({ solution, categories, editeurs, notesRedac, action }: SolutionFormProps) {
+export default function SolutionForm({ solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, action }: SolutionFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [galerie, setGalerie] = useState<GalerieImage[]>(
@@ -200,6 +204,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     tarification: false,
     editorial: false,
     criteres: false,
+    fonctionnalites: false,
     galerie: false,
     dates: false,
     seo: false,
@@ -541,6 +546,21 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
               </div>
             ))}
           </div>
+        </Section>
+      )}
+
+      {/* Section — Fonctionnalités principales */}
+      {tagsForSolution && solutionId && (
+        <Section
+          title={`Fonctionnalités principales (${tagsForSolution.filter((t) => t.enabled).length} actives)`}
+          isOpen={openSections.fonctionnalites}
+          onToggle={() => toggleSection('fonctionnalites')}
+        >
+          <FonctionnalitesSection
+            solutionId={solutionId}
+            categorieId={solution?.categorie_id ?? null}
+            initialTags={tagsForSolution}
+          />
         </Section>
       )}
 

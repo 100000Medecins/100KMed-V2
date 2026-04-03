@@ -108,3 +108,38 @@ export async function getResultatsRedacAdmin(solutionId: string) {
 }
 
 export type ResultatRedacAdmin = Awaited<ReturnType<typeof getResultatsRedacAdmin>>[number]
+
+/**
+ * Récupère tous les tags d'une catégorie avec leur état (activé/désactivé) pour une solution.
+ */
+export async function getTagsForSolutionAdmin(solutionId: string, categorieId: string | null) {
+  const supabase = createServiceRoleClient()
+
+  // Tous les tags de la catégorie
+  const tagsQuery = supabase
+    .from('tags')
+    .select('id, libelle, ordre, is_tag_principal')
+
+  const { data: tags } = categorieId
+    ? await tagsQuery.eq('id_categorie', categorieId).order('ordre', { ascending: true })
+    : await tagsQuery.is('id_categorie', null).order('ordre', { ascending: true })
+
+  // Tags déjà associés à cette solution
+  const { data: solutionTags } = await supabase
+    .from('solutions_tags')
+    .select('id_tag')
+    .eq('id_solution', solutionId)
+
+  const enabledTagIds = new Set(
+    (solutionTags || []).map((st) => st.id_tag).filter(Boolean)
+  )
+
+  return (tags || []).map((tag) => ({
+    id: tag.id as string,
+    libelle: tag.libelle as string | null,
+    ordre: tag.ordre as number | null,
+    enabled: enabledTagIds.has(tag.id),
+  }))
+}
+
+export type TagForSolution = Awaited<ReturnType<typeof getTagsForSolutionAdmin>>[number]
