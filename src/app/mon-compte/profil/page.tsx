@@ -6,7 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { updateProfile } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
-import { Check } from 'lucide-react'
+import { Check, Lock } from 'lucide-react'
 import { useRef } from 'react'
 
 export default function ProfilPage() {
@@ -17,6 +17,7 @@ export default function ProfilPage() {
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [isFromPsc, setIsFromPsc] = useState(false)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +45,7 @@ export default function ProfilPage() {
     const supabase = createClient()
     supabase
       .from('users')
-      .select('nom, prenom, specialite, mode_exercice, portrait')
+      .select('nom, prenom, specialite, mode_exercice, portrait, rpps')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
@@ -57,6 +58,7 @@ export default function ProfilPage() {
           setSpecialite(SPECIALITES.includes(resolved) ? resolved : sp)
           setModeExercice(data.mode_exercice || '')
           setSelectedAvatar(data.portrait || null)
+          setIsFromPsc(!!(data.rpps || user?.user_metadata?.provider === 'psc'))
         }
         setLoading(false)
       })
@@ -164,7 +166,15 @@ export default function ProfilPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Identité */}
         <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-navy">Identité</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-navy">Identité</h2>
+            {isFromPsc && (
+              <span className="flex items-center gap-1 text-xs text-gray-400 bg-surface-light px-2 py-0.5 rounded-full">
+                <Lock className="w-3 h-3" />
+                Fournie par Pro Santé Connect
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -173,9 +183,14 @@ export default function ProfilPage() {
               <input
                 type="text"
                 value={prenom}
-                onChange={(e) => setPrenom(e.target.value)}
+                readOnly={isFromPsc}
+                onChange={(e) => !isFromPsc && setPrenom(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                  isFromPsc
+                    ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                }`}
                 placeholder="Jean"
               />
             </div>
@@ -186,9 +201,14 @@ export default function ProfilPage() {
               <input
                 type="text"
                 value={nom}
-                onChange={(e) => setNom(e.target.value)}
+                readOnly={isFromPsc}
+                onChange={(e) => !isFromPsc && setNom(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                  isFromPsc
+                    ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                }`}
                 placeholder="Dupont"
               />
             </div>
@@ -202,17 +222,26 @@ export default function ProfilPage() {
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Spécialité *
             </label>
-            <select
-              value={specialite}
-              onChange={(e) => setSpecialite(e.target.value)}
-              required
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
-            >
-              <option value="">Sélectionnez votre spécialité</option>
-              {SPECIALITES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+            {isFromPsc ? (
+              <input
+                type="text"
+                value={specialite}
+                readOnly
+                className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
+              />
+            ) : (
+              <select
+                value={specialite}
+                onChange={(e) => setSpecialite(e.target.value)}
+                required
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+              >
+                <option value="">Sélectionnez votre spécialité</option>
+                {SPECIALITES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -223,12 +252,12 @@ export default function ProfilPage() {
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => setModeExercice(mode)}
+                  onClick={() => !isFromPsc && setModeExercice(mode)}
                   className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
                     modeExercice === mode
                       ? 'bg-navy text-white border-navy'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
-                  }`}
+                  } ${isFromPsc ? 'cursor-not-allowed opacity-70' : ''}`}
                 >
                   {mode}
                 </button>

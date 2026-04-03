@@ -238,10 +238,10 @@ export async function GET(request: Request) {
     }
 
     if (evaluationLiee) {
-      return NextResponse.redirect(`${origin}/mon-compte/mes-evaluations?evaluation=publiee`)
+      return NextResponse.redirect(`${origin}/mon-compte/profil?evaluation=publiee`)
     }
 
-    return NextResponse.redirect(`${origin}/mon-compte/mes-evaluations`)
+    return NextResponse.redirect(`${origin}/mon-compte/profil`)
 
   } catch (err) {
     console.error('[PSC] callback exception:', err)

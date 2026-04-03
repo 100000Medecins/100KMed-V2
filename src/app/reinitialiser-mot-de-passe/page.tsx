@@ -53,7 +53,7 @@ function ReinitialiserContent() {
     if (error) {
       setError(error.message)
     } else {
-      router.push('/mon-compte/mes-evaluations')
+      router.push('/mon-compte/profil')
     }
   }
 

@@ -8,8 +8,8 @@ import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 const navItems = [
-  { href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck },
   { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
+  { href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck },
 ]
 
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {

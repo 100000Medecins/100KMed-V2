@@ -28,7 +28,7 @@ function ConnexionContent() {
   // Si déjà connecté, rediriger
   useEffect(() => {
     if (user && !loading) {
-      router.replace(redirect || '/mon-compte/mes-evaluations')
+      router.replace(redirect || '/mon-compte/profil')
     }
   }, [user, loading, redirect, router])
 
@@ -54,7 +54,7 @@ function ConnexionContent() {
       if (result.error) {
         setError(result.error)
       } else {
-        router.push(redirect || '/mon-compte/mes-evaluations')
+        router.push(redirect || '/mon-compte/profil')
       }
     } else {
       const result = await signUpWithEmail(email, password)
