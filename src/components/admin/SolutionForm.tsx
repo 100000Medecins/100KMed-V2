@@ -7,7 +7,7 @@ import RichTextEditor from '@/components/admin/RichTextEditor'
 
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
-type Editeur = { id: string; nom: string }
+type Editeur = { id: string; nom: string | null }
 type GalerieImage = { id?: string; url: string; titre: string | null; ordre: number | null }
 
 type NoteRedacItem = {
