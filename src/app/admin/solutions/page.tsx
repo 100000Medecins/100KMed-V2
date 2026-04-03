@@ -7,6 +7,7 @@ import { getAllSolutionsAdmin } from '@/lib/db/admin-solutions'
 import { getCategories } from '@/lib/db/categories'
 import DeleteSolutionButton from '@/components/admin/DeleteSolutionButton'
 import AdminCategoryFilter from '@/components/admin/AdminCategoryFilter'
+import ToggleSolutionActif from '@/components/admin/ToggleSolutionActif'
 
 interface PageProps {
   searchParams: { categorie?: string }
@@ -68,6 +69,9 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
                 <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
                   Éditeur
                 </th>
+                <th className="text-center px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  Actif
+                </th>
                 <th className="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -86,6 +90,12 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
                     {solution.editeur?.nom || '—'}
+                  </td>
+                  <td className="px-6 py-4 text-center hidden md:table-cell">
+                    <ToggleSolutionActif
+                      solutionId={solution.id}
+                      actif={solution.actif ?? true}
+                    />
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">

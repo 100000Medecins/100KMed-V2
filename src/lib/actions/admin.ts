@@ -335,6 +335,15 @@ export async function reorderCategories(orderedIds: string[]) {
   revalidatePath('/solutions', 'layout')
 }
 
+export async function toggleSolutionActif(id: string, actif: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('solutions').update({ actif }).eq('id', id)
+  if (error) return { error: `Erreur : ${error.message}` }
+  revalidatePath('/admin/solutions')
+  revalidatePath('/solutions', 'layout')
+}
+
 export async function toggleCategorieActif(id: string, actif: boolean) {
   await assertAdmin()
 

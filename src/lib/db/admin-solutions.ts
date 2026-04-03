@@ -20,8 +20,9 @@ export async function getAllSolutionsAdmin() {
   return data as unknown as Array<{
     id: string
     nom: string
-    editeur: { id: string; nom: string } | null
-    categorie: { id: string; nom: string } | null
+    actif: boolean | null
+    editeur: { id: string; nom: string | null } | null
+    categorie: { id: string; nom: string | null } | null
     [key: string]: unknown
   }>
 }
