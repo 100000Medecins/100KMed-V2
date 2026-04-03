@@ -464,7 +464,8 @@ export async function submitEvaluationAnonyme(
   }
 
   // Récupérer le template email
-  const { data: template } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: template } = await (supabase as any)
     .from('email_templates')
     .select('sujet, contenu_html')
     .eq('id', 'verification_psc')

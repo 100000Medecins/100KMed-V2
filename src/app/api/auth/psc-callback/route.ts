@@ -161,61 +161,68 @@ export async function GET(request: Request) {
     }
 
     // 7. Lier les évaluations anonymes en attente
-    let evaluationLiee = false
+    let evalsALier: Array<{ id: string; solution_id: string | null }> = []
 
     // Par token de vérification (chemin direct depuis le lien email)
     if (verificationToken) {
-      const { data: evalParToken } = await supabaseAdmin
+      const { data } = await supabaseAdmin
         .from('evaluations')
-        .select('id')
+        .select('id, solution_id')
         .eq('token_verification', verificationToken)
         .eq('statut', 'en_attente_psc')
-        .limit(1)
-
-      if (evalParToken && evalParToken.length > 0) {
-        await supabaseAdmin
-          .from('evaluations')
-          .update({ statut: 'publiee', user_id: userId, email_temp: null, token_verification: null })
-          .eq('token_verification', verificationToken)
-          .eq('statut', 'en_attente_psc')
-        evaluationLiee = true
-      }
+      if (data && data.length > 0) evalsALier = data
     }
 
     // Par email PSC (filet si le token n'est pas dans le state)
-    if (!evaluationLiee && email) {
-      const { data: evalParEmail } = await supabaseAdmin
+    if (evalsALier.length === 0 && email) {
+      const { data } = await supabaseAdmin
         .from('evaluations')
-        .select('id')
+        .select('id, solution_id')
         .eq('email_temp', email.toLowerCase())
         .eq('statut', 'en_attente_psc')
-        .limit(1)
+      if (data && data.length > 0) evalsALier = data
+    }
 
-      if (evalParEmail && evalParEmail.length > 0) {
-        await supabaseAdmin
+    // Par email enregistré dans users
+    if (evalsALier.length === 0) {
+      const { data: userProfile } = await supabaseAdmin
+        .from('users').select('email').eq('id', userId).single()
+      const registeredEmail = userProfile?.email
+      if (registeredEmail) {
+        const { data } = await supabaseAdmin
           .from('evaluations')
-          .update({ statut: 'publiee', user_id: userId, email_temp: null, token_verification: null })
-          .eq('email_temp', email.toLowerCase())
+          .select('id, solution_id')
+          .eq('email_temp', registeredEmail.toLowerCase())
           .eq('statut', 'en_attente_psc')
-        evaluationLiee = true
+        if (data && data.length > 0) evalsALier = data
       }
     }
 
-    // Par email enregistré dans users (cas : email différent dans le formulaire, même compte PSC via RPPS)
-    if (!evaluationLiee) {
-      const { data: userProfile } = await supabaseAdmin
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .single()
+    // Publier toutes les évaluations trouvées + créer solutions_utilisees
+    const evaluationLiee = evalsALier.length > 0
+    for (const ev of evalsALier) {
+      await supabaseAdmin
+        .from('evaluations')
+        .update({ statut: 'publiee', user_id: userId, email_temp: null, token_verification: null })
+        .eq('id', ev.id)
 
-      const registeredEmail = userProfile?.email
-      if (registeredEmail && (!email || registeredEmail.toLowerCase() !== email.toLowerCase())) {
-        await supabaseAdmin
-          .from('evaluations')
-          .update({ statut: 'publiee', user_id: userId, email_temp: null, token_verification: null })
-          .eq('email_temp', registeredEmail.toLowerCase())
-          .eq('statut', 'en_attente_psc')
+      // Créer solutions_utilisees si elle n'existe pas (nécessaire pour l'affichage dans mon compte)
+      if (ev.solution_id) {
+        const { data: existingSU } = await supabaseAdmin
+          .from('solutions_utilisees')
+          .select('id')
+          .eq('solution_id', ev.solution_id)
+          .eq('user_id', userId)
+          .limit(1)
+
+        if (!existingSU || existingSU.length === 0) {
+          await supabaseAdmin.from('solutions_utilisees').insert({
+            user_id: userId,
+            solution_id: ev.solution_id,
+            statut_evaluation: 'finalisee',
+            date_debut: new Date().toISOString().split('T')[0],
+          })
+        }
       }
     }
 

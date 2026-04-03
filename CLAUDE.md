@@ -53,6 +53,16 @@ Tailwind with custom theme: `navy` (primary), `accent-blue/yellow/orange/pink`, 
 
 Editorial text may contain HTML tags. Use `sanitizeHtml()` from `src/lib/sanitize.ts` with `dangerouslySetInnerHTML` — only allows `<br>`, `<u>`, `<b>`, `<strong>`, `<em>`, `<i>`, `<p>`.
 
+### Supabase types
+
+`src/types/database.ts` is auto-generated. **After every SQL migration** (new table or column), regenerate it:
+
+```bash
+npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts
+```
+
+Always remind the user to run this command after providing SQL migrations.
+
 ## Environment variables
 
 ```
