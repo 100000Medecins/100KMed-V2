@@ -9,8 +9,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch toutes les données nécessaires en parallèle
   const [categoriesRes, solutionsRes, editeursRes] = await Promise.all([
     supabase.from('categories').select('slug').eq('actif', true),
-    supabase.from('solutions').select('slug, categorie:categories(slug), updated_at'),
-    supabase.from('editeurs').select('id, updated_at'),
+    supabase.from('solutions').select('slug, categorie:categories(slug)'),
+    supabase.from('editeurs').select('id'),
   ])
 
   const categories = categoriesRes.data || []
@@ -69,7 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pages solutions (les plus importantes pour le SEO)
   const solutionPages: MetadataRoute.Sitemap = solutions.map((sol) => ({
     url: `${BASE_URL}/solutions/${(sol.categorie as unknown as { slug: string } | null)?.slug ?? 'unknown'}/${sol.slug}`,
-    lastModified: sol.updated_at ? new Date(sol.updated_at) : new Date(),
+    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
@@ -77,7 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pages éditeurs
   const editeurPages: MetadataRoute.Sitemap = editeurs.map((ed) => ({
     url: `${BASE_URL}/editeur/${ed.id}`,
-    lastModified: ed.updated_at ? new Date(ed.updated_at) : new Date(),
+    lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.6,
   }))

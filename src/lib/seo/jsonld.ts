@@ -44,14 +44,12 @@ export function generateSolutionJsonLd(
   }
 
   // Prix
-  if (solution.prix) {
-    const prix = solution.prix as Record<string, unknown>
-    if (prix.prix_ttc) {
-      jsonLd.offers = {
-        '@type': 'Offer',
-        price: prix.prix_ttc,
-        priceCurrency: (prix.devise as string) || 'EUR',
-      }
+  const sol = solution as unknown as Record<string, unknown>
+  if (sol.prix_ttc) {
+    jsonLd.offers = {
+      '@type': 'Offer',
+      price: sol.prix_ttc,
+      priceCurrency: (sol.prix_devise as string) || 'EUR',
     }
   }
 

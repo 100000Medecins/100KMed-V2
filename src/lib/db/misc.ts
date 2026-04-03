@@ -45,7 +45,8 @@ export async function getVideos(isVideosPrincipales?: boolean) {
 export async function getActualites(limit?: number) {
   const supabase = await createServerClient()
 
-  let query = supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
     .from('actualites')
     .select('*')
     .order('created_at', { ascending: false })
@@ -86,7 +87,7 @@ export async function getTags(categorieId: string) {
 
   if (linksError) throw linksError
 
-  const tagIds = Array.from(new Set((links || []).map((l) => l.id_tag)))
+  const tagIds = Array.from(new Set((links || []).map((l) => l.id_tag).filter((id): id is string => id !== null)))
   if (tagIds.length === 0) return []
 
   // 3. Récupérer les tags
@@ -164,7 +165,8 @@ export async function getCriteresMajeurs(categorieId: string): Promise<Critere[]
 export async function getDocuments() {
   const supabase = await createServerClient()
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('documents')
     .select('*')
     .order('ordre', { ascending: true })

@@ -130,7 +130,7 @@ export default function ProfilPage() {
   const handleEmailChange = async (e: React.FormEvent) => {
     e.preventDefault()
     setEmailError(null)
-    setEmailSuccess(null)
+    setSuccess(null)
     setEmailSubmitting(true)
     const { error } = await supabaseRef.current.auth.updateUser({ email: newEmail })
     setEmailSubmitting(false)
@@ -150,7 +150,7 @@ export default function ProfilPage() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordError(null)
-    setPasswordSuccess(null)
+    setSuccess(null)
 
     if (newPassword !== confirmPassword) {
       setPasswordError('Les mots de passe ne correspondent pas.')

@@ -7,7 +7,7 @@ interface MainFeaturesProps {
 export default function MainFeatures({ tags }: MainFeaturesProps) {
   const features = tags
     .map((t) => t.tag)
-    .filter((t): t is Tag => t != null && t.is_principale_fonctionnalite === true)
+    .filter((t): t is Tag => t != null && t.is_tag_principal === true)
 
   if (features.length === 0) return null
 

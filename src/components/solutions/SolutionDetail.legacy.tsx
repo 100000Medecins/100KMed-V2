@@ -151,7 +151,7 @@ export default function SolutionDetail({
               <div className="md:w-96 flex-shrink-0">
                 <div className="rounded-2xl overflow-hidden shadow-card">
                   <img
-                    src={solution.galerie[0].url}
+                    src={solution.galerie[0].url ?? undefined}
                     alt={solution.galerie[0].titre || `Capture ${solution.nom}`}
                     className="w-full h-auto"
                   />
@@ -161,7 +161,7 @@ export default function SolutionDetail({
                     {solution.galerie.slice(1, 4).map((img) => (
                       <img
                         key={img.id}
-                        src={img.url}
+                        src={img.url ?? undefined}
                         alt={img.titre || ''}
                         className="w-20 h-14 rounded-lg object-cover bg-surface-light"
                       />

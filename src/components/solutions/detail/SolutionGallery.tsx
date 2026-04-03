@@ -25,7 +25,7 @@ export default function SolutionGallery({ images }: SolutionGalleryProps) {
       {/* Main image */}
       <div className="relative group">
         <img
-          src={images[current].url}
+          src={images[current].url ?? undefined}
           alt={images[current].titre || `Capture ${current + 1}`}
           className="w-full h-auto aspect-video object-contain bg-gray-50"
         />
@@ -61,7 +61,7 @@ export default function SolutionGallery({ images }: SolutionGalleryProps) {
               }`}
             >
               <img
-                src={img.url}
+                src={img.url ?? undefined}
                 alt={img.titre || ''}
                 className="w-full h-full object-contain"
               />

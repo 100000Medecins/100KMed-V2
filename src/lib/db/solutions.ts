@@ -68,7 +68,7 @@ export async function getSolutionById(id: string) {
 
   let tags: Array<{ tag: Record<string, unknown> }> = []
   if (tagRows && tagRows.length > 0) {
-    const tagIds = tagRows.map((r: { id_tag: string }) => r.id_tag)
+    const tagIds = tagRows.map((r) => r.id_tag).filter((id): id is string => id !== null)
     const { data: tagsData } = await supabase
       .from('tags')
       .select('*')
@@ -105,7 +105,7 @@ export async function getSolutionBySlug(slug: string) {
 
   let tags: Array<{ tag: Record<string, unknown> }> = []
   if (tagRows && tagRows.length > 0) {
-    const tagIds = tagRows.map((r: { id_tag: string }) => r.id_tag)
+    const tagIds = tagRows.map((r) => r.id_tag).filter((id): id is string => id !== null)
     const { data: tagsData } = await supabase
       .from('tags')
       .select('*')
@@ -131,7 +131,7 @@ export async function getSolutionsByTags(categorieId: string, tagIds: string[]) 
 
   if (tagError) throw tagError
 
-  const solutionIds = Array.from(new Set(solutionTagRows.map((row) => row.id_solution)))
+  const solutionIds = Array.from(new Set(solutionTagRows.map((row) => row.id_solution).filter((id): id is string => id !== null)))
 
   if (solutionIds.length === 0) return []
 

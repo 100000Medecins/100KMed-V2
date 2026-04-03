@@ -374,6 +374,7 @@ export async function computeAggregatedResultats(
       critere: {
         id: `computed-${key}`,
         categorie_id: null,
+        id_categorie: null,
         type: meta.type,
         nom_court: meta.nom_court,
         nom_long: meta.nom_court,
@@ -388,8 +389,11 @@ export async function computeAggregatedResultats(
         parent_id: null,
         question: null,
         reponse: null,
+        reponse_max: null,
+        reponse_min: null,
+        reponse_type: null,
       },
-    } as ResultatWithCritere)
+    } as unknown as ResultatWithCritere)
   }
 
   // Synthèse globale
@@ -423,6 +427,7 @@ export async function computeAggregatedResultats(
       critere: {
         id: 'computed-synthese',
         categorie_id: null,
+        id_categorie: null,
         type: 'synthese',
         nom_court: 'Note globale',
         nom_long: 'Note globale',
@@ -437,8 +442,11 @@ export async function computeAggregatedResultats(
         parent_id: null,
         question: null,
         reponse: null,
+        reponse_max: null,
+        reponse_min: null,
+        reponse_type: null,
       },
-    } as ResultatWithCritere)
+    } as unknown as ResultatWithCritere)
   }
 
   return results

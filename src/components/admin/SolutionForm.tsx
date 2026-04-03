@@ -379,7 +379,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           <textarea
             id="prix"
             name="prix"
-            defaultValue={solution?.prix ? JSON.stringify(solution.prix, null, 2) : ''}
+            defaultValue={(solution as any)?.prix ? JSON.stringify((solution as any).prix, null, 2) : ''}
             rows={4}
             className={textareaClass}
             placeholder='{ "mensuel": 99, "annuel": 990 }'
