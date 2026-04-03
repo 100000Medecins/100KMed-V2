@@ -17,7 +17,7 @@ interface SolutionItem {
 }
 
 export default function ChoisirSolutionPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { loading: authLoading } = useAuth()
   const router = useRouter()
   const [solutions, setSolutions] = useState<SolutionItem[]>([])
   const [search, setSearch] = useState('')
@@ -25,10 +25,6 @@ export default function ChoisirSolutionPage() {
 
   useEffect(() => {
     if (authLoading) return
-    if (!user) {
-      router.push('/connexion?redirect=/solution/noter')
-      return
-    }
 
     const supabase = createClient()
     supabase
@@ -39,7 +35,7 @@ export default function ChoisirSolutionPage() {
         setSolutions((data as unknown as SolutionItem[]) || [])
         setLoading(false)
       })
-  }, [user, authLoading, router])
+  }, [authLoading])
 
   const filtered = search.trim()
     ? solutions.filter((s) =>

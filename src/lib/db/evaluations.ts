@@ -52,6 +52,7 @@ export async function getAvisUtilisateurs(
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null) // Seulement les évaluations finalisées
+    .or('statut.eq.publiee,statut.is.null') // Seulement les évaluations publiées (null = ancien, traité comme publiée)
 
   // Tri
   if (options.critereTri === 'date') {
@@ -111,6 +112,7 @@ export async function getLastAvisUtilisateurs(
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
+    .or('statut.eq.publiee,statut.is.null')
     .order('last_date_note', { ascending: false })
     .limit(limit)
 
@@ -157,6 +159,7 @@ export async function getAvisUtilisateursPaginated(
     `, { count: 'exact' })
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
+    .or('statut.eq.publiee,statut.is.null')
     .order(tri === 'note' ? 'moyenne_utilisateur' : 'last_date_note', { ascending: false })
     .range(offset, offset + limit - 1)
 
@@ -278,6 +281,7 @@ export async function getAverageNoteUtilisateurs(
     .select('scores')
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
+    .or('statut.eq.publiee,statut.is.null')
 
   if (error || !evaluations || evaluations.length === 0) return { note: null, total: 0, distribution: {} }
 
@@ -337,6 +341,7 @@ export async function computeAggregatedResultats(
     .select('scores, moyenne_utilisateur')
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
+    .or('statut.eq.publiee,statut.is.null')
 
   if (error || !evaluations || evaluations.length === 0) return []
 

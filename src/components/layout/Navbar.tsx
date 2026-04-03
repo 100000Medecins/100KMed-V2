@@ -76,7 +76,7 @@ export default function Navbar() {
               <Button variant="outline" href="/connexion" className="text-sm py-2.5 px-6">
                 Me connecter
               </Button>
-              <Button variant="primary" href="/connexion" className="text-sm py-2.5 px-6">
+              <Button variant="primary" href="/solution/noter" className="text-sm py-2.5 px-6">
                 Évaluer un logiciel
               </Button>
             </>
@@ -114,7 +114,7 @@ export default function Navbar() {
                 </Button>
               ) : (
                 <>
-                  <Button variant="primary" href="/connexion" className="w-full justify-center">
+                  <Button variant="primary" href="/solution/noter" className="w-full justify-center">
                     Évaluer un logiciel
                   </Button>
                   <Button variant="ghost" href="/connexion" className="w-full justify-center">

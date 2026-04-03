@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Users } from 'lucide-react'
+import { Package, FolderOpen, BarChart3, FileText, Users, Mail } from 'lucide-react'
 
 const navItems = [
   { href: '/admin/solutions', label: 'Solutions', icon: Package },
   { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
   { href: '/admin/pages', label: 'Pages', icon: FileText },
   { href: '/admin/partenaires', label: 'Partenaires', icon: Users },
+  { href: '/admin/emails', label: 'Emails', icon: Mail },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
 

@@ -2,6 +2,8 @@
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { randomUUID } from 'crypto'
+import sgMail from '@sendgrid/mail'
 
 interface CritereScore {
   id: string
@@ -405,5 +407,82 @@ export async function submitEvaluation(
   }
 
   revalidatePath('/solutions')
+  return { status: 'SUCCESS' }
+}
+
+/**
+ * Soumet une évaluation pour un utilisateur anonyme (non connecté).
+ * L'évaluation reste en attente jusqu'à vérification PSC.
+ */
+export async function submitEvaluationAnonyme(
+  solutionId: string,
+  scores: Record<string, number | string | null>,
+  moyenne: number,
+  emailTemp: string,
+  dateDebut?: string | null,
+  dateFin?: string | null
+) {
+  const supabase = createServiceRoleClient()
+  const tokenVerification = randomUUID()
+  const emailNormalise = emailTemp.toLowerCase().trim()
+
+  // Vérifier si une évaluation en attente existe déjà pour cet email + solution
+  const { data: existing } = await supabase
+    .from('evaluations')
+    .select('id')
+    .eq('solution_id', solutionId)
+    .eq('email_temp', emailNormalise)
+    .eq('statut', 'en_attente_psc')
+    .limit(1)
+
+  const scoresFinaux: Record<string, number | string | null> = { ...scores }
+  if (dateDebut) scoresFinaux.date_debut = dateDebut
+  if (dateFin) scoresFinaux.date_fin = dateFin
+
+  if (existing && existing.length > 0) {
+    // Mettre à jour l'évaluation existante en attente
+    await supabase
+      .from('evaluations')
+      .update({
+        scores: scoresFinaux,
+        moyenne_utilisateur: Math.round(moyenne * 100) / 100,
+        last_date_note: new Date().toISOString(),
+        token_verification: tokenVerification,
+      })
+      .eq('id', existing[0].id)
+  } else {
+    const { error } = await supabase.from('evaluations').insert({
+      solution_id: solutionId,
+      scores: scoresFinaux,
+      moyenne_utilisateur: Math.round(moyenne * 100) / 100,
+      last_date_note: new Date().toISOString(),
+      statut: 'en_attente_psc',
+      email_temp: emailNormalise,
+      token_verification: tokenVerification,
+    })
+    if (error) throw new Error(error.message)
+  }
+
+  // Récupérer le template email
+  const { data: template } = await supabase
+    .from('email_templates')
+    .select('sujet, contenu_html')
+    .eq('id', 'verification_psc')
+    .single()
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const pscLink = `${siteUrl}/api/auth/psc-initier?token=${tokenVerification}`
+
+  const sujet = template?.sujet || 'Validez votre évaluation sur 100 000 Médecins'
+  const contenuHtml = (template?.contenu_html || '').replace('{{psc_link}}', pscLink)
+
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+  await sgMail.send({
+    to: emailTemp,
+    from: 'contact@100000medecins.org',
+    subject: sujet,
+    html: contenuHtml,
+  })
+
   return { status: 'SUCCESS' }
 }

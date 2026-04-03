@@ -7,8 +7,8 @@ import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
-import { submitEvaluation } from '@/lib/actions/evaluation'
-import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward } from 'lucide-react'
+import { submitEvaluation, submitEvaluationAnonyme } from '@/lib/actions/evaluation'
+import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Mail, CheckCircle } from 'lucide-react'
 
 interface PageProps {
   params: { slug: string[] }
@@ -492,17 +492,16 @@ export default function NoterPage({ params }: PageProps) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
+  const [emailAnonyme, setEmailAnonyme] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
-    if (!user) {
-      router.push(`/connexion?redirect=/solution/noter/${categorieSlug}/${solutionSlug}`)
-      return
-    }
 
     const supabase = createClient()
 
-    // Charger la solution et une éventuelle évaluation existante
+    // Charger la solution (accessible sans auth)
     supabase
       .from('solutions')
       .select('id, nom, slug, logo_url, categorie:categories(id, slug)')
@@ -515,7 +514,12 @@ export default function NoterPage({ params }: PageProps) {
         }
         setSolution(sol)
 
-        // Charger évaluation existante
+        if (!user) {
+          setLoading(false)
+          return
+        }
+
+        // Charger évaluation existante (uniquement si connecté)
         supabase
           .from('evaluations')
           .select('scores')
@@ -568,17 +572,19 @@ export default function NoterPage({ params }: PageProps) {
             setLoading(false)
           })
       })
-  }, [user, authLoading, categorieSlug, solutionSlug, router])
+  }, [user, authLoading, solutionSlug])
 
   // Un critère est "répondu" s'il a une note (> 0) OU s'il est marqué NC (null)
   const allRated = CRITERES.every((c) => scores[c.key] === null || (typeof scores[c.key] === 'number' && scores[c.key]! > 0))
 
   const sectionsDetail = getSectionsForCategorie(categorieSlug)
   const substeps = getSubsteps(sectionsDetail)
-  const totalSteps = 1 + substeps.length
+  // Pour les anonymes, une étape email est ajoutée en fin de parcours
+  const totalSteps = 1 + substeps.length + (!user ? 1 : 0)
+  const isEmailStep = !user && currentStep === totalSteps
 
   const substepIndex = Math.max(0, currentStep - 2)
-  const currentSubstepGroup = currentStep >= 2 ? substeps[substepIndex] : null
+  const currentSubstepGroup = currentStep >= 2 && !isEmailStep ? substeps[substepIndex] : null
   const isLastStep = currentStep === totalSteps
 
   const currentSubstepQuestions = currentSubstepGroup?.sections.flatMap(s => s.questions) ?? []
@@ -586,46 +592,78 @@ export default function NoterPage({ params }: PageProps) {
     q => q.key in detailScores && (detailScores[q.key] === null || detailScores[q.key]! > 0)
   ).length
 
+  const buildFinalScores = () => {
+    const finalScores: Record<string, number | string | null> = { ...scores, ...detailScores }
+    if (commentaire.trim()) finalScores.commentaire = commentaire.trim()
+    if (dateDebut) finalScores.date_debut = dateDebut
+    if (plusUtilise && dateFin) finalScores.date_fin = dateFin
+    return finalScores
+  }
+
+  const buildMoyenne = () => {
+    const numericValues = CRITERES
+      .map((c) => scores[c.key])
+      .filter((v): v is number => typeof v === 'number' && v > 0)
+    return numericValues.length > 0
+      ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
+      : 0
+  }
+
   const handleSubmit = async () => {
-    if (!user || !solution || !allRated) return
+    if (!solution || !allRated) return
+
+    // Utilisateur anonyme : aller à l'étape email
+    if (!user) {
+      setCurrentStep(totalSteps)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
     try {
-      // Construire les scores finaux (critères principaux + détaillés + commentaire)
-      // Les valeurs NC (null) sont conservées telles quelles dans le JSONB
-      const finalScores: Record<string, number | string | null> = { ...scores, ...detailScores }
-      if (commentaire.trim()) {
-        finalScores.commentaire = commentaire.trim()
-      }
-      if (dateDebut) {
-        finalScores.date_debut = dateDebut
-      }
-      if (plusUtilise && dateFin) {
-        finalScores.date_fin = dateFin
-      }
-
-      // Calculer la moyenne uniquement sur les critères notés (exclure les NC)
-      const numericValues = CRITERES
-        .map((c) => scores[c.key])
-        .filter((v): v is number => typeof v === 'number' && v > 0)
-      const moyenne = numericValues.length > 0
-        ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
-        : 0
-
-      // Appeler la server action (bypass RLS)
       await submitEvaluation(
         solution.id,
-        finalScores,
-        moyenne,
+        buildFinalScores(),
+        buildMoyenne(),
         dateDebut || null,
         plusUtilise ? (dateFin || null) : null
       )
-
       router.push(`/solutions/${categorieSlug}/${solutionSlug}`)
     } catch (err) {
       console.error('Erreur soumission:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleSubmitAnonyme = async () => {
+    if (!solution) return
+    setEmailError(null)
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailAnonyme.trim() || !emailRegex.test(emailAnonyme.trim())) {
+      setEmailError('Veuillez saisir une adresse email valide.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await submitEvaluationAnonyme(
+        solution.id,
+        buildFinalScores(),
+        buildMoyenne(),
+        emailAnonyme.trim(),
+        dateDebut || null,
+        plusUtilise ? (dateFin || null) : null
+      )
+      setSubmitted(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (err) {
+      console.error('Erreur soumission anonyme:', err)
+      setEmailError('Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setSubmitting(false)
     }
@@ -841,6 +879,99 @@ export default function NoterPage({ params }: PageProps) {
                   Veuillez noter tous les critères (ou indiquer NC) pour continuer.
                 </p>
               )}
+            </>
+          )}
+
+          {/* ─── Écran de confirmation (après soumission anonyme) ─── */}
+          {submitted && (
+            <div className="bg-white rounded-card shadow-card p-8 text-center">
+              <div className="flex justify-center mb-4">
+                <CheckCircle className="w-14 h-14 text-green-500" />
+              </div>
+              <h2 className="text-lg font-bold text-navy mb-2">
+                Votre évaluation a bien été enregistrée !
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Un email de vérification a été envoyé à <strong>{emailAnonyme}</strong>.
+              </p>
+              <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-800 text-left mb-6">
+                <p className="font-semibold mb-1">Prochaine étape :</p>
+                <p>Cliquez sur le lien dans l&apos;email pour vous connecter via <strong>Pro Santé Connect</strong> et confirmer que vous êtes médecin en exercice.</p>
+                <p className="mt-2">Votre avis sera publié automatiquement après validation.</p>
+              </div>
+              <button
+                onClick={() => router.push(`/solutions/${categorieSlug}/${solutionSlug}`)}
+                className="text-sm text-accent-blue hover:underline"
+              >
+                Retour à la fiche solution
+              </button>
+            </div>
+          )}
+
+          {/* ─── Étape email (anonyme uniquement, dernière étape) ─── */}
+          {isEmailStep && !submitted && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-base font-semibold text-navy mb-1">
+                  Dernière étape — Vérification de votre identité
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Pour garantir que les avis publiés proviennent de médecins en exercice, nous devons vérifier votre identité via Pro Santé Connect.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-card shadow-card p-6 space-y-4">
+                <div className="flex items-start gap-3 text-sm text-gray-600">
+                  <Mail className="w-5 h-5 text-accent-blue flex-shrink-0 mt-0.5" />
+                  <p>
+                    Saisissez votre adresse email. Nous vous enverrons un lien pour vous connecter une seule fois via <strong>Pro Santé Connect</strong>. Votre avis sera publié automatiquement après validation.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-navy mb-1.5">
+                    Votre adresse email
+                  </label>
+                  <input
+                    type="email"
+                    value={emailAnonyme}
+                    onChange={(e) => {
+                      setEmailAnonyme(e.target.value)
+                      setEmailError(null)
+                    }}
+                    placeholder="prenom.nom@exemple.fr"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitAnonyme() }}
+                  />
+                  {emailError && (
+                    <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                  )}
+                </div>
+
+                <div className="bg-surface-light rounded-xl p-3 text-xs text-gray-500">
+                  Votre email ne sera pas affiché publiquement. Il est uniquement utilisé pour envoyer le lien de vérification.
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  onClick={() => {
+                    setCurrentStep(prev => prev - 1)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Retour
+                </button>
+                <Button
+                  variant="primary"
+                  onClick={handleSubmitAnonyme}
+                  className={submitting ? 'opacity-50 pointer-events-none' : ''}
+                >
+                  {submitting ? 'Envoi en cours...' : 'Recevoir mon lien de vérification'}
+                </Button>
+              </div>
             </>
           )}
 
