@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react'
 import { Plus, Trash2, GripVertical, ChevronDown } from 'lucide-react'
 import {
   createFonctionnalite,
+  createSeparateur,
   deleteFonctionnalite,
   renameFonctionnalite,
   reorderFonctionnalites,
@@ -52,8 +53,22 @@ export default function TagsCategorieSection({
       if (result?.error) {
         setError(result.error)
       } else if (result?.tag) {
-        setTags((prev) => [...prev, { ...result.tag, parent_ids: [] }])
+        setTags((prev) => [...prev, { ...result.tag, parent_ids: [], is_separator: false }])
         setNewLibelle('')
+      }
+    })
+  }
+
+  function handleAddSeparateur() {
+    setError(null)
+    startTransition(async () => {
+      const result = await createSeparateur(categorieId)
+      if (!result) { setError('Erreur inconnue'); return }
+      if ('error' in result) { setError(result.error); return }
+      if (result.tag) {
+        setTags((prev) => [...prev, result.tag])
+        setEditingId(result.tag.id)
+        setEditingValue(result.tag.libelle ?? '')
       }
     })
   }
@@ -148,17 +163,72 @@ export default function TagsCategorieSection({
 
       {tags.map((tag, index) => {
         const isPopoverOpen = openParentFor === tag.id
-        const otherTags = tags.filter((t) => t.id !== tag.id)
+        // Exclure les séparateurs des options "Valide aussi"
+        const otherRealTags = tags.filter((t) => t.id !== tag.id && !t.is_separator)
+        const dragRingClass = dragOverIndex === index ? 'ring-2 ring-accent-blue bg-blue-50' : ''
 
+        // ── Séparateur ──────────────────────────────────────────────
+        if (tag.is_separator) {
+          return (
+            <div
+              key={tag.id}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`flex items-center gap-2 py-1.5 px-3 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 transition-all ${dragRingClass}`}
+            >
+              <div
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 flex-shrink-0"
+              >
+                <GripVertical className="w-4 h-4" />
+              </div>
+
+              {editingId === tag.id ? (
+                <input
+                  autoFocus
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onBlur={() => commitEdit(tag.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitEdit(tag.id)
+                    if (e.key === 'Escape') setEditingId(null)
+                  }}
+                  className="flex-1 min-w-0 text-xs font-semibold uppercase tracking-wider bg-white border border-accent-blue/40 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEditing(tag)}
+                  className="flex-1 min-w-0 text-xs font-semibold uppercase tracking-wider text-gray-400 text-left hover:text-gray-600 transition-colors"
+                  title="Cliquer pour renommer ce groupe"
+                >
+                  {tag.libelle || 'Groupe sans nom'}
+                </button>
+              )}
+
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => handleDelete(tag.id)}
+                className="p-1.5 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
+                title="Supprimer ce séparateur"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )
+        }
+
+        // ── Tag normal ───────────────────────────────────────────────
         return (
           <div
             key={tag.id}
             onDragOver={(e) => handleDragOver(e, index)}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
-            className={`flex items-center gap-2 py-2 px-3 bg-surface-light rounded-xl transition-all ${
-              dragOverIndex === index ? 'ring-2 ring-accent-blue bg-blue-50' : ''
-            }`}
+            className={`flex items-center gap-2 py-2 px-3 bg-surface-light rounded-xl transition-all ${dragRingClass}`}
           >
             {/* Drag handle */}
             <div
@@ -198,7 +268,7 @@ export default function TagsCategorieSection({
             <div className="relative flex-shrink-0" ref={isPopoverOpen ? popoverRef : undefined}>
               <button
                 type="button"
-                disabled={isPending || otherTags.length === 0}
+                disabled={isPending || otherRealTags.length === 0}
                 onClick={() => setOpenParentFor(isPopoverOpen ? null : tag.id)}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border transition-colors disabled:opacity-40 ${
                   tag.parent_ids.length > 0
@@ -214,12 +284,12 @@ export default function TagsCategorieSection({
                 <ChevronDown className={`w-3 h-3 transition-transform ${isPopoverOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {isPopoverOpen && otherTags.length > 0 && (
+              {isPopoverOpen && otherRealTags.length > 0 && (
                 <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-card p-2 min-w-[220px] max-h-60 overflow-y-auto">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-2 pb-1.5">
                     Valide automatiquement
                   </p>
-                  {otherTags.map((other) => (
+                  {otherRealTags.map((other) => (
                     <label
                       key={other.id}
                       className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-light cursor-pointer"
@@ -260,7 +330,20 @@ export default function TagsCategorieSection({
         </p>
       )}
 
-      {/* Ajouter */}
+      {/* Ajouter un séparateur de groupe */}
+      <div className="flex justify-start pt-1">
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handleAddSeparateur}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border-2 border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Ajouter un groupe
+        </button>
+      </div>
+
+      {/* Ajouter une fonctionnalité */}
       <div className="flex items-center gap-2 pt-1">
         <input
           type="text"

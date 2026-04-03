@@ -537,6 +537,28 @@ export async function reorderFonctionnalites(orderedIds: string[]) {
   revalidatePath('/solutions', 'layout')
 }
 
+export async function createSeparateur(categorieId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('tags')
+    .insert({ id: randomUUID(), id_categorie: categorieId, libelle: 'Nouveau groupe', is_separator: true })
+    .select('id, libelle, ordre')
+    .single()
+  if (error) return { error: error.message as string }
+  revalidatePath('/solutions', 'layout')
+  return {
+    tag: {
+      id: data.id as string,
+      libelle: data.libelle as string | null,
+      ordre: data.ordre as number | null,
+      parent_ids: [] as string[],
+      is_separator: true,
+    },
+  }
+}
+
 export async function renameFonctionnalite(tagId: string, libelle: string) {
   await assertAdmin()
   const supabase = createServiceRoleClient()

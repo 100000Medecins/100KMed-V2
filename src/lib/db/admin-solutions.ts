@@ -133,15 +133,16 @@ export async function getTagsForSolutionAdmin(solutionId: string, categorieId: s
     if (st.id_tag) stMap.set(st.id_tag, st.is_tag_principal ?? false)
   }
 
-  return (tags || []).map((tag) => ({
-    id: tag.id as string,
-    libelle: tag.libelle as string | null,
-    ordre: tag.ordre as number | null,
-    // parent_ids sera dans le type après migration + regen
-    parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
-    enabled: stMap.has(tag.id),
-    is_principale: stMap.get(tag.id) === true,
-  }))
+  return (tags || [])
+    .filter((tag) => !((tag as unknown as Record<string, unknown>).is_separator as boolean))
+    .map((tag) => ({
+      id: tag.id as string,
+      libelle: tag.libelle as string | null,
+      ordre: tag.ordre as number | null,
+      parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
+      enabled: stMap.has(tag.id),
+      is_principale: stMap.get(tag.id) === true,
+    }))
 }
 
 export type TagForSolution = Awaited<ReturnType<typeof getTagsForSolutionAdmin>>[number]
@@ -165,6 +166,7 @@ export async function getTagsForCategorieAdmin(categorieId: string) {
     libelle: tag.libelle as string | null,
     ordre: tag.ordre as number | null,
     parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
+    is_separator: ((tag as unknown as Record<string, unknown>).is_separator as boolean) ?? false,
   }))
 }
 

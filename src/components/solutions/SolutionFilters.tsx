@@ -3,8 +3,8 @@
 import { useRouter, usePathname } from 'next/navigation'
 import type { Tag } from '@/types/models'
 
-// Tag étendu avec parent_ids (disponible après migration + regen types)
-type TagWithParent = Tag & { parent_ids?: string[] }
+// Tag étendu avec parent_ids et is_separator (disponible après migration + regen types)
+type TagWithParent = Tag & { parent_ids?: string[]; is_separator?: boolean }
 
 const DEFAULT_DIR: Record<string, string> = {
   nom: 'asc',
@@ -85,8 +85,20 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
           </button>
         )}
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {tagsWithParent.map((tag) => {
+          // ── Séparateur / en-tête de groupe ──
+          if (tag.is_separator) {
+            return (
+              <div key={tag.id} className="pt-3 pb-0.5 first:pt-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                  {tag.libelle}
+                </p>
+              </div>
+            )
+          }
+
+          // ── Tag normal ──
           const isSelected = selectedTagIds.includes(tag.id)
           const isImplied = impliedParentIds.has(tag.id)
 
