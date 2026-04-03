@@ -85,7 +85,7 @@ export default function ProfilPage() {
     if (!isValid) return
     setSubmitting(true)
     setError(null)
-    setSuccess(false)
+    setSuccess(null)
 
     try {
       await updateProfile({
