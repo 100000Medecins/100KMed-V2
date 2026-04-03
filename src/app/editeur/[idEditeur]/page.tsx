@@ -58,7 +58,7 @@ export default async function EditeurPage({ params }: PageProps) {
               {editeur.logo_url && (
                 <img
                   src={editeur.logo_url}
-                  alt={editeur.logo_titre || editeur.nom}
+                  alt={editeur.logo_titre || editeur.nom || ''}
                   className="w-20 h-20 rounded-2xl object-contain bg-white shadow-card p-2"
                 />
               )}
@@ -76,9 +76,9 @@ export default async function EditeurPage({ params }: PageProps) {
                   {editeur.contact_ville && (
                     <span>{editeur.contact_ville}, {editeur.contact_pays}</span>
                   )}
-                  {editeur.website_url && (
+                  {editeur.website && (
                     <a
-                      href={editeur.website_url}
+                      href={editeur.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-accent-blue hover:underline"

@@ -38,8 +38,8 @@ export function generateSolutionJsonLd(
   if (solution.editeur) {
     jsonLd.author = {
       '@type': 'Organization',
-      name: solution.editeur.nom_commercial || solution.editeur.nom,
-      url: solution.editeur.website_url || undefined,
+      name: solution.editeur.nom_commercial || solution.editeur.nom || undefined,
+      url: solution.editeur.website || undefined,
     }
   }
 
@@ -65,9 +65,9 @@ export function generateOrganizationJsonLd(editeur: Editeur) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: editeur.nom_commercial || editeur.nom,
+    name: editeur.nom_commercial || editeur.nom || undefined,
     description: editeur.description || undefined,
-    url: editeur.website_url || undefined,
+    url: editeur.website || undefined,
     logo: editeur.logo_url || undefined,
     address: editeur.contact_ville
       ? {
