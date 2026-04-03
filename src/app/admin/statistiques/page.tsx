@@ -90,7 +90,7 @@ async function getStats() {
     .select('id, nom')
 
   const editeurMap = new Map<string, string>()
-  for (const ed of editeurs ?? []) editeurMap.set(ed.id, ed.nom)
+  for (const ed of editeurs ?? []) editeurMap.set(ed.id, ed.nom ?? '')
 
   // ── Note moyenne ──
   const ratings = allEvals
