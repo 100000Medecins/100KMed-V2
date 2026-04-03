@@ -62,43 +62,20 @@ export async function getActualites(limit?: number) {
 }
 
 /**
- * Récupère les tags d'une catégorie.
+ * Récupère les tags d'une catégorie (directement depuis id_categorie).
  * Remplace : fetchTags
  */
 export async function getTags(categorieId: string) {
   const supabase = await createServerClient()
 
-  // 1. Récupérer les solutions de cette catégorie
-  const { data: solutions, error: solError } = await supabase
-    .from('solutions')
-    .select('id')
-    .eq('id_categorie', categorieId)
-
-  if (solError) throw solError
-  if (!solutions || solutions.length === 0) return []
-
-  const solutionIds = solutions.map((s) => s.id)
-
-  // 2. Récupérer les tag IDs liés à ces solutions
-  const { data: links, error: linksError } = await supabase
-    .from('solutions_tags')
-    .select('id_tag')
-    .in('id_solution', solutionIds)
-
-  if (linksError) throw linksError
-
-  const tagIds = Array.from(new Set((links || []).map((l) => l.id_tag).filter((id): id is string => id !== null)))
-  if (tagIds.length === 0) return []
-
-  // 3. Récupérer les tags
   const { data, error } = await supabase
     .from('tags')
     .select('*')
-    .in('id', tagIds)
+    .eq('id_categorie', categorieId)
     .order('ordre', { ascending: true })
 
   if (error) throw error
-  return data as Tag[]
+  return (data ?? []) as Tag[]
 }
 
 /**

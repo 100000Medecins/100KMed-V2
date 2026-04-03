@@ -110,36 +110,62 @@ export async function getResultatsRedacAdmin(solutionId: string) {
 export type ResultatRedacAdmin = Awaited<ReturnType<typeof getResultatsRedacAdmin>>[number]
 
 /**
- * Récupère tous les tags d'une catégorie avec leur état (activé/désactivé) pour une solution.
+ * Récupère tous les tags d'une catégorie avec leur état pour une solution.
+ * enabled = présent dans solutions_tags
+ * is_principale = solutions_tags.is_tag_principal = true
  */
 export async function getTagsForSolutionAdmin(solutionId: string, categorieId: string | null) {
   const supabase = createServiceRoleClient()
 
-  // Tous les tags de la catégorie
-  const tagsQuery = supabase
-    .from('tags')
-    .select('id, libelle, ordre, is_tag_principal')
-
+  const tagsQuery = supabase.from('tags').select('id, libelle, ordre')
   const { data: tags } = categorieId
     ? await tagsQuery.eq('id_categorie', categorieId).order('ordre', { ascending: true })
     : await tagsQuery.is('id_categorie', null).order('ordre', { ascending: true })
 
-  // Tags déjà associés à cette solution
   const { data: solutionTags } = await supabase
     .from('solutions_tags')
-    .select('id_tag')
+    .select('id_tag, is_tag_principal')
     .eq('id_solution', solutionId)
 
-  const enabledTagIds = new Set(
-    (solutionTags || []).map((st) => st.id_tag).filter(Boolean)
-  )
+  // map tagId -> is_tag_principal
+  const stMap = new Map<string, boolean>()
+  for (const st of solutionTags || []) {
+    if (st.id_tag) stMap.set(st.id_tag, st.is_tag_principal ?? false)
+  }
 
   return (tags || []).map((tag) => ({
     id: tag.id as string,
     libelle: tag.libelle as string | null,
     ordre: tag.ordre as number | null,
-    enabled: enabledTagIds.has(tag.id),
+    // parent_ids sera dans le type après migration + regen
+    parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
+    enabled: stMap.has(tag.id),
+    is_principale: stMap.get(tag.id) === true,
   }))
 }
 
 export type TagForSolution = Awaited<ReturnType<typeof getTagsForSolutionAdmin>>[number]
+
+/**
+ * Récupère tous les tags d'une catégorie pour l'admin catégorie (CRUD).
+ */
+export async function getTagsForCategorieAdmin(categorieId: string) {
+  const supabase = createServiceRoleClient()
+
+  const { data, error } = await supabase
+    .from('tags')
+    .select('id, libelle, ordre')
+    .eq('id_categorie', categorieId)
+    .order('ordre', { ascending: true })
+
+  if (error) return []
+
+  return (data || []).map((tag) => ({
+    id: tag.id as string,
+    libelle: tag.libelle as string | null,
+    ordre: tag.ordre as number | null,
+    parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
+  }))
+}
+
+export type TagForCategorie = Awaited<ReturnType<typeof getTagsForCategorieAdmin>>[number]

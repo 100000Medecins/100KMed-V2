@@ -493,44 +493,8 @@ export async function togglePartenaireActif(id: string, actif: boolean) {
 }
 
 // ────────────────────────────────────────────
-// Fonctionnalités (tags)
+// Tags — gestion catégorie (CRUD global)
 // ────────────────────────────────────────────
-
-export async function toggleFonctionnalite(solutionId: string, tagId: string, enabled: boolean) {
-  await assertAdmin()
-  const supabase = createServiceRoleClient()
-
-  if (enabled) {
-    const { data: existing } = await supabase
-      .from('solutions_tags')
-      .select('id')
-      .eq('id_solution', solutionId)
-      .eq('id_tag', tagId)
-      .maybeSingle()
-
-    if (existing) {
-      await supabase
-        .from('solutions_tags')
-        .update({ is_tag_principal: true })
-        .eq('id_solution', solutionId)
-        .eq('id_tag', tagId)
-    } else {
-      await supabase.from('solutions_tags').insert({
-        id_solution: solutionId,
-        id_tag: tagId,
-        is_tag_principal: true,
-      })
-    }
-  } else {
-    await supabase
-      .from('solutions_tags')
-      .delete()
-      .eq('id_solution', solutionId)
-      .eq('id_tag', tagId)
-  }
-
-  revalidatePath('/solutions', 'layout')
-}
 
 export async function createFonctionnalite(categorieId: string | null, libelle: string) {
   await assertAdmin()
@@ -538,7 +502,7 @@ export async function createFonctionnalite(categorieId: string | null, libelle: 
 
   const { data, error } = await supabase
     .from('tags')
-    .insert({ id: randomUUID(), id_categorie: categorieId, libelle, is_tag_principal: true })
+    .insert({ id: randomUUID(), id_categorie: categorieId, libelle })
     .select('id, libelle, ordre')
     .single()
 
@@ -549,7 +513,7 @@ export async function createFonctionnalite(categorieId: string | null, libelle: 
       id: data.id as string,
       libelle: data.libelle as string | null,
       ordre: data.ordre as number | null,
-      enabled: false,
+      parent_id: null as string | null,
     },
   }
 }
@@ -570,6 +534,133 @@ export async function reorderFonctionnalites(orderedIds: string[]) {
       supabase.from('tags').update({ ordre: index }).eq('id', id)
     )
   )
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function renameFonctionnalite(tagId: string, libelle: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('tags').update({ libelle }).eq('id', tagId)
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function updateTagParents(tagId: string, parentIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // parent_ids sera dans le type après migration + regen — cast nécessaire pour l'instant
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('tags').update({ parent_ids: parentIds }).eq('id', tagId)
+  revalidatePath('/solutions', 'layout')
+}
+
+// ────────────────────────────────────────────
+// Tags — association solution (par solution)
+// ────────────────────────────────────────────
+
+/** Helper : remonte les IDs de tous les ancêtres d'un tag (BFS sur parent_ids[]) */
+async function getAncestorTagIds(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  tagId: string
+): Promise<string[]> {
+  const ancestors = new Set<string>()
+  const queue = [tagId]
+  const visited = new Set<string>()
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    if (visited.has(currentId)) continue
+    visited.add(currentId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).from('tags').select('parent_ids').eq('id', currentId).maybeSingle()
+    const parentIds = (data?.parent_ids ?? []) as string[]
+    for (const pid of parentIds) {
+      if (!visited.has(pid)) {
+        ancestors.add(pid)
+        queue.push(pid)
+      }
+    }
+  }
+  return Array.from(ancestors)
+}
+
+/**
+ * Active/désactive l'association d'un tag avec une solution.
+ * Quand on active, les ancêtres (parents) sont également auto-associés.
+ */
+export async function toggleTagAssociation(solutionId: string, tagId: string, enabled: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  if (enabled) {
+    const { data: existing } = await supabase
+      .from('solutions_tags')
+      .select('id')
+      .eq('id_solution', solutionId)
+      .eq('id_tag', tagId)
+      .maybeSingle()
+
+    if (!existing) {
+      await supabase.from('solutions_tags').insert({
+        id_solution: solutionId,
+        id_tag: tagId,
+        is_tag_principal: false,
+      })
+    }
+
+    // Auto-associer les ancêtres (ex: cocher V2 coche aussi V1)
+    const ancestors = await getAncestorTagIds(supabase, tagId)
+    for (const ancestorId of ancestors) {
+      const { data: existingAncestor } = await supabase
+        .from('solutions_tags')
+        .select('id')
+        .eq('id_solution', solutionId)
+        .eq('id_tag', ancestorId)
+        .maybeSingle()
+      if (!existingAncestor) {
+        await supabase.from('solutions_tags').insert({
+          id_solution: solutionId,
+          id_tag: ancestorId,
+          is_tag_principal: false,
+        })
+      }
+    }
+  } else {
+    await supabase.from('solutions_tags')
+      .delete()
+      .eq('id_solution', solutionId)
+      .eq('id_tag', tagId)
+  }
+
+  revalidatePath('/solutions', 'layout')
+}
+
+/**
+ * Active/désactive le statut "principale" d'un tag pour une solution.
+ * Le tag doit déjà être associé ; si ce n'est pas le cas et principale=true, on l'associe.
+ */
+export async function toggleTagPrincipale(solutionId: string, tagId: string, principale: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const { data: existing } = await supabase
+    .from('solutions_tags')
+    .select('id')
+    .eq('id_solution', solutionId)
+    .eq('id_tag', tagId)
+    .maybeSingle()
+
+  if (existing) {
+    await supabase.from('solutions_tags')
+      .update({ is_tag_principal: principale })
+      .eq('id', existing.id)
+  } else if (principale) {
+    await supabase.from('solutions_tags').insert({
+      id_solution: solutionId,
+      id_tag: tagId,
+      is_tag_principal: true,
+    })
+  }
+
   revalidatePath('/solutions', 'layout')
 }
 

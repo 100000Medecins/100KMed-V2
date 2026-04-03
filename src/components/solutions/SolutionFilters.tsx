@@ -3,6 +3,9 @@
 import { useRouter, usePathname } from 'next/navigation'
 import type { Tag } from '@/types/models'
 
+// Tag étendu avec parent_ids (disponible après migration + regen types)
+type TagWithParent = Tag & { parent_ids?: string[] }
+
 const DEFAULT_DIR: Record<string, string> = {
   nom: 'asc',
   note_redac: 'desc',
@@ -17,9 +20,36 @@ interface SolutionFiltersProps {
   currentDir?: string
 }
 
+/**
+ * Calcule les IDs des tags parents qui sont implicitement inclus
+ * parce qu'un de leurs enfants est sélectionné.
+ * Ex : si "LAP V2" est sélectionné et LAP_V2.parent_id = LAP_V1.id,
+ * alors LAP V1 est "implied" (grisé, pas cliquable).
+ */
+function getImpliedParentIds(tags: TagWithParent[], selectedIds: string[]): Set<string> {
+  const implied = new Set<string>()
+  const queue = [...selectedIds]
+  const visited = new Set<string>()
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    if (visited.has(currentId)) continue
+    visited.add(currentId)
+    const tag = tags.find((t) => t.id === currentId)
+    for (const pid of tag?.parent_ids ?? []) {
+      if (!visited.has(pid)) {
+        implied.add(pid)
+        queue.push(pid)
+      }
+    }
+  }
+  return implied
+}
+
 export default function SolutionFilters({ tags, selectedTagIds, currentTri, currentCritere, currentDir }: SolutionFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const tagsWithParent = tags as TagWithParent[]
 
   function buildUrl(tagIds: string[]) {
     const params = new URLSearchParams()
@@ -40,6 +70,8 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
 
   if (tags.length === 0) return null
 
+  const impliedParentIds = getImpliedParentIds(tagsWithParent, selectedTagIds)
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -54,19 +86,26 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
         )}
       </div>
       <div className="flex flex-col gap-2">
-        {tags.map((tag) => {
+        {tagsWithParent.map((tag) => {
           const isSelected = selectedTagIds.includes(tag.id)
+          const isImplied = impliedParentIds.has(tag.id)
+
           return (
             <button
               key={tag.id}
-              onClick={() => toggleTag(tag.id)}
+              onClick={() => !isImplied && toggleTag(tag.id)}
+              disabled={isImplied}
+              title={isImplied ? 'Inclus implicitement' : undefined}
               className={`text-sm px-3 py-1.5 rounded-full border transition-colors text-left ${
                 isSelected
                   ? 'bg-navy text-white border-navy'
+                  : isImplied
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-navy hover:text-navy'
               }`}
             >
               {tag.libelle}
+              {isImplied && <span className="ml-1 text-xs opacity-60">✓</span>}
             </button>
           )
         })}

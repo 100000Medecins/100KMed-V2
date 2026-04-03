@@ -6,6 +6,7 @@ import type { Database } from '@/types/database'
 import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
+import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
 
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
@@ -205,6 +206,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     editorial: false,
     criteres: false,
     fonctionnalites: false,
+    fonctionnalitesAssociees: false,
     galerie: false,
     dates: false,
     seo: false,
@@ -549,16 +551,29 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         </Section>
       )}
 
-      {/* Section — Fonctionnalités principales */}
+      {/* Section — Fonctionnalités associées (pour filtrage) */}
       {tagsForSolution && solutionId && (
         <Section
-          title={`Fonctionnalités principales (${tagsForSolution.filter((t) => t.enabled).length} actives)`}
+          title={`Fonctionnalités (${tagsForSolution.filter((t) => t.enabled).length} associées)`}
+          isOpen={openSections.fonctionnalitesAssociees}
+          onToggle={() => toggleSection('fonctionnalitesAssociees')}
+        >
+          <FonctionnalitesAssocieesSection
+            solutionId={solutionId}
+            initialTags={tagsForSolution}
+          />
+        </Section>
+      )}
+
+      {/* Section — Fonctionnalités principales (affichées sur la page solution) */}
+      {tagsForSolution && solutionId && (
+        <Section
+          title={`Fonctionnalités principales (${tagsForSolution.filter((t) => t.is_principale).length} affichées)`}
           isOpen={openSections.fonctionnalites}
           onToggle={() => toggleSection('fonctionnalites')}
         >
           <FonctionnalitesSection
             solutionId={solutionId}
-            categorieId={solution?.categorie_id ?? null}
             initialTags={tagsForSolution}
           />
         </Section>
