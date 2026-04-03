@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { updateProfile } from '@/lib/actions/user'
+import { updateProfile, cancelEmailChange } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
-import { Check, Lock } from 'lucide-react'
+import { Check, Lock, Mail } from 'lucide-react'
 import { useRef } from 'react'
 
 export default function ProfilPage() {
@@ -21,13 +21,14 @@ export default function ProfilPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [success, setSuccess] = useState<string | null>(null)
 
   // Email
   const [newEmail, setNewEmail] = useState('')
   const [emailSubmitting, setEmailSubmitting] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
-  const [emailSuccess, setEmailSuccess] = useState<string | null>(null)
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  const [cancellingEmail, setCancellingEmail] = useState(false)
 
   // Mot de passe
   const [currentPassword, setCurrentPassword] = useState('')
@@ -35,7 +36,6 @@ export default function ProfilPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSubmitting, setPasswordSubmitting] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
 
   const supabaseRef = useRef(createClient())
 
@@ -64,6 +64,20 @@ export default function ProfilPage() {
       })
   }, [user])
 
+  // Charger/vérifier le changement d'email en attente
+  useEffect(() => {
+    if (!user) return
+    const key = `pendingEmail_${user.id}`
+    const stored = localStorage.getItem(key)
+    if (!stored) return
+    // Si l'email actuel correspond déjà → confirmation faite, nettoyer
+    if (user.email === stored) {
+      localStorage.removeItem(key)
+    } else {
+      setPendingEmail(stored)
+    }
+  }, [user])
+
   const isValid = nom.trim() && prenom.trim() && specialite && modeExercice
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,15 +98,32 @@ export default function ProfilPage() {
         const supabase = createClient()
         await supabase.from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
       }
-      setSuccess(true)
+      setSuccess('Profil mis à jour avec succès.')
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
-      setTimeout(() => setSuccess(false), 4000)
+      setTimeout(() => setSuccess(null), 4000)
     } catch (err) {
       console.error('Erreur mise à jour profil:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleCancelEmailChange = async () => {
+    setCancellingEmail(true)
+    try {
+      await cancelEmailChange()
+      localStorage.removeItem(`pendingEmail_${user!.id}`)
+      setPendingEmail(null)
+      setSuccess('Changement d\'email annulé.')
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      setTimeout(() => setSuccess(null), 4000)
+    } catch {
+      setError('Impossible d\'annuler le changement d\'email. Veuillez réessayer.')
+    } finally {
+      setCancellingEmail(false)
     }
   }
 
@@ -106,8 +137,13 @@ export default function ProfilPage() {
     if (error) {
       setEmailError(error.message)
     } else {
-      setEmailSuccess('Un email de confirmation a été envoyé à votre nouvelle adresse.')
+      localStorage.setItem(`pendingEmail_${user!.id}`, newEmail)
+      setPendingEmail(newEmail)
       setNewEmail('')
+      setSuccess('Un email de confirmation a été envoyé à votre nouvelle adresse.')
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      setTimeout(() => setSuccess(null), 4000)
     }
   }
 
@@ -138,10 +174,13 @@ export default function ProfilPage() {
     if (error) {
       setPasswordError(error.message)
     } else {
-      setPasswordSuccess('Mot de passe mis à jour avec succès.')
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
+      setSuccess('Mot de passe mis à jour avec succès.')
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      setTimeout(() => setSuccess(null), 4000)
     }
   }
 
@@ -156,11 +195,31 @@ export default function ProfilPage() {
       {success && (
         <div className="bg-green-50 text-green-700 text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
           <Check className="w-4 h-4 shrink-0" />
-          Profil mis à jour avec succès.
+          {success}
         </div>
       )}
       {error && (
         <div className="bg-red-50 text-red-600 text-sm p-4 rounded-xl mb-6">{error}</div>
+      )}
+
+      {pendingEmail && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm p-4 rounded-xl mb-6 flex items-start gap-3">
+          <Mail className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+          <div className="flex-1">
+            <p className="font-medium">Changement d&apos;email en attente</p>
+            <p className="text-amber-700 mt-0.5">
+              Un lien de confirmation a été envoyé à <span className="font-medium">{pendingEmail}</span>. En attendant, votre ancien email reste utilisé pour la connexion et toutes les communications.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCancelEmailChange}
+            disabled={cancellingEmail}
+            className="shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 underline disabled:opacity-50"
+          >
+            {cancellingEmail ? 'Annulation...' : 'Annuler'}
+          </button>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -283,7 +342,6 @@ export default function ProfilPage() {
               />
             </div>
             {emailError && <p className="text-xs text-red-600">{emailError}</p>}
-            {emailSuccess && <p className="text-xs text-green-600">{emailSuccess}</p>}
             <div className="flex justify-end">
               <Button variant="primary" className={emailSubmitting ? 'opacity-50 pointer-events-none' : ''}>
                 {emailSubmitting ? 'Envoi...' : 'Changer l\'email'}
@@ -332,7 +390,6 @@ export default function ProfilPage() {
               />
             </div>
             {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
-            {passwordSuccess && <p className="text-xs text-green-600">{passwordSuccess}</p>}
             <div className="flex justify-end">
               <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
                 {passwordSubmitting ? 'Mise à jour...' : 'Changer le mot de passe'}

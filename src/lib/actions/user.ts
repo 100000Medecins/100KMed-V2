@@ -188,6 +188,25 @@ export async function updateAvatar(avatarId: string) {
 }
 
 /**
+ * Annule un changement d'email en attente de confirmation.
+ * Remet l'email actuel confirmé, ce qui efface le token de changement.
+ */
+export async function cancelEmailChange() {
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const admin = createServiceRoleClient()
+  const { error } = await admin.auth.admin.updateUserById(user.id, {
+    email: user.email!,
+    email_confirm: true,
+  })
+
+  if (error) throw new Error(error.message)
+  return { status: 'SUCCESS' }
+}
+
+/**
  * Supprime le compte utilisateur.
  * Remplace : mutation deleteUser
  *
