@@ -312,6 +312,32 @@ export async function finalizeEvaluation(solutionId: string) {
 }
 
 /**
+ * Reconfirme une évaluation en un clic (remet last_date_note à maintenant,
+ * réinitialise les compteurs de relance).
+ */
+export async function reconfirmerEvaluation(solutionId: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const admin = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any)
+    .from('evaluations')
+    .update({
+      last_date_note: new Date().toISOString(),
+      last_relance_sent_at: null,
+      relance_count: 0,
+    })
+    .eq('solution_id', solutionId)
+    .eq('user_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/mon-compte/mes-evaluations')
+  return { status: 'SUCCESS' }
+}
+
+/**
  * Soumet une évaluation complète pour une solution (formulaire simplifié).
  * Utilise le service role pour bypasser le RLS.
  */

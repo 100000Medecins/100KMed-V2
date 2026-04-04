@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ClipboardCheck, LogOut, UserCircle } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -10,6 +10,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 const navItems = [
   { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
   { href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck },
+  { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
 ]
 
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {

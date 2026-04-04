@@ -98,8 +98,15 @@ async function getStats() {
     .filter((v): v is number => v != null && !isNaN(v))
   const avgRating = ratings.length > 0 ? ratings.reduce((s, v) => s + v, 0) / ratings.length : 0
 
-  // ── Activité récente ──
+  // ── Fraîcheur des notes ──
   const now = new Date()
+  const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString()
+  const evalsWithDate = allEvals.filter((e) => e.last_date_note)
+  const evalsRecentes = evalsWithDate.filter((e) => (e.last_date_note as string) >= oneYearAgo).length
+  const evalsAnciennes = evalsWithDate.length - evalsRecentes
+  const pctRecentes = evalsWithDate.length > 0 ? Math.round((evalsRecentes / evalsWithDate.length) * 100) : 0
+
+  // ── Activité récente ──
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const recentCount = allEvals.filter(
     (e) => e.last_date_note && (e.last_date_note as string) >= sevenDaysAgo
@@ -227,6 +234,9 @@ async function getStats() {
     topRated,
     usersBySpecialite,
     usersByMode,
+    evalsRecentes,
+    evalsAnciennes,
+    pctRecentes,
   }
 }
 
@@ -550,6 +560,41 @@ export default async function AdminStatistiquesPage() {
           suffix="/5"
         />
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/*  ROW 1b — FRAÎCHEUR DES AVIS                                 */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Panel icon={<Clock className="w-5 h-5 text-navy" />} title="Fraîcheur des avis">
+        <div className="flex flex-col sm:flex-row items-center gap-8">
+          {/* Barre de progression */}
+          <div className="flex-1 w-full">
+            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+              <span>Moins d&apos;1 an — <span className="font-bold text-green-600">{stats.evalsRecentes}</span></span>
+              <span>Plus d&apos;1 an — <span className="font-bold text-amber-500">{stats.evalsAnciennes}</span></span>
+            </div>
+            <div className="h-5 w-full bg-amber-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 rounded-full transition-all"
+                style={{ width: `${stats.pctRecentes}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5 text-center">
+              <span className="font-bold text-navy text-sm">{stats.pctRecentes}%</span> des avis datent de moins d&apos;un an
+            </p>
+          </div>
+          {/* Chiffres clés */}
+          <div className="flex gap-6 shrink-0">
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-green-600">{stats.evalsRecentes}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Récents (&lt; 1 an)</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-amber-500">{stats.evalsAnciennes}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Anciens (&gt; 1 an)</p>
+            </div>
+          </div>
+        </div>
+      </Panel>
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/*  ROW 2 — EVAL TREND + DISTRIBUTION                           */}
