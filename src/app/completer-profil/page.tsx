@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
+import PasswordInput from '@/components/ui/PasswordInput'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { completeProfile, getCurrentUserProfile } from '@/lib/actions/user'
 import { AVATARS } from '@/lib/constants/profil'
+import { createClient } from '@/lib/supabase/client'
 import { Check, Lock } from 'lucide-react'
 
 export default function CompleterProfilPage() {
@@ -25,6 +27,7 @@ export default function CompleterProfilPage() {
   const [pseudo, setPseudo] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
 
+  const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isFromPsc, setIsFromPsc] = useState(false)
@@ -46,8 +49,27 @@ export default function CompleterProfilPage() {
       setSpecialite(profile?.specialite || String(user?.user_metadata?.specialite || ''))
       setModeExercice(profile?.mode_exercice || String(user?.user_metadata?.mode_exercice || ''))
       if (profile?.pseudo) setPseudo(profile.pseudo)
-      if (profile?.contact_email) setContactEmail(profile.contact_email)
       if (profile?.portrait) setSelectedAvatar(profile.portrait)
+
+      // Pré-remplir l'email : priorité contact_email déjà sauvé,
+      // sinon user.email (fourni par PSC/Supabase),
+      // sinon email_temp de l'évaluation anonyme en attente
+      if (profile?.contact_email) {
+        setContactEmail(profile.contact_email)
+      } else if (user?.email) {
+        setContactEmail(user.email)
+      } else {
+        // Chercher l'email_temp dans l'évaluation anonyme liée à ce compte
+        const supabase = createClient()
+        const { data: evalAnon } = await supabase
+          .from('evaluations')
+          .select('email_temp')
+          .eq('user_id', user!.id)
+          .not('email_temp', 'is', null)
+          .limit(1)
+          .single()
+        if (evalAnon?.email_temp) setContactEmail(evalAnon.email_temp)
+      }
 
       setProfileLoaded(true)
     }
@@ -55,7 +77,7 @@ export default function CompleterProfilPage() {
     loadProfile()
   }, [user])
 
-  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim()
+  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() && password.length >= 6
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,6 +86,11 @@ export default function CompleterProfilPage() {
     setError(null)
 
     try {
+      // Définir le mot de passe Supabase avant de compléter le profil
+      const supabase = createClient()
+      const { error: pwError } = await supabase.auth.updateUser({ password })
+      if (pwError) throw new Error(pwError.message)
+
       await completeProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
@@ -73,7 +100,7 @@ export default function CompleterProfilPage() {
         pseudo: pseudo.trim() || undefined,
         portrait: selectedAvatar || undefined,
       })
-      router.push('/mon-compte')
+      router.push('/mon-compte/profil')
     } catch (err) {
       console.error('Erreur complétion profil:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
@@ -206,6 +233,24 @@ export default function CompleterProfilPage() {
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Utilisé pour les notifications et la récupération de compte.
+                </p>
+              </div>
+
+              {/* Mot de passe — obligatoire */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Mot de passe <span className="text-red-500">*</span>
+                </label>
+                <PasswordInput
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="6 caractères minimum"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Vous permettra de vous reconnecter par email en plus de Pro Santé Connect.
                 </p>
               </div>
 

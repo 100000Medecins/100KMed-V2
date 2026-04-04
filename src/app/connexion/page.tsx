@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ShieldCheck, Mail } from 'lucide-react'
+import PasswordInput from '@/components/ui/PasswordInput'
 
 function ConnexionContent() {
   const { signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, user, loading } = useAuth()
@@ -174,8 +175,7 @@ function ConnexionContent() {
             </div>
             <div>
               <label className="block text-sm font-medium text-navy mb-1">Mot de passe</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

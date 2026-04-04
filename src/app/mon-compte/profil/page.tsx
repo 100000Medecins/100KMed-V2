@@ -6,8 +6,9 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { updateProfile, cancelEmailChange } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
+import PasswordInput from '@/components/ui/PasswordInput'
 import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
-import { Check, Lock, Mail, Trash2 } from 'lucide-react'
+import { Check, Lock, Mail, Trash2, KeyRound } from 'lucide-react'
 import { useRef } from 'react'
 
 export default function ProfilPage() {
@@ -24,6 +25,10 @@ export default function ProfilPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [needsPassword, setNeedsPassword] = useState(false)
+  const [initPassword, setInitPassword] = useState('')
+  const [initPasswordSubmitting, setInitPasswordSubmitting] = useState(false)
+  const [initPasswordError, setInitPasswordError] = useState<string | null>(null)
 
   // Email
   const [newEmail, setNewEmail] = useState('')
@@ -60,7 +65,15 @@ export default function ProfilPage() {
           setSpecialite(SPECIALITES.includes(resolved) ? resolved : sp)
           setModeExercice(data.mode_exercice || '')
           setSelectedAvatar(data.portrait || null)
-          setIsFromPsc(!!(data.rpps || user?.user_metadata?.provider === 'psc'))
+          const fromPsc = !!(data.rpps || user?.user_metadata?.provider === 'psc')
+          setIsFromPsc(fromPsc)
+          // Utilisateur PSC sans mot de passe = aucune identité "email" dans Supabase
+          if (fromPsc) {
+            const hasEmailIdentity = user?.identities?.some(
+              (i: { provider: string }) => i.provider === 'email'
+            )
+            setNeedsPassword(!hasEmailIdentity)
+          }
         }
         setLoading(false)
       })
@@ -79,6 +92,27 @@ export default function ProfilPage() {
       setPendingEmail(stored)
     }
   }, [user])
+
+  const handleInitPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (initPassword.length < 6) {
+      setInitPasswordError('Le mot de passe doit contenir au moins 6 caractères.')
+      return
+    }
+    setInitPasswordError(null)
+    setInitPasswordSubmitting(true)
+    const { error } = await supabaseRef.current.auth.updateUser({ password: initPassword })
+    setInitPasswordSubmitting(false)
+    if (error) {
+      setInitPasswordError(error.message)
+    } else {
+      setNeedsPassword(false)
+      setInitPassword('')
+      setSuccess('Mot de passe défini avec succès. Vous pouvez maintenant vous connecter par email.')
+      document.documentElement.scrollTop = 0
+      setTimeout(() => setSuccess(null), 5000)
+    }
+  }
 
   const isValid = nom.trim() && prenom.trim() && specialite && modeExercice
 
@@ -224,107 +258,153 @@ export default function ProfilPage() {
         </div>
       )}
 
+      {/* Bannière définition de mot de passe — PSC sans password */}
+      {needsPassword && (
+        <div className="bg-amber-50 border border-amber-200 rounded-card p-6 mb-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <KeyRound className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">Définissez un mot de passe</p>
+              <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                Vous vous êtes connecté via Pro Santé Connect. Pour pouvoir vous reconnecter par email à l&apos;avenir, définissez un mot de passe dès maintenant.
+              </p>
+            </div>
+          </div>
+          <form onSubmit={handleInitPassword} className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-amber-800 mb-1">
+                Choisissez un mot de passe <span className="text-amber-500">(6 caractères min.)</span>
+              </label>
+              <PasswordInput
+                value={initPassword}
+                onChange={(e) => setInitPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="••••••••"
+                className="w-full px-3 py-2.5 border border-amber-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-300/40 focus:border-amber-400 bg-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={initPasswordSubmitting}
+              className="px-4 py-2.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 rounded-xl transition-colors shrink-0"
+            >
+              {initPasswordSubmitting ? 'Enregistrement...' : 'Définir'}
+            </button>
+          </form>
+          {initPasswordError && (
+            <p className="text-xs text-red-600 mt-2">{initPasswordError}</p>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Identité */}
+        {/* Identité professionnelle (fusionné) */}
         <div className="bg-white rounded-card shadow-card p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-navy">Identité</h2>
+            <h2 className="text-sm font-semibold text-navy">Identité professionnelle</h2>
             {isFromPsc && (
               <span className="flex items-center gap-1 text-xs text-gray-400 bg-surface-light px-2 py-0.5 rounded-full">
                 <Lock className="w-3 h-3" />
-                Fournie par Pro Santé Connect
+                Fourni par Pro Santé Connect
               </span>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Prénom *
-              </label>
-              <input
-                type="text"
-                value={prenom}
-                readOnly={isFromPsc}
-                onChange={(e) => !isFromPsc && setPrenom(e.target.value)}
-                required
-                className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
-                  isFromPsc
-                    ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
-                    : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
-                }`}
-                placeholder="Jean"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Nom *
-              </label>
-              <input
-                type="text"
-                value={nom}
-                readOnly={isFromPsc}
-                onChange={(e) => !isFromPsc && setNom(e.target.value)}
-                required
-                className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
-                  isFromPsc
-                    ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
-                    : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
-                }`}
-                placeholder="Dupont"
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Exercice professionnel */}
-        <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-navy">Exercice professionnel</h2>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Spécialité *
-            </label>
-            {isFromPsc ? (
-              <input
-                type="text"
-                value={specialite}
-                readOnly
-                className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
-              />
-            ) : (
-              <select
-                value={specialite}
-                onChange={(e) => setSpecialite(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
-              >
-                <option value="">Sélectionnez votre spécialité</option>
-                {SPECIALITES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Mode d&apos;exercice *
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {MODES_EXERCICE.map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => !isFromPsc && setModeExercice(mode)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                    modeExercice === mode
-                      ? 'bg-navy text-white border-navy'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
-                  } ${isFromPsc ? 'cursor-not-allowed opacity-70' : ''}`}
-                >
-                  {mode}
-                </button>
-              ))}
+          {isFromPsc ? (
+            /* Affichage lecture seule — uniquement les champs fournis par PSC */
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              {prenom && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Prénom</p>
+                  <p className="text-sm font-medium text-navy">{prenom}</p>
+                </div>
+              )}
+              {nom && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Nom</p>
+                  <p className="text-sm font-medium text-navy">{nom}</p>
+                </div>
+              )}
+              {specialite && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Spécialité</p>
+                  <p className="text-sm font-medium text-navy">{specialite}</p>
+                </div>
+              )}
+              {modeExercice && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Mode d&apos;exercice</p>
+                  <p className="text-sm font-medium text-navy">{modeExercice}</p>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            /* Formulaire éditable pour les non-PSC */
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom *</label>
+                  <input
+                    type="text"
+                    value={prenom}
+                    onChange={(e) => setPrenom(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    placeholder="Jean"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom *</label>
+                  <input
+                    type="text"
+                    value={nom}
+                    onChange={(e) => setNom(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    placeholder="Dupont"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité *</label>
+                  <select
+                    value={specialite}
+                    onChange={(e) => setSpecialite(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                  >
+                    <option value="">Sélectionnez votre spécialité</option>
+                    {SPECIALITES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice *</label>
+                  <div className="flex flex-wrap gap-2">
+                    {MODES_EXERCICE.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setModeExercice(mode)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                          modeExercice === mode
+                            ? 'bg-navy text-white border-navy'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Changer l'email */}
@@ -358,8 +438,7 @@ export default function ProfilPage() {
           <form onSubmit={handlePasswordChange} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
@@ -369,8 +448,7 @@ export default function ProfilPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -381,8 +459,7 @@ export default function ProfilPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required

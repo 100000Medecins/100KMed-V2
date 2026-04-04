@@ -110,3 +110,76 @@ export async function deleteSolutionUtilisee(solutionUtiliseeId: string) {
   revalidatePath('/mon-compte/mes-evaluations')
   return { status: 'SUCCESS' }
 }
+
+/**
+ * Calcule côté serveur (service role, bypass RLS) si chaque évaluation est complète.
+ * Compare les identifiant_tech des critères de la catégorie avec les clés des scores soumis.
+ * Retourne une map solution_id -> true (complet) | false (incomplet).
+ */
+export async function getEvaluationCompletionMap(
+  userId: string
+): Promise<Record<string, boolean>> {
+  const supabase = createServiceRoleClient()
+
+  // Récupérer les solutions_utilisees avec leur categorie_id
+  const { data: sus } = await supabase
+    .from('solutions_utilisees')
+    .select('solution_id, solution:solutions(categorie_id)')
+    .eq('user_id', userId)
+    .neq('statut_evaluation', 'ancienne')
+
+  // Récupérer les scores des évaluations
+  const { data: evals } = await supabase
+    .from('evaluations')
+    .select('solution_id, scores')
+    .eq('user_id', userId)
+
+  if (!sus || !evals) return {}
+
+  // Construire la map solution_id -> scores keys
+  const scoresMap: Record<string, Set<string>> = {}
+  const nonScoreKeys = new Set(['commentaire', 'date_debut', 'date_fin'])
+  for (const ev of evals) {
+    if (!ev.solution_id) continue
+    const keys = Object.keys((ev.scores || {}) as Record<string, unknown>)
+      .filter((k) => !nonScoreKeys.has(k))
+    scoresMap[ev.solution_id] = new Set(keys)
+  }
+
+  // Pour chaque solution, récupérer les identifiant_tech attendus par catégorie
+  const completionMap: Record<string, boolean> = {}
+
+  for (const su of sus) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const catId = (su.solution as any)?.categorie_id as string | null
+    const solutionId = su.solution_id as string
+    if (!solutionId) continue
+
+    if (!catId) {
+      // Pas de catégorie → on ne peut pas juger → considéré complet
+      completionMap[solutionId] = true
+      continue
+    }
+
+    const { data: criteres } = await supabase
+      .from('criteres')
+      .select('identifiant_tech')
+      .eq('id_categorie', catId)
+      .not('identifiant_tech', 'is', null)
+
+    const expected = (criteres || [])
+      .map((c) => c.identifiant_tech as string)
+      .filter(Boolean)
+
+    if (expected.length === 0) {
+      completionMap[solutionId] = true
+      continue
+    }
+
+    const submitted = scoresMap[solutionId] ?? new Set()
+    const isComplete = expected.every((tech) => submitted.has(tech))
+    completionMap[solutionId] = isComplete
+  }
+
+  return completionMap
+}

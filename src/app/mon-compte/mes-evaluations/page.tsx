@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { deleteSolutionUtilisee } from '@/lib/actions/solutions'
+import { deleteSolutionUtilisee, getEvaluationCompletionMap } from '@/lib/actions/solutions'
 import { reconfirmerEvaluation } from '@/lib/actions/evaluation'
 import Button from '@/components/ui/Button'
 import Link from 'next/link'
@@ -25,6 +25,8 @@ export default function MesEvaluationsPage() {
   const [solutions, setSolutions] = useState<any[]>([])
   // map solution_id -> last_date_note
   const [lastDates, setLastDates] = useState<Record<string, string | null>>({})
+  // map solution_id -> true si tous les critères de la catégorie sont remplis
+  const [completionMap, setCompletionMap] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [confirmedId, setConfirmedId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -43,13 +45,17 @@ export default function MesEvaluationsPage() {
         .from('evaluations')
         .select('solution_id, last_date_note')
         .eq('user_id', user.id),
-    ]).then(([{ data: sus }, { data: evals }]) => {
+      getEvaluationCompletionMap(user.id),
+    ]).then(([{ data: sus }, { data: evals }, complMap]) => {
       setSolutions(sus || [])
-      const map: Record<string, string | null> = {}
+
+      const dateMap: Record<string, string | null> = {}
       for (const ev of evals || []) {
-        if (ev.solution_id) map[ev.solution_id] = ev.last_date_note
+        if (ev.solution_id) dateMap[ev.solution_id] = ev.last_date_note
       }
-      setLastDates(map)
+
+      setLastDates(dateMap)
+      setCompletionMap(complMap)
       setLoading(false)
     })
   }, [user])
@@ -164,14 +170,24 @@ export default function MesEvaluationsPage() {
                       </button>
                     )}
 
-                    {/* Modifier ma note */}
-                    <Link
-                      href={`/solution/noter/${su.solution?.categorie?.slug}/${su.solution?.slug}`}
-                      className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-accent-blue hover:bg-accent-blue/5 border border-gray-200 hover:border-accent-blue/30 transition-colors px-3 py-1.5 rounded-lg"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      Modifier ma note
-                    </Link>
+                    {/* Compléter / Modifier ma note */}
+                    {!completionMap[su.solution_id] ? (
+                      <Link
+                        href={`/solution/noter/${su.solution?.categorie?.slug}/${su.solution?.slug}`}
+                        className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 transition-colors px-3 py-1.5 rounded-lg"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Compléter ma note
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/solution/noter/${su.solution?.categorie?.slug}/${su.solution?.slug}`}
+                        className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-accent-blue hover:bg-accent-blue/5 border border-gray-200 hover:border-accent-blue/30 transition-colors px-3 py-1.5 rounded-lg"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Modifier ma note
+                      </Link>
+                    )}
 
                     {/* Supprimer */}
                     <button
