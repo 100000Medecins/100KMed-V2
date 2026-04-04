@@ -75,7 +75,8 @@ export async function GET(req: NextRequest) {
   const errors: string[] = []
 
   // ── 1. Premières relances (1 an, jamais relancé) ─────────────────
-  const { data: evals1an } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: evals1an } = await (supabase as any)
     .from('evaluations')
     .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, prenom)')
     .not('last_date_note', 'is', null)
@@ -91,7 +92,8 @@ export async function GET(req: NextRequest) {
     if (!user?.email || !solution?.nom) continue
 
     // Vérifier les préférences de notification
-    const { data: prefs } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prefs } = await (supabase as any)
       .from('users_notification_preferences')
       .select('relance_emails')
       .eq('user_id', ev.user_id)
@@ -101,7 +103,8 @@ export async function GET(req: NextRequest) {
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
       await sendRelanceEmail('relance_1an', user.email, user.prenom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('evaluations')
         .update({ last_relance_sent_at: now.toISOString(), relance_count: 1 })
         .eq('id', ev.id)
@@ -112,7 +115,8 @@ export async function GET(req: NextRequest) {
   }
 
   // ── 2. Relances suivantes (tous les 3 mois, cap à MAX_RELANCES) ──
-  const { data: evalsRecurrence } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: evalsRecurrence } = await (supabase as any)
     .from('evaluations')
     .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, prenom)')
     .not('last_relance_sent_at', 'is', null)
@@ -128,7 +132,8 @@ export async function GET(req: NextRequest) {
     if (!user?.email || !solution?.nom) continue
 
     // Vérifier les préférences de notification
-    const { data: prefs } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prefs } = await (supabase as any)
       .from('users_notification_preferences')
       .select('relance_emails')
       .eq('user_id', ev.user_id)
@@ -138,7 +143,8 @@ export async function GET(req: NextRequest) {
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
       await sendRelanceEmail('relance_3mois', user.email, user.prenom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('evaluations')
         .update({
           last_relance_sent_at: now.toISOString(),
