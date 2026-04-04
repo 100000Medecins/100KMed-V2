@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
+import PasswordInput from '@/components/ui/PasswordInput'
 import { createClient } from '@/lib/supabase/client'
 import { ShieldCheck } from 'lucide-react'
 
@@ -20,20 +21,53 @@ function ReinitialiserContent() {
   useEffect(() => {
     const supabase = createClient()
 
-    // Écouter l'événement PASSWORD_RECOVERY déclenché par Supabase
-    // quand l'utilisateur clique sur le lien dans l'email
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setReady(true)
+    async function initialize() {
+      // Flux PKCE : ?code= dans les search params
+      const code = new URLSearchParams(window.location.search).get('code')
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          setError('Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.')
+        } else {
+          setReady(true)
+        }
+        return
       }
-    })
 
-    // Vérifier si une session existe déjà (lien déjà traité)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-    })
+      // Flux implicite : @supabase/ssr ne traite pas le hash automatiquement,
+      // il faut parser manuellement #access_token=...&type=recovery
+      const hash = window.location.hash.substring(1)
+      if (hash) {
+        const params = new URLSearchParams(hash)
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+        const type = params.get('type')
 
-    return () => subscription.unsubscribe()
+        if (accessToken && refreshToken && type === 'recovery') {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          if (error) {
+            setError('Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.')
+          } else {
+            setReady(true)
+          }
+          return
+        }
+      }
+
+      // Vérifier s'il y a déjà une session active (page rechargée après traitement)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setReady(true)
+        return
+      }
+
+      setError('Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.')
+    }
+
+    initialize()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +85,10 @@ function ReinitialiserContent() {
     setSubmitting(false)
 
     if (error) {
-      setError(error.message)
+      if (error.message.includes('different from the old password'))
+        setError('Le nouveau mot de passe doit être différent de l\'ancien.')
+      else
+        setError(error.message)
     } else {
       router.push('/mon-compte/profil')
     }
@@ -83,24 +120,24 @@ function ReinitialiserContent() {
           <form onSubmit={handleSubmit} className="space-y-4 text-left">
             <div>
               <label className="block text-sm font-medium text-navy mb-1">Nouveau mot de passe</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                autoComplete="new-password"
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                 placeholder="6 caractères minimum"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-navy mb-1">Confirmer le mot de passe</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
                 minLength={6}
+                autoComplete="new-password"
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                 placeholder="6 caractères minimum"
               />

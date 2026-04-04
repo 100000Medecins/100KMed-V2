@@ -167,7 +167,7 @@ export async function GET(request: Request) {
     if (verificationToken) {
       const { data } = await supabaseAdmin
         .from('evaluations')
-        .select('id, solution_id')
+        .select('id, solution_id, email_temp')
         .eq('token_verification', verificationToken)
         .eq('statut', 'en_attente_psc')
       if (data && data.length > 0) evalsALier = data
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
     if (evalsALier.length === 0 && email) {
       const { data } = await supabaseAdmin
         .from('evaluations')
-        .select('id, solution_id')
+        .select('id, solution_id, email_temp')
         .eq('email_temp', email.toLowerCase())
         .eq('statut', 'en_attente_psc')
       if (data && data.length > 0) evalsALier = data
@@ -191,10 +191,22 @@ export async function GET(request: Request) {
       if (registeredEmail) {
         const { data } = await supabaseAdmin
           .from('evaluations')
-          .select('id, solution_id')
+          .select('id, solution_id, email_temp')
           .eq('email_temp', registeredEmail.toLowerCase())
           .eq('statut', 'en_attente_psc')
         if (data && data.length > 0) evalsALier = data
+      }
+    }
+
+    // Sauvegarder l'email_temp comme contact_email avant de l'effacer
+    const emailTempTrouve = (evalsALier as Array<{ email_temp?: string | null }>)[0]?.email_temp
+    if (emailTempTrouve) {
+      const { data: existingProfile } = await supabaseAdmin
+        .from('users').select('contact_email').eq('id', userId).single()
+      if (!existingProfile?.contact_email) {
+        await supabaseAdmin.from('users')
+          .update({ contact_email: emailTempTrouve })
+          .eq('id', userId)
       }
     }
 

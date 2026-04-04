@@ -12,7 +12,7 @@ import { Check, Lock, Mail, Trash2, KeyRound } from 'lucide-react'
 import { useRef } from 'react'
 
 export default function ProfilPage() {
-  const { user } = useAuth()
+  const { user, resetPassword } = useAuth()
 
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
@@ -47,6 +47,7 @@ export default function ProfilPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSubmitting, setPasswordSubmitting] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [resetSent, setResetSent] = useState(false)
 
   const supabaseRef = useRef(createClient())
 
@@ -220,7 +221,10 @@ export default function ProfilPage() {
     const { error } = await supabaseRef.current.auth.updateUser({ password: newPassword })
     setPasswordSubmitting(false)
     if (error) {
-      setPasswordError(error.message)
+      if (error.message.includes('different from the old password'))
+        setPasswordError('Le nouveau mot de passe doit être différent de l\'ancien.')
+      else
+        setPasswordError(error.message)
     } else {
       if (currentPasswordRef.current) currentPasswordRef.current.value = ''
       setNewPassword('')
@@ -533,6 +537,25 @@ export default function ProfilPage() {
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                     placeholder="••••••••"
                   />
+                  {resetSent ? (
+                    <p className="text-xs text-green-600 mt-1.5">
+                      Email de réinitialisation envoyé à <span className="font-medium">{contactEmail || user?.email}</span>.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const email = contactEmail || user?.email
+                        if (!email) return
+                        await resetPassword(email)
+                        setResetSent(true)
+                        setTimeout(() => setResetSent(false), 10000)
+                      }}
+                      className="text-xs text-gray-400 hover:text-accent-blue hover:underline mt-1.5 block"
+                    >
+                      Mot de passe oublié ?
+                    </button>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
@@ -562,7 +585,7 @@ export default function ProfilPage() {
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => { setShowPasswordForm(false); setNewPassword(''); setConfirmPassword(''); setPasswordError(null) }}
+                    onClick={() => { setShowPasswordForm(false); setNewPassword(''); setConfirmPassword(''); setPasswordError(null); setResetSent(false) }}
                     className="text-xs text-gray-400 hover:text-gray-600"
                   >
                     Annuler
@@ -578,29 +601,27 @@ export default function ProfilPage() {
 
         {/* Avatar */}
         <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
-            {selectedAvatar && !showAvatarPicker && (
-              <button
-                type="button"
-                onClick={() => setShowAvatarPicker(true)}
-                className="text-xs font-medium text-accent-blue hover:underline"
-              >
-                Changer d&apos;avatar
-              </button>
-            )}
-          </div>
+          <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
 
           {selectedAvatar && !showAvatarPicker ? (
             /* Avatar sélectionné — affichage compact */
-            <button
-              type="button"
-              onClick={() => setShowAvatarPicker(true)}
-              className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity"
-              title="Changer d'avatar"
-            >
-              <img src={selectedAvatar} alt="Mon avatar" className="w-full h-full object-cover" />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAvatarPicker(true)}
+                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity"
+                title="Changer d'avatar"
+              >
+                <img src={selectedAvatar} alt="Mon avatar" className="w-full h-full object-cover" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAvatarPicker(true)}
+                className="text-xs font-medium text-accent-blue hover:underline ml-2"
+              >
+                Changer
+              </button>
+            </div>
           ) : (
             /* Grille de sélection */
             <>

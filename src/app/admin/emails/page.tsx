@@ -4,12 +4,13 @@ import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminEmailsPage() {
-  const [templatePsc, template1an, template3mois, templateLancement, templateSuppression] = await Promise.all([
+  const [templatePsc, template1an, template3mois, templateLancement, templateSuppression, templateReset] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
     getEmailTemplate('relance_3mois'),
     getEmailTemplate('lancement'),
     getEmailTemplate('suppression_compte'),
+    getEmailTemplate('reinitialisation_mot_de_passe'),
   ])
 
   const templates = [
@@ -53,6 +54,14 @@ export default async function AdminEmailsPage() {
       variables: ['{{prenom}}', '{{nom}}'],
       data: templateSuppression,
       defaultSujet: 'Votre compte 100 000 Médecins a été supprimé',
+    },
+    {
+      id: 'reinitialisation_mot_de_passe',
+      title: 'Réinitialisation du mot de passe',
+      description: 'Envoyé lorsqu\'un utilisateur demande à réinitialiser son mot de passe (depuis la page connexion ou depuis son compte).',
+      variables: ['{{lien_reinitialisation}}'],
+      data: templateReset,
+      defaultSujet: 'Réinitialisez votre mot de passe — 100 000 Médecins',
     },
   ]
 

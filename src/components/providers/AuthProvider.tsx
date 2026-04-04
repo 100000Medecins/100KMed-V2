@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { createUserProfile } from '@/lib/actions/user'
+import { createUserProfile, sendPasswordReset } from '@/lib/actions/user'
 import { connectWithPsc } from '@/lib/auth/psc'
 import type { User } from '@supabase/supabase-js'
 
@@ -135,12 +135,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const resetPassword = async (email: string) => {
-    if (!supabase) return { error: 'Supabase non configuré' }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
-    })
-    if (error) return { error: error.message }
-    return { error: null }
+    return await sendPasswordReset(email)
   }
 
   const updatePassword = async (password: string) => {

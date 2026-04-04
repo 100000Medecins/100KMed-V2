@@ -2,6 +2,56 @@
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import sgMail from '@sendgrid/mail'
+
+/**
+ * Envoie un email de réinitialisation de mot de passe via SendGrid
+ * avec le template éditable en admin.
+ */
+export async function sendPasswordReset(email: string): Promise<{ error: string | null }> {
+  const supabase = createServiceRoleClient()
+
+  // Générer le lien de récupération via le SDK admin
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo: `${siteUrl}/reinitialiser-mot-de-passe` },
+  })
+
+  if (error) return { error: error.message }
+
+  const resetLink = data.properties?.action_link
+  if (!resetLink) return { error: 'Lien de réinitialisation indisponible' }
+
+  // Récupérer le template depuis la DB
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: template } = await (supabase as any)
+    .from('email_templates')
+    .select('sujet, contenu_html')
+    .eq('id', 'reinitialisation_mot_de_passe')
+    .single()
+
+  if (!template?.contenu_html) return { error: 'Template email introuvable' }
+
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+  const html = (template.contenu_html as string)
+    .replace(/\{\{lien_reinitialisation\}\}/g, resetLink)
+  const sujet = template.sujet as string
+
+  try {
+    await sgMail.send({
+      to: email,
+      from: 'contact@100000medecins.org',
+      subject: sujet,
+      html,
+    })
+  } catch {
+    return { error: 'Erreur lors de l\'envoi de l\'email.' }
+  }
+
+  return { error: null }
+}
 
 /**
  * Récupère le profil complet de l'utilisateur connecté depuis la table users.
@@ -88,6 +138,15 @@ export async function completeProfile(data: {
     .eq('id', user.id)
 
   if (error) throw new Error(error.message)
+
+  // Mettre à jour l'email auth pour que l'utilisateur puisse se connecter
+  // avec son vrai email (et non l'adresse technique PSC psc-ans...@psc.sante.fr)
+  if (user.email !== data.contact_email) {
+    await supabase.auth.admin.updateUserById(user.id, {
+      email: data.contact_email,
+      email_confirm: true,
+    })
+  }
 
   return { status: 'SUCCESS' }
 }
