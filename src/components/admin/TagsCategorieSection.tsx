@@ -64,7 +64,7 @@ export default function TagsCategorieSection({
     startTransition(async () => {
       const result = await createSeparateur(categorieId)
       if (!result) { setError('Erreur inconnue'); return }
-      if ('error' in result) { setError(result.error); return }
+      if ('error' in result) { setError(result.error ?? 'Erreur inconnue'); return }
       if (result.tag) {
         setTags((prev) => [...prev, result.tag])
         setEditingId(result.tag.id)
