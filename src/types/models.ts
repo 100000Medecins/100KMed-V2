@@ -27,7 +27,19 @@ export type Actualite = any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type DocumentRow = any
 export type GalerieItem = Database['public']['Tables']['solutions_galerie']['Row']
-export type PageStatique = Database['public']['Tables']['pages_statiques']['Row']
+export type PageStatique = Database['public']['Tables']['pages_statiques']['Row'] & {
+  metadata?: SyndicatFoundateur[] | null
+}
+
+export interface SyndicatFoundateur {
+  id: string
+  nom: string
+  nom_complet?: string
+  logo_url: string
+  citation: string
+  presidents: string
+  titre: string
+}
 
 // ============================================
 // Types composites (avec JOINs)

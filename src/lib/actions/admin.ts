@@ -411,11 +411,20 @@ export async function updatePageStatique(id: string, formData: FormData) {
 
   const supabase = createServiceRoleClient()
 
-  const updateData = {
+  const metadataRaw = formData.get('metadata') as string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: Record<string, any> = {
     titre: formData.get('titre') as string,
     image_couverture: (formData.get('image_couverture') as string) || null,
     contenu: (formData.get('contenu') as string) || null,
     meta_description: (formData.get('meta_description') as string) || null,
+  }
+  if (metadataRaw) {
+    try {
+      updateData.metadata = JSON.parse(metadataRaw)
+    } catch {
+      return { error: 'Format des membres fondateurs invalide.' }
+    }
   }
 
   const { error } = await supabase

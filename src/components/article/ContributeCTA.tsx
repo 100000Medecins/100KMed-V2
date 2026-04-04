@@ -30,8 +30,8 @@ export default function ContributeCTA() {
           </li>
         </ul>
 
-        <Button variant="primary" showArrow href="/">
-          Je me connecte
+        <Button variant="primary" showArrow href="/solution/noter">
+          Évaluer un logiciel
         </Button>
       </div>
     </section>

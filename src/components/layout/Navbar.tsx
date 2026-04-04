@@ -68,9 +68,14 @@ export default function Navbar() {
         {/* CTA */}
         <div className="hidden lg:flex items-center gap-3">
           {!loading && user ? (
-            <Button variant="primary" href="/mon-compte/profil" className="text-sm py-2.5 px-6">
-              Mon compte
-            </Button>
+            <>
+              <Button variant="primary" href="/solution/noter" className="text-sm py-2.5 px-6">
+                Évaluer un logiciel
+              </Button>
+              <Button variant="outline" href="/mon-compte/profil" className="text-sm py-2.5 px-6">
+                Mon compte
+              </Button>
+            </>
           ) : (
             <>
               <Button variant="outline" href="/connexion" className="text-sm py-2.5 px-6">
@@ -109,9 +114,14 @@ export default function Navbar() {
             ))}
             <div className="pt-4 space-y-2">
               {!loading && user ? (
-                <Button variant="primary" href="/mon-compte/profil" className="w-full justify-center">
-                  Mon compte
-                </Button>
+                <>
+                  <Button variant="primary" href="/solution/noter" className="w-full justify-center">
+                    Évaluer un logiciel
+                  </Button>
+                  <Button variant="ghost" href="/mon-compte/profil" className="w-full justify-center">
+                    Mon compte
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button variant="primary" href="/solution/noter" className="w-full justify-center">

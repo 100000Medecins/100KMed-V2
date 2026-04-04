@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getPageBySlug } from '@/lib/db/pages'
-import PageStatique from '@/components/PageStatique'
+import QuiSommesNousPage from '@/components/QuiSommesNousPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPageBySlug('qui-sommes-nous')
@@ -19,5 +19,5 @@ export default async function QuiSommesNous() {
     notFound()
   }
 
-  return <PageStatique page={page} breadcrumbLabel="Qui sommes-nous ?" />
+  return <QuiSommesNousPage page={page} />
 }
