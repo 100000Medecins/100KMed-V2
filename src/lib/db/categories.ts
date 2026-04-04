@@ -19,6 +19,21 @@ export async function getCategories() {
 }
 
 /**
+ * Récupère toutes les catégories (actives ET inactives) pour l'interface admin.
+ */
+export async function getAllCategoriesAdmin() {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('position', { ascending: true })
+
+  if (error) throw error
+  return data as Categorie[]
+}
+
+/**
  * Récupère une catégorie par son ID.
  * Remplace : fetchCategorieByIdCategorie
  */

@@ -12,6 +12,7 @@ import {
   Clock,
   Stethoscope,
   Briefcase,
+  UserX,
 } from 'lucide-react'
 
 /* ================================================================== */
@@ -113,6 +114,18 @@ async function getStats() {
   ).length
 
   const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  // ── Suppressions de comptes ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: suppressions } = await (supabase as any)
+    .from('compte_suppressions')
+    .select('deleted_at')
+  const allSuppressions: { deleted_at: string }[] = suppressions ?? []
+  const totalSuppressions = allSuppressions.length
+  const suppressionsCeMois = allSuppressions.filter(
+    (s) => s.deleted_at.startsWith(thisMonthKey)
+  ).length
+
   const thisMonthCount = allEvals.filter(
     (e) => e.last_date_note && (e.last_date_note as string).startsWith(thisMonthKey)
   ).length
@@ -237,6 +250,8 @@ async function getStats() {
     evalsRecentes,
     evalsAnciennes,
     pctRecentes,
+    totalSuppressions,
+    suppressionsCeMois,
   }
 }
 
@@ -558,6 +573,16 @@ export default async function AdminStatistiquesPage() {
           value={stats.avgRating.toFixed(1)}
           sub={`sur ${stats.totalAvis} évaluations`}
           suffix="/5"
+        />
+      </div>
+
+      {/* Comptes supprimés */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <KpiCard
+          icon={<UserX className="w-5 h-5 text-red-400" />}
+          label="Comptes supprimés"
+          value={String(stats.totalSuppressions)}
+          sub={`+${stats.suppressionsCeMois} ce mois-ci`}
         />
       </div>
 

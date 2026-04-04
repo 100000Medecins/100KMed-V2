@@ -5,7 +5,7 @@ import sgMail from '@sendgrid/mail'
 
 export const dynamic = 'force-dynamic'
 
-const MAX_RELANCES = 4 // 1 an, 1 an 3 mois, 1 an 6 mois, 1 an 9 mois
+// Pas de cap : relances tous les 3 mois indéfiniment jusqu'à revalidation
 
 function isAuthorized(req: NextRequest): boolean {
   const auth = req.headers.get('authorization')
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
     .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, prenom)')
     .not('last_relance_sent_at', 'is', null)
     .lt('last_relance_sent_at', threeMonthsAgo.toISOString())
-    .lt('relance_count', MAX_RELANCES)
+    .gt('relance_count', 0)
     .not('user_id', 'is', null)
 
   for (const ev of evalsRecurrence ?? []) {

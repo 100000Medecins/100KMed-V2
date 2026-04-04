@@ -4,11 +4,12 @@ import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminEmailsPage() {
-  const [templatePsc, template1an, template3mois, templateLancement] = await Promise.all([
+  const [templatePsc, template1an, template3mois, templateLancement, templateSuppression] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
     getEmailTemplate('relance_3mois'),
     getEmailTemplate('lancement'),
+    getEmailTemplate('suppression_compte'),
   ])
 
   const templates = [
@@ -23,16 +24,16 @@ export default async function AdminEmailsPage() {
     },
     {
       id: 'relance_1an',
-      title: 'Relance 1 an après évaluation',
-      description: 'Envoyé automatiquement 1 an après la dernière évaluation pour proposer une mise à jour.',
+      title: 'Relance 1 an — 1ʳᵉ relance',
+      description: 'Envoyé automatiquement 1 an après la dernière évaluation. C\'est le premier email de relance reçu par l\'utilisateur.',
       variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
       data: template1an,
       defaultSujet: "Votre avis sur {{solution_nom}} est-il toujours d'actualité ?",
     },
     {
       id: 'relance_3mois',
-      title: 'Relance 1 an + 3 mois (rappel)',
-      description: "Envoyé 3 mois après la relance 1 an si l'utilisateur n'a pas encore mis à jour son avis.",
+      title: 'Rappel tous les 3 mois (2ᵉ, 3ᵉ, 4ᵉ relance)',
+      description: "Envoyé tous les 3 mois indéfiniment tant que l'utilisateur n'a pas revalidé son avis (à 1 an 3 mois, 1 an 6 mois, 1 an 9 mois…). S'arrête uniquement si l'utilisateur revalide ou désactive les relances dans ses notifications.",
       variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
       data: template3mois,
       defaultSujet: 'Rappel : votre avis sur {{solution_nom}}',
@@ -44,6 +45,14 @@ export default async function AdminEmailsPage() {
       variables: ['{{psc_link}}'],
       data: templatePsc,
       defaultSujet: 'Validez votre évaluation sur 100 000 Médecins',
+    },
+    {
+      id: 'suppression_compte',
+      title: 'Confirmation de suppression de compte',
+      description: 'Envoyé à l\'utilisateur après la suppression définitive de son compte.',
+      variables: ['{{prenom}}', '{{nom}}'],
+      data: templateSuppression,
+      defaultSujet: 'Votre compte 100 000 Médecins a été supprimé',
     },
   ]
 

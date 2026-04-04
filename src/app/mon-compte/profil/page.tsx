@@ -6,7 +6,8 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { updateProfile, cancelEmailChange } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
-import { Check, Lock, Mail } from 'lucide-react'
+import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
+import { Check, Lock, Mail, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
 
 export default function ProfilPage() {
@@ -22,6 +23,7 @@ export default function ProfilPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   // Email
   const [newEmail, setNewEmail] = useState('')
@@ -437,6 +439,26 @@ export default function ProfilPage() {
           </Button>
         </div>
       </form>
+
+      {/* Zone de danger */}
+      <div className="mt-8 border border-red-200 rounded-card p-5">
+        <h2 className="text-sm font-semibold text-red-600 mb-1">Zone de danger</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          La suppression de votre compte est définitive et irréversible.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-white hover:bg-red-500 border border-red-300 hover:border-red-500 px-4 py-2 rounded-xl transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Supprimer mon compte
+        </button>
+      </div>
+
+      {showDeleteModal && (
+        <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
-import { getCategories } from '@/lib/db/categories'
+import { getAllCategoriesAdmin } from '@/lib/db/categories'
 import { getEditeurs } from '@/lib/db/editeurs'
 import { getSolutionByIdAdmin, getResultatsRedacAdmin, getTagsForSolutionAdmin } from '@/lib/db/admin-solutions'
 import SolutionForm from '@/components/admin/SolutionForm'
@@ -18,7 +18,7 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
   if (!solution) notFound()
 
   const [categories, editeurs, notesRedac, tagsForSolution] = await Promise.all([
-    getCategories(),
+    getAllCategoriesAdmin(),
     getEditeurs(),
     getResultatsRedacAdmin(id),
     getTagsForSolutionAdmin(id, solution.categorie_id),

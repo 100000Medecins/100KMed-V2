@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 
-import { getCategories } from '@/lib/db/categories'
+import { getAllCategoriesAdmin } from '@/lib/db/categories'
 import { getEditeurs } from '@/lib/db/editeurs'
 import SolutionForm from '@/components/admin/SolutionForm'
 import { createSolution } from '@/lib/actions/admin'
 
 export default async function AdminNewSolutionPage() {
   const [categories, editeurs] = await Promise.all([
-    getCategories(),
+    getAllCategoriesAdmin(),
     getEditeurs(),
   ])
 
