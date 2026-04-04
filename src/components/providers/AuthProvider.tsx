@@ -103,7 +103,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithEmail = async (email: string, password: string) => {
     if (!supabase) return { error: 'Supabase non configuré' }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: error.message }
+    if (error) {
+      if (error.message === 'Invalid login credentials')
+        return { error: 'Email ou mot de passe incorrect.' }
+      return { error: error.message }
+    }
     return { error: null }
   }
 

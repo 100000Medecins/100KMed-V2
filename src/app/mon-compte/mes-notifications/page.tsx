@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notifications'
-import { Bell, RefreshCw, Mail, CheckCircle } from 'lucide-react'
+import { Bell, RefreshCw, Mail, CheckCircle, FlaskConical, BookOpen } from 'lucide-react'
 
 interface Prefs {
   relance_emails: boolean
   marketing_emails: boolean
+  etudes_cliniques: boolean
+  questionnaires_these: boolean
 }
 
 function Toggle({
@@ -39,7 +41,12 @@ function Toggle({
 }
 
 export default function MesNotificationsPage() {
-  const [prefs, setPrefs] = useState<Prefs>({ relance_emails: true, marketing_emails: true })
+  const [prefs, setPrefs] = useState<Prefs>({
+    relance_emails: true,
+    marketing_emails: true,
+    etudes_cliniques: false,
+    questionnaires_these: false,
+  })
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -78,6 +85,7 @@ export default function MesNotificationsPage() {
       </div>
 
       <div className="bg-white rounded-card shadow-card divide-y divide-gray-100">
+
         {/* Relances évaluations */}
         <div className="flex items-start justify-between gap-4 p-5">
           <div className="flex items-start gap-3">
@@ -120,6 +128,48 @@ export default function MesNotificationsPage() {
           />
         </div>
 
+        {/* Études cliniques */}
+        <div className="flex items-start justify-between gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+              <FlaskConical className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div>
+              <p className="font-medium text-navy text-sm">Études cliniques</p>
+              <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
+                Participez à des études sur l&apos;essai de nouveaux logiciels médicaux
+                ou d&apos;appareils connectés en santé.
+              </p>
+            </div>
+          </div>
+          <Toggle
+            checked={prefs.etudes_cliniques}
+            onChange={(v) => handleToggle('etudes_cliniques', v)}
+            disabled={isPending}
+          />
+        </div>
+
+        {/* Questionnaires de thèse / e-santé */}
+        <div className="flex items-start justify-between gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <p className="font-medium text-navy text-sm">Questionnaires de recherche</p>
+              <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
+                Répondez à des questionnaires de thèse ou des études académiques
+                sur le thème de l&apos;e-santé.
+              </p>
+            </div>
+          </div>
+          <Toggle
+            checked={prefs.questionnaires_these}
+            onChange={(v) => handleToggle('questionnaires_these', v)}
+            disabled={isPending}
+          />
+        </div>
+
         {/* Note transactionnels */}
         <div className="flex items-start gap-3 p-5 bg-surface-light rounded-b-card">
           <div className="mt-0.5 w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -133,6 +183,7 @@ export default function MesNotificationsPage() {
             </p>
           </div>
         </div>
+
       </div>
     </div>
   )

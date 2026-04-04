@@ -18,7 +18,7 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
   // 1. Récupérer les infos du profil pour le mail
   const { data: profile } = await supabase
     .from('users')
-    .select('nom, prenom, specialite, mode_exercice')
+    .select('nom, prenom, specialite, mode_exercice, contact_email')
     .eq('id', user.id)
     .single()
 
@@ -53,8 +53,9 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
       const html = (template.contenu_html as string)
         .replace(/\{\{prenom\}\}/g, prenom)
         .replace(/\{\{nom\}\}/g, nom)
+      const recipientEmail = (profile as { contact_email?: string } | null)?.contact_email || user.email!
       await sgMail.send({
-        to: user.email!,
+        to: recipientEmail,
         from: 'contact@100000medecins.org',
         subject: sujet,
         html,

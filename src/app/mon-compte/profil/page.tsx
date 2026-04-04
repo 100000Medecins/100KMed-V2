@@ -20,6 +20,7 @@ export default function ProfilPage() {
   const [modeExercice, setModeExercice] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [isFromPsc, setIsFromPsc] = useState(false)
+  const [contactEmail, setContactEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +32,7 @@ export default function ProfilPage() {
   const [initPasswordError, setInitPasswordError] = useState<string | null>(null)
 
   // Email
+  const [showEmailForm, setShowEmailForm] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [emailSubmitting, setEmailSubmitting] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -38,7 +40,9 @@ export default function ProfilPage() {
   const [cancellingEmail, setCancellingEmail] = useState(false)
 
   // Mot de passe
-  const [currentPassword, setCurrentPassword] = useState('')
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const currentPasswordRef = useRef<HTMLInputElement>(null)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSubmitting, setPasswordSubmitting] = useState(false)
@@ -52,13 +56,14 @@ export default function ProfilPage() {
     const supabase = createClient()
     supabase
       .from('users')
-      .select('nom, prenom, specialite, mode_exercice, portrait, rpps')
+      .select('nom, prenom, specialite, mode_exercice, portrait, rpps, contact_email')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
         if (data) {
           setNom(data.nom || '')
           setPrenom(data.prenom || '')
+          setContactEmail((data as { contact_email?: string }).contact_email || null)
           // Résoudre les codes SM vers libellés si nécessaire
           const sp = data.specialite || ''
           const resolved = SM_SPECIALITES[sp] ?? sp
@@ -176,6 +181,7 @@ export default function ProfilPage() {
       localStorage.setItem(`pendingEmail_${user!.id}`, newEmail)
       setPendingEmail(newEmail)
       setNewEmail('')
+      setShowEmailForm(false)
       setSuccess('Un email de confirmation a été envoyé à votre nouvelle adresse.')
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
@@ -193,11 +199,17 @@ export default function ProfilPage() {
       return
     }
 
+    const currentPasswordValue = currentPasswordRef.current?.value || ''
+    if (!currentPasswordValue) {
+      setPasswordError('Veuillez saisir votre mot de passe actuel.')
+      return
+    }
+
     setPasswordSubmitting(true)
     // Vérifier le mot de passe actuel en tentant une reconnexion
     const { error: signInError } = await supabaseRef.current.auth.signInWithPassword({
       email: user!.email!,
-      password: currentPassword,
+      password: currentPasswordValue,
     })
     if (signInError) {
       setPasswordError('Mot de passe actuel incorrect.')
@@ -210,9 +222,10 @@ export default function ProfilPage() {
     if (error) {
       setPasswordError(error.message)
     } else {
-      setCurrentPassword('')
+      if (currentPasswordRef.current) currentPasswordRef.current.value = ''
       setNewPassword('')
       setConfirmPassword('')
+      setShowPasswordForm(false)
       setSuccess('Mot de passe mis à jour avec succès.')
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
@@ -314,30 +327,62 @@ export default function ProfilPage() {
           </div>
 
           {isFromPsc ? (
-            /* Affichage lecture seule — uniquement les champs fournis par PSC */
-            <div className="flex flex-wrap gap-x-8 gap-y-3">
+            /* Champs grisés en lecture seule pour les utilisateurs PSC */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {prenom && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Prénom</p>
-                  <p className="text-sm font-medium text-navy">{prenom}</p>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom</label>
+                  <input
+                    type="text"
+                    value={prenom}
+                    readOnly
+                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
+                  />
                 </div>
               )}
               {nom && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Nom</p>
-                  <p className="text-sm font-medium text-navy">{nom}</p>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
+                  <input
+                    type="text"
+                    value={nom}
+                    readOnly
+                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
+                  />
                 </div>
               )}
               {specialite && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Spécialité</p>
-                  <p className="text-sm font-medium text-navy">{specialite}</p>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+                  <input
+                    type="text"
+                    value={specialite}
+                    readOnly
+                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
+                  />
                 </div>
               )}
               {modeExercice && (
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Mode d&apos;exercice</p>
-                  <p className="text-sm font-medium text-navy">{modeExercice}</p>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
+                  <input
+                    type="text"
+                    value={modeExercice}
+                    readOnly
+                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+              )}
+              {/* Email PSC technique, affiché uniquement s'il diffère du contact_email */}
+              {user?.email && contactEmail && user.email !== contactEmail && (
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Email Pro Santé Connect</label>
+                  <input
+                    type="text"
+                    value={user.email}
+                    readOnly
+                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
+                  />
                 </div>
               )}
             </div>
@@ -407,103 +452,195 @@ export default function ProfilPage() {
           )}
         </div>
 
-        {/* Changer l'email */}
+        {/* Identifiants de connexion */}
         <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-navy">Adresse email</h2>
-          <p className="text-xs text-gray-500">Email actuel : <span className="font-medium text-navy">{user?.email}</span></p>
-          <form onSubmit={handleEmailChange} className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nouvel email</label>
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                placeholder="nouveau@email.com"
-              />
-            </div>
-            {emailError && <p className="text-xs text-red-600">{emailError}</p>}
-            <div className="flex justify-end">
-              <Button variant="primary" className={emailSubmitting ? 'opacity-50 pointer-events-none' : ''}>
-                {emailSubmitting ? 'Envoi...' : 'Changer l\'email'}
-              </Button>
-            </div>
-          </form>
-        </div>
+          <h2 className="text-sm font-semibold text-navy">Identifiants de connexion</h2>
 
-        {/* Changer le mot de passe */}
-        <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-navy">Mot de passe</h2>
-          <form onSubmit={handlePasswordChange} className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
-              <PasswordInput
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                placeholder="••••••••"
-              />
+          {/* Email */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-gray-500">
+                Email : <span className="font-semibold text-navy">{contactEmail || user?.email}</span>
+              </p>
+              {!showEmailForm && (
+                <button
+                  type="button"
+                  onClick={() => { setShowEmailForm(true); setEmailError(null) }}
+                  className="shrink-0 text-xs font-medium text-accent-blue hover:underline"
+                >
+                  Changer
+                </button>
+              )}
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
-              <PasswordInput
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                placeholder="6 caractères minimum"
-              />
+            {showEmailForm && (
+              <form onSubmit={handleEmailChange} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nouvel email</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    required
+                    autoFocus
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    placeholder="nouveau@email.com"
+                  />
+                </div>
+                {emailError && <p className="text-xs text-red-600">{emailError}</p>}
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowEmailForm(false); setNewEmail(''); setEmailError(null) }}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Annuler
+                  </button>
+                  <Button variant="primary" className={emailSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                    {emailSubmitting ? 'Envoi...' : 'Confirmer'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <div className="border-t border-gray-100" />
+
+          {/* Mot de passe */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-gray-500">
+                Mot de passe : <span className="font-semibold text-navy tracking-widest">••••••••</span>
+              </p>
+              {!showPasswordForm && (
+                <button
+                  type="button"
+                  onClick={() => { setShowPasswordForm(true); setPasswordError(null) }}
+                  className="shrink-0 text-xs font-medium text-accent-blue hover:underline"
+                >
+                  Changer
+                </button>
+              )}
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
-              <PasswordInput
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                placeholder="6 caractères minimum"
-              />
-            </div>
-            {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
-            <div className="flex justify-end">
-              <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
-                {passwordSubmitting ? 'Mise à jour...' : 'Changer le mot de passe'}
-              </Button>
-            </div>
-          </form>
+            {showPasswordForm && (
+              <form onSubmit={handlePasswordChange} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
+                  <PasswordInput
+                    ref={currentPasswordRef}
+                    autoComplete="current-password"
+                    required
+                    autoFocus
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
+                  <PasswordInput
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    placeholder="6 caractères minimum"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
+                  <PasswordInput
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    placeholder="6 caractères minimum"
+                  />
+                </div>
+                {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowPasswordForm(false); setNewPassword(''); setConfirmPassword(''); setPasswordError(null) }}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Annuler
+                  </button>
+                  <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                    {passwordSubmitting ? 'Mise à jour...' : 'Confirmer'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
 
         {/* Avatar */}
         <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
-          <p className="text-xs text-gray-500">
-            Sélectionnez une image qui vous représente sur la plateforme.
-          </p>
-          <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
-            {AVATARS.map((avatar) => (
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
+            {selectedAvatar && !showAvatarPicker && (
               <button
-                key={avatar.id}
                 type="button"
-                onClick={() => setSelectedAvatar(avatar.url)}
-                className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
-                  selectedAvatar === avatar.url
-                    ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
-                    : 'border-transparent hover:border-gray-300'
-                }`}
+                onClick={() => setShowAvatarPicker(true)}
+                className="text-xs font-medium text-accent-blue hover:underline"
               >
-                <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
-                {selectedAvatar === avatar.url && (
-                  <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white drop-shadow" />
-                  </div>
-                )}
+                Changer d&apos;avatar
               </button>
-            ))}
+            )}
           </div>
+
+          {selectedAvatar && !showAvatarPicker ? (
+            /* Avatar sélectionné — affichage compact */
+            <button
+              type="button"
+              onClick={() => setShowAvatarPicker(true)}
+              className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity"
+              title="Changer d'avatar"
+            >
+              <img src={selectedAvatar} alt="Mon avatar" className="w-full h-full object-cover" />
+            </button>
+          ) : (
+            /* Grille de sélection */
+            <>
+              {!selectedAvatar && (
+                <p className="text-xs text-gray-500">Sélectionnez une image qui vous représente sur la plateforme.</p>
+              )}
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
+                {AVATARS.map((avatar) => (
+                  <button
+                    key={avatar.id}
+                    type="button"
+                    onClick={() => { setSelectedAvatar(avatar.url); setShowAvatarPicker(false) }}
+                    className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
+                      selectedAvatar === avatar.url
+                        ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                  >
+                    <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
+                    {selectedAvatar === avatar.url && (
+                      <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white drop-shadow" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {showAvatarPicker && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarPicker(false)}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Submit */}

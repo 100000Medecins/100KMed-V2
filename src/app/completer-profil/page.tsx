@@ -52,12 +52,10 @@ export default function CompleterProfilPage() {
       if (profile?.portrait) setSelectedAvatar(profile.portrait)
 
       // Pré-remplir l'email : priorité contact_email déjà sauvé,
-      // sinon user.email (fourni par PSC/Supabase),
-      // sinon email_temp de l'évaluation anonyme en attente
+      // sinon email_temp de l'évaluation anonyme (email renseigné par l'utilisateur),
+      // sinon user.email en dernier recours (peut être une adresse technique PSC)
       if (profile?.contact_email) {
         setContactEmail(profile.contact_email)
-      } else if (user?.email) {
-        setContactEmail(user.email)
       } else {
         // Chercher l'email_temp dans l'évaluation anonyme liée à ce compte
         const supabase = createClient()
@@ -68,7 +66,11 @@ export default function CompleterProfilPage() {
           .not('email_temp', 'is', null)
           .limit(1)
           .single()
-        if (evalAnon?.email_temp) setContactEmail(evalAnon.email_temp)
+        if (evalAnon?.email_temp) {
+          setContactEmail(evalAnon.email_temp)
+        } else if (user?.email && !user.email.includes('@psc.sante.fr')) {
+          setContactEmail(user.email)
+        }
       }
 
       setProfileLoaded(true)

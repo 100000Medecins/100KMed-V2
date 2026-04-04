@@ -5,6 +5,8 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 export interface NotificationPreferences {
   relance_emails: boolean
   marketing_emails: boolean
+  etudes_cliniques: boolean
+  questionnaires_these: boolean
 }
 
 export async function getNotificationPreferences(): Promise<NotificationPreferences> {
@@ -16,7 +18,7 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from('users_notification_preferences')
-    .select('relance_emails, marketing_emails')
+    .select('relance_emails, marketing_emails, etudes_cliniques, questionnaires_these')
     .eq('user_id', user.id)
     .single()
 
@@ -24,6 +26,8 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
   return {
     relance_emails: data?.relance_emails ?? true,
     marketing_emails: data?.marketing_emails ?? true,
+    etudes_cliniques: data?.etudes_cliniques ?? false,
+    questionnaires_these: data?.questionnaires_these ?? false,
   }
 }
 
