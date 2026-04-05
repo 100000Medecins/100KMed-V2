@@ -117,7 +117,7 @@ export type ResultatRedacAdmin = Awaited<ReturnType<typeof getResultatsRedacAdmi
 export async function getTagsForSolutionAdmin(solutionId: string, categorieId: string | null) {
   const supabase = createServiceRoleClient()
 
-  const tagsQuery = supabase.from('tags').select('id, libelle, ordre')
+  const tagsQuery = supabase.from('tags').select('id, libelle, ordre, is_separator')
   const { data: tags } = categorieId
     ? await tagsQuery.eq('id_categorie', categorieId).order('ordre', { ascending: true })
     : await tagsQuery.is('id_categorie', null).order('ordre', { ascending: true })
@@ -155,7 +155,7 @@ export async function getTagsForCategorieAdmin(categorieId: string) {
 
   const { data, error } = await supabase
     .from('tags')
-    .select('id, libelle, ordre')
+    .select('id, libelle, ordre, is_separator')
     .eq('id_categorie', categorieId)
     .order('ordre', { ascending: true })
 
