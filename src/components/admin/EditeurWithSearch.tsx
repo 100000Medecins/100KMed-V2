@@ -86,7 +86,6 @@ export default function EditeurWithSearch({ editeur, action }: Props) {
         contact_pays: appliedValues.contact_pays !== undefined ? appliedValues.contact_pays : editeur.contact_pays,
         nb_employes: appliedValues.nb_employes !== undefined ? appliedValues.nb_employes : editeur.nb_employes,
         siret: appliedValues.siret !== undefined ? appliedValues.siret : editeur.siret,
-        mot_editeur: null,
       }
     : undefined
 
