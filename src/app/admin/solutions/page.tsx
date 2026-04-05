@@ -32,7 +32,6 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
           <h1 className="text-2xl font-bold text-navy">Solutions</h1>
           <p className="text-sm text-gray-500 mt-1">
             {filtered.length} solution{filtered.length > 1 ? 's' : ''}
-            {selectedCategoryId ? ` (sur ${solutions.length} au total)` : ''}
           </p>
         </div>
         <Link
