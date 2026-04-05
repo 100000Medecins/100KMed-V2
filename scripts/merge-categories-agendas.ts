@@ -197,7 +197,7 @@ async function main() {
 
   // 5. Mettre à jour les solutions_tags qui pointent vers les anciens tag ids
   if (!DRY_RUN) {
-    for (const [oldTagId, newTagId] of tagIdMap) {
+    for (const [oldTagId, newTagId] of Array.from(tagIdMap.entries())) {
       if (oldTagId === newTagId) continue // tag déjà dans la bonne catégorie, pas besoin de migrer
       // Les solutions de "Agendas médicaux" ont été déplacées, leurs tags_ids pointent vers l'ancien tag
       // → on repointe vers le tag équivalent dans "Agenda médical"
