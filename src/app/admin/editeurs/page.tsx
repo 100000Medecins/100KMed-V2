@@ -67,7 +67,14 @@ export default async function AdminEditeursPage() {
                         <div className="h-8 w-16 rounded bg-gray-100 flex-shrink-0" />
                       )}
                       <div>
-                        <p className="font-medium text-navy">{ed.nom_commercial || ed.nom}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-navy">{ed.nom_commercial || ed.nom}</p>
+                          {!ed.description && !ed.website && !ed.logo_url && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">
+                              À compléter
+                            </span>
+                          )}
+                        </div>
                         {ed.nom_commercial && ed.nom && (
                           <p className="text-xs text-gray-400">{ed.nom}</p>
                         )}

@@ -104,10 +104,12 @@ export async function searchSolutionInfo(
       messages: [
         {
           role: 'user',
-          content: `Tu es un assistant qui extrait des informations sur des logiciels médicaux.
+          content: `Tu es un rédacteur pour un site comparatif de logiciels médicaux destiné aux médecins libéraux français.
+
+Ton style éditorial : factuel, direct, légèrement ironique. Tu évites absolument le jargon marketing ("solution innovante", "révolutionnaire", "au service des professionnels de santé", "plateforme de santé numérique de référence", etc.). Tu parles à des médecins qui ont peu de temps, qui ont déjà vu trop de promesses et qui veulent savoir concrètement ce que fait l'outil, qui l'utilise, et ce qu'il coûte si possible. Pas de superlatifs, pas d'autopromotion recopiée.
 
 Extrais les informations disponibles sur le logiciel "${nom}"${editeurCtx} à partir du contexte ci-dessous.
-Génère une description professionnelle (3-4 phrases) en français, adaptée à un site comparatif de logiciels médicaux pour médecins. La description doit présenter les fonctionnalités principales et les points forts du logiciel.
+Génère une description (3-4 phrases) en français dans ce style éditorial. Décris ce que fait concrètement le logiciel, qui sont ses utilisateurs typiques, et note sobrement les points distinctifs réels.
 
 Contexte :
 ${context}

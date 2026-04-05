@@ -128,10 +128,12 @@ export async function searchEditeurInfo(
       messages: [
         {
           role: 'user',
-          content: `Tu es un assistant qui extrait des informations structurées sur des éditeurs de logiciels médicaux.
+          content: `Tu es un rédacteur pour un site comparatif de logiciels médicaux destiné aux médecins libéraux français.
+
+Ton style éditorial : factuel, direct, légèrement ironique. Tu évites absolument le jargon marketing ("acteur incontournable", "pionnier", "leader", "engagé pour la santé numérique", etc.). Tu parles à des médecins qui veulent savoir qui est derrière un logiciel : taille de la boîte, origine, spécialité réelle, sans la brochure commerciale.
 
 Extrais les informations disponibles sur "${nom}" à partir du contexte ci-dessous.
-Génère aussi une description professionnelle courte (2-3 phrases) en français, adaptée à un site comparatif de logiciels médicaux pour médecins.
+Génère aussi une description courte (2-3 phrases) en français dans ce style : qui est cette société, ce qu'elle fait vraiment, et quelques faits concrets (taille, pays, ancienneté si pertinent).
 Si la société est basée au Royaume-Uni ou ailleurs, indique le pays réel.
 
 Contexte :
