@@ -12,7 +12,8 @@ type DiffField = {
 }
 
 const DIFF_FIELDS: DiffField[] = [
-  { key: 'description', label: 'Description', isHtml: true },
+  { key: 'description', label: 'Description (courte)', isHtml: true },
+  { key: 'avis_redac', label: 'Avis rédaction', isHtml: true },
   { key: 'website_url', label: 'Site web' },
   { key: 'logo_url', label: 'Logo', isImage: true },
 ]

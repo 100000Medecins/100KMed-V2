@@ -433,10 +433,12 @@ async function main() {
         .from('solutions_tags').select('id')
         .eq('id_solution', solutionId).eq('id_tag', tagId).maybeSingle()
       if (!existing) {
-        await supabase.from('solutions_tags').insert({
-          id: uuid(), id_solution: solutionId, id_tag: tagId,
-          enabled: true, is_tag_principal: false,
+        const { error: tagError } = await supabase.from('solutions_tags').insert({
+          id_solution: solutionId,
+          id_tag: tagId,
+          is_tag_principal: false,
         })
+        if (tagError) console.error(`❌ Tag insert error (${tagId}):`, tagError.message)
       }
     }
   }

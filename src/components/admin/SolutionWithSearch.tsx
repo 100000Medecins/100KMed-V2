@@ -89,6 +89,7 @@ export default function SolutionWithSearch({
     ? {
         ...solution,
         description: appliedValues.description !== undefined ? appliedValues.description : solution.description,
+        evaluation_redac_avis: appliedValues.avis_redac !== undefined ? appliedValues.avis_redac : solution.evaluation_redac_avis,
         website_url: appliedValues.website_url !== undefined ? appliedValues.website_url : solution.website_url,
         logo_url: appliedValues.logo_url !== undefined ? appliedValues.logo_url : solution.logo_url,
       }
@@ -98,6 +99,7 @@ export default function SolutionWithSearch({
   const currentState: Partial<Record<keyof SolutionSuggestion, string | null>> = {
     nom: mergedSolution.nom,
     description: mergedSolution.description,
+    avis_redac: mergedSolution.evaluation_redac_avis as string | null,
     website_url: mergedSolution.website_url,
     logo_url: mergedSolution.logo_url,
   }

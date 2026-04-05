@@ -171,13 +171,16 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni explication. Met
     const cleaned = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '')
     const parsed = JSON.parse(cleaned)
 
-    // Logo via Clearbit
+    // Logo via logo.dev (remplace Clearbit, déprécié)
     let logo_url: string | null = null
     const site = parsed.website || officialSiteUrl || ''
+    const logoToken = process.env.LOGO_DEV_TOKEN
     if (site) {
       try {
         const domain = new URL(site).hostname.replace(/^www\./, '')
-        logo_url = `https://logo.clearbit.com/${domain}`
+        logo_url = logoToken
+          ? `https://img.logo.dev/${domain}?token=${logoToken}&size=200&format=png`
+          : `https://logo.clearbit.com/${domain}`
       } catch {
         // URL invalide
       }
