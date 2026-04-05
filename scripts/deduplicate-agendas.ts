@@ -79,7 +79,7 @@ async function main() {
   }
 
   // 4. Identifier les groupes avec doublons
-  const duplicates = [...groups.entries()].filter(([, sols]) => sols.length > 1)
+  const duplicates = Array.from(groups.entries()).filter(([, sols]) => sols.length > 1)
 
   if (duplicates.length === 0) {
     console.log('✅ Aucun doublon détecté.')
