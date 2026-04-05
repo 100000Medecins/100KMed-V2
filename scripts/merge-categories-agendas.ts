@@ -68,7 +68,8 @@ async function main() {
   console.log(`📋 "${catNew.nom}" : ${solsNew?.length ?? 0} solutions\n`)
 
   // Index des solutions de l'ancienne catégorie par nom normalisé
-  const oldMap = new Map<string, (typeof solsOld)[number]>()
+  type SolRow = { id: string; nom: string | null; description: string | null; website: string | null; id_editeur: string | null; actif: boolean | null; slug: string | null }
+  const oldMap = new Map<string, SolRow>()
   for (const s of solsOld ?? []) {
     oldMap.set(normalizeKey(s.nom ?? ''), s)
   }
