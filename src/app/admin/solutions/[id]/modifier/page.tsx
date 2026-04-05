@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { getAllCategoriesAdmin } from '@/lib/db/categories'
 import { getEditeurs } from '@/lib/db/editeurs'
 import { getSolutionByIdAdmin, getResultatsRedacAdmin, getTagsForSolutionAdmin } from '@/lib/db/admin-solutions'
-import SolutionForm from '@/components/admin/SolutionForm'
+import SolutionWithSearch from '@/components/admin/SolutionWithSearch'
 import { updateSolution } from '@/lib/actions/admin'
 
 interface PageProps {
@@ -32,7 +32,7 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
         Modifier : {solution.nom}
       </h1>
       <div className="bg-white rounded-card shadow-card p-6 md:p-8">
-        <SolutionForm
+        <SolutionWithSearch
           solution={solution}
           categories={categories}
           editeurs={editeurs}

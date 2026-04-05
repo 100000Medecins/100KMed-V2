@@ -285,7 +285,18 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             </select>
           </div>
           <div>
-            <label htmlFor="editeur_id" className={labelClass}>Éditeur</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="editeur_id" className="text-sm font-medium text-navy">Éditeur</label>
+              <a
+                href="/admin/editeurs/nouveau"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline"
+              >
+                <Plus className="w-3 h-3" />
+                Créer un éditeur
+              </a>
+            </div>
             <select
               id="editeur_id"
               name="editeur_id"

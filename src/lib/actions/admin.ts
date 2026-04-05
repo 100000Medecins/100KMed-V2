@@ -502,6 +502,69 @@ export async function togglePartenaireActif(id: string, actif: boolean) {
 }
 
 // ────────────────────────────────────────────
+// Éditeurs
+// ────────────────────────────────────────────
+
+export async function createEditeur(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { data, error } = await supabase.from('editeurs').insert({
+    id: randomUUID(),
+    nom: formData.get('nom') as string,
+    nom_commercial: (formData.get('nom_commercial') as string) || null,
+    description: (formData.get('description') as string) || null,
+    logo_url: (formData.get('logo_url') as string) || null,
+    logo_titre: (formData.get('logo_titre') as string) || null,
+    website: (formData.get('website') as string) || null,
+    contact_email: (formData.get('contact_email') as string) || null,
+    contact_telephone: (formData.get('contact_telephone') as string) || null,
+    contact_adresse: (formData.get('contact_adresse') as string) || null,
+    contact_cp: (formData.get('contact_cp') as string) || null,
+    contact_ville: (formData.get('contact_ville') as string) || null,
+    contact_pays: (formData.get('contact_pays') as string) || null,
+    nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
+    siret: (formData.get('siret') as string) || null,
+    mot_editeur: (formData.get('mot_editeur') as string) || null,
+  }).select('id').single()
+  if (error) return { error: error.message }
+  revalidatePath('/admin/editeurs')
+  redirect(`/admin/editeurs/${data.id}/modifier`)
+}
+
+export async function updateEditeur(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('editeurs').update({
+    nom: formData.get('nom') as string,
+    nom_commercial: (formData.get('nom_commercial') as string) || null,
+    description: (formData.get('description') as string) || null,
+    logo_url: (formData.get('logo_url') as string) || null,
+    logo_titre: (formData.get('logo_titre') as string) || null,
+    website: (formData.get('website') as string) || null,
+    contact_email: (formData.get('contact_email') as string) || null,
+    contact_telephone: (formData.get('contact_telephone') as string) || null,
+    contact_adresse: (formData.get('contact_adresse') as string) || null,
+    contact_cp: (formData.get('contact_cp') as string) || null,
+    contact_ville: (formData.get('contact_ville') as string) || null,
+    contact_pays: (formData.get('contact_pays') as string) || null,
+    nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
+    siret: (formData.get('siret') as string) || null,
+    mot_editeur: (formData.get('mot_editeur') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/editeurs')
+  revalidatePath(`/editeur/${id}`)
+  redirect('/admin/editeurs')
+}
+
+export async function deleteEditeur(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('editeurs').delete().eq('id', id)
+  revalidatePath('/admin/editeurs')
+}
+
+// ────────────────────────────────────────────
 // Tags — gestion catégorie (CRUD global)
 // ────────────────────────────────────────────
 
