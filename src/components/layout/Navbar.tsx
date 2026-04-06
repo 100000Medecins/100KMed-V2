@@ -1,17 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
+import type { NavCategorie } from "@/app/api/nav-categories/route";
 
-type NavCategorie = { nom: string; slug: string }
+type Groupe = {
+  nom: string
+  ordre: number
+  categories: NavCategorie[]
+}
+
+function buildGroupes(categories: NavCategorie[]): Groupe[] {
+  const map = new Map<string, Groupe>()
+
+  for (const cat of categories) {
+    const key = cat.groupe_id ?? '__aucun__'
+    if (!map.has(key)) {
+      map.set(key, {
+        nom: cat.groupe_nom ?? 'Autres',
+        ordre: cat.groupe_ordre ?? 999,
+        categories: [],
+      })
+    }
+    map.get(key)!.categories.push(cat)
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.ordre - b.ordre)
+}
 
 export default function Navbar() {
   const { user, loading } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(false);
   const [categories, setCategories] = useState<NavCategorie[]>([]);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const megaMenuRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -26,10 +53,27 @@ export default function Navbar() {
       .catch(() => {})
   }, [])
 
-  const allNavItems = [
-    { label: "Qui sommes-nous ?", href: "/qui-sommes-nous" },
-    ...categories.map((c) => ({ label: `Comparatif ${c.nom}`, href: `/solutions/${c.slug}` })),
-  ]
+  // Fermer le mega-menu en cliquant en dehors
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (megaMenuRef.current && !megaMenuRef.current.contains(e.target as Node)) {
+        setIsMegaMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function handleMenuMouseEnter() {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setIsMegaMenuOpen(true)
+  }
+
+  function handleMenuMouseLeave() {
+    closeTimer.current = setTimeout(() => setIsMegaMenuOpen(false), 150)
+  }
+
+  const groupes = buildGroupes(categories)
 
   return (
     <header
@@ -54,15 +98,67 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center justify-center gap-6 min-w-0">
-          {allNavItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors text-center"
+          {/* Mega-menu Comparatifs */}
+          <div
+            ref={megaMenuRef}
+            className="relative"
+            onMouseEnter={handleMenuMouseEnter}
+            onMouseLeave={handleMenuMouseLeave}
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+              onClick={() => setIsMegaMenuOpen((v) => !v)}
             >
-              {item.label}
-            </a>
-          ))}
+              Comparatifs
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isMegaMenuOpen && categories.length > 0 && (
+              <div
+                className="absolute left-1/2 -translate-x-1/2 top-full mt-3 bg-white rounded-2xl shadow-card border border-gray-100 p-6 min-w-[480px] max-w-[640px]"
+                onMouseEnter={handleMenuMouseEnter}
+                onMouseLeave={handleMenuMouseLeave}
+              >
+                <div className={`grid gap-6 ${groupes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {groupes.map((groupe) => (
+                    <div key={groupe.nom}>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                        {groupe.nom}
+                      </p>
+                      <ul className="space-y-1">
+                        {groupe.categories.map((cat) => (
+                          <li key={cat.slug}>
+                            <a
+                              href={`/solutions/${cat.slug}`}
+                              className="block text-sm text-gray-700 hover:text-accent-blue hover:bg-accent-blue/5 px-2 py-1.5 rounded-lg transition-colors"
+                            >
+                              {cat.nom}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <a
+                    href="/comparatifs"
+                    className="text-xs font-semibold text-accent-blue hover:underline"
+                  >
+                    Voir tous les comparatifs →
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <a
+            href="/qui-sommes-nous"
+            className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+          >
+            Qui sommes-nous ?
+          </a>
         </div>
 
         {/* CTA */}
@@ -101,17 +197,59 @@ export default function Navbar() {
       {/* Mobile menu */}
       {isMobileOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100 shadow-lg">
-          <div className="px-6 py-6 space-y-4">
-            {allNavItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
-                onClick={() => setIsMobileOpen(false)}
+          <div className="px-6 py-6 space-y-2">
+            {/* Comparatifs accordion */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsMobileComparatifOpen((v) => !v)}
+                className="flex items-center justify-between w-full text-sm text-gray-600 hover:text-navy font-medium py-2"
               >
-                {item.label}
-              </a>
-            ))}
+                Comparatifs
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileComparatifOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isMobileComparatifOpen && (
+                <div className="pl-4 mt-1 space-y-3 pb-2">
+                  {groupes.map((groupe) => (
+                    <div key={groupe.nom}>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                        {groupe.nom}
+                      </p>
+                      <ul className="space-y-1">
+                        {groupe.categories.map((cat) => (
+                          <li key={cat.slug}>
+                            <a
+                              href={`/solutions/${cat.slug}`}
+                              className="block text-sm text-gray-600 hover:text-navy py-1"
+                              onClick={() => setIsMobileOpen(false)}
+                            >
+                              {cat.nom}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  <a
+                    href="/comparatifs"
+                    className="block text-xs font-semibold text-accent-blue pt-1"
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    Voir tous les comparatifs →
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <a
+              href="/qui-sommes-nous"
+              className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+              onClick={() => setIsMobileOpen(false)}
+            >
+              Qui sommes-nous ?
+            </a>
+
             <div className="pt-4 space-y-2">
               {!loading && user ? (
                 <>

@@ -18,6 +18,7 @@ interface SolutionFiltersProps {
   currentTri: string
   currentCritere: string
   currentDir?: string
+  labelFiltres?: string
 }
 
 /**
@@ -46,7 +47,7 @@ function getImpliedParentIds(tags: TagWithParent[], selectedIds: string[]): Set<
   return implied
 }
 
-export default function SolutionFilters({ tags, selectedTagIds, currentTri, currentCritere, currentDir }: SolutionFiltersProps) {
+export default function SolutionFilters({ tags, selectedTagIds, currentTri, currentCritere, currentDir, labelFiltres }: SolutionFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const tagsWithParent = tags as TagWithParent[]
@@ -75,7 +76,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-navy">Fonctionnalités</h3>
+        <h3 className="text-sm font-semibold text-navy">{labelFiltres || 'Fonctionnalités'}</h3>
         {selectedTagIds.length > 0 && (
           <button
             onClick={() => router.push(buildUrl([]))}

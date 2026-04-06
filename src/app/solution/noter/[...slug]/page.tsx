@@ -9,17 +9,18 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { submitEvaluation, submitEvaluationAnonyme } from '@/lib/actions/evaluation'
 import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Mail, CheckCircle } from 'lucide-react'
+import { getCritereLabel } from '@/lib/constants/criteres'
 
 interface PageProps {
   params: { slug: string[] }
 }
 
 const CRITERES = [
-  { key: 'interface', label: 'Interface utilisateur', question: 'Comment jugez-vous l\'ergonomie et la facilité d\'utilisation du logiciel ?' },
-  { key: 'fonctionnalites', label: 'Fonctionnalités', question: 'Les fonctionnalités répondent-elles à vos besoins au quotidien ?' },
-  { key: 'fiabilite', label: 'Fiabilité', question: 'Le logiciel est-il stable et fiable dans son utilisation quotidienne ?' },
-  { key: 'editeur', label: 'Éditeur / Support', question: 'Comment évaluez-vous la qualité du support et de l\'accompagnement de l\'éditeur ?' },
-  { key: 'qualite_prix', label: 'Rapport qualité/prix', question: 'Le rapport qualité/prix est-il satisfaisant ?' },
+  { key: 'interface', question: 'Comment jugez-vous l\'ergonomie et la facilité d\'utilisation du logiciel ?' },
+  { key: 'fonctionnalites', question: 'Les fonctionnalités répondent-elles à vos besoins au quotidien ?' },
+  { key: 'fiabilite', question: 'Le logiciel est-il stable et fiable dans son utilisation quotidienne ?' },
+  { key: 'editeur', question: 'Comment évaluez-vous la qualité du support et de l\'accompagnement de l\'éditeur ?' },
+  { key: 'qualite_prix', question: 'Le rapport qualité/prix est-il satisfaisant ?' },
 ]
 
 // ─── Étape 2 : Questions détaillées « Usage au quotidien » ───────────────────
@@ -495,6 +496,25 @@ export default function NoterPage({ params }: PageProps) {
   const [emailAnonyme, setEmailAnonyme] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [sectionsDB, setSectionsDB] = useState<DetailSection[]>([])
+
+  // Charger les sections depuis la DB
+  useEffect(() => {
+    fetch(`/api/questionnaire/${categorieSlug}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setSectionsDB(data.map((s: any) => ({
+          titre: s.titre,
+          introduction: s.introduction ?? undefined,
+          questions: s.questions.map((q: any) => ({
+            key: q.key,
+            question: q.question,
+            critereMajeur: q.critere_majeur,
+          })),
+        })))
+      })
+      .catch(() => {})
+  }, [categorieSlug])
 
   useEffect(() => {
     if (authLoading) return
@@ -540,18 +560,15 @@ export default function NoterPage({ params }: PageProps) {
                 }
               }
 
-              // Restaurer les scores détaillés (toutes les catégories possibles)
-              const allSections = [
-                ...SECTIONS_DETAILLEES,
-                ...Object.values(SECTIONS_PAR_CATEGORIE).flat(),
-              ]
-              for (const section of allSections) {
-                for (const q of section.questions) {
-                  if (existing[q.key] === null) {
-                    restoredDetailScores[q.key] = null // NC
-                  } else if (typeof existing[q.key] === 'number') {
-                    restoredDetailScores[q.key] = existing[q.key]
-                  }
+              // Restaurer les scores détaillés depuis toutes les clés inconnues des CRITERES
+              const critereKeys = new Set(CRITERES.map((c) => c.key))
+              const metaKeys = new Set(['commentaire', 'date_debut', 'date_fin'])
+              for (const [key, value] of Object.entries(existing)) {
+                if (critereKeys.has(key) || metaKeys.has(key)) continue
+                if (value === null) {
+                  restoredDetailScores[key] = null
+                } else if (typeof value === 'number') {
+                  restoredDetailScores[key] = value
                 }
               }
 
@@ -577,7 +594,7 @@ export default function NoterPage({ params }: PageProps) {
   // Un critère est "répondu" s'il a une note (> 0) OU s'il est marqué NC (null)
   const allRated = CRITERES.every((c) => scores[c.key] === null || (typeof scores[c.key] === 'number' && scores[c.key]! > 0))
 
-  const sectionsDetail = getSectionsForCategorie(categorieSlug)
+  const sectionsDetail = sectionsDB.length > 0 ? sectionsDB : getSectionsForCategorie(categorieSlug)
   const substeps = getSubsteps(sectionsDetail)
   // Pour les anonymes, une étape email est ajoutée en fin de parcours
   const totalSteps = 1 + substeps.length + (!user ? 1 : 0)
@@ -592,8 +609,43 @@ export default function NoterPage({ params }: PageProps) {
     q => q.key in detailScores && (detailScores[q.key] === null || detailScores[q.key]! > 0)
   ).length
 
+  // Pour chaque critère majeur, si une majorité de ses sous-questions est répondue
+  // (note > 0 ou NC/null comptent comme répondues), on remplace la note initiale
+  // par la moyenne des réponses numériques. Sinon on garde la note de l'étape 1.
+  const buildRefinedCritereScores = (): Record<string, number> => {
+    const allDetailQuestions = sectionsDetail.flatMap((s) => s.questions)
+    const refined: Record<string, number> = {}
+
+    for (const critere of CRITERES) {
+      const questionsForCritere = allDetailQuestions.filter((q) => q.critereMajeur === critere.key)
+      const originalScore = typeof scores[critere.key] === 'number' ? (scores[critere.key] as number) : 0
+
+      if (questionsForCritere.length === 0) {
+        refined[critere.key] = originalScore
+        continue
+      }
+
+      const answered = questionsForCritere.filter((q) => q.key in detailScores)
+      const majorityReached = answered.length > questionsForCritere.length / 2
+
+      if (majorityReached) {
+        const numericAnswers = answered
+          .map((q) => detailScores[q.key])
+          .filter((v): v is number => typeof v === 'number' && v > 0)
+        refined[critere.key] = numericAnswers.length > 0
+          ? numericAnswers.reduce((sum, v) => sum + v, 0) / numericAnswers.length
+          : originalScore
+      } else {
+        refined[critere.key] = originalScore
+      }
+    }
+
+    return refined
+  }
+
   const buildFinalScores = () => {
-    const finalScores: Record<string, number | string | null> = { ...scores, ...detailScores }
+    const refinedScores = buildRefinedCritereScores()
+    const finalScores: Record<string, number | string | null> = { ...scores, ...detailScores, ...refinedScores }
     if (commentaire.trim()) finalScores.commentaire = commentaire.trim()
     if (dateDebut) finalScores.date_debut = dateDebut
     if (plusUtilise && dateFin) finalScores.date_fin = dateFin
@@ -601,8 +653,9 @@ export default function NoterPage({ params }: PageProps) {
   }
 
   const buildMoyenne = () => {
+    const refinedScores = buildRefinedCritereScores()
     const numericValues = CRITERES
-      .map((c) => scores[c.key])
+      .map((c) => refinedScores[c.key])
       .filter((v): v is number => typeof v === 'number' && v > 0)
     return numericValues.length > 0
       ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
@@ -814,7 +867,7 @@ export default function NoterPage({ params }: PageProps) {
                 {CRITERES.map((critere) => (
                   <div key={critere.key} className="bg-white rounded-card shadow-card p-5">
                     <h3 className="text-sm font-semibold text-navy mb-1">
-                      {critere.label}
+                      {getCritereLabel(critere.key, categorieSlug)}
                     </h3>
                     <p className="text-xs text-gray-500 mb-3">{critere.question}</p>
                     <StarSelector

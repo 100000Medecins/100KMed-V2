@@ -281,6 +281,7 @@ function extractCategorieFromFormData(formData: FormData) {
     icon: (formData.get('icon') as string) || null,
     intro: (formData.get('intro') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
+    label_filtres: (formData.get('label_filtres') as string) || null,
   }
 }
 
@@ -323,6 +324,15 @@ export async function updateCategorie(id: string, formData: FormData) {
   redirect('/admin/categories')
 }
 
+export async function updateCategorieLabelFiltres(id: string, labelFiltres: string | null) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('categories').update({ label_filtres: labelFiltres }).eq('id', id)
+  revalidatePath('/admin/categories')
+  revalidatePath('/solutions', 'layout')
+}
+
 export async function reorderCategories(orderedIds: string[]) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
@@ -333,6 +343,81 @@ export async function reorderCategories(orderedIds: string[]) {
   )
   revalidatePath('/admin/categories')
   revalidatePath('/solutions', 'layout')
+}
+
+// ────────────────────────────────────────────
+// Groupes de catégories CRUD
+// ────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabase = any
+
+export async function createGroupe(nom: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { data: existing } = await supabase
+    .from('groupes_categories')
+    .select('ordre')
+    .order('ordre', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const nextOrdre = existing ? (existing.ordre as number) + 1 : 0
+  const { error } = await supabase
+    .from('groupes_categories')
+    .insert({ id: randomUUID(), nom, ordre: nextOrdre })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function updateGroupe(id: string, nom: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('groupes_categories')
+    .update({ nom })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function deleteGroupe(id: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { error } = await supabase.from('groupes_categories').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function reorderGroupes(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('groupes_categories').update({ ordre: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function updateCategorieGroupe(categorieId: string, groupeId: string | null) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('categories')
+    .update({ groupe_id: groupeId })
+    .eq('id', categorieId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
 }
 
 export async function toggleSolutionActif(id: string, actif: boolean) {

@@ -13,7 +13,14 @@ interface SolutionItem {
   nom: string
   slug: string | null
   logo_url: string | null
-  categorie: { slug: string | null; nom: string } | null
+  categorie: { slug: string | null; nom: string; icon: string | null } | null
+}
+
+interface CategorieCard {
+  slug: string
+  nom: string
+  icon: string | null
+  count: number
 }
 
 export default function ChoisirSolutionPage() {
@@ -21,6 +28,7 @@ export default function ChoisirSolutionPage() {
   const router = useRouter()
   const [solutions, setSolutions] = useState<SolutionItem[]>([])
   const [search, setSearch] = useState('')
+  const [selectedCategorie, setSelectedCategorie] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -29,7 +37,8 @@ export default function ChoisirSolutionPage() {
     const supabase = createClient()
     supabase
       .from('solutions')
-      .select('id, nom, slug, logo_url, categorie:categories(slug, nom)')
+      .select('id, nom, slug, logo_url, categorie:categories(slug, nom, icon)')
+      .eq('actif', true)
       .order('nom', { ascending: true })
       .then(({ data }) => {
         setSolutions((data as unknown as SolutionItem[]) || [])
@@ -37,11 +46,25 @@ export default function ChoisirSolutionPage() {
       })
   }, [authLoading])
 
-  const filtered = search.trim()
-    ? solutions.filter((s) =>
-        s.nom.toLowerCase().includes(search.toLowerCase())
-      )
-    : solutions
+  // Construire les cartes de catégories depuis les solutions chargées
+  const categories: CategorieCard[] = (() => {
+    const map = new Map<string, CategorieCard>()
+    for (const s of solutions) {
+      const cat = s.categorie
+      if (!cat?.slug) continue
+      if (!map.has(cat.slug)) {
+        map.set(cat.slug, { slug: cat.slug, nom: cat.nom, icon: cat.icon, count: 0 })
+      }
+      map.get(cat.slug)!.count++
+    }
+    return Array.from(map.values()).sort((a, b) => a.nom.localeCompare(b.nom))
+  })()
+
+  const filtered = solutions.filter((s) => {
+    const matchSearch = !search.trim() || s.nom.toLowerCase().includes(search.toLowerCase())
+    const matchCat = !selectedCategorie || s.categorie?.slug === selectedCategorie
+    return matchSearch && matchCat
+  })
 
   if (authLoading || loading) {
     return (
@@ -67,7 +90,7 @@ export default function ChoisirSolutionPage() {
           </p>
 
           {/* Barre de recherche */}
-          <div className="relative mb-6">
+          <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -78,12 +101,39 @@ export default function ChoisirSolutionPage() {
             />
           </div>
 
+          {/* Cartes de catégories */}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-3 mb-6">
+              {categories.map((cat) => {
+                const isActive = selectedCategorie === cat.slug
+                return (
+                  <button
+                    key={cat.slug}
+                    type="button"
+                    onClick={() => setSelectedCategorie(isActive ? null : cat.slug)}
+                    className={`flex flex-col items-center gap-2 px-4 py-4 rounded-2xl border-2 transition-all w-[calc(50%-6px)] sm:w-44 ${
+                      isActive
+                        ? 'bg-navy text-white border-navy shadow-md'
+                        : 'bg-white text-gray-700 border-gray-100 hover:border-accent-blue/40 hover:shadow-sm shadow-card'
+                    }`}
+                  >
+                    {cat.icon && <span className="text-3xl">{cat.icon}</span>}
+                    <span className="text-sm font-semibold leading-snug text-center">{cat.nom}</span>
+                    <span className={`text-xs ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
+                      {cat.count} logiciel{cat.count > 1 ? 's' : ''}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           {/* Liste des solutions */}
           <div className="space-y-2">
             {filtered.length === 0 ? (
               <div className="bg-white rounded-card shadow-card p-8 text-center">
                 <p className="text-gray-500 text-sm">
-                  {search ? 'Aucun logiciel trouvé.' : 'Aucun logiciel disponible.'}
+                  {search || selectedCategorie ? 'Aucun logiciel trouvé.' : 'Aucun logiciel disponible.'}
                 </p>
               </div>
             ) : (

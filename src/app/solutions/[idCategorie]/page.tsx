@@ -30,6 +30,9 @@ export async function generateStaticParams() {
   return []
 }
 
+// Catégories sans note 100 000 Médecins → pas d'option de tri par note
+const SLUGS_SANS_NOTES_REDAC = ['intelligence-artificielle-medecine', 'ia-documentaires', 'agenda-medical']
+
 const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
   nom: 'asc',
   note_redac: 'desc',
@@ -144,6 +147,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                     currentTri={tri}
                     currentCritere={critereId}
                     currentDir={dir}
+                    labelFiltres={(categorie as any).label_filtres || undefined}
                   />
                 </Suspense>
               </aside>
@@ -158,6 +162,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                 currentDir={dir}
                 selectedTagIds={selectedTagIds}
                 count={solutionsAvecNotes.length}
+                hideNoteRedac={SLUGS_SANS_NOTES_REDAC.includes(params.idCategorie)}
               />
               <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} />
             </div>

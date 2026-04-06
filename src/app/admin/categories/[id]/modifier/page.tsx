@@ -5,6 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import CategorieForm from '@/components/admin/CategorieForm'
 import TagsCategorieSection from '@/components/admin/TagsCategorieSection'
 import { updateCategorie } from '@/lib/actions/admin'
+import InlineLabelFiltres from '@/components/admin/InlineLabelFiltres'
 import { getTagsForCategorieAdmin } from '@/lib/db/admin-solutions'
 
 interface PageProps {
@@ -49,9 +50,11 @@ export default async function AdminEditCategoriePage({ params }: PageProps) {
 
       {/* Gestion des fonctionnalités de la catégorie */}
       <div>
-        <h2 className="text-lg font-bold text-navy mb-4">
-          Fonctionnalités ({tags.length})
-        </h2>
+        <InlineLabelFiltres
+          categorieId={id}
+          initialLabel={(categorie as any).label_filtres || 'Fonctionnalités'}
+          count={tags.length}
+        />
         <div className="bg-white rounded-card shadow-card p-6 md:p-8">
           <p className="text-sm text-gray-500 mb-5">
             Définissez ici les fonctionnalités disponibles pour cette catégorie. Elles apparaîtront dans la barre de filtres du comparatif et pourront être associées aux solutions individuellement.

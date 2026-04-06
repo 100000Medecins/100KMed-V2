@@ -12,6 +12,7 @@ interface SolutionSortBarProps {
   currentDir: 'asc' | 'desc'
   selectedTagIds: string[]
   count: number
+  hideNoteRedac?: boolean
 }
 
 const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
@@ -20,7 +21,7 @@ const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
   note_utilisateurs: 'desc',
 }
 
-export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCritere, currentDir, selectedTagIds, count }: SolutionSortBarProps) {
+export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCritere, currentDir, selectedTagIds, count, hideNoteRedac = false }: SolutionSortBarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -51,7 +52,6 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
   function handleTriClick(tri: string) {
     const isActive = currentTri === tri || (!currentTri && tri === 'nom')
     if (isActive) {
-      // Toggle direction
       const newDir: 'asc' | 'desc' = currentDir === 'asc' ? 'desc' : 'asc'
       const critere = (tri === 'note_redac' || tri === 'note_utilisateurs') ? currentCritere : ''
       router.push(buildUrl(tri, critere, newDir))
@@ -69,11 +69,13 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
 
   const nomLabel = (currentTri === 'nom' || !currentTri) && currentDir === 'desc' ? 'Nom Z→A' : 'Nom A→Z'
 
-  const BASE_OPTIONS = [
+  const ALL_OPTIONS = [
     { value: 'nom', label: nomLabel },
     { value: 'note_redac', label: 'Note 100000Médecins' },
     { value: 'note_utilisateurs', label: 'Note utilisateurs' },
   ]
+
+  const options = hideNoteRedac ? ALL_OPTIONS.filter((o) => o.value !== 'note_redac') : ALL_OPTIONS
 
   const showCritereDropdown = currentTri === 'note_redac' || currentTri === 'note_utilisateurs'
   const selectedCritere = criteresMajeurs.find((c) => c.id === currentCritere)
@@ -88,9 +90,8 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium text-gray-400 shrink-0">Trier par :</span>
 
-          {/* Boutons de tri global */}
           <div className="flex gap-1.5 flex-wrap items-center">
-            {BASE_OPTIONS.map((opt) => {
+            {options.map((opt) => {
               const isActive = currentTri === opt.value || (opt.value === 'nom' && !currentTri)
               const ArrowIcon = currentDir === 'asc' ? ArrowUp : ArrowDown
               return (

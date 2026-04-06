@@ -109,6 +109,7 @@ export default function SolutionDetailPage({
                     initialAvis={avisPagines.avis}
                     initialTotal={avisPagines.total}
                     initialTotalPages={avisPagines.totalPages}
+                    categorieSlug={categorieSlug}
                   />
                 </div>
               )}
