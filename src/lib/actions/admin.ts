@@ -491,6 +491,27 @@ export async function deleteCategorie(id: string, force = false) {
 // Pages Statiques (Blog)
 // ────────────────────────────────────────────
 
+export async function createPageStatique(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const slug = (formData.get('slug') as string).trim()
+  const titre = (formData.get('titre') as string).trim()
+  if (!slug || !titre) return { error: 'Titre et slug requis.' }
+
+  const { error } = await supabase.from('pages_statiques').insert({
+    id: randomUUID(),
+    slug,
+    titre,
+    contenu: null,
+    meta_description: null,
+  })
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/pages')
+  redirect('/admin/pages')
+}
+
 export async function updatePageStatique(id: string, formData: FormData) {
   await assertAdmin()
 
@@ -852,5 +873,15 @@ export async function reorderPartenaires(orderedIds: string[]) {
     )
   )
   revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+}
+
+export async function updateSiteConfig(cle: string, valeur: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  await supabase
+    .from('site_config')
+    .update({ valeur })
+    .eq('cle', cle)
   revalidatePath('/')
 }

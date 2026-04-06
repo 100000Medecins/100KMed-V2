@@ -15,8 +15,31 @@ async function getPartenaires() {
   }
 }
 
+async function getSiteConfig(cles: string[]): Promise<Record<string, string>> {
+  try {
+    const supabase = await createServerClient()
+    const { data } = await (supabase as any)
+      .from('site_config')
+      .select('cle, valeur')
+      .in('cle', cles)
+    const map: Record<string, string> = {}
+    for (const row of data ?? []) map[row.cle] = row.valeur
+    return map
+  } catch {
+    return {}
+  }
+}
+
 export default async function HeroSection() {
-  const partenaires = await getPartenaires()
+  const [partenaires, config] = await Promise.all([
+    getPartenaires(),
+    getSiteConfig(['hero_titre', 'hero_sous_titre', 'label_partenaires']),
+  ])
+
+  const heroTitre = config['hero_titre'] ?? 'Mieux exercer,\navec les bons outils.'
+  const heroSousTitre = config['hero_sous_titre'] ?? 'Grâce aux avis de vos confrères, trouvez les logiciels les plus adaptés à votre pratique au quotidien.'
+  const labelPartenaires = config['label_partenaires'] ?? 'Le premier mouvement intersyndical autour de la e-santé'
+  const [titreLigne1, titreLigne2] = heroTitre.split('\n')
 
   return (
     <section className="bg-hero-gradient pt-[72px]">
@@ -25,13 +48,11 @@ export default async function HeroSection() {
           {/* Left: Text content */}
           <div>
             <h1 className="text-4xl md:text-5xl lg:text-[3.4rem] font-extrabold text-navy leading-[1.15] tracking-tight">
-              Mieux exercer,
-              <br />
-              avec les bons outils.
+              {titreLigne1}
+              {titreLigne2 && <><br />{titreLigne2}</>}
             </h1>
             <p className="mt-5 text-gray-600 text-base md:text-lg leading-relaxed max-w-lg">
-              Grâce aux avis de vos confrères, trouvez les logiciels
-              les plus adaptés à votre pratique au quotidien.
+              {heroSousTitre}
             </p>
           </div>
 
@@ -74,7 +95,7 @@ export default async function HeroSection() {
         <div className="border-t border-white/50 bg-white/40 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-6 py-6">
             <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400 text-center mb-5">
-              Le premier mouvement intersyndical autour de la e-santé
+              {labelPartenaires}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
               {partenaires.map((p) => {

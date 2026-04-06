@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { Pencil } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 async function getAllPagesStatiquesAdmin() {
@@ -28,6 +28,11 @@ export default async function AdminPagesPage() {
             {pages.length} page{pages.length > 1 ? 's' : ''} statique{pages.length > 1 ? 's' : ''}
           </p>
         </div>
+        <Link href="/admin/pages/nouveau"
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft hover:shadow-card transition-all duration-300">
+          <Plus className="w-4 h-4" />
+          Nouvelle page
+        </Link>
       </div>
 
       <div className="bg-white rounded-card shadow-card overflow-hidden">
