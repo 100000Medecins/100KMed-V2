@@ -159,6 +159,13 @@ export default function Navbar() {
           >
             Qui sommes-nous ?
           </a>
+
+          <a
+            href="/irritants-esante"
+            className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+          >
+            Les irritants de l'e-santé
+          </a>
         </div>
 
         {/* CTA */}
@@ -248,6 +255,14 @@ export default function Navbar() {
               onClick={() => setIsMobileOpen(false)}
             >
               Qui sommes-nous ?
+            </a>
+
+            <a
+              href="/irritants-esante"
+              className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+              onClick={() => setIsMobileOpen(false)}
+            >
+              Les irritants de l'e-santé
             </a>
 
             <div className="pt-4 space-y-2">
