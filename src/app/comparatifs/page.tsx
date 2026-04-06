@@ -64,7 +64,7 @@ export default async function ComparatifsPage() {
           <div className="max-w-5xl mx-auto px-6 text-center">
             <h1 className="text-3xl font-bold text-navy mb-3">Tous nos comparatifs</h1>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">
-              Des comparatifs réalisés par et pour des médecins libéraux — sans jargon marketing.
+              Des comparatifs réalisés par et pour des médecins — sans jargon marketing.
             </p>
           </div>
         </section>

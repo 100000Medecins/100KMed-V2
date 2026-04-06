@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
-import type { NavCategorie } from "@/app/api/nav-categories/route";
+import type { NavCategorie, NavResponse } from "@/app/api/nav-categories/route";
 
 type Groupe = {
   nom: string
@@ -36,6 +36,7 @@ export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(false);
   const [categories, setCategories] = useState<NavCategorie[]>([]);
+  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: true });
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,7 +50,10 @@ export default function Navbar() {
   useEffect(() => {
     fetch('/api/nav-categories')
       .then((r) => r.json())
-      .then(setCategories)
+      .then((data: NavResponse) => {
+        setCategories(data.categories ?? [])
+        setNavConfig(data.navConfig ?? { irritants_visible: true })
+      })
       .catch(() => {})
   }, [])
 
@@ -160,12 +164,14 @@ export default function Navbar() {
             Qui sommes-nous ?
           </a>
 
-          <a
-            href="/irritants-esante"
-            className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
-          >
-            Les irritants de l'e-santé
-          </a>
+          {navConfig.irritants_visible && (
+            <a
+              href="/irritants-esante"
+              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+            >
+              Les irritants de l'e-santé
+            </a>
+          )}
         </div>
 
         {/* CTA */}
@@ -257,13 +263,15 @@ export default function Navbar() {
               Qui sommes-nous ?
             </a>
 
-            <a
-              href="/irritants-esante"
-              className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
-              onClick={() => setIsMobileOpen(false)}
-            >
-              Les irritants de l'e-santé
-            </a>
+            {navConfig.irritants_visible && (
+              <a
+                href="/irritants-esante"
+                className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+                onClick={() => setIsMobileOpen(false)}
+              >
+                Les irritants de l'e-santé
+              </a>
+            )}
 
             <div className="pt-4 space-y-2">
               {!loading && user ? (

@@ -9,17 +9,30 @@ export type NavCategorie = {
   groupe_ordre: number | null
 }
 
+export type NavResponse = {
+  categories: NavCategorie[]
+  navConfig: { irritants_visible: boolean }
+}
+
 export async function GET() {
   try {
     const supabase = await createServerClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from('categories')
-      .select('nom, slug, groupe_id, groupes_categories(id, nom, ordre)')
-      .eq('actif', true)
-      .order('position', { ascending: true })
 
-    const result: NavCategorie[] = (data ?? []).map((c: Record<string, unknown>) => {
+    const [{ data: categoriesData }, { data: configData }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('categories')
+        .select('nom, slug, groupe_id, groupes_categories(id, nom, ordre)')
+        .eq('actif', true)
+        .order('position', { ascending: true }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('site_config')
+        .select('cle, valeur')
+        .in('cle', ['nav_irritants_visible']),
+    ])
+
+    const categories: NavCategorie[] = (categoriesData ?? []).map((c: Record<string, unknown>) => {
       const g = c.groupes_categories as { id: string; nom: string; ordre: number } | null
       return {
         nom: c.nom as string,
@@ -30,8 +43,15 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json(result)
+    const configMap: Record<string, string> = {}
+    for (const row of configData ?? []) configMap[row.cle] = row.valeur
+
+    const navConfig = {
+      irritants_visible: configMap['nav_irritants_visible'] !== 'false',
+    }
+
+    return NextResponse.json({ categories, navConfig } satisfies NavResponse)
   } catch {
-    return NextResponse.json([])
+    return NextResponse.json({ categories: [], navConfig: { irritants_visible: true } })
   }
 }

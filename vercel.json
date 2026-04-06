@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/relance-evaluations",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/relance-incomplets",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/relance-psc",
+      "schedule": "0 9 * * 1"
     }
   ]
 }

@@ -39,7 +39,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
           {/* Left sidebar */}
           <div className="lg:w-56 shrink-0">
             <h2 className="text-xl font-bold text-navy leading-snug mb-6">
-              Les logiciels les plus recommandés
+              Les logiciels les mieux notés
             </h2>
             <div className="flex flex-wrap lg:flex-col gap-2">
               {categories.map((cat, i) => (

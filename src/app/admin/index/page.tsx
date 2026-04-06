@@ -41,6 +41,7 @@ export default async function AdminIndexPage() {
       'label_partenaires',
       'section_articles_titre',
       'section_articles_slugs',
+      'nav_irritants_visible',
     ]),
     getAllPages(),
     getAllPartenaires(),

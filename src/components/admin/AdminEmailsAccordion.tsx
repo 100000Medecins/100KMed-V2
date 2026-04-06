@@ -66,7 +66,7 @@ export default function AdminEmailsAccordion({ templates }: AdminEmailsAccordion
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-navy">{tpl.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{tpl.description}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tpl.description}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 {tpl.data?.updated_at && (

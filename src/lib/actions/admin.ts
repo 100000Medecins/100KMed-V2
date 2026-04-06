@@ -881,7 +881,6 @@ export async function updateSiteConfig(cle: string, valeur: string) {
   const supabase: AnySupabase = createServiceRoleClient()
   await supabase
     .from('site_config')
-    .update({ valeur })
-    .eq('cle', cle)
+    .upsert({ cle, valeur }, { onConflict: 'cle' })
   revalidatePath('/')
 }

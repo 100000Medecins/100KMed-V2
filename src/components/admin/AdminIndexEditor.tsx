@@ -172,6 +172,46 @@ function RichField({ cle, initialValue, label, minHeight = 80 }: { cle: string; 
 }
 
 
+function NavToggleField({ cle, initialValue, label }: { cle: string; initialValue: boolean; label: string }) {
+  const [enabled, setEnabled] = useState(initialValue)
+  const [saved, setSaved] = useState(false)
+  const [, startTransition] = useTransition()
+
+  function toggle() {
+    const next = !enabled
+    setEnabled(next)
+    startTransition(async () => {
+      await updateSiteConfig(cle, next ? 'true' : 'false')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    })
+  }
+
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="text-sm text-gray-700">{label}</span>
+      <div className="flex items-center gap-3">
+        {saved && <span className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Enregistré</span>}
+        <button
+          type="button"
+          onClick={toggle}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+            enabled ? 'bg-navy' : 'bg-gray-200'
+          }`}
+          role="switch"
+          aria-checked={enabled}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
+              enabled ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ArticlesOrder({ pages, initialSlugs }: { pages: Props['pages']; initialSlugs: string }) {
   const [selected, setSelected] = useState<string[]>(
     initialSlugs.split(',').map(s => s.trim()).filter(Boolean)
@@ -319,6 +359,15 @@ export default function AdminIndexEditor({ config, pages, partenaires }: Props) 
             initialSlugs={config['section_articles_slugs'] ?? 'tous-ensemble,difficile-de-changer,lancement-100k'}
           />
         </div>
+      </Accordeon>
+
+      {/* Accordéon 4 : Navigation */}
+      <Accordeon title="Navigation (header)">
+        <NavToggleField
+          cle="nav_irritants_visible"
+          initialValue={config['nav_irritants_visible'] !== 'false'}
+          label={`Afficher "Les irritants de l'e-santé" dans le header`}
+        />
       </Accordeon>
     </div>
   )
