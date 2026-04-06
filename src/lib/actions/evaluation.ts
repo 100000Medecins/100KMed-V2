@@ -338,6 +338,62 @@ export async function reconfirmerEvaluation(solutionId: string) {
 }
 
 /**
+ * Sauvegarde un brouillon d'évaluation (scores partiels).
+ * Crée solutions_utilisees (instanciee) + evaluations si inexistants,
+ * puis met à jour evaluations.scores avec les données courantes.
+ * Appelé silencieusement à chaque navigation entre étapes.
+ */
+export async function saveDraftEvaluation(
+  solutionId: string,
+  scores: Record<string, number | string | null>
+) {
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return
+
+  const supabase = createServiceRoleClient()
+
+  // Créer solutions_utilisees si inexistant
+  const { data: existingSU } = await supabase
+    .from('solutions_utilisees')
+    .select('id')
+    .eq('solution_id', solutionId)
+    .eq('user_id', user.id)
+    .limit(1)
+
+  if (!existingSU || existingSU.length === 0) {
+    await supabase.from('solutions_utilisees').insert({
+      user_id: user.id,
+      solution_id: solutionId,
+      statut_evaluation: 'instanciee',
+      date_debut: new Date().toISOString().split('T')[0],
+    })
+  }
+
+  // Créer ou mettre à jour evaluations.scores
+  const { data: existingEval } = await supabase
+    .from('evaluations')
+    .select('id')
+    .eq('solution_id', solutionId)
+    .eq('user_id', user.id)
+    .limit(1)
+
+  if (!existingEval || existingEval.length === 0) {
+    await supabase.from('evaluations').insert({
+      user_id: user.id,
+      solution_id: solutionId,
+      scores,
+    })
+  } else {
+    await supabase
+      .from('evaluations')
+      .update({ scores })
+      .eq('solution_id', solutionId)
+      .eq('user_id', user.id)
+  }
+}
+
+/**
  * Soumet une évaluation complète pour une solution (formulaire simplifié).
  * Utilise le service role pour bypasser le RLS.
  */

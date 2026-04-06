@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
-import { submitEvaluation, submitEvaluationAnonyme } from '@/lib/actions/evaluation'
+import { submitEvaluation, submitEvaluationAnonyme, saveDraftEvaluation } from '@/lib/actions/evaluation'
 import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Mail, CheckCircle } from 'lucide-react'
 import { getCritereLabel } from '@/lib/constants/criteres'
 
@@ -497,6 +497,7 @@ export default function NoterPage({ params }: PageProps) {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [sectionsDB, setSectionsDB] = useState<DetailSection[]>([])
+  const saveDraftRef = useRef<() => void>(() => {})
 
   // Charger les sections depuis la DB
   useEffect(() => {
@@ -660,6 +661,63 @@ export default function NoterPage({ params }: PageProps) {
     return numericValues.length > 0
       ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
       : 0
+  }
+
+  // Sauvegarde silencieuse du brouillon
+  // overrideScores / overrideDetailScores permettent de passer le nouvel état
+  // immédiatement après un setState (avant le re-render React)
+  const saveDraft = (
+    overrideScores?: Record<string, number | null>,
+    overrideDetailScores?: Record<string, number | null>
+  ) => {
+    if (!user || !solution) return
+    const s = overrideScores ?? scores
+    const d = overrideDetailScores ?? detailScores
+    const refined: Record<string, number> = {}
+    const allDetailQuestions = sectionsDetail.flatMap((sec) => sec.questions)
+    for (const critere of CRITERES) {
+      const questionsForCritere = allDetailQuestions.filter((q) => q.critereMajeur === critere.key)
+      const originalScore = typeof s[critere.key] === 'number' ? (s[critere.key] as number) : 0
+      if (questionsForCritere.length === 0) { refined[critere.key] = originalScore; continue }
+      const answered = questionsForCritere.filter((q) => q.key in d)
+      const majorityReached = answered.length > questionsForCritere.length / 2
+      if (majorityReached) {
+        const numericAnswers = answered.map((q) => d[q.key]).filter((v): v is number => typeof v === 'number' && v > 0)
+        refined[critere.key] = numericAnswers.length > 0 ? numericAnswers.reduce((sum, v) => sum + v, 0) / numericAnswers.length : originalScore
+      } else {
+        refined[critere.key] = originalScore
+      }
+    }
+    const finalScores: Record<string, number | string | null> = { ...s, ...d, ...refined }
+    if (commentaire.trim()) finalScores.commentaire = commentaire.trim()
+    if (dateDebut) finalScores.date_debut = dateDebut
+    if (plusUtilise && dateFin) finalScores.date_fin = dateFin
+    saveDraftEvaluation(solution.id, finalScores).catch(() => {})
+  }
+
+  // Maintenir la ref à jour pour pouvoir sauvegarder depuis beforeunload
+  saveDraftRef.current = saveDraft
+
+  // Sauvegarder quand l'utilisateur quitte la page (ferme l'onglet, recharge, etc.)
+  useEffect(() => {
+    const handleBeforeUnload = () => { saveDraftRef.current() }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
+
+
+  // Sauvegarde + avance à l'étape suivante
+  const handleNext = () => {
+    saveDraft()
+    setCurrentStep(prev => prev + 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Sauvegarde + recule à l'étape précédente
+  const handleBack = () => {
+    saveDraft()
+    setCurrentStep(prev => prev - 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async () => {
@@ -872,7 +930,11 @@ export default function NoterPage({ params }: PageProps) {
                     <p className="text-xs text-gray-500 mb-3">{critere.question}</p>
                     <StarSelector
                       value={critere.key in scores ? scores[critere.key] : 0}
-                      onChange={(v) => setScores((prev) => ({ ...prev, [critere.key]: v }))}
+                      onChange={(v) => {
+                        const next = { ...scores, [critere.key]: v }
+                        setScores(next)
+                        saveDraft(next, detailScores)
+                      }}
                     />
                   </div>
                 ))}
@@ -1008,10 +1070,7 @@ export default function NoterPage({ params }: PageProps) {
 
               <div className="flex justify-between items-center mt-8">
                 <button
-                  onClick={() => {
-                    setCurrentStep(prev => prev - 1)
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
+                  onClick={handleBack}
                   className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -1066,9 +1125,11 @@ export default function NoterPage({ params }: PageProps) {
                     key={section.titre}
                     section={section}
                     scores={detailScores}
-                    onScoreChange={(key, value) =>
-                      setDetailScores((prev) => ({ ...prev, [key]: value }))
-                    }
+                    onScoreChange={(key, value) => {
+                      const next = { ...detailScores, [key]: value }
+                      setDetailScores(next)
+                      saveDraft(scores, next)
+                    }}
                     defaultOpen={idx === 0}
                   />
                 ))}
@@ -1084,10 +1145,7 @@ export default function NoterPage({ params }: PageProps) {
               {/* Navigation */}
               <div className="flex justify-between items-center mt-8">
                 <button
-                  onClick={() => {
-                    setCurrentStep(prev => prev - 1)
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
+                  onClick={handleBack}
                   className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -1115,10 +1173,7 @@ export default function NoterPage({ params }: PageProps) {
                   ) : (
                     <Button
                       variant="primary"
-                      onClick={() => {
-                        setCurrentStep(prev => prev + 1)
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
+                      onClick={handleNext}
                     >
                       <span className="flex items-center gap-2">
                         Suivant
