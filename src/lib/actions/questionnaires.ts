@@ -76,7 +76,7 @@ export async function getAllSlugs(): Promise<string[]> {
   const { data } = await supabase
     .from('questionnaire_sections')
     .select('categorie_slug')
-  const slugs = [...new Set((data ?? []).map((r: { categorie_slug: string }) => r.categorie_slug))]
+  const slugs = Array.from(new Set((data ?? []).map((r: { categorie_slug: string }) => r.categorie_slug)))
   return slugs as string[]
 }
 
