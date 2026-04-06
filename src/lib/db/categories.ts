@@ -91,7 +91,7 @@ export async function getCategorieBySlug(slug: string) {
  */
 export async function getGroupes(): Promise<Groupe[]> {
   const supabase = createServiceRoleClient()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('groupes_categories')
     .select('id, nom, ordre')
     .order('ordre', { ascending: true })
@@ -104,7 +104,7 @@ export async function getGroupes(): Promise<Groupe[]> {
  */
 export async function getCategoriesAvecGroupe() {
   const supabase = await createServerClient()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('categories')
     .select('nom, slug, groupe_id, groupes_categories(id, nom, ordre)')
     .eq('actif', true)
