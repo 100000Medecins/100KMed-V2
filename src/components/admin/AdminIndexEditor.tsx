@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { ChevronDown, ChevronUp, Check, GripVertical, Plus, X } from 'lucide-react'
 import { updateSiteConfig } from '@/lib/actions/admin'
 import PartenairesList from '@/components/admin/PartenairesList'
+import RichTextEditor from '@/components/admin/RichTextEditor'
 
 interface Props {
   config: Record<string, string>
@@ -69,6 +70,107 @@ function InlineField({ cle, initialValue, label, multiline = false }: { cle: str
     </div>
   )
 }
+
+function HeroImageField({ initialValue }: { initialValue: string }) {
+  const [url, setUrl] = useState(initialValue)
+  const [uploading, setUploading] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [, startTransition] = useTransition()
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    const json = await res.json()
+    if (res.ok) {
+      setUrl(json.url)
+      startTransition(async () => {
+        await updateSiteConfig('hero_image', json.url)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      })
+    }
+    setUploading(false)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  function remove() {
+    setUrl('')
+    startTransition(async () => {
+      await updateSiteConfig('hero_image', '')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    })
+  }
+
+  return (
+    <div className="mb-5">
+      <label className="block text-sm font-medium text-navy mb-1.5">
+        Illustration à droite
+        <span className="ml-2 text-xs font-normal text-gray-400">Si vide, l'illustration par défaut s'affiche</span>
+      </label>
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+      <div className="flex items-center gap-4">
+        {url && (
+          <img src={url} alt="Hero" className="h-24 w-40 object-cover rounded-xl border border-gray-200" />
+        )}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
+          >
+            {uploading ? 'Upload...' : url ? 'Changer l\'image' : 'Uploader une image'}
+          </button>
+          {url && (
+            <button
+              type="button"
+              onClick={remove}
+              className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
+            >
+              Supprimer (revenir à l'illustration)
+            </button>
+          )}
+        </div>
+        {saved && <span className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Enregistré</span>}
+      </div>
+    </div>
+  )
+}
+
+function RichField({ cle, initialValue, label, minHeight = 80 }: { cle: string; initialValue: string; label: string; minHeight?: number }) {
+  const [value, setValue] = useState(initialValue)
+  const [saved, setSaved] = useState(false)
+  const [, startTransition] = useTransition()
+
+  function save() {
+    startTransition(async () => {
+      await updateSiteConfig(cle, value)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    })
+  }
+
+  return (
+    <div className="mb-5">
+      <label className="block text-sm font-medium text-navy mb-1.5">{label}</label>
+      <RichTextEditor initialContent={value} onChange={setValue} minHeight={minHeight} />
+      <button
+        type="button"
+        onClick={save}
+        className="mt-2 inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-navy text-white rounded-lg hover:bg-navy/80 transition-colors"
+      >
+        {saved ? <><Check className="w-3.5 h-3.5" /> Enregistré</> : 'Enregistrer'}
+      </button>
+    </div>
+  )
+}
+
 
 function ArticlesOrder({ pages, initialSlugs }: { pages: Props['pages']; initialSlugs: string }) {
   const [selected, setSelected] = useState<string[]>(
@@ -168,17 +270,16 @@ export default function AdminIndexEditor({ config, pages, partenaires }: Props) 
     <div>
       {/* Accordéon 1 : Hero */}
       <Accordeon title="Section Hero (titre + sous-titre)" defaultOpen>
-        <p className="text-xs text-gray-400 mb-4">Utilisez \n pour couper le titre en deux lignes.</p>
-        <InlineField
+        <HeroImageField initialValue={config['hero_image'] ?? ''} />
+        <RichField
           cle="hero_titre"
-          initialValue={config['hero_titre'] ?? 'Mieux exercer,\navec les bons outils.'}
+          initialValue={config['hero_titre'] ?? '<p>Mieux exercer,<br>avec les bons outils.</p>'}
           label="Titre principal"
         />
-        <InlineField
+        <RichField
           cle="hero_sous_titre"
-          initialValue={config['hero_sous_titre'] ?? 'Grâce aux avis de vos confrères, trouvez les logiciels les plus adaptés à votre pratique au quotidien.'}
+          initialValue={config['hero_sous_titre'] ?? '<p>Grâce aux avis de vos confrères, trouvez les logiciels les plus adaptés à votre pratique au quotidien.</p>'}
           label="Sous-titre"
-          multiline
         />
       </Accordeon>
 
@@ -206,11 +307,10 @@ export default function AdminIndexEditor({ config, pages, partenaires }: Props) 
 
       {/* Accordéon 3 : Articles */}
       <Accordeon title="Section Articles (ordre des pages)">
-        <InlineField
+        <RichField
           cle="section_articles_titre"
-          initialValue={config['section_articles_titre'] ?? '<span class="text-accent-blue">10000médecins.org</span>,\npour vous accompagner dans l\'ère numérique.'}
-          label="Titre de la section (HTML accepté)"
-          multiline
+          initialValue={config['section_articles_titre'] ?? '<p><span class="text-accent-blue">10000médecins.org</span>,<br>pour vous accompagner dans l\'ère numérique.</p>'}
+          label="Titre de la section"
         />
         <div className="mt-4">
           <label className="block text-sm font-medium text-navy mb-2">Pages affichées</label>

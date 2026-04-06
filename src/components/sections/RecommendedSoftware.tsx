@@ -61,7 +61,19 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
           {/* Cards grid */}
           <div className="flex-1">
             {active.solutions.length === 0 ? (
-              <p className="text-gray-400 text-sm py-8">Aucune solution notée pour le moment.</p>
+              <div className="flex flex-col items-center justify-center h-48 rounded-2xl border-2 border-dashed border-gray-200 gap-3">
+                <p className="text-gray-400 text-sm text-center max-w-xs">
+                  Pas encore assez d'évaluations pour établir un classement — revenez bientôt ! 😊
+                </p>
+                <p className="text-gray-500 text-sm">Ou évaluez le vôtre dès maintenant&nbsp;:</p>
+                <Link
+                  href="/solution/noter"
+                  className="inline-flex items-center gap-2 bg-navy text-white font-semibold px-5 py-2.5 rounded-full hover:bg-navy/90 transition-colors text-sm"
+                >
+                  Évaluer un logiciel
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

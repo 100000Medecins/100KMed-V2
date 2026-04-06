@@ -37,6 +37,7 @@ export default async function AdminIndexPage() {
     getSiteConfigMultiple([
       'hero_titre',
       'hero_sous_titre',
+      'hero_image',
       'label_partenaires',
       'section_articles_titre',
       'section_articles_slugs',

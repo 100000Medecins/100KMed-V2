@@ -6,7 +6,7 @@ import AboutMission from "@/components/sections/AboutMission";
 import EHealthVideos from "@/components/sections/EHealthVideos";
 import EditorCTA from "@/components/sections/EditorCTA";
 import { getCategories } from "@/lib/db/categories";
-import { getSolutions, getNotesGlobalesRedac } from "@/lib/db/solutions";
+import { getSolutions, getNotesUtilisateursGlobales } from "@/lib/db/solutions";
 
 export const revalidate = 1800;
 
@@ -17,7 +17,7 @@ export default async function Home() {
     categories.map(async (cat) => {
       const solutions = await getSolutions({ categorieId: cat.id });
       const solutionIds = solutions.map((s) => s.id);
-      const notesGlobales = await getNotesGlobalesRedac(solutionIds);
+      const notesUtilisateurs = await getNotesUtilisateursGlobales(solutionIds);
 
       const solutionsAvecNotes = solutions
         .map((s) => ({
@@ -25,7 +25,7 @@ export default async function Home() {
           nom: s.nom,
           slug: s.slug,
           logo_url: s.logo_url,
-          noteRedacBase5: notesGlobales[s.id] || null,
+          noteRedacBase5: notesUtilisateurs[s.id] || null,
           categorieSlug: cat.slug || "",
         }))
         .filter((s) => s.noteRedacBase5 !== null)
