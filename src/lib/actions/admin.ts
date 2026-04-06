@@ -491,13 +491,13 @@ export async function deleteCategorie(id: string, force = false) {
 // Pages Statiques (Blog)
 // ────────────────────────────────────────────
 
-export async function createPageStatique(formData: FormData) {
+export async function createPageStatique(formData: FormData): Promise<void> {
   await assertAdmin()
   const supabase = createServiceRoleClient()
 
   const slug = (formData.get('slug') as string).trim()
   const titre = (formData.get('titre') as string).trim()
-  if (!slug || !titre) return { error: 'Titre et slug requis.' }
+  if (!slug || !titre) redirect('/admin/pages')
 
   const { error } = await supabase.from('pages_statiques').insert({
     id: randomUUID(),
@@ -506,7 +506,7 @@ export async function createPageStatique(formData: FormData) {
     contenu: null,
     meta_description: null,
   })
-  if (error) return { error: error.message }
+  if (error) redirect('/admin/pages')
 
   revalidatePath('/admin/pages')
   redirect('/admin/pages')
