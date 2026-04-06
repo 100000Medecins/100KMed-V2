@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { resolveSpecialite } from '@/lib/auth/psc-specialites'
 import {
   MessageSquare,
   Users,
@@ -210,9 +211,14 @@ async function getStats() {
     .slice(0, 8)
 
   // ── Utilisateurs par spécialité ──
+  // SM26, SM53, SM54 sont tous des médecins généralistes — fusionnés sous un seul libellé
+  const SPECIALITE_FUSION: Record<string, string> = {
+    'Spécialiste en Médecine générale': 'Médecine générale',
+  }
   const specCount: Record<string, number> = {}
   for (const u of allUsers) {
-    const spec = (u.specialite as string) || 'Non renseignée'
+    let spec = resolveSpecialite(u.specialite as string) || 'Non renseignée'
+    spec = SPECIALITE_FUSION[spec] ?? spec
     specCount[spec] = (specCount[spec] || 0) + 1
   }
   const usersBySpecialite = Object.entries(specCount)
@@ -348,8 +354,8 @@ function BarChartHorizontal({
   return (
     <div className="space-y-2.5">
       {data.map((d, i) => (
-        <div key={d.label} className="flex items-center gap-3">
-          <span className="text-xs text-gray-600 w-28 truncate text-right font-medium">{d.label}</span>
+        <div key={d.label} className="flex items-start gap-3 pt-0.5">
+          <span className="text-xs text-gray-600 w-36 shrink-0 text-right font-medium leading-tight">{d.label}</span>
           <div className="flex-1 h-7 bg-gray-50 rounded-lg overflow-hidden relative">
             <div
               className="h-full rounded-lg"

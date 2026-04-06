@@ -177,7 +177,7 @@ export default function MesEvaluationsPage() {
                         className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 transition-colors px-3 py-1.5 rounded-lg"
                       >
                         <Pencil className="w-3.5 h-3.5" />
-                        Compléter ma note
+                        Compléter mon évaluation
                       </Link>
                     ) : (
                       <Link

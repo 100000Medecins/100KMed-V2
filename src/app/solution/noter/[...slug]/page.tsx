@@ -848,23 +848,27 @@ export default function NoterPage({ params }: PageProps) {
                 {/* Depuis quand utilisez-vous ce logiciel ? */}
                 <div className="bg-white rounded-card shadow-card p-5">
                   <h3 className="text-sm font-semibold text-navy mb-1">
-                    Depuis quand utilisez-vous ce logiciel ?
+                    Depuis combien d&apos;années utilisez-vous ce logiciel ?
                   </h3>
                   <p className="text-xs text-gray-500 mb-3">
-                    Indiquez l&apos;année depuis laquelle vous utilisez cette solution.
+                    Indiquez approximativement depuis combien de temps vous utilisez cette solution.
                   </p>
                   <select
-                    value={dateDebut ? dateDebut.substring(0, 4) : ''}
+                    value={dateDebut ? String(new Date().getFullYear() - parseInt(dateDebut.substring(0, 4))) : ''}
                     onChange={(e) => {
                       const val = e.target.value
-                      setDateDebut(val ? `${val}-01-01` : '')
+                      if (val === '') { setDateDebut(''); return }
+                      const year = new Date().getFullYear() - parseInt(val)
+                      setDateDebut(`${year}-01-01`)
                     }}
                     className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                   >
-                    <option value="">Sélectionnez une année</option>
-                    {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                      <option key={year} value={year}>{year}</option>
+                    <option value="">Sélectionnez une durée</option>
+                    <option value="0">Moins d&apos;1 an</option>
+                    {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>{n} an{n > 1 ? 's' : ''}</option>
                     ))}
+                    <option value="21">Plus de 20 ans</option>
                   </select>
 
                   {/* Case à cocher : plus utilisé */}
