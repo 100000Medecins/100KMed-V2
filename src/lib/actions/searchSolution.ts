@@ -102,6 +102,22 @@ export async function searchSolutionInfo(
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
+      tools: [
+        {
+          name: 'extraire_infos_logiciel',
+          description: 'Extrait les informations éditoriales d\'un logiciel médical',
+          input_schema: {
+            type: 'object',
+            properties: {
+              description: { type: 'string', description: '1-2 phrases très courtes et factuelles' },
+              avis_redac: { type: 'string', description: '3-4 phrases avis éditorial' },
+              website_url: { type: 'string', description: 'URL complète du site officiel ou null' },
+            },
+            required: ['description', 'avis_redac'],
+          },
+        },
+      ],
+      tool_choice: { type: 'tool', name: 'extraire_infos_logiciel' },
       messages: [
         {
           role: 'user',
@@ -116,15 +132,7 @@ Génère deux textes distincts :
 2. "avis_redac" : 3-4 phrases dans le style éditorial. Décris ce que fait concrètement le logiciel, qui l'utilise, les points forts réels, et les limites ou points d'attention si perceptibles dans les sources.
 
 Contexte :
-${context}
-
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni explication. Mets null si une info n'est pas trouvée.
-
-{
-  "description": "1-2 phrases très courtes et factuelles",
-  "avis_redac": "3-4 phrases avis éditorial",
-  "website_url": "URL complète du site officiel du logiciel ou null"
-}`,
+${context}`,
         },
       ],
     }),
@@ -138,9 +146,8 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni explication. Met
   const claudeData = await claudeRes.json()
 
   try {
-    const text: string = claudeData.content[0].text.trim()
-    const cleaned = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '')
-    const parsed = JSON.parse(cleaned)
+    const toolUse = claudeData.content?.find((b: { type: string }) => b.type === 'tool_use')
+    const parsed = toolUse?.input ?? JSON.parse(claudeData.content[0].text.trim())
 
     // Logo via logo.dev (remplace Clearbit, déprécié)
     let logo_url: string | null = null

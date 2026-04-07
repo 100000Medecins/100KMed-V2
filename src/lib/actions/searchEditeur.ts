@@ -125,6 +125,30 @@ export async function searchEditeurInfo(
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
+      tools: [
+        {
+          name: 'extraire_infos_editeur',
+          description: 'Extrait les informations structurées d\'un éditeur de logiciel médical',
+          input_schema: {
+            type: 'object',
+            properties: {
+              nom_commercial: { type: 'string', description: 'Nom de marque si différent du nom légal, sinon null' },
+              description: { type: 'string', description: 'Description 2-3 phrases en français' },
+              website: { type: 'string', description: 'URL complète du site officiel ou null' },
+              contact_email: { type: 'string', description: 'Email de contact ou null' },
+              contact_telephone: { type: 'string', description: 'Numéro ou null' },
+              contact_adresse: { type: 'string', description: 'Rue et numéro ou null' },
+              contact_cp: { type: 'string', description: 'Code postal ou null' },
+              contact_ville: { type: 'string', description: 'Ville ou null' },
+              contact_pays: { type: 'string', description: 'Pays ou null' },
+              nb_employes: { type: 'number', description: 'Nombre entier ou null' },
+              siret: { type: 'string', description: '14 chiffres ou null' },
+            },
+            required: ['description'],
+          },
+        },
+      ],
+      tool_choice: { type: 'tool', name: 'extraire_infos_editeur' },
       messages: [
         {
           role: 'user',
@@ -137,23 +161,7 @@ Génère aussi une description courte (2-3 phrases) en français dans ce style :
 Si la société est basée au Royaume-Uni ou ailleurs, indique le pays réel.
 
 Contexte :
-${context}
-
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni explication. Mets null si une info n'est pas trouvée.
-
-{
-  "nom_commercial": "nom de marque si différent du nom légal, sinon null",
-  "description": "description 2-3 phrases en français",
-  "website": "URL complète du site officiel ou null",
-  "contact_email": "email de contact ou null",
-  "contact_telephone": "numéro ou null",
-  "contact_adresse": "rue et numéro ou null",
-  "contact_cp": "code postal ou null",
-  "contact_ville": "ville ou null",
-  "contact_pays": "pays ou null",
-  "nb_employes": nombre entier ou null,
-  "siret": "14 chiffres ou null"
-}`,
+${context}`,
         },
       ],
     }),
@@ -167,9 +175,8 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni explication. Met
   const claudeData = await claudeRes.json()
 
   try {
-    const text: string = claudeData.content[0].text.trim()
-    const cleaned = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '')
-    const parsed = JSON.parse(cleaned)
+    const toolUse = claudeData.content?.find((b: { type: string }) => b.type === 'tool_use')
+    const parsed = toolUse?.input ?? JSON.parse(claudeData.content[0].text.trim())
 
     // Logo via logo.dev (remplace Clearbit, déprécié)
     let logo_url: string | null = null
