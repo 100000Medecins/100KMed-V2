@@ -894,3 +894,128 @@ export async function updateSiteConfig(cle: string, valeur: string) {
     .upsert({ cle, valeur }, { onConflict: 'cle' })
   revalidatePath('/')
 }
+
+// ────────────────────────────────────────────
+// Blog — Catégories
+// ────────────────────────────────────────────
+
+export async function createArticleCategorie(nom: string, slug: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles_categories')
+    .insert({ id: randomUUID(), nom, slug })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+export async function updateArticleCategorie(id: string, nom: string, slug: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles_categories')
+    .update({ nom, slug })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+export async function deleteArticleCategorie(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles_categories')
+    .delete()
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+// ────────────────────────────────────────────
+// Blog — Articles
+// ────────────────────────────────────────────
+
+
+function extractArticleFromFormData(formData: FormData) {
+  const titre = formData.get('titre') as string
+  const slug = (formData.get('slug') as string) || slugify(titre)
+  const statut = (formData.get('statut') as string) || 'brouillon'
+  const datePublication = statut === 'publié' ? new Date().toISOString() : null
+  return {
+    titre,
+    slug,
+    extrait: (formData.get('extrait') as string) || null,
+    contenu: (formData.get('contenu') as string) || null,
+    image_couverture: (formData.get('image_couverture') as string) || null,
+    meta_description: (formData.get('meta_description') as string) || null,
+    id_categorie: (formData.get('id_categorie') as string) || null,
+    statut,
+    date_publication: datePublication,
+  }
+}
+
+export async function createArticle(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const data = extractArticleFromFormData(formData)
+  const { error } = await supabase
+    .from('articles')
+    .insert({ id: randomUUID(), ...data })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  redirect('/admin/blog')
+}
+
+export async function updateArticle(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const data = extractArticleFromFormData(formData)
+  const { error } = await supabase
+    .from('articles')
+    .update(data)
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  redirect('/admin/blog')
+}
+
+export async function deleteArticle(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles')
+    .delete()
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+export async function updateArticleImageCouverture(id: string, imageUrl: string | null) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles')
+    .update({ image_couverture: imageUrl })
+    .eq('id', id)
+  if (error) return { error: error.message }
+}
+
+export async function publishArticle(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles')
+    .update({ statut: 'publié', date_publication: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  revalidatePath(`/blog/${id}`)
+  return { success: true }
+}

@@ -368,6 +368,11 @@ export default function AdminIndexEditor({ config, pages, partenaires }: Props) 
           initialValue={config['nav_irritants_visible'] !== 'false'}
           label={`Afficher "Les irritants de l'e-santé" dans le header`}
         />
+        <NavToggleField
+          cle="nav_blog_visible"
+          initialValue={config['nav_blog_visible'] !== 'false'}
+          label={`Afficher "Blog" dans le header`}
+        />
       </Accordeon>
     </div>
   )

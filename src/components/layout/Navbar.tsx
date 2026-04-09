@@ -36,7 +36,7 @@ export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(false);
   const [categories, setCategories] = useState<NavCategorie[]>([]);
-  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: true });
+  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: true, blog_visible: true });
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,7 +52,7 @@ export default function Navbar() {
       .then((r) => r.json())
       .then((data: NavResponse) => {
         setCategories(data.categories ?? [])
-        setNavConfig(data.navConfig ?? { irritants_visible: true })
+        setNavConfig(data.navConfig ?? { irritants_visible: true, blog_visible: true })
       })
       .catch(() => {})
   }, [])
@@ -172,6 +172,15 @@ export default function Navbar() {
               Les irritants de l'e-santé
             </a>
           )}
+
+          {navConfig.blog_visible && (
+            <a
+              href="/blog"
+              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+            >
+              Blog
+            </a>
+          )}
         </div>
 
         {/* CTA */}
@@ -270,6 +279,16 @@ export default function Navbar() {
                 onClick={() => setIsMobileOpen(false)}
               >
                 Les irritants de l'e-santé
+              </a>
+            )}
+
+            {navConfig.blog_visible && (
+              <a
+                href="/blog"
+                className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+                onClick={() => setIsMobileOpen(false)}
+              >
+                Blog
               </a>
             )}
 

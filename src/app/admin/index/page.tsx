@@ -42,6 +42,7 @@ export default async function AdminIndexPage() {
       'section_articles_titre',
       'section_articles_slugs',
       'nav_irritants_visible',
+      'nav_blog_visible',
     ]),
     getAllPages(),
     getAllPartenaires(),
