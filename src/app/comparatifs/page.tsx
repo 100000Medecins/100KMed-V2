@@ -82,7 +82,7 @@ export default async function ComparatifsPage() {
                     <Link
                       key={cat.slug}
                       href={`/solutions/${cat.slug}`}
-                      className="relative overflow-hidden rounded-3xl min-h-[220px] flex flex-col justify-end p-8 group"
+                      className="relative overflow-hidden rounded-3xl min-h-[220px] flex flex-col justify-start p-8 group"
                       style={{ background: 'linear-gradient(135deg, #C8DCE4 0%, #E4B8C8 55%, #EDD8B0 100%)' }}
                     >
                       {/* Illustration : image uploadée ou emoji en fallback */}
@@ -93,7 +93,7 @@ export default async function ComparatifsPage() {
                           className="absolute bottom-0 right-4 h-[160px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
                         />
                       ) : cat.icon ? (
-                        <span className="absolute top-6 right-7 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                        <span className="absolute bottom-4 right-6 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
                           {cat.icon}
                         </span>
                       ) : null}
