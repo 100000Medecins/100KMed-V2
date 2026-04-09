@@ -12,7 +12,7 @@ export default function DeleteArticleButton({ id, titre }: { id: string; titre: 
     return (
       <span className="inline-flex items-center gap-1">
         <button
-          onClick={() => startTransition(() => deleteArticle(id))}
+          onClick={() => startTransition(() => { deleteArticle(id) })}
           disabled={isPending}
           className="px-2 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
         >
