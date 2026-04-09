@@ -22,8 +22,8 @@ function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-function formatValue(val: string | null, isHtml = false) {
-  if (val === null || val === '') return null
+function formatValue(val: string | null | undefined, isHtml = false) {
+  if (val === null || val === undefined || val === '') return null
   if (isHtml) return stripHtml(val)
   return val
 }

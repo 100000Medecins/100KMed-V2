@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react'
 import type { Database } from '@/types/database'
 import RichTextEditor from './RichTextEditor'
+import { updateCategorieImageUrl } from '@/lib/actions/admin'
 
 type Categorie = Database['public']['Tables']['categories']['Row']
 
@@ -39,6 +40,11 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
       const json = await res.json()
       if (!res.ok) { setImageUploadError(json.error ?? 'Erreur upload'); return }
       setImageUrl(json.url)
+      // Sauvegarde immédiate en base si on est en mode édition
+      if (categorie?.id) {
+        const result = await updateCategorieImageUrl(categorie.id, json.url)
+        if (result?.error) setImageUploadError(`Upload OK, mais sauvegarde échouée : ${result.error}`)
+      }
     } catch {
       setImageUploadError('Erreur réseau')
     } finally {
@@ -109,6 +115,7 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
       {/* Image */}
       <div>
         <label className={labelClass}>Image (affichée à droite du texte)</label>
+        <input type="hidden" name="image_url" value={imageUrl} />
         <input
           ref={imageFileInputRef}
           type="file"
@@ -132,7 +139,10 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
             {imageUrl && (
               <button
                 type="button"
-                onClick={() => setImageUrl('')}
+                onClick={async () => {
+                  setImageUrl('')
+                  if (categorie?.id) await updateCategorieImageUrl(categorie.id, null)
+                }}
                 className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
               >
                 Supprimer l'image

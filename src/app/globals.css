@@ -20,11 +20,15 @@
   }
 
   .bg-hero-gradient {
-    background: linear-gradient(135deg, #FDE8EF 0%, #E0EAFF 50%, #FFF0E6 100%);
+    background: linear-gradient(135deg, #A8C4D0 0%, #D49AAC 55%, #DFC090 100%);
   }
 
   .bg-cta-gradient {
-    background: linear-gradient(135deg, #E0EAFF 0%, #FDE8EF 50%, #FFF0E6 100%);
+    background: linear-gradient(135deg, #A8C4D0 0%, #D49AAC 55%, #DFC090 100%);
+  }
+
+  .bg-partners-gradient {
+    background: linear-gradient(90deg, #EAF2F5 0%, #F5E8EE 50%, #FAF2E6 100%);
   }
 }
 

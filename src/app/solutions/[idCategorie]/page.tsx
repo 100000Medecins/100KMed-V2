@@ -109,28 +109,34 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
       <Navbar />
       <main className="pt-[72px]">
         {/* Hero catégorie */}
-        <section className="bg-surface-light py-12 md:py-16">
+        <section className="bg-surface-light py-10 md:py-14">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="flex flex-col md:flex-row items-start gap-8">
-              <div className="flex-1">
-                <h1 className="text-2xl md:text-3xl font-bold text-navy mb-4 flex items-center gap-3">
-                  {categorie.icon && <span className="text-3xl">{categorie.icon}</span>}
-                  {categorie.nom}
-                </h1>
+            {/* Titre : toujours visible */}
+            <h1 className="text-2xl md:text-3xl font-bold text-navy mb-4 flex items-center gap-3">
+              {categorie.icon && <span className="text-3xl">{categorie.icon}</span>}
+              {categorie.nom}
+            </h1>
+
+            {/* Intro + image : masqués sur mobile */}
+            {(categorie.intro || categorie.image_url) && (
+              <div className="hidden md:flex items-center gap-10">
                 {categorie.intro && (
-                  <div className="text-gray-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: categorie.intro }} />
+                  <div
+                    className="flex-1 text-gray-600 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: categorie.intro }}
+                  />
+                )}
+                {categorie.image_url && (
+                  <div className="shrink-0 w-64 lg:w-80">
+                    <img
+                      src={categorie.image_url}
+                      alt={categorie.nom}
+                      className="w-full h-56 lg:h-64 object-contain drop-shadow-lg"
+                    />
+                  </div>
                 )}
               </div>
-              {categorie.image_url && (
-                <div className="shrink-0 w-full md:w-80">
-                  <img
-                    src={categorie.image_url}
-                    alt={categorie.nom}
-                    className="w-full h-48 md:h-56 object-cover rounded-2xl shadow-card"
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </section>
 

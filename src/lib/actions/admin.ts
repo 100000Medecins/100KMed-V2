@@ -324,6 +324,16 @@ export async function updateCategorie(id: string, formData: FormData) {
   redirect('/admin/categories')
 }
 
+export async function updateCategorieImageUrl(id: string, imageUrl: string | null) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('categories')
+    .update({ image_url: imageUrl })
+    .eq('id', id)
+  if (error) return { error: error.message }
+}
+
 export async function updateCategorieLabelFiltres(id: string, labelFiltres: string | null) {
   await assertAdmin()
   const supabase = createServiceRoleClient()

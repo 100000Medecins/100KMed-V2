@@ -13,6 +13,7 @@ type CatRow = {
   nom: string
   slug: string | null
   icon: string | null
+  image_url: string | null
   groupe_id: string | null
   groupes_categories: { id: string; nom: string; ordre: number } | null
 }
@@ -29,7 +30,7 @@ async function getCategoriesGroupees(): Promise<Groupe[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('categories')
-    .select('nom, slug, icon, groupe_id, groupes_categories(id, nom, ordre)')
+    .select('nom, slug, icon, image_url, groupe_id, groupes_categories(id, nom, ordre)')
     .eq('actif', true)
     .order('position', { ascending: true })
 
@@ -60,31 +61,46 @@ export default async function ComparatifsPage() {
     <>
       <Navbar />
       <main className="pt-[72px]">
-        <section className="bg-surface-light py-12 md:py-16">
+        <section className="bg-hero-gradient py-14 md:py-20">
           <div className="max-w-5xl mx-auto px-6 text-center">
-            <h1 className="text-3xl font-bold text-navy mb-3">Tous nos comparatifs</h1>
-            <p className="text-gray-500 text-lg max-w-xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Tous nos comparatifs</h1>
+            <p className="text-white/75 text-lg max-w-xl mx-auto">
               Des comparatifs réalisés par et pour des médecins — sans jargon marketing.
             </p>
           </div>
         </section>
 
-        <section className="max-w-5xl mx-auto px-6 py-12">
-          <div className="space-y-12">
+        <section className="max-w-5xl mx-auto px-6 py-14">
+          <div className="space-y-10">
             {groupes.map((groupe) => (
               <div key={groupe.id}>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5 text-center">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">
                   {groupe.nom}
                 </h2>
-                <div className="flex flex-wrap justify-center gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {groupe.categories.map((cat) => (
                     <Link
                       key={cat.slug}
                       href={`/solutions/${cat.slug}`}
-                      className="flex flex-col items-center justify-center gap-3 px-6 py-6 rounded-2xl border-2 border-gray-100 bg-white shadow-card hover:border-accent-blue/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 w-40 sm:w-52"
+                      className="relative overflow-hidden rounded-3xl min-h-[220px] flex flex-col justify-end p-8 group"
+                      style={{ background: 'linear-gradient(135deg, #C8DCE4 0%, #E4B8C8 55%, #EDD8B0 100%)' }}
                     >
-                      {cat.icon && <span className="text-4xl">{cat.icon}</span>}
-                      <span className="text-sm font-semibold text-navy leading-snug text-center">{cat.nom}</span>
+                      {/* Illustration : image uploadée ou emoji en fallback */}
+                      {cat.image_url ? (
+                        <img
+                          src={cat.image_url}
+                          alt=""
+                          className="absolute bottom-0 right-4 h-[160px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                        />
+                      ) : cat.icon ? (
+                        <span className="absolute top-6 right-7 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                          {cat.icon}
+                        </span>
+                      ) : null}
+                      <span className="text-xl font-extrabold text-navy mb-3 leading-snug relative z-10">{cat.nom}</span>
+                      <span className="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm text-navy font-semibold px-4 py-2 rounded-full text-sm w-fit group-hover:bg-white/60 transition-colors duration-200 relative z-10">
+                        Explorer →
+                      </span>
                     </Link>
                   ))}
                 </div>
