@@ -44,3 +44,18 @@ export function createServiceRoleClient() {
     { auth: { persistSession: false } }
   )
 }
+
+/**
+ * Identique à createServiceRoleClient mais sans typage strict.
+ * À utiliser pour les tables absentes des types générés (articles, articles_categories…)
+ * jusqu'à la prochaine régénération des types Supabase.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createServiceRoleClientUntyped(): ReturnType<typeof createClient<any>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return createClient<any>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}

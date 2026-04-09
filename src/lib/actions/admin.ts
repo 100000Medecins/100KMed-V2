@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { createHmac, randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServiceRoleClient, createServiceRoleClientUntyped } from '@/lib/supabase/server'
 
 // ────────────────────────────────────────────
 // Auth
@@ -901,7 +901,7 @@ export async function updateSiteConfig(cle: string, valeur: string) {
 
 export async function createArticleCategorie(nom: string, slug: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { error } = await supabase
     .from('articles_categories')
     .insert({ id: randomUUID(), nom, slug })
@@ -912,7 +912,7 @@ export async function createArticleCategorie(nom: string, slug: string) {
 
 export async function updateArticleCategorie(id: string, nom: string, slug: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { error } = await supabase
     .from('articles_categories')
     .update({ nom, slug })
@@ -924,7 +924,7 @@ export async function updateArticleCategorie(id: string, nom: string, slug: stri
 
 export async function deleteArticleCategorie(id: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { error } = await supabase
     .from('articles_categories')
     .delete()
@@ -959,7 +959,7 @@ function extractArticleFromFormData(formData: FormData) {
 
 export async function createArticle(formData: FormData) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const data = extractArticleFromFormData(formData)
   const { error } = await supabase
     .from('articles')
@@ -972,7 +972,7 @@ export async function createArticle(formData: FormData) {
 
 export async function updateArticle(id: string, formData: FormData) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const data = extractArticleFromFormData(formData)
   const { error } = await supabase
     .from('articles')
@@ -986,7 +986,7 @@ export async function updateArticle(id: string, formData: FormData) {
 
 export async function deleteArticle(id: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { error } = await supabase
     .from('articles')
     .delete()
@@ -998,7 +998,7 @@ export async function deleteArticle(id: string) {
 
 export async function updateArticleImageCouverture(id: string, imageUrl: string | null) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { error } = await supabase
     .from('articles')
     .update({ image_couverture: imageUrl })
@@ -1008,7 +1008,7 @@ export async function updateArticleImageCouverture(id: string, imageUrl: string 
 
 export async function publishArticle(id: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { error } = await supabase
     .from('articles')
     .update({ statut: 'publié', date_publication: new Date().toISOString() })

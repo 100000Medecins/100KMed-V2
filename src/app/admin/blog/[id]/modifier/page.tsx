@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServiceRoleClientUntyped } from '@/lib/supabase/server'
 import ArticleForm from '@/components/admin/ArticleForm'
 import SocialPanel from '@/components/admin/SocialPanel'
 import { updateArticle } from '@/lib/actions/admin'
@@ -11,13 +11,13 @@ interface PageProps {
 }
 
 async function getArticle(id: string) {
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { data } = await supabase.from('articles').select('*').eq('id', id).single()
   return data
 }
 
 async function getCategories() {
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClientUntyped()
   const { data } = await supabase.from('articles_categories').select('id, nom').order('position', { ascending: true })
   return data ?? []
 }
