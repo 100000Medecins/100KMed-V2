@@ -12,15 +12,8 @@ interface SolutionHeroProps {
   noteUtilisateurs: number | null
   nbEvaluations: number
   categorieSlug: string
+  hasDetailedRatings: boolean
 }
-
-const anchors = [
-  { id: 'avis-redaction', label: 'Avis de la rédaction' },
-  { id: 'galerie', label: 'Galerie' },
-  { id: 'notes-detaillees', label: 'Evaluation détaillée' },
-  { id: 'avis-utilisateurs', label: 'Notes utilisateurs' },
-  { id: 'mot-editeur', label: 'Mot éditeur' },
-]
 
 /** Carte de note — design identique pour utilisateurs & rédaction */
 function RatingCard({
@@ -56,7 +49,15 @@ export default function SolutionHero({
   noteUtilisateurs,
   nbEvaluations,
   categorieSlug,
+  hasDetailedRatings,
 }: SolutionHeroProps) {
+  const anchors = [
+    { id: 'avis-redaction', label: 'Avis de la rédaction', show: !!solution.evaluation_redac_avis },
+    { id: 'galerie', label: 'Galerie', show: !!(solution.galerie && solution.galerie.length > 0) },
+    { id: 'notes-detaillees', label: 'Evaluation détaillée', show: hasDetailedRatings },
+    { id: 'avis-utilisateurs', label: 'Notes utilisateurs', show: true },
+    { id: 'mot-editeur', label: 'Mot éditeur', show: !!solution.mot_editeur },
+  ].filter(a => a.show)
   return (
     <div>
       {/* Breadcrumb */}
@@ -80,82 +81,81 @@ export default function SolutionHero({
 
       {/* Hero content */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        <div className="px-4 md:px-8 py-8 bg-white rounded-2xl shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* Colonne gauche : logo + infos + CTAs */}
-            <div className="flex-1 min-w-0">
-              {/* Logo rectangle + titre */}
-              <div className="flex items-start gap-5 mb-6">
-                {solution.logo_url ? (
-                  <img
-                    src={solution.logo_url}
-                    alt={solution.logo_titre || solution.nom}
-                    className="h-16 w-auto max-w-[120px] rounded-xl object-contain bg-gray-50 p-2 shadow-sm border border-gray-100 flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-20 h-16 rounded-xl bg-gray-100 flex items-center justify-center text-navy font-bold text-xl flex-shrink-0">
-                    {solution.nom.substring(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-navy">
-                    {solution.nom}
-                  </h1>
-                  <div className="flex items-center gap-3 mt-1">
-                    Edité par {solution.editeur && (
-                      <Link
-                        href={`/editeur/${solution.editeur.id}`}
-                        className="text-gray-500 hover:text-navy hover:underline"
-                      >
-                        {solution.editeur.nom_commercial || solution.editeur.nom}
-                      </Link>
-                    )}
-                  </div>
+        <div className="grid lg:grid-cols-[1fr_340px] gap-8 items-start">
+          {/* Carte principale */}
+          <div className="px-8 py-8 bg-white rounded-2xl shadow-sm">
+            {/* Logo rectangle + titre */}
+            <div className="flex items-start gap-5 mb-6">
+              {solution.logo_url ? (
+                <img
+                  src={solution.logo_url}
+                  alt={solution.logo_titre || solution.nom}
+                  className="h-16 w-auto max-w-[120px] rounded-xl object-contain bg-gray-50 p-2 shadow-sm border border-gray-100 flex-shrink-0"
+                />
+              ) : (
+                <div className="w-20 h-16 rounded-xl bg-gray-100 flex items-center justify-center text-navy font-bold text-xl flex-shrink-0">
+                  {solution.nom.substring(0, 2).toUpperCase()}
                 </div>
-              </div>
-
-              {/* Description */}
-              {solution.description && (
-                <p className="text-gray-600 leading-relaxed mb-6 max-w-2xl text-sm md:text-base">
-                  {solution.description}
-                </p>
               )}
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-3">
-                <Button variant="primary" href={`/solution/noter/${categorieSlug}/${solution.slug}`}>
-                  Évaluer {solution.nom}
-                </Button>
-                {!!(solution as unknown as Record<string, unknown>).website && (
-                  <a
-                    href={(solution as unknown as Record<string, unknown>).website as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-button border-2 border-gray-200 text-gray-700 hover:border-navy hover:text-navy transition-colors text-sm font-medium"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Site internet
-                  </a>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-navy">
+                  {solution.nom}
+                </h1>
+                {solution.editeur && (
+                  <div className="flex items-center gap-1 mt-1 text-gray-500 text-sm">
+                    Edité par{' '}
+                    <Link
+                      href={`/editeur/${solution.editeur.id}`}
+                      className="hover:text-navy hover:underline ml-1"
+                    >
+                      {solution.editeur.nom_commercial || solution.editeur.nom}
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Colonne droite : 2 cartes de notes */}
-            <div className="flex gap-4 flex-shrink-0">
-              {noteUtilisateurs != null && (
-                <RatingCard
-                  rating={noteUtilisateurs}
-                  label="Notes des utilisateurs"
-                  subtitle={`${nbEvaluations} avis`}
-                />
-              )}
-              {noteRedaction != null && (
-                <RatingCard
-                  rating={noteRedaction}
-                  label="Note de la rédaction"
-                />
+            {/* Description */}
+            {solution.description && (
+              <p className="text-gray-600 leading-relaxed mb-6 text-sm md:text-base">
+                {solution.description}
+              </p>
+            )}
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-3">
+              <Button variant="primary" href={`/solution/noter/${categorieSlug}/${solution.slug}`}>
+                Évaluer {solution.nom}
+              </Button>
+              {!!(solution as unknown as Record<string, unknown>).website && (
+                <a
+                  href={(solution as unknown as Record<string, unknown>).website as string}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-button border-2 border-gray-200 text-gray-700 hover:border-navy hover:text-navy transition-colors text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Site internet
+                </a>
               )}
             </div>
+          </div>
+
+          {/* Sidebar droite : cartes de notes (alignée sur la sidebar du contenu) */}
+          <div className="flex flex-col gap-4">
+            {noteUtilisateurs != null && (
+              <RatingCard
+                rating={noteUtilisateurs}
+                label="Notes des utilisateurs"
+                subtitle={`${nbEvaluations} avis`}
+              />
+            )}
+            {noteRedaction != null && (
+              <RatingCard
+                rating={noteRedaction}
+                label="Note de la rédaction"
+              />
+            )}
           </div>
         </div>
       </div>

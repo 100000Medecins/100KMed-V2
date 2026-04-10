@@ -68,6 +68,7 @@ export default function SolutionDetailPage({
         noteUtilisateurs={noteUtilisateurs}
         nbEvaluations={nbEvaluations}
         categorieSlug={categorieSlug}
+        hasDetailedRatings={notesRedac.length > 0}
       />
 
       {/* Contenu — background gradient SVG */}

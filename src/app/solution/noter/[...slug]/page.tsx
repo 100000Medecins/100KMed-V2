@@ -955,7 +955,7 @@ export default function NoterPage({ params }: PageProps) {
                     value={commentaire}
                     onChange={(e) => setCommentaire(e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-none"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y"
                     placeholder="Décrivez votre expérience..."
                   />
                 </div>
