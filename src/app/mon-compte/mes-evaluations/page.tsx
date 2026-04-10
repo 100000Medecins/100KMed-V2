@@ -8,7 +8,7 @@ import { reconfirmerEvaluation } from '@/lib/actions/evaluation'
 import Button from '@/components/ui/Button'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Plus, Pencil, Trash2, CheckCircle, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle, RefreshCw, MessageSquare } from 'lucide-react'
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000
 
@@ -188,6 +188,15 @@ export default function MesEvaluationsPage() {
                         Modifier ma note
                       </Link>
                     )}
+
+                    {/* Modifier le commentaire */}
+                    <Link
+                      href={`/solution/noter/${su.solution?.categorie?.slug}/${su.solution?.slug}#commentaire`}
+                      className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-accent-blue hover:bg-accent-blue/5 border border-gray-200 hover:border-accent-blue/30 transition-colors px-3 py-1.5 rounded-lg"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Modifier mon commentaire
+                    </Link>
 
                     {/* Supprimer */}
                     <button

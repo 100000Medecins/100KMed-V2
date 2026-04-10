@@ -135,11 +135,15 @@ export default function MesNotificationsPage() {
               <FlaskConical className="w-4 h-4 text-emerald-500" />
             </div>
             <div>
-              <p className="font-medium text-navy text-sm">Études cliniques</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-medium text-navy text-sm">Études cliniques</p>
+                <span className="text-xs text-emerald-600 font-medium">avec le Digital Medica Hub</span>
+              </div>
               <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
                 Participez à des études sur l&apos;essai de nouveaux logiciels médicaux
                 ou d&apos;appareils connectés en santé.
               </p>
+              <p className="text-xs text-gray-400 mt-1 italic">Plus d&apos;informations prochainement.</p>
             </div>
           </div>
           <Toggle
@@ -161,6 +165,7 @@ export default function MesNotificationsPage() {
                 Répondez à des questionnaires de thèse ou des études académiques
                 sur le thème de l&apos;e-santé.
               </p>
+              <p className="text-xs text-gray-400 mt-1 italic">Plus d&apos;informations prochainement.</p>
             </div>
           </div>
           <Toggle

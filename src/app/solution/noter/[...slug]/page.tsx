@@ -705,6 +705,14 @@ export default function NoterPage({ params }: PageProps) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [])
 
+  // Scroll vers #commentaire après chargement si l'ancre est dans l'URL
+  useEffect(() => {
+    if (!loading && window.location.hash === '#commentaire') {
+      const el = document.getElementById('commentaire')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [loading])
+
 
   // Sauvegarde + avance à l'étape suivante
   const handleNext = () => {
@@ -944,7 +952,7 @@ export default function NoterPage({ params }: PageProps) {
                 ))}
 
                 {/* Commentaire */}
-                <div className="bg-white rounded-card shadow-card p-5">
+                <div id="commentaire" className="bg-white rounded-card shadow-card p-5">
                   <h3 className="text-sm font-semibold text-navy mb-1">
                     Votre commentaire
                   </h3>
