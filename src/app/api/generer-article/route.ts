@@ -37,12 +37,35 @@ Transformation numérique de la médecine de ville, charge administrative, démo
 
 Tu ne dois jamais inventer ni extrapoler de faits vérifiables : chiffres, dates, noms de textes réglementaires, noms d'organisations, résultats d'études. Si tu n'es pas certain d'une donnée factuelle, tu la formules de manière générale plutôt que de la préciser faussement. Tu termines systématiquement l'article par une courte note en italique (balise <em>) signalant que les données factuelles doivent être vérifiées avant publication.`
 
+const LONGUEUR_CONFIG = {
+  breve: {
+    label: 'Brève',
+    mots: '300 à 500 mots',
+    sections: '2 à 3 sections avec titres <h2>',
+    max_tokens: 1500,
+  },
+  article: {
+    label: 'Article',
+    mots: '700 à 1000 mots',
+    sections: '3 à 5 sections avec titres <h2>',
+    max_tokens: 3000,
+  },
+  dossier: {
+    label: 'Dossier',
+    mots: '1200 à 1800 mots',
+    sections: '4 à 6 sections avec titres <h2>, avec sous-sections <h3> si nécessaire',
+    max_tokens: 5000,
+  },
+}
+
 export async function POST(req: Request) {
-  const { sujet } = await req.json()
+  const { sujet, longueur = 'article' } = await req.json()
 
   if (!sujet?.trim()) {
     return NextResponse.json({ error: 'Sujet manquant' }, { status: 400 })
   }
+
+  const config = LONGUEUR_CONFIG[longueur as keyof typeof LONGUEUR_CONFIG] ?? LONGUEUR_CONFIG.article
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'Clé API Anthropic non configurée' }, { status: 500 })
@@ -57,17 +80,19 @@ export async function POST(req: Request) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
+      max_tokens: config.max_tokens,
       system: SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
           content: `Écris un article sur le sujet suivant : ${sujet}
 
+Format souhaité : ${config.label} (${config.mots}, ${config.sections}).
+
 Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans backticks, sans commentaires), avec exactement ces quatre champs :
 - "titre" : titre accrocheur de l'article
 - "chapeau" : extrait accrocheur de 1-2 phrases maximum, 150 caractères max, affiché en intro sur la carte et en chapeau de l'article
-- "contenu_html" : corps complet de l'article en HTML, en utilisant uniquement les balises <h2>, <p>, <strong>, <em>. Pas de <h1>, pas de listes <ul>/<li>.
+- "contenu_html" : corps complet de l'article en HTML, en utilisant uniquement les balises <h2>, <h3>, <p>, <strong>, <em>. Pas de <h1>, pas de listes <ul>/<li>.
 - "meta_description" : description SEO de 150 à 160 caractères`,
         },
       ],

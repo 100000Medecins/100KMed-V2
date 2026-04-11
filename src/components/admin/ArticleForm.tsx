@@ -55,6 +55,7 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
   // Génération article
   const [showGenerer, setShowGenerer] = useState(!article?.id)
   const [brief, setBrief] = useState('')
+  const [longueur, setLongueur] = useState<'breve' | 'article' | 'dossier'>('article')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
 
@@ -116,7 +117,7 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
       const res = await fetch('/api/generer-article', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sujet: brief }),
+        body: JSON.stringify({ sujet: brief, longueur }),
       })
       const data = await res.json()
       if (!res.ok) { setGenerateError(data.error ?? 'Erreur lors de la génération'); return }
@@ -181,15 +182,35 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
             {generateError && (
               <p className="text-xs text-red-600">{generateError}</p>
             )}
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isGenerating || !brief.trim()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-accent-blue text-white rounded-xl hover:bg-accent-blue/90 disabled:opacity-50 transition-colors"
-            >
-              <Sparkles className="w-4 h-4" />
-              {isGenerating ? 'Génération en cours…' : 'Générer l\'article'}
-            </button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-medium">
+                {([
+                  { value: 'breve', label: 'Brève', hint: '~400 mots' },
+                  { value: 'article', label: 'Article', hint: '~800 mots' },
+                  { value: 'dossier', label: 'Dossier', hint: '~1500 mots' },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setLongueur(opt.value)}
+                    className={`px-4 py-2 transition-colors ${longueur === opt.value ? 'bg-accent-blue text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                    title={opt.hint}
+                  >
+                    {opt.label}
+                    <span className="ml-1 opacity-60">{opt.hint}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isGenerating || !brief.trim()}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-accent-blue text-white rounded-xl hover:bg-accent-blue/90 disabled:opacity-50 transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                {isGenerating ? 'Génération en cours…' : 'Générer l\'article'}
+              </button>
+            </div>
           </div>
         )}
       </div>

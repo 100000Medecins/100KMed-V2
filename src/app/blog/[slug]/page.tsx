@@ -27,10 +27,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const article = await getArticle(slug)
   if (!article) return { title: 'Article introuvable' }
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'
   return {
     title: `${article.titre} — 100000médecins.org`,
     description: article.meta_description || article.extrait || undefined,
-    openGraph: article.image_couverture ? { images: [article.image_couverture] } : undefined,
+    openGraph: {
+      title: article.titre,
+      description: article.meta_description || article.extrait || undefined,
+      url: `${siteUrl}/blog/${slug}`,
+      siteName: '100 000 Médecins',
+      type: 'article',
+      ...(article.image_couverture ? {
+        images: [{
+          url: article.image_couverture,
+          width: 1200,
+          height: 630,
+          alt: article.titre,
+        }],
+      } : {}),
+    },
+    twitter: {
+      card: article.image_couverture ? 'summary_large_image' : 'summary',
+      title: article.titre,
+      description: article.meta_description || article.extrait || undefined,
+      images: article.image_couverture ? [article.image_couverture] : undefined,
+    },
   }
 }
 
