@@ -79,7 +79,7 @@ export default function TagsCategorieSection({
         .filter((t) => t.id !== tagId)
         .map((t) => ({
           ...t,
-          parent_ids: t.parent_ids.filter((pid) => pid !== tagId),
+          parent_ids: t.parent_ids.filter((pid: string) => pid !== tagId),
         }))
     )
     startTransition(async () => {
