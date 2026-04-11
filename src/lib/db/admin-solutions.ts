@@ -161,7 +161,7 @@ export async function getTagsForCategorieAdmin(categorieId: string) {
 
   if (error) return []
 
-  return (data || []).map((tag) => ({
+  return (data || []).map((tag: Record<string, unknown>) => ({
     id: tag.id as string,
     libelle: tag.libelle as string | null,
     ordre: tag.ordre as number | null,
