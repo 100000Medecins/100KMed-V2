@@ -153,7 +153,7 @@ export type TagForSolution = Awaited<ReturnType<typeof getTagsForSolutionAdmin>>
 export async function getTagsForCategorieAdmin(categorieId: string) {
   const supabase = createServiceRoleClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('tags')
     .select('id, libelle, ordre, is_separator, parent_ids')
     .eq('id_categorie', categorieId)
