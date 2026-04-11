@@ -105,7 +105,7 @@ export default function ChoisirSolutionPage() {
                     key={cat.slug}
                     type="button"
                     onClick={() => setSelectedCategorie(isActive ? null : cat.slug)}
-                    className="relative overflow-hidden rounded-3xl min-h-[140px] flex flex-col justify-start p-6 text-left transition-all duration-200 group"
+                    className="relative overflow-hidden rounded-3xl min-h-[100px] flex flex-col justify-start p-5 text-left transition-all duration-200 group"
                     style={{
                       background: isActive
                         ? 'linear-gradient(135deg, #5A7FA0 0%, #9A4070 55%, #A07040 100%)'

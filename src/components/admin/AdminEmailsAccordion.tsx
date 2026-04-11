@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Mail, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import EmailTemplateEditor from '@/components/admin/EmailTemplateEditor'
+import AdminTargetedSendPanel from '@/components/admin/AdminTargetedSendPanel'
 import type { EmailTemplate } from '@/lib/actions/emailTemplates'
+
+interface TargetedSendConfig {
+  apiRoute: string
+  optedInEmails: string[]
+  labelLien: string
+  labelTextePromoteur: string
+}
 
 interface TemplateConfig {
   id: string
@@ -14,6 +22,8 @@ interface TemplateConfig {
   defaultSujet: string
   /** Si true, affiche un bouton d'envoi masse */
   masseSendable?: boolean
+  /** Si défini, affiche le panneau d'envoi ciblé */
+  targetedSend?: TargetedSendConfig
 }
 
 interface AdminEmailsAccordionProps {
@@ -100,6 +110,16 @@ export default function AdminEmailsAccordion({ templates }: AdminEmailsAccordion
                   initialHtml={tpl.data?.contenu_html ?? ''}
                   updatedAt={tpl.data?.updated_at ?? null}
                 />
+
+                {/* Panneau envoi ciblé (études cliniques / questionnaires) */}
+                {tpl.targetedSend && (
+                  <AdminTargetedSendPanel
+                    apiRoute={tpl.targetedSend.apiRoute}
+                    optedInEmails={tpl.targetedSend.optedInEmails}
+                    labelLien={tpl.targetedSend.labelLien}
+                    labelTextePromoteur={tpl.targetedSend.labelTextePromoteur}
+                  />
+                )}
 
                 {/* Bouton envoi masse (uniquement pour le mail de lancement) */}
                 {tpl.masseSendable && (

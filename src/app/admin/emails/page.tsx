@@ -1,16 +1,44 @@
 import { getEmailTemplate } from '@/lib/actions/emailTemplates'
 import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
+async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_these'): Promise<string[]> {
+  try {
+    const supabase = createServiceRoleClient()
+    const { data: prefs } = await (supabase as any)
+      .from('users_notification_preferences')
+      .select('user_id')
+      .eq(prefKey, true)
+    if (!prefs || prefs.length === 0) return []
+    const userIds = prefs.map((p: any) => p.user_id)
+    const { data: users } = await (supabase as any)
+      .from('users')
+      .select('email')
+      .in('id', userIds)
+    return (users ?? []).map((u: any) => u.email).filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
 export default async function AdminEmailsPage() {
-  const [templatePsc, template1an, template3mois, templateLancement, templateSuppression, templateReset] = await Promise.all([
+  const [
+    templatePsc, template1an, template3mois, templateLancement,
+    templateSuppression, templateReset, templateEtude, templateQuestionnaire,
+    emailsEtudes, emailsQuestionnaires,
+  ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
     getEmailTemplate('relance_3mois'),
     getEmailTemplate('lancement'),
     getEmailTemplate('suppression_compte'),
     getEmailTemplate('reinitialisation_mot_de_passe'),
+    getEmailTemplate('etude_clinique'),
+    getEmailTemplate('questionnaire_recherche'),
+    getOptedInEmails('etudes_cliniques'),
+    getOptedInEmails('questionnaires_these'),
   ])
 
   const templates = [
@@ -62,6 +90,34 @@ export default async function AdminEmailsPage() {
       variables: ['{{lien_reinitialisation}}'],
       data: templateReset,
       defaultSujet: 'Réinitialisez votre mot de passe — 100 000 Médecins',
+    },
+    {
+      id: 'etude_clinique',
+      title: '🔬 Étude clinique',
+      description: `Envoyé manuellement aux ${emailsEtudes.length} utilisateurs ayant activé "Études cliniques" dans leurs préférences de notification.`,
+      variables: ['{{nom}}', '{{lien_etude}}', '{{texte_promoteur}}', '{{lien_desabonnement}}'],
+      data: templateEtude,
+      defaultSujet: 'Participez à une étude clinique — 100 000 Médecins',
+      targetedSend: {
+        apiRoute: '/api/admin/send-etude',
+        optedInEmails: emailsEtudes,
+        labelLien: 'Lien vers le site de l\'étude',
+        labelTextePromoteur: 'Texte fourni par le promoteur de l\'étude',
+      },
+    },
+    {
+      id: 'questionnaire_recherche',
+      title: '📋 Questionnaire de recherche',
+      description: `Envoyé manuellement aux ${emailsQuestionnaires.length} utilisateurs ayant activé "Questionnaires de recherche" dans leurs préférences de notification.`,
+      variables: ['{{nom}}', '{{lien_etude}}', '{{texte_promoteur}}', '{{lien_desabonnement}}'],
+      data: templateQuestionnaire,
+      defaultSujet: 'Participez à un questionnaire de recherche — 100 000 Médecins',
+      targetedSend: {
+        apiRoute: '/api/admin/send-questionnaire',
+        optedInEmails: emailsQuestionnaires,
+        labelLien: 'Lien vers le questionnaire',
+        labelTextePromoteur: 'Texte fourni par le promoteur de l\'étude',
+      },
     },
   ]
 
