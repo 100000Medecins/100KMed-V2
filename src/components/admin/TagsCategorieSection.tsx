@@ -109,7 +109,7 @@ export default function TagsCategorieSection({
     if (!tag) return
     const newParentIds = checked
       ? [...tag.parent_ids, parentId]
-      : tag.parent_ids.filter((id) => id !== parentId)
+      : tag.parent_ids.filter((id: string) => id !== parentId)
 
     setTags((prev) =>
       prev.map((t) => (t.id === tagId ? { ...t, parent_ids: newParentIds } : t))
