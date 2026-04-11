@@ -7,19 +7,21 @@ import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { Search } from 'lucide-react'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 interface SolutionItem {
   id: string
   nom: string
   slug: string | null
   logo_url: string | null
-  categorie: { slug: string | null; nom: string; icon: string | null } | null
+  categorie: { slug: string | null; nom: string; icon: string | null; image_url: string | null } | null
 }
 
 interface CategorieCard {
   slug: string
   nom: string
   icon: string | null
+  image_url: string | null
   count: number
 }
 
@@ -37,7 +39,7 @@ export default function ChoisirSolutionPage() {
     const supabase = createClient()
     supabase
       .from('solutions')
-      .select('id, nom, slug, logo_url, categorie:categories(slug, nom, icon)')
+      .select('id, nom, slug, logo_url, categorie:categories(slug, nom, icon, image_url)')
       .eq('actif', true)
       .order('nom', { ascending: true })
       .then(({ data }) => {
@@ -53,7 +55,7 @@ export default function ChoisirSolutionPage() {
       const cat = s.categorie
       if (!cat?.slug) continue
       if (!map.has(cat.slug)) {
-        map.set(cat.slug, { slug: cat.slug, nom: cat.nom, icon: cat.icon, count: 0 })
+        map.set(cat.slug, { slug: cat.slug, nom: cat.nom, icon: cat.icon, image_url: cat.image_url, count: 0 })
       }
       map.get(cat.slug)!.count++
     }
@@ -81,13 +83,57 @@ export default function ChoisirSolutionPage() {
     <>
       <Navbar />
       <main className="pt-[72px] min-h-screen bg-surface-light">
-        <div className="max-w-2xl mx-auto px-6 py-10">
-          <h1 className="text-xl font-bold text-navy mb-2">
+        <div className="max-w-4xl mx-auto px-6 pt-4 pb-0">
+          <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Évaluer un logiciel' }]} />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-extrabold text-navy mb-1">
             Évaluer un logiciel
           </h1>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 mb-8">
             Sélectionnez le logiciel que vous souhaitez évaluer.
           </p>
+
+          {/* Cartes de catégories style comparatifs */}
+          {categories.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+              {categories.map((cat) => {
+                const isActive = selectedCategorie === cat.slug
+                return (
+                  <button
+                    key={cat.slug}
+                    type="button"
+                    onClick={() => setSelectedCategorie(isActive ? null : cat.slug)}
+                    className="relative overflow-hidden rounded-3xl min-h-[140px] flex flex-col justify-start p-6 text-left transition-all duration-200 group"
+                    style={{
+                      background: isActive
+                        ? 'linear-gradient(135deg, #5A7FA0 0%, #9A4070 55%, #A07040 100%)'
+                        : 'linear-gradient(135deg, #8BAFC4 0%, #C47A9A 55%, #C9A06A 100%)',
+                      outline: isActive ? '2px solid rgba(255,255,255,0.6)' : 'none',
+                      outlineOffset: '-2px',
+                    }}
+                  >
+                    {cat.image_url ? (
+                      <img
+                        src={cat.image_url}
+                        alt=""
+                        className="absolute bottom-0 right-3 h-[110px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                      />
+                    ) : cat.icon ? (
+                      <span className="absolute bottom-3 right-4 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                        {cat.icon}
+                      </span>
+                    ) : null}
+                    <span className="text-lg font-extrabold text-navy mb-2 leading-snug relative z-10">{cat.nom}</span>
+                    <span className="inline-flex items-center gap-1 bg-white/40 backdrop-blur-sm text-navy font-semibold px-3 py-1.5 rounded-full text-xs w-fit relative z-10">
+                      {cat.count} logiciel{cat.count > 1 ? 's' : ''}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
           {/* Barre de recherche */}
           <div className="relative mb-4">
@@ -100,33 +146,6 @@ export default function ChoisirSolutionPage() {
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
             />
           </div>
-
-          {/* Cartes de catégories */}
-          {categories.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
-              {categories.map((cat) => {
-                const isActive = selectedCategorie === cat.slug
-                return (
-                  <button
-                    key={cat.slug}
-                    type="button"
-                    onClick={() => setSelectedCategorie(isActive ? null : cat.slug)}
-                    className={`flex flex-col items-center gap-2 px-4 py-4 rounded-2xl border-2 transition-all w-[calc(50%-6px)] sm:w-44 ${
-                      isActive
-                        ? 'bg-navy text-white border-navy shadow-md'
-                        : 'bg-white text-gray-700 border-gray-100 hover:border-accent-blue/40 hover:shadow-sm shadow-card'
-                    }`}
-                  >
-                    {cat.icon && <span className="text-3xl">{cat.icon}</span>}
-                    <span className="text-sm font-semibold leading-snug text-center">{cat.nom}</span>
-                    <span className={`text-xs ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
-                      {cat.count} logiciel{cat.count > 1 ? 's' : ''}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
 
           {/* Liste des solutions */}
           <div className="space-y-2">

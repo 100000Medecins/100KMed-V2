@@ -81,7 +81,7 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
   const selectedCritere = criteresMajeurs.find((c) => c.id === currentCritere)
 
   return (
-    <div className="sticky top-[72px] z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 py-3 -mx-1 px-1 mb-6">
+    <div className="sticky top-[80px] z-10 bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-card py-3 px-4 mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <span className="text-sm text-gray-400 shrink-0">
           {count} solution{count > 1 ? 's' : ''}

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const revalidate = 300
 
@@ -61,8 +62,11 @@ export default async function BlogPage({ searchParams }: PageProps) {
       <Navbar />
       <main className="pt-[72px]">
         {/* Hero */}
-        <section className="bg-hero-gradient py-14 md:py-20">
-          <div className="max-w-5xl mx-auto px-6 text-center">
+        <section className="bg-hero-gradient pt-4 pb-10 md:pb-16">
+          <div className="max-w-7xl mx-auto px-6 pt-2 pb-0">
+            <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Blog' }]} variant="light" />
+          </div>
+          <div className="max-w-5xl mx-auto px-6 text-center mt-10 md:mt-14">
             <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Blog</h1>
             <p className="text-white/75 text-lg max-w-xl mx-auto">
               Actualités, conseils et dossiers sur la e-santé médicale.

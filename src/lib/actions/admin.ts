@@ -223,6 +223,12 @@ export async function updateSolution(id: string, formData: FormData) {
   const supabase = createServiceRoleClient()
   const data = extractSolutionFromFormData(formData)
 
+  // Si le bouton "Mettre à jour et activer" a été cliqué
+  const activer = formData.get('_activer') === 'true'
+  if (activer) {
+    (data as Record<string, unknown>).actif = true
+  }
+
   const { error } = await supabase
     .from('solutions')
     .update(data)
@@ -246,7 +252,7 @@ export async function updateSolution(id: string, formData: FormData) {
 
   revalidatePath('/admin', 'layout')
   revalidatePath('/solutions', 'layout')
-  redirect('/admin/solutions')
+  redirect(`/admin/solutions?scroll=${id}`)
 }
 
 export async function deleteSolution(id: string) {

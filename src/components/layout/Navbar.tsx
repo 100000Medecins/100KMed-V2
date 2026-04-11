@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -32,6 +33,8 @@ function buildGroupes(categories: NavCategorie[]): Groupe[] {
 
 export default function Navbar() {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
+  const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(false);
@@ -78,12 +81,20 @@ export default function Navbar() {
   }
 
   const groupes = buildGroupes(categories)
+  // Navbar toujours sombre sauf sur le hero non scrollé (transparente)
+  const darkNav = true
+  const navBg = isHome && !isScrolled
+    ? 'transparent'
+    : 'linear-gradient(135deg, rgba(10,90,90,0.80) 0%, rgba(80,30,130,0.75) 55%, rgba(20,50,110,0.82) 100%)'
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white/95 backdrop-blur-md shadow-nav" : "bg-white"
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+      style={{
+        background: navBg,
+        backdropFilter: 'blur(16px)',
+        boxShadow: isHome && !isScrolled ? 'none' : '0 2px 20px rgba(0,0,0,0.18)',
+      }}
     >
       <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
         {/* Logo */}
@@ -95,8 +106,8 @@ export default function Navbar() {
             <span className="w-2.5 h-2.5 rounded-full bg-rating-green" />
             <span className="w-2.5 h-2.5 rounded-full bg-accent-yellow" />
           </div>
-          <span className="text-base font-bold text-navy hidden sm:block">
-            100000médecins<span className="text-accent-blue">.org</span>
+          <span className={`text-base font-bold hidden sm:block transition-colors duration-500 ${darkNav ? 'text-white' : 'text-navy'}`}>
+            100000médecins<span className={darkNav ? 'text-white/70' : 'text-accent-blue'}>.org</span>
           </span>
         </a>
 
@@ -111,7 +122,7 @@ export default function Navbar() {
           >
             <button
               type="button"
-              className="flex items-center gap-1 text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+              className={`flex items-center gap-1 text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
               onClick={() => setIsMegaMenuOpen((v) => !v)}
             >
               Comparatifs
@@ -120,14 +131,15 @@ export default function Navbar() {
 
             {isMegaMenuOpen && categories.length > 0 && (
               <div
-                className="absolute left-1/2 -translate-x-1/2 top-full mt-3 bg-white rounded-2xl shadow-card border border-gray-100 p-6 min-w-[480px] max-w-[640px]"
+                className="absolute left-1/2 -translate-x-1/2 top-full mt-3 rounded-2xl p-6 min-w-[480px] max-w-[640px]"
+                style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.97) 0%, rgba(80,30,130,0.95) 55%, rgba(20,50,110,0.97) 100%)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.35)' }}
                 onMouseEnter={handleMenuMouseEnter}
                 onMouseLeave={handleMenuMouseLeave}
               >
                 <div className={`grid gap-6 ${groupes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   {groupes.map((groupe) => (
                     <div key={groupe.nom}>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2">
                         {groupe.nom}
                       </p>
                       <ul className="space-y-1">
@@ -135,7 +147,7 @@ export default function Navbar() {
                           <li key={cat.slug}>
                             <a
                               href={`/solutions/${cat.slug}`}
-                              className="block text-sm text-gray-700 hover:text-accent-blue hover:bg-accent-blue/5 px-2 py-1.5 rounded-lg transition-colors"
+                              className="block text-sm text-white/75 hover:text-white hover:bg-white/10 px-2 py-1.5 rounded-lg transition-colors"
                             >
                               {cat.nom}
                             </a>
@@ -145,7 +157,7 @@ export default function Navbar() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="mt-4 pt-4 border-t border-white/10">
                   <a
                     href="/comparatifs"
                     className="text-xs font-semibold text-accent-blue hover:underline"
@@ -159,7 +171,7 @@ export default function Navbar() {
 
           <a
             href="/qui-sommes-nous"
-            className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+            className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
           >
             Qui sommes-nous ?
           </a>
@@ -167,7 +179,7 @@ export default function Navbar() {
           {navConfig.irritants_visible && (
             <a
               href="/irritants-esante"
-              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+              className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
             >
               Les irritants de l'e-santé
             </a>
@@ -176,7 +188,7 @@ export default function Navbar() {
           {navConfig.blog_visible && (
             <a
               href="/blog"
-              className="text-sm text-gray-600 hover:text-navy font-medium transition-colors"
+              className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
             >
               Blog
             </a>
@@ -187,19 +199,19 @@ export default function Navbar() {
         <div className="hidden lg:flex items-center gap-3">
           {!loading && user ? (
             <>
-              <Button variant="primary" href="/solution/noter" className="text-sm py-2.5 px-6">
+              <Button variant={darkNav ? "white" : "primary"} href="/solution/noter" className="text-sm py-2.5 px-6">
                 Évaluer un logiciel
               </Button>
-              <Button variant="outline" href="/mon-compte/profil" className="text-sm py-2.5 px-6">
+              <Button variant="white" href="/mon-compte/profil" className={`text-sm py-2.5 px-6 ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}>
                 Mon compte
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" href="/connexion" className="text-sm py-2.5 px-6">
+              <Button variant="white" href="/connexion" className={`text-sm py-2.5 px-6 ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}>
                 Me connecter
               </Button>
-              <Button variant="primary" href="/solution/noter" className="text-sm py-2.5 px-6">
+              <Button variant={darkNav ? "white" : "primary"} href="/solution/noter" className="text-sm py-2.5 px-6">
                 Évaluer un logiciel
               </Button>
             </>
@@ -209,7 +221,7 @@ export default function Navbar() {
         {/* Mobile toggle */}
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="lg:hidden p-2 text-navy"
+          className={`lg:hidden p-2 transition-colors duration-500 ${darkNav ? 'text-white' : 'text-navy'}`}
           aria-label="Menu"
         >
           {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -218,14 +230,14 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isMobileOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 shadow-lg">
+        <div className="lg:hidden border-t border-white/10 shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.95) 0%, rgba(80,30,130,0.92) 55%, rgba(20,50,110,0.95) 100%)', backdropFilter: 'blur(16px)' }}>
           <div className="px-6 py-6 space-y-2">
             {/* Comparatifs accordion */}
             <div>
               <button
                 type="button"
                 onClick={() => setIsMobileComparatifOpen((v) => !v)}
-                className="flex items-center justify-between w-full text-sm text-gray-600 hover:text-navy font-medium py-2"
+                className="flex items-center justify-between w-full text-sm text-white/85 hover:text-white font-medium py-2"
               >
                 Comparatifs
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileComparatifOpen ? 'rotate-180' : ''}`} />
@@ -235,7 +247,7 @@ export default function Navbar() {
                 <div className="pl-4 mt-1 space-y-3 pb-2">
                   {groupes.map((groupe) => (
                     <div key={groupe.nom}>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-1">
                         {groupe.nom}
                       </p>
                       <ul className="space-y-1">
@@ -243,7 +255,7 @@ export default function Navbar() {
                           <li key={cat.slug}>
                             <a
                               href={`/solutions/${cat.slug}`}
-                              className="block text-sm text-gray-600 hover:text-navy py-1"
+                              className="block text-sm text-white/75 hover:text-white py-1"
                               onClick={() => setIsMobileOpen(false)}
                             >
                               {cat.nom}
@@ -266,7 +278,7 @@ export default function Navbar() {
 
             <a
               href="/qui-sommes-nous"
-              className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+              className="block text-sm text-white/85 hover:text-white font-medium py-2"
               onClick={() => setIsMobileOpen(false)}
             >
               Qui sommes-nous ?
@@ -275,7 +287,7 @@ export default function Navbar() {
             {navConfig.irritants_visible && (
               <a
                 href="/irritants-esante"
-                className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+                className="block text-sm text-white/85 hover:text-white font-medium py-2"
                 onClick={() => setIsMobileOpen(false)}
               >
                 Les irritants de l'e-santé
@@ -285,7 +297,7 @@ export default function Navbar() {
             {navConfig.blog_visible && (
               <a
                 href="/blog"
-                className="block text-sm text-gray-600 hover:text-navy font-medium py-2"
+                className="block text-sm text-white/85 hover:text-white font-medium py-2"
                 onClick={() => setIsMobileOpen(false)}
               >
                 Blog

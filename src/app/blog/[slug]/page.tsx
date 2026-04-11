@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -78,6 +79,14 @@ export default async function ArticlePage({ params }: PageProps) {
             <div className="absolute inset-0 bg-hero-gradient" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 max-w-3xl mx-auto px-6 pt-4">
+            <Breadcrumb items={[
+              { label: 'Accueil', href: '/' },
+              { label: 'Blog', href: '/blog' },
+              ...(cat?.nom ? [{ label: cat.nom, href: `/blog?categorie=${cat.slug}` }] : []),
+              { label: article.titre },
+            ]} variant="light" />
+          </div>
           <div className="absolute bottom-0 left-0 right-0 max-w-3xl mx-auto px-6 pb-10">
             {cat?.nom && (
               <Link

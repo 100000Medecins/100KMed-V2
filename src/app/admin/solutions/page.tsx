@@ -8,6 +8,7 @@ import { getCategories } from '@/lib/db/categories'
 import DeleteSolutionButton from '@/components/admin/DeleteSolutionButton'
 import AdminCategoryFilter from '@/components/admin/AdminCategoryFilter'
 import ToggleSolutionActif from '@/components/admin/ToggleSolutionActif'
+import ScrollToSolution from '@/components/admin/ScrollToSolution'
 
 interface PageProps {
   searchParams: { categorie?: string }
@@ -26,6 +27,7 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
 
   return (
     <div>
+      <Suspense fallback={null}><ScrollToSolution /></Suspense>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -78,7 +80,7 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.map((solution) => (
-                <tr key={solution.id} className="hover:bg-surface-light transition-colors">
+                <tr key={solution.id} id={`solution-${solution.id}`} className="hover:bg-surface-light transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <span className="font-medium text-navy text-sm">{solution.nom}</span>

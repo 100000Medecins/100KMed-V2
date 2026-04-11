@@ -810,7 +810,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
       </Section>
 
       {/* Submit */}
-      <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
+      <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4 flex-wrap">
         <button
           type="submit"
           disabled={isPending}
@@ -822,6 +822,17 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
               ? 'Mettre à jour'
               : 'Créer la solution'}
         </button>
+        {solution && !solution.actif && (
+          <button
+            type="submit"
+            name="_activer"
+            value="true"
+            disabled={isPending}
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-rating-green text-white hover:bg-rating-green/90 shadow-soft transition-all disabled:opacity-50"
+          >
+            Mettre à jour et activer
+          </button>
+        )}
         <a
           href="/admin/solutions"
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"

@@ -155,7 +155,7 @@ export async function getTagsForCategorieAdmin(categorieId: string) {
 
   const { data, error } = await supabase
     .from('tags')
-    .select('id, libelle, ordre, is_separator')
+    .select('id, libelle, ordre, is_separator, parent_ids')
     .eq('id_categorie', categorieId)
     .order('ordre', { ascending: true })
 

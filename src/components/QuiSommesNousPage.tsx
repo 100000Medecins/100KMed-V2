@@ -15,20 +15,14 @@ export default function QuiSommesNousPage({ page }: Props) {
     <>
       <Navbar />
 
-      {/* Breadcrumb */}
-      <div className="pt-[72px] bg-surface-light border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <Breadcrumb
-            items={[
-              { label: 'Accueil', href: '/' },
-              { label: 'Qui sommes-nous ?' },
-            ]}
-          />
+      <div className="pt-[72px] bg-white">
+        <div className="max-w-4xl mx-auto px-6 pt-4 pb-0">
+          <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Qui sommes-nous ?' }]} />
         </div>
       </div>
 
       <article className="bg-white">
-        <div className="max-w-4xl mx-auto px-6 py-12 md:py-16">
+        <div className="max-w-4xl mx-auto px-6 py-10 md:py-14">
 
           {/* Titre */}
           <h1 className="text-3xl md:text-4xl lg:text-[2.6rem] font-extrabold text-navy leading-[1.2] tracking-tight mb-10">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createServerClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -60,9 +61,12 @@ export default async function ComparatifsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-[72px]">
-        <section className="bg-hero-gradient py-14 md:py-20">
-          <div className="max-w-5xl mx-auto px-6 text-center">
+      <main className="pt-[72px]" style={{ backgroundColor: '#CDD5EA' }}>
+        <section className="bg-hero-gradient pt-4 pb-14 md:pb-20">
+          <div className="max-w-7xl mx-auto px-6 pt-2 pb-0">
+            <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Comparatifs' }]} variant="light" />
+          </div>
+          <div className="max-w-5xl mx-auto px-6 text-center mt-10 md:mt-14">
             <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Tous nos comparatifs</h1>
             <p className="text-white/75 text-lg max-w-xl mx-auto">
               Des comparatifs réalisés par et pour des médecins — sans jargon marketing.
@@ -83,17 +87,17 @@ export default async function ComparatifsPage() {
                       key={cat.slug}
                       href={`/solutions/${cat.slug}`}
                       className="relative overflow-hidden rounded-3xl min-h-[220px] flex flex-col justify-start p-8 group"
-                      style={{ background: 'linear-gradient(135deg, #C8DCE4 0%, #E4B8C8 55%, #EDD8B0 100%)' }}
+                      style={{ background: 'linear-gradient(135deg, #8BAFC4 0%, #C47A9A 55%, #C9A06A 100%)' }}
                     >
                       {/* Illustration : image uploadée ou emoji en fallback */}
                       {cat.image_url ? (
                         <img
                           src={cat.image_url}
                           alt=""
-                          className="absolute bottom-0 right-4 h-[160px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                          className="absolute bottom-0 right-4 h-[220px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
                         />
                       ) : cat.icon ? (
-                        <span className="absolute bottom-4 right-6 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                        <span className="absolute bottom-4 right-6 text-[120px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
                           {cat.icon}
                         </span>
                       ) : null}

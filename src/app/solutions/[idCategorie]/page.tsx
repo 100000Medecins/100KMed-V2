@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 import { getCategorieBySlug } from '@/lib/db/categories'
 import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
@@ -109,34 +110,39 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
       <Navbar />
       <main className="pt-[72px]">
         {/* Hero catégorie */}
-        <section className="bg-surface-light py-10 md:py-14">
+        <section className="bg-hero-gradient pt-4 pb-12 md:pb-14">
           <div className="max-w-7xl mx-auto px-6">
-            {/* Titre : toujours visible */}
-            <h1 className="text-2xl md:text-3xl font-bold text-navy mb-4 flex items-center gap-3">
-              {categorie.icon && <span className="text-3xl">{categorie.icon}</span>}
-              {categorie.nom}
-            </h1>
+            <div className="mb-12">
+              <Breadcrumb variant="light" items={[{ label: 'Accueil', href: '/' }, { label: 'Comparatifs', href: '/comparatifs' }, { label: categorie.nom }]} />
+            </div>
+            <div className="flex items-center gap-10">
+              <div className="flex-1">
+                {/* Titre */}
+                <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 flex items-center gap-3">
+                  {categorie.icon && <span className="text-3xl">{categorie.icon}</span>}
+                  {categorie.nom}
+                </h1>
 
-            {/* Intro + image : masqués sur mobile */}
-            {(categorie.intro || categorie.image_url) && (
-              <div className="hidden md:flex items-center gap-10">
+                {/* Intro : masquée sur mobile */}
                 {categorie.intro && (
                   <div
-                    className="flex-1 text-gray-600 prose prose-sm max-w-none"
+                    className="hidden md:block text-white/70 text-sm leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_em]:text-white/60 [&_strong]:text-white/90"
                     dangerouslySetInnerHTML={{ __html: categorie.intro }}
                   />
                 )}
-                {categorie.image_url && (
-                  <div className="shrink-0 w-64 lg:w-80">
-                    <img
-                      src={categorie.image_url}
-                      alt={categorie.nom}
-                      className="w-full h-56 lg:h-64 object-contain drop-shadow-lg"
-                    />
-                  </div>
-                )}
               </div>
-            )}
+
+              {/* Image : masquée sur mobile */}
+              {categorie.image_url && (
+                <div className="hidden md:block shrink-0 w-56 lg:w-72">
+                  <img
+                    src={categorie.image_url}
+                    alt={categorie.nom}
+                    className="w-full h-48 lg:h-56 object-contain drop-shadow-2xl"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
