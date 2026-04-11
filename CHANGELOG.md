@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-04-11] — Robustesse publication réseaux sociaux + persistance messages
+
+### Added
+- **Persistance des messages générés** (`src/components/admin/SocialPanel.tsx`) : les posts générés pour chaque article sont sauvegardés dans `localStorage` (clé `social_posts_{id}`). Ils sont rechargés automatiquement à la réouverture de la page, avec les textes modifiés et les dates choisies. "Regénérer les messages" efface le cache.
+
+### Fixed
+- **Erreur JSON sur envoi Make.com** (`src/app/api/social-publish/route.ts`, `src/components/admin/SocialPanel.tsx`) : ajout de try/catch autour du fetch Make.com et du `res.json()` côté client — les erreurs réseau ou timeouts affichent maintenant un message lisible dans le panneau au lieu de crasher la page.
+
+---
+
 ## [2026-04-11] — Améliorations UI pages solutions
 
 ### Changed

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Send, Clock, Check, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe } from 'lucide-react'
 import { publishArticle } from '@/lib/actions/admin'
 
@@ -61,6 +61,8 @@ interface Props {
   }
 }
 
+const STORAGE_KEY = (id: string) => `social_posts_${id}`
+
 export default function SocialPanel({ article }: Props) {
   const [open, setOpen] = useState(false)
   const [posts, setPosts] = useState<NetworkPost[]>([])
@@ -68,6 +70,14 @@ export default function SocialPanel({ article }: Props) {
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
   const [isPublished, setIsPublished] = useState(article.statut === 'publié')
+
+  // Charger les posts sauvegardés au montage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY(article.id))
+      if (saved) setPosts(JSON.parse(saved))
+    } catch {}
+  }, [article.id])
 
   const articleUrl = article.slug
     ? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'}/blog/${article.slug}`
@@ -107,20 +117,25 @@ export default function SocialPanel({ article }: Props) {
       immediate: false,
       status: 'idle',
     }))
-    setPosts(newPosts)
+    savePosts(newPosts)
     setIsGenerating(false)
   }
 
+  function savePosts(updated: NetworkPost[]) {
+    try { localStorage.setItem(STORAGE_KEY(article.id), JSON.stringify(updated)) } catch {}
+    setPosts(updated)
+  }
+
   function updatePost(network: Network, field: 'text' | 'scheduled_at', value: string) {
-    setPosts((prev) => prev.map((p) => p.network === network ? { ...p, [field]: value } : p))
+    savePosts(posts.map((p) => p.network === network ? { ...p, [field]: value } : p))
   }
 
   function toggleImmediate(network: Network) {
-    setPosts((prev) => prev.map((p) => p.network === network ? { ...p, immediate: !p.immediate } : p))
+    savePosts(posts.map((p) => p.network === network ? { ...p, immediate: !p.immediate } : p))
   }
 
   function removePost(network: Network) {
-    setPosts((prev) => prev.filter((p) => p.network !== network))
+    savePosts(posts.filter((p) => p.network !== network))
   }
 
   async function sendPost(network: Network) {
@@ -129,23 +144,25 @@ export default function SocialPanel({ article }: Props) {
 
     setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'sending' } : p))
 
-    const res = await fetch('/api/social-publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        network: post.network,
-        text: post.text,
-        scheduled_at: post.immediate ? undefined : (post.scheduled_at ? new Date(post.scheduled_at).toISOString() : undefined),
-        image_url: article.image_couverture ?? undefined,
-        article_url: articleUrl,
-      }),
-    })
-    const data = await res.json()
-
-    if (!res.ok || !data.success) {
-      setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'error', error: data.error } : p))
-    } else {
+    let data: { success?: boolean; error?: string } = {}
+    try {
+      const res = await fetch('/api/social-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          network: post.network,
+          text: post.text,
+          scheduled_at: post.immediate ? undefined : (post.scheduled_at ? new Date(post.scheduled_at).toISOString() : undefined),
+          image_url: article.image_couverture ?? undefined,
+          article_url: articleUrl,
+        }),
+      })
+      data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error ?? 'Erreur inconnue')
       setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'sent' } : p))
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erreur inconnue'
+      setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'error', error: msg } : p))
     }
   }
 
@@ -331,7 +348,7 @@ export default function SocialPanel({ article }: Props) {
               {!allSent && (
                 <button
                   type="button"
-                  onClick={() => setPosts([])}
+                  onClick={() => { try { localStorage.removeItem(STORAGE_KEY(article.id)) } catch {} setPosts([]) }}
                   className="text-xs text-gray-400 hover:text-gray-600 underline"
                 >
                   Regénérer les messages
