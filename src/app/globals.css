@@ -8,6 +8,8 @@
   }
   body {
     @apply font-poppins antialiased text-gray-800;
+    background-color: #E8EDF8;
+    color-scheme: light;
   }
 }
 
@@ -20,15 +22,20 @@
   }
 
   .bg-hero-gradient {
-    background: linear-gradient(135deg, #A8C4D0 0%, #D49AAC 55%, #DFC090 100%);
+    background:
+      radial-gradient(ellipse 60% 65% at 10% 70%, rgba(74, 144, 217, 0.65) 0%, transparent 100%),
+      radial-gradient(ellipse 50% 60% at 85% 15%, rgba(138, 92, 246, 0.55) 0%, transparent 100%),
+      radial-gradient(ellipse 45% 50% at 55% 90%, rgba(16, 185, 129, 0.40) 0%, transparent 100%),
+      radial-gradient(ellipse 40% 40% at 75% 65%, rgba(239, 68, 68, 0.20) 0%, transparent 100%),
+      #0f1e38;
   }
 
   .bg-cta-gradient {
-    background: linear-gradient(135deg, #A8C4D0 0%, #D49AAC 55%, #DFC090 100%);
+    background: linear-gradient(135deg, #0f1f3d 0%, #1B2A4A 100%);
   }
 
   .bg-partners-gradient {
-    background: linear-gradient(90deg, #EAF2F5 0%, #F5E8EE 50%, #FAF2E6 100%);
+    background: rgba(255, 255, 255, 0.10);
   }
 }
 

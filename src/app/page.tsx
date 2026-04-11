@@ -6,18 +6,24 @@ import AboutMission from "@/components/sections/AboutMission";
 import EHealthVideos from "@/components/sections/EHealthVideos";
 import EditorCTA from "@/components/sections/EditorCTA";
 import { getCategories } from "@/lib/db/categories";
-import { getSolutions, getNotesUtilisateursGlobales } from "@/lib/db/solutions";
+import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getSiteStats } from "@/lib/db/solutions";
 
 export const revalidate = 1800;
 
 export default async function Home() {
-  const categories = await getCategories();
+  const [categories, siteStats] = await Promise.all([
+    getCategories(),
+    getSiteStats(),
+  ]);
 
   const categoriesData = await Promise.all(
     categories.map(async (cat) => {
       const solutions = await getSolutions({ categorieId: cat.id });
       const solutionIds = solutions.map((s) => s.id);
-      const notesUtilisateurs = await getNotesUtilisateursGlobales(solutionIds);
+      const [notesUtilisateurs, notesRedac] = await Promise.all([
+        getNotesUtilisateursGlobales(solutionIds),
+        getNotesRedacGlobales(solutionIds),
+      ]);
 
       const solutionsAvecNotes = solutions
         .map((s) => ({
@@ -25,11 +31,12 @@ export default async function Home() {
           nom: s.nom,
           slug: s.slug,
           logo_url: s.logo_url,
-          noteRedacBase5: notesUtilisateurs[s.id] || null,
+          noteUtilisateurs: notesUtilisateurs[s.id] ?? null,
+          noteRedac: notesRedac[s.id] ?? null,
           categorieSlug: cat.slug || "",
         }))
-        .filter((s) => s.noteRedacBase5 !== null)
-        .sort((a, b) => (b.noteRedacBase5 || 0) - (a.noteRedacBase5 || 0))
+        .filter((s) => s.noteUtilisateurs !== null || s.noteRedac !== null)
+        .sort((a, b) => (b.noteUtilisateurs || 0) - (a.noteUtilisateurs || 0))
         .slice(0, 6);
 
       return {
@@ -45,7 +52,7 @@ export default async function Home() {
     <>
       <Navbar />
       <main>
-        <HeroSection />
+        <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} />
         <RecommendedSoftware categories={categoriesData} />
         <AboutMission />
         <EHealthVideos />

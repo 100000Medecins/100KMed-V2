@@ -64,21 +64,29 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestionQuery, setSuggestionQuery] = useState(titre)
+  const [suggestionProvider, setSuggestionProvider] = useState<'unsplash' | 'pexels'>('unsplash')
+  const [usedKeywords, setUsedKeywords] = useState<string | null>(null)
+  const [previewPhoto, setPreviewPhoto] = useState<UnsplashPhoto | null>(null)
 
-  async function handleSuggestImages() {
-    if (!titre.trim()) return
+  async function handleSuggestImages(providerOverride?: 'unsplash' | 'pexels') {
+    const query = suggestionQuery.trim() || titre.trim()
+    if (!query) return
+    const provider = providerOverride ?? suggestionProvider
     setIsLoadingSuggestions(true)
     setSuggestionsError(null)
     setShowSuggestions(true)
+    setUsedKeywords(null)
     try {
       const res = await fetch('/api/suggerer-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titre }),
+        body: JSON.stringify({ titre: query, provider }),
       })
       const data = await res.json()
       if (!res.ok) { setSuggestionsError(data.error ?? 'Erreur'); return }
       setImageSuggestions(data.photos ?? [])
+      setUsedKeywords(data.keywords ?? null)
     } catch {
       setSuggestionsError('Erreur réseau')
     } finally {
@@ -310,15 +318,40 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
             >
               {imageUploading ? 'Upload...' : imageUrl ? 'Changer l\'image' : 'Uploader une image'}
             </button>
-            <button
-              type="button"
-              onClick={handleSuggestImages}
-              disabled={isLoadingSuggestions || !titre.trim()}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm border border-accent-blue/30 text-accent-blue rounded-xl hover:bg-accent-blue/5 disabled:opacity-50 transition-colors"
-            >
-              <Images className="w-4 h-4" />
-              {isLoadingSuggestions ? 'Recherche…' : 'Suggérer des images'}
-            </button>
+            <div className="space-y-1.5">
+              <div className="flex gap-1 p-0.5 bg-gray-100 rounded-lg w-fit">
+                {(['unsplash', 'pexels'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setSuggestionProvider(p)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${suggestionProvider === p ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {p === 'unsplash' ? 'Unsplash' : 'Pexels'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={suggestionQuery}
+                  onChange={(e) => setSuggestionQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSuggestImages() } }}
+                  placeholder={titre || 'Mots-clés pour la recherche…'}
+                  className="flex-1 rounded-xl bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-3 py-2"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSuggestImages()}
+                  disabled={isLoadingSuggestions || (!suggestionQuery.trim() && !titre.trim())}
+                  className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border border-accent-blue/30 text-accent-blue rounded-xl hover:bg-accent-blue/5 disabled:opacity-50 transition-colors flex-shrink-0"
+                  title="Suggérer des images"
+                >
+                  <Images className="w-4 h-4" />
+                  {isLoadingSuggestions ? 'Recherche…' : 'Suggérer'}
+                </button>
+              </div>
+            </div>
             {imageUrl && (
               <button
                 type="button"
@@ -333,15 +366,20 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
             {/* Grille de suggestions Unsplash */}
             {showSuggestions && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-500">Cliquez pour sélectionner</p>
-                  <button type="button" onClick={() => setShowSuggestions(false)} className="text-xs text-gray-400 hover:text-gray-600">Fermer</button>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-500">Cliquez sur une photo pour la prévisualiser</p>
+                    {usedKeywords && (
+                      <p className="text-[10px] text-gray-400 mt-0.5 truncate">Recherche : <span className="font-mono">{usedKeywords}</span></p>
+                    )}
+                  </div>
+                  <button type="button" onClick={() => setShowSuggestions(false)} className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0">Fermer</button>
                 </div>
                 {suggestionsError && <p className="text-xs text-red-600">{suggestionsError}</p>}
                 {isLoadingSuggestions && (
                   <div className="grid grid-cols-2 gap-1.5">
                     {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+                      <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
                     ))}
                   </div>
                 )}
@@ -351,26 +389,48 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
                       <button
                         key={photo.id}
                         type="button"
-                        onClick={() => handleSelectUnsplashPhoto(photo)}
-                        className="relative group h-20 overflow-hidden rounded-lg border-2 border-transparent hover:border-accent-blue transition-all"
-                        title={`Photo by ${photo.photographer}`}
+                        onClick={() => setPreviewPhoto(photo)}
+                        className="relative group h-16 overflow-hidden rounded-lg border-2 border-transparent hover:border-accent-blue transition-all"
+                        title={`Prévisualiser — ${photo.photographer}`}
                       >
-                        <img
-                          src={photo.thumb_url}
-                          alt={photo.alt}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                        <span className="absolute bottom-0 left-0 right-0 text-[9px] text-white/80 bg-black/40 px-1 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                          {photo.photographer}
-                        </span>
+                        <img src={photo.thumb_url} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                          <span className="opacity-0 group-hover:opacity-100 text-white text-[10px] font-medium bg-black/50 rounded px-1.5 py-0.5 transition-opacity">Voir</span>
+                        </div>
                       </button>
                     ))}
                   </div>
                 )}
                 <p className="text-[10px] text-gray-400 text-center">
-                  Photos via <a href="https://unsplash.com?utm_source=100000medecins&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">Unsplash</a>
+                  {suggestionProvider === 'pexels'
+                    ? <>Photos via <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">Pexels</a></>
+                    : <>Photos via <a href="https://unsplash.com?utm_source=100000medecins&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">Unsplash</a></>
+                  }
                 </p>
+              </div>
+            )}
+
+            {/* Modal prévisualisation */}
+            {previewPhoto && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setPreviewPhoto(null)}>
+                <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+                  <img src={previewPhoto.small_url} alt={previewPhoto.alt} className="w-full object-contain max-h-[60vh]" />
+                  <div className="p-4 flex items-center justify-between gap-4">
+                    <p className="text-xs text-gray-400">
+                      Photo par <a href={previewPhoto.photographer_url} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">{previewPhoto.photographer}</a> · {previewPhoto.source === 'pexels' ? 'Pexels' : 'Unsplash'}
+                    </p>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button type="button" onClick={() => setPreviewPhoto(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Annuler</button>
+                      <button
+                        type="button"
+                        onClick={() => { handleSelectUnsplashPhoto(previewPhoto); setPreviewPhoto(null) }}
+                        className="px-4 py-2 text-sm bg-navy text-white rounded-xl hover:bg-navy-dark transition-colors font-medium"
+                      >
+                        Sélectionner cette photo
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

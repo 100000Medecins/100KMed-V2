@@ -12,6 +12,7 @@ const config: Config = {
         poppins: ["var(--font-poppins)", "sans-serif"],
       },
       colors: {
+        white: "#F4F7FF",
         navy: {
           DEFAULT: "#1B2A4A",
           dark: "#0F1B33",
@@ -28,8 +29,8 @@ const config: Config = {
           star: "#F5C518",
         },
         surface: {
-          light: "#F7F8FC",
-          muted: "#EEF1F8",
+          light: "#E8EDF8",
+          muted: "#DCE4F2",
         },
         hero: {
           pink: "#FDE8EF",

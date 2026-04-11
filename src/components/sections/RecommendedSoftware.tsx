@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import StarRating from '@/components/ui/StarRating'
 import RatingBadge from '@/components/ui/RatingBadge'
@@ -10,7 +10,8 @@ interface SolutionCard {
   nom: string
   slug: string | null
   logo_url: string | null
-  noteRedacBase5: number | null
+  noteUtilisateurs: number | null
+  noteRedac: number | null
   categorieSlug: string
 }
 
@@ -25,12 +26,25 @@ interface RecommendedSoftwareProps {
   categories: CategorieData[]
 }
 
+type SortMode = 'collegues' | 'redac'
+
 export default function RecommendedSoftware({ categories }: RecommendedSoftwareProps) {
   const [activeIndex, setActiveIndex] = useState(0)
+  const [sortMode, setSortMode] = useState<SortMode>('collegues')
 
   if (categories.length === 0) return null
 
   const active = categories[activeIndex]
+
+  const sortedSolutions = useMemo(() => {
+    return [...active.solutions]
+      .filter((s) => sortMode === 'collegues' ? s.noteUtilisateurs !== null : s.noteRedac !== null)
+      .sort((a, b) => {
+        if (sortMode === 'collegues') return (b.noteUtilisateurs || 0) - (a.noteUtilisateurs || 0)
+        return (b.noteRedac || 0) - (a.noteRedac || 0)
+      })
+      .slice(0, 6)
+  }, [active.solutions, sortMode])
 
   return (
     <section className="bg-surface-light py-20 md:py-28" id="tools">
@@ -38,9 +52,34 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left sidebar */}
           <div className="lg:w-56 shrink-0">
-            <h2 className="text-xl font-bold text-navy leading-snug mb-6">
+            <h2 className="text-xl font-bold text-navy leading-snug mb-3">
               Les logiciels les mieux notés
             </h2>
+
+            {/* Toggle par collègues / par rédaction */}
+            <div className="flex flex-col gap-1 mb-5">
+              <button
+                onClick={() => setSortMode('collegues')}
+                className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
+                  sortMode === 'collegues'
+                    ? 'text-accent-blue bg-accent-blue/10'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {sortMode === 'collegues' ? '▸ ' : ''}par vos collègues
+              </button>
+              <button
+                onClick={() => setSortMode('redac')}
+                className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
+                  sortMode === 'redac'
+                    ? 'text-accent-blue bg-accent-blue/10'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {sortMode === 'redac' ? '▸ ' : ''}par 100&nbsp;000 Médecins
+              </button>
+            </div>
+
             <div className="flex flex-wrap lg:flex-col gap-2">
               {categories.map((cat, i) => (
                 <button
@@ -60,10 +99,12 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
 
           {/* Cards grid */}
           <div className="flex-1">
-            {active.solutions.length === 0 ? (
+            {sortedSolutions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 rounded-2xl border-2 border-dashed border-gray-200 gap-3">
                 <p className="text-gray-400 text-sm text-center max-w-xs">
-                  Pas encore assez d'évaluations pour établir un classement — revenez bientôt ! 😊
+                  {sortMode === 'redac'
+                    ? "Pas encore d'évaluation de la rédaction dans cette catégorie."
+                    : "Pas encore assez d'évaluations pour établir un classement — revenez bientôt ! 😊"}
                 </p>
                 <p className="text-gray-500 text-sm">Ou évaluez le vôtre dès maintenant&nbsp;:</p>
                 <Link
@@ -77,14 +118,14 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {active.solutions.slice(0, 3).map((sol) => (
-                    <SolutionCardItem key={sol.id} solution={sol} />
+                  {sortedSolutions.slice(0, 3).map((sol) => (
+                    <SolutionCardItem key={sol.id} solution={sol} sortMode={sortMode} />
                   ))}
                 </div>
-                {active.solutions.length > 3 && (
+                {sortedSolutions.length > 3 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
-                    {active.solutions.slice(3, 6).map((sol) => (
-                      <SolutionCardItem key={sol.id} solution={sol} />
+                    {sortedSolutions.slice(3, 6).map((sol) => (
+                      <SolutionCardItem key={sol.id} solution={sol} sortMode={sortMode} />
                     ))}
                   </div>
                 )}
@@ -106,7 +147,9 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
   )
 }
 
-function SolutionCardItem({ solution }: { solution: SolutionCard }) {
+function SolutionCardItem({ solution, sortMode }: { solution: SolutionCard; sortMode: SortMode }) {
+  const note = sortMode === 'collegues' ? solution.noteUtilisateurs : solution.noteRedac
+
   return (
     <Link
       href={`/solutions/${solution.categorieSlug}/${solution.slug}`}
@@ -114,10 +157,10 @@ function SolutionCardItem({ solution }: { solution: SolutionCard }) {
     >
       <span className="text-sm font-semibold text-navy mb-3">{solution.nom}</span>
 
-      {solution.noteRedacBase5 ? (
+      {note ? (
         <div className="flex items-center gap-2 mb-4">
-          <RatingBadge rating={solution.noteRedacBase5} />
-          <StarRating rating={solution.noteRedacBase5} />
+          <RatingBadge rating={note} />
+          <StarRating rating={note} />
         </div>
       ) : (
         <div className="mb-4">

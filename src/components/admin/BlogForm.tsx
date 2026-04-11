@@ -3,8 +3,9 @@
 import { useState, useTransition, useRef } from 'react'
 import type { Database } from '@/types/database'
 import type { SyndicatFoundateur } from '@/types/models'
+import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
 import RichTextEditor from '@/components/admin/RichTextEditor'
-import { ChevronDown, GripVertical } from 'lucide-react'
+import { ChevronDown, GripVertical, ImageIcon, Sparkles } from 'lucide-react'
 
 type PageStatique = Database['public']['Tables']['pages_statiques']['Row'] & {
   metadata?: SyndicatFoundateur[] | null
@@ -31,6 +32,59 @@ export default function BlogForm({ page, action }: BlogFormProps) {
   const [openSyndicat, setOpenSyndicat] = useState<string | null>(null)
   const dragIndexRef = useRef<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  // Image
+  const [imageUrl, setImageUrl] = useState(page.image_couverture ?? '')
+  const [imageUploading, setImageUploading] = useState(false)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const imageRef = useRef<HTMLInputElement>(null)
+
+  // Suggestions images
+  const [imageSuggestions, setImageSuggestions] = useState<UnsplashPhoto[]>([])
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestionQuery, setSuggestionQuery] = useState(page.titre ?? '')
+  const [suggestionProvider, setSuggestionProvider] = useState<'unsplash' | 'pexels'>('unsplash')
+  const [usedKeywords, setUsedKeywords] = useState<string | null>(null)
+  const [previewPhoto, setPreviewPhoto] = useState<UnsplashPhoto | null>(null)
+
+  async function handleSuggestImages() {
+    const query = suggestionQuery.trim() || page.titre?.trim()
+    if (!query) return
+    setIsLoadingSuggestions(true)
+    setSuggestionsError(null)
+    setShowSuggestions(true)
+    setUsedKeywords(null)
+    try {
+      const res = await fetch('/api/suggerer-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titre: query, provider: suggestionProvider }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setSuggestionsError(data.error ?? 'Erreur'); return }
+      setImageSuggestions(data.photos ?? [])
+      setUsedKeywords(data.keywords ?? null)
+    } catch { setSuggestionsError('Erreur réseau') }
+    finally { setIsLoadingSuggestions(false) }
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageUploading(true)
+    setImageError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) { setImageError(json.error ?? 'Erreur upload'); return }
+      setImageUrl(json.url)
+    } catch { setImageError('Erreur réseau') }
+    finally { setImageUploading(false); if (imageRef.current) imageRef.current.value = '' }
+  }
 
   const isQuiSommesNous = page.slug === 'qui-sommes-nous'
 
@@ -66,6 +120,7 @@ export default function BlogForm({ page, action }: BlogFormProps) {
 
   function handleSubmit(formData: FormData) {
     formData.set('contenu', contenu)
+    formData.set('image_couverture', imageUrl)
     if (isQuiSommesNous) {
       formData.set('metadata', JSON.stringify(syndicats))
     }
@@ -103,16 +158,134 @@ export default function BlogForm({ page, action }: BlogFormProps) {
       </div>
 
       {/* Image de couverture */}
-      <div>
-        <label htmlFor="image_couverture" className={labelClass}>Image de couverture (URL)</label>
-        <input
-          id="image_couverture"
-          type="text"
-          name="image_couverture"
-          defaultValue={page.image_couverture ?? ''}
-          placeholder="https://... ou /images/..."
-          className={inputClass}
-        />
+      <div className="bg-white border border-gray-200 rounded-card p-4 space-y-3">
+        <label className={labelClass}>Image de couverture</label>
+        <input type="hidden" name="image_couverture" value={imageUrl} />
+        <input ref={imageRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleImageChange} />
+        {imageUrl && (
+          <img src={imageUrl} alt="Couverture" className="w-full h-40 object-cover rounded-xl border border-gray-100" />
+        )}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => imageRef.current?.click()}
+            disabled={imageUploading}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            <ImageIcon className="w-4 h-4 text-gray-400" />
+            {imageUploading ? 'Upload...' : imageUrl ? 'Changer l\'image' : 'Uploader une image'}
+          </button>
+          <div className="space-y-1.5 w-full">
+            <div className="flex gap-1 p-0.5 bg-gray-100 rounded-lg w-fit">
+              {(['unsplash', 'pexels'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setSuggestionProvider(p)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${suggestionProvider === p ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  {p === 'unsplash' ? 'Unsplash' : 'Pexels'}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={suggestionQuery}
+                onChange={(e) => setSuggestionQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSuggestImages() } }}
+                placeholder={page.titre || 'Mots-clés pour la recherche…'}
+                className="flex-1 rounded-xl bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-3 py-2"
+              />
+              <button
+                type="button"
+                onClick={handleSuggestImages}
+                disabled={isLoadingSuggestions || (!suggestionQuery.trim() && !page.titre?.trim())}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-accent-blue/30 text-accent-blue rounded-xl hover:bg-accent-blue/5 disabled:opacity-50 transition-colors flex-shrink-0"
+                title="Suggérer des images"
+              >
+                <Sparkles className="w-4 h-4" />
+                {isLoadingSuggestions ? 'Recherche…' : 'Suggérer'}
+              </button>
+            </div>
+          </div>
+          {imageUrl && (
+            <button type="button" onClick={() => setImageUrl('')} className="px-4 py-2 text-sm text-red-400 hover:text-red-600 border border-red-100 rounded-xl hover:bg-red-50 transition-colors">
+              Supprimer
+            </button>
+          )}
+        </div>
+        {imageError && <p className="text-xs text-red-600">{imageError}</p>}
+        {suggestionsError && <p className="text-xs text-red-600">{suggestionsError}</p>}
+
+        {showSuggestions && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500">Cliquez sur une photo pour la prévisualiser</p>
+                {usedKeywords && (
+                  <p className="text-[10px] text-gray-400 mt-0.5 truncate">Recherche : <span className="font-mono">{usedKeywords}</span></p>
+                )}
+              </div>
+              <button type="button" onClick={() => setShowSuggestions(false)} className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0">Fermer</button>
+            </div>
+            {isLoadingSuggestions && (
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            )}
+            {!isLoadingSuggestions && imageSuggestions.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {imageSuggestions.map((photo) => (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    onClick={() => setPreviewPhoto(photo)}
+                    className="relative group h-16 overflow-hidden rounded-lg border-2 border-transparent hover:border-accent-blue transition-all"
+                    title={`Prévisualiser — ${photo.photographer}`}
+                  >
+                    <img src={photo.thumb_url} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 text-white text-[10px] font-medium bg-black/50 rounded px-1.5 py-0.5 transition-opacity">Voir</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-gray-400 text-center">
+              {suggestionProvider === 'pexels'
+                ? <>Photos via <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">Pexels</a></>
+                : <>Photos via <a href="https://unsplash.com?utm_source=100000medecins&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">Unsplash</a></>
+              }
+            </p>
+          </div>
+        )}
+
+        {/* Modal prévisualisation */}
+        {previewPhoto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setPreviewPhoto(null)}>
+            <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+              <img src={previewPhoto.small_url} alt={previewPhoto.alt} className="w-full object-contain max-h-[60vh]" />
+              <div className="p-4 flex items-center justify-between gap-4">
+                <p className="text-xs text-gray-400">
+                  Photo par <a href={previewPhoto.photographer_url} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">{previewPhoto.photographer}</a> · {previewPhoto.source === 'pexels' ? 'Pexels' : 'Unsplash'}
+                </p>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button type="button" onClick={() => setPreviewPhoto(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Annuler</button>
+                  <button
+                    type="button"
+                    onClick={() => { setImageUrl(previewPhoto.regular_url); setShowSuggestions(false); setPreviewPhoto(null) }}
+                    className="px-4 py-2 text-sm bg-navy text-white rounded-xl hover:bg-navy-dark transition-colors font-medium"
+                  >
+                    Sélectionner cette photo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Meta description */}

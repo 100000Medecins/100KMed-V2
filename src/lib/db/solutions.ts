@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import type { SolutionWithRelations, SolutionWithResultat } from '@/types/models'
 
 /**
@@ -244,6 +244,34 @@ export async function getNotesRedac(solutionId: string) {
 export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]
 
 /**
+ * Récupère la note moyenne rédaction pour une liste de solutions.
+ * Retourne un map solutionId -> moyenne des note_redac_base5.
+ */
+export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+  const supabase = await createServerClient()
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, note_redac_base5')
+    .in('solution_id', solutionIds)
+    .not('note_redac_base5', 'is', null)
+  if (error || !data) return {}
+  const sums: Record<string, { total: number; count: number }> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const note = row.note_redac_base5 as number
+    if (!sums[id]) sums[id] = { total: 0, count: 0 }
+    sums[id].total += note
+    sums[id].count += 1
+  }
+  const map: Record<string, number> = {}
+  for (const [id, { total, count }] of Object.entries(sums)) {
+    map[id] = Math.round((total / count) * 10) / 10
+  }
+  return map
+}
+
+/**
  * Récupère la note moyenne utilisateurs pour une liste de solutions.
  * Retourne un map solutionId -> moyenne_utilisateurs_base5.
  */
@@ -339,6 +367,21 @@ export async function getNbNotesUtilisateurs(solutionIds: string[]): Promise<Rec
  * Récupère la note globale de la rédaction pour une liste de solutions.
  * Retourne un map solutionId -> note en base 5.
  */
+/**
+ * Stats globales du site : nb solutions actives, nb évaluations utilisateurs.
+ */
+export async function getSiteStats(): Promise<{ nbSolutions: number; nbEvaluations: number }> {
+  const supabase = createServiceRoleClient()
+  const [{ count: nbSolutions }, { count: nbEvaluations }] = await Promise.all([
+    supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('actif', true),
+    supabase.from('evaluations').select('*', { count: 'exact', head: true }).not('last_date_note', 'is', null),
+  ])
+  return {
+    nbSolutions: nbSolutions ?? 0,
+    nbEvaluations: nbEvaluations ?? 0,
+  }
+}
+
 export async function getNotesGlobalesRedac(solutionIds: string[]): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
