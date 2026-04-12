@@ -80,7 +80,7 @@ export async function getDetailedComparisonData(solutionId: string): Promise<Det
     }
 
     grouped.get(parentKey)!.items.push({
-      critereId: r.critere_id,
+      critereId: r.critere_id ?? key,
       nomCourt: r.critere?.nom_court || key,
       valueUtilisateurs: r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null,
     })
