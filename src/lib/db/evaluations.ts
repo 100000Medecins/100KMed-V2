@@ -314,7 +314,7 @@ export async function getAverageNoteUtilisateurs(
     ? Math.round((allNotes.reduce((s, v) => s + v, 0) / allNotes.length) * 10) / 10
     : null
 
-  return { note, total: evaluations.length, distribution }
+  return { note, total: allNotes.length, distribution }
 }
 
 /**

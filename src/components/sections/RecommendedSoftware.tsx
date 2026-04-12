@@ -19,6 +19,7 @@ interface CategorieData {
   id: string
   nom: string
   slug: string
+  hasNoteRedac: boolean
   solutions: SolutionCard[]
 }
 
@@ -36,15 +37,18 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
 
   const active = categories[activeIndex]
 
+  // Si la catégorie active n'a pas de note rédac, forcer le mode collègues
+  const effectiveSortMode = active.hasNoteRedac ? sortMode : 'collegues'
+
   const sortedSolutions = useMemo(() => {
     return [...active.solutions]
-      .filter((s) => sortMode === 'collegues' ? s.noteUtilisateurs !== null : s.noteRedac !== null)
+      .filter((s) => effectiveSortMode === 'collegues' ? s.noteUtilisateurs !== null : s.noteRedac !== null)
       .sort((a, b) => {
-        if (sortMode === 'collegues') return (b.noteUtilisateurs || 0) - (a.noteUtilisateurs || 0)
+        if (effectiveSortMode === 'collegues') return (b.noteUtilisateurs || 0) - (a.noteUtilisateurs || 0)
         return (b.noteRedac || 0) - (a.noteRedac || 0)
       })
       .slice(0, 6)
-  }, [active.solutions, sortMode])
+  }, [active.solutions, effectiveSortMode])
 
   return (
     <section className="bg-surface-light py-20 md:py-28" id="tools">
@@ -61,23 +65,25 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
               <button
                 onClick={() => setSortMode('collegues')}
                 className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
-                  sortMode === 'collegues'
+                  effectiveSortMode === 'collegues'
                     ? 'text-accent-blue bg-accent-blue/10'
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
-                {sortMode === 'collegues' ? '▸ ' : ''}par vos collègues
+                {effectiveSortMode === 'collegues' ? '▸ ' : ''}par vos collègues
               </button>
-              <button
-                onClick={() => setSortMode('redac')}
-                className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
-                  sortMode === 'redac'
-                    ? 'text-accent-blue bg-accent-blue/10'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {sortMode === 'redac' ? '▸ ' : ''}par 100&nbsp;000 Médecins
-              </button>
+              {active.hasNoteRedac && (
+                <button
+                  onClick={() => setSortMode('redac')}
+                  className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
+                    effectiveSortMode === 'redac'
+                      ? 'text-accent-blue bg-accent-blue/10'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  {effectiveSortMode === 'redac' ? '▸ ' : ''}par 100&nbsp;000 Médecins
+                </button>
+              )}
             </div>
 
             <div className="flex flex-wrap lg:flex-col gap-2">
@@ -102,7 +108,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
             {sortedSolutions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 rounded-2xl border-2 border-dashed border-gray-200 gap-3">
                 <p className="text-gray-400 text-sm text-center max-w-xs">
-                  {sortMode === 'redac'
+                  {effectiveSortMode === 'redac'
                     ? "Pas encore d'évaluation de la rédaction dans cette catégorie."
                     : "Pas encore assez d'évaluations pour établir un classement — revenez bientôt ! 😊"}
                 </p>
@@ -119,13 +125,13 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {sortedSolutions.slice(0, 3).map((sol) => (
-                    <SolutionCardItem key={sol.id} solution={sol} sortMode={sortMode} />
+                    <SolutionCardItem key={sol.id} solution={sol} sortMode={effectiveSortMode} />
                   ))}
                 </div>
                 {sortedSolutions.length > 3 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
                     {sortedSolutions.slice(3, 6).map((sol) => (
-                      <SolutionCardItem key={sol.id} solution={sol} sortMode={sortMode} />
+                      <SolutionCardItem key={sol.id} solution={sol} sortMode={effectiveSortMode} />
                     ))}
                   </div>
                 )}

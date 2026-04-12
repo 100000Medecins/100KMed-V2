@@ -78,7 +78,7 @@ export default function SolutionDetailPage({
           <div className="grid lg:grid-cols-[1fr_340px] gap-8">
             {/* Colonne gauche */}
             <div className="space-y-8">
-              <div id="avis-redaction">
+              <div id="avis-redaction" className="scroll-mt-[140px]">
                 <EditorialReview
                   avisRedaction={solution.evaluation_redac_avis}
                   noteRedaction={noteRedaction}
@@ -87,23 +87,31 @@ export default function SolutionDetailPage({
                 />
               </div>
 
-              <div id="galerie">
+              <div id="galerie" className="scroll-mt-[140px]">
                 <SolutionGallery images={solution.galerie || []} />
               </div>
 
-              <div id="notes-detaillees">
+              <div id="notes-detaillees" className="scroll-mt-[140px]">
                 <DetailedRatings notesRedac={notesRedac} />
               </div>
 
-              <div id="avis-utilisateurs">
+              <div id="avis-utilisateurs" className="scroll-mt-[140px]">
                 <UserReviewsSection
                   resultats={filteredResultats}
                   noteUtilisateursData={noteUtilisateursData}
                 />
               </div>
 
+              <div id="comparaison" className="scroll-mt-[140px]">
+                <ComparisonSection
+                  solutionNom={solution.nom}
+                  resultats={filteredResultats}
+                  autreSolutions={autreSolutions || []}
+                />
+              </div>
+
               {avisPagines && avisPagines.total > 0 && (
-                <div id="temoignages">
+                <div id="temoignages" className="scroll-mt-[140px]">
                   <ConfrereTestimonials
                     solutionId={solution.id}
                     totalEvaluations={nbEvaluations}
@@ -115,15 +123,7 @@ export default function SolutionDetailPage({
                 </div>
               )}
 
-              <div id="comparaison">
-                <ComparisonSection
-                  solutionNom={solution.nom}
-                  resultats={filteredResultats}
-                  autreSolutions={autreSolutions || []}
-                />
-              </div>
-
-              <div id="mot-editeur">
+              <div id="mot-editeur" className="scroll-mt-[140px]">
                 <PublisherWord
                   motEditeur={solution.mot_editeur}
                   editeur={solution.editeur}
