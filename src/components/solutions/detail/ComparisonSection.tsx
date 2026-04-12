@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, X, Plus } from 'lucide-react'
 import type { ResultatWithCritere } from '@/types/models'
-import { getComparisonData } from '@/lib/actions/comparison'
+import { getComparisonData, getDetailedComparisonData, type DetailGroupItem } from '@/lib/actions/comparison'
 
 const COLORS = ['#4A90D9', '#E8734A', '#9333EA', '#16A34A']
 const COLORS_BG = ['rgba(74,144,217,0.18)', 'rgba(232,115,74,0.15)', 'rgba(147,51,234,0.13)', 'rgba(22,163,74,0.13)']
@@ -143,10 +143,12 @@ function InlineBars({ bars, compact = false }: { bars: BarValue[]; compact?: boo
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function ComparisonSection({
+  solutionId,
   solutionNom,
   resultats,
   autreSolutions,
 }: {
+  solutionId: string
   solutionNom: string
   resultats: ResultatWithCritere[]
   autreSolutions: { id: string; nom: string; logo_url: string | null }[]
@@ -157,6 +159,9 @@ export default function ComparisonSection({
   const [detailExpanded, setDetailExpanded] = useState(false)
   const [expandedCriteres, setExpandedCriteres] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
+  const [detailMain, setDetailMain] = useState<DetailGroupItem[] | null>(null)
+  const [detailComps, setDetailComps] = useState<Record<string, DetailGroupItem[]>>({})
+  const [detailLoading, setDetailLoading] = useState(false)
 
   // ── Radar ──
   const criteria = resultats.filter(
@@ -178,7 +183,10 @@ export default function ComparisonSection({
   const handleSelect = (sol: { id: string; nom: string; logo_url: string | null }) => {
     setDropdownOpen(false)
     startTransition(async () => {
-      const data = await getComparisonData(sol.id)
+      const [data, detailData] = await Promise.all([
+        getComparisonData(sol.id),
+        getDetailedComparisonData(sol.id),
+      ])
       const valuesRedac = labels.map((label) => {
         const match = data.find((d) => d.nomCourt === label)
         return match ? (match.valueRedac ?? match.valueUtilisateurs ?? 0) : 0
@@ -188,11 +196,19 @@ export default function ComparisonSection({
         return match ? (match.valueUtilisateurs ?? match.valueRedac ?? 0) : 0
       })
       setComparisons(prev => [...prev, { id: sol.id, nom: sol.nom, valuesRedac, valuesUtilisateurs }])
+      if (detailData.length > 0) {
+        setDetailComps(prev => ({ ...prev, [sol.id]: detailData }))
+      }
     })
   }
 
   const handleRemove = (id: string) => {
     setComparisons(prev => prev.filter(c => c.id !== id))
+    setDetailComps(prev => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }
 
   const toggleCritere = (id: string) => {
@@ -213,16 +229,34 @@ export default function ComparisonSection({
     values: noteMode === 'redac' ? c.valuesRedac : c.valuesUtilisateurs,
   }))
 
-  // ── Comparatif détaillé : groupé par steps du schema_evaluation ──
-  function getVal(r: ResultatWithCritere) {
-    return noteMode === 'redac'
-      ? (r.note_redac_base5 != null ? Number(r.note_redac_base5) : null)
-      : (r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null)
+  // ── Accordéon détaillé — lazy-load on first expand ──
+  const handleDetailExpand = () => {
+    if (!detailExpanded && detailMain === null) {
+      setDetailLoading(true)
+      void getDetailedComparisonData(solutionId).then((data) => {
+        setDetailMain(data)
+        setDetailLoading(false)
+      })
+    }
+    setDetailExpanded(v => !v)
   }
 
-  // Accordéon détaillé — sera peuplé après migration DB (étape 6)
-  const detailGroups: { titre: string; children: { id: string; nom: string; bars: { colorIdx: number; value: number | null }[] }[] }[] = []
-  const hasDetailedData = false
+  // Construire les groupes à afficher
+  const detailGroups = (detailMain ?? []).map((group) => ({
+    titre: group.parentNom,
+    children: group.items.map((item) => ({
+      id: item.critereId,
+      nom: item.nomCourt,
+      bars: [
+        { colorIdx: 0, value: item.valueUtilisateurs },
+        ...comparisons.map((comp, i) => {
+          const compGroup = (detailComps[comp.id] ?? []).find((g) => g.parentKey === group.parentKey)
+          const compItem = compGroup?.items.find((it) => it.critereId === item.critereId)
+          return { colorIdx: i + 1, value: compItem?.valueUtilisateurs ?? null }
+        }),
+      ],
+    })),
+  }))
 
   return (
     <section className="bg-white rounded-card shadow-card overflow-hidden">
@@ -303,21 +337,29 @@ export default function ComparisonSection({
         )}
       </div>
 
-      {/* Comparatif détaillé — accordéon outer */}
-      {hasDetailedData && (
-        <div className="border-t border-gray-100">
-          <button
-            onClick={() => setDetailExpanded(v => !v)}
-            className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
-          >
-            <span className="text-sm font-semibold text-navy">Comparatif détaillé par critères</span>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${detailExpanded ? 'rotate-180' : ''}`} />
-          </button>
+      {/* Comparatif détaillé — accordéon (notes utilisateurs uniquement) */}
+      <div className="border-t border-gray-100">
+        <button
+          onClick={handleDetailExpand}
+          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-navy">Comparatif détaillé par sous-critères</span>
+            <span className="text-xs text-gray-400 font-normal">(notes utilisateurs)</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${detailExpanded ? 'rotate-180' : ''}`} />
+        </button>
 
-          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${detailExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className="overflow-hidden">
+        <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${detailExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+          <div className="overflow-hidden">
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-navy/20 border-t-navy rounded-full animate-spin" />
+              </div>
+            ) : detailMain !== null && detailMain.length === 0 ? (
+              <p className="text-sm text-gray-400 px-6 py-4">Aucune donnée détaillée disponible.</p>
+            ) : (
               <div className="pb-2">
-                {/* Groupes de sous-critères (steps du schema_evaluation) */}
                 {detailGroups.map((group) => {
                   const isOpen = expandedCriteres.has(group.titre)
                   return (
@@ -335,7 +377,7 @@ export default function ComparisonSection({
                           <div className="bg-gray-50/60">
                             {group.children.map((child) => (
                               <div key={child.id} className="flex items-center gap-3 px-6 py-2 border-t border-gray-100 first:border-0">
-                                <span className="flex-1 text-xs text-gray-600 pl-3">{child.nom}</span>
+                                <span className="flex-1 text-xs text-gray-600 pl-3 line-clamp-2">{child.nom}</span>
                                 <InlineBars bars={child.bars} compact />
                                 <div className="w-4 shrink-0" />
                               </div>
@@ -347,10 +389,10 @@ export default function ComparisonSection({
                   )
                 })}
               </div>
-            </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </section>
   )
 }

@@ -205,7 +205,10 @@ export async function getAvisUtilisateursPaginated(
       user: row.user as UserRow | null,
       moyenne: (() => {
         const m = row.moyenne_utilisateur as number | null
-        return m != null && m > 5 ? Math.round((m / 2) * 10) / 10 : m
+        if (m == null) return null
+        // Si les scores sont ancien format, la moyenne stockée est sur 0-10
+        const isNewFormat = Object.keys((row.scores as Record<string, unknown>) || {}).some((k) => k.startsWith('detail_'))
+        return !isNewFormat && m > 5 ? Math.round((m / 2) * 10) / 10 : m
       })(),
       date: row.last_date_note as string | null,
       commentaire,
@@ -223,11 +226,11 @@ export async function getAvisUtilisateursPaginated(
       ancienUtilisateur: ancienUtilisateurs[userId] ?? false,
       scores: (() => {
         const entries = Object.entries(scores).filter(([k]) => k !== 'commentaire')
-        // Détecte si les scores sont sur 0-10 (ancien Firebase) : au moins une valeur > 5
-        const isOldScale = entries.some(([, v]) => typeof v === 'number' && v > 5)
-        const divisor = isOldScale ? 2 : 1
+        // Détecte l'ancien format Firebase par la présence de clés detail_*
+        const isNewFormat = entries.some(([k]) => k.startsWith('detail_'))
+        const divisor = isNewFormat ? 1 : 2
         return Object.fromEntries(
-          entries.map(([k, v]) => [k, typeof v === 'number' ? Math.round((v / divisor) * 10) / 10 : null])
+          entries.map(([k, v]) => [k, typeof v === 'number' && v > 0 ? Math.round((v / divisor) * 10) / 10 : null])
         ) as Record<string, number | null>
       })(),
     }
@@ -263,12 +266,77 @@ export async function getDureeUtilisationSolution(solutionId: string, userId: st
   return diffMonths
 }
 
+// Maps each detail_* sub-criterion key to its critere_principal group
+export const DETAIL_CRITERE_MAP: Record<string, string> = {
+  // Interface utilisateur
+  detail_connexion: 'interface', detail_interface_generale: 'interface', detail_reactif: 'interface',
+  detail_ins: 'interface', detail_atcd: 'interface', detail_notes_consultation: 'interface',
+  detail_modeles_consultation: 'interface', detail_examens_visualisation: 'interface',
+  detail_ordonnance_pharmacie: 'interface', detail_modeles_ordonnance: 'interface',
+  detail_modeles_certificats: 'interface', detail_prescription_autres: 'interface',
+  detail_pluripro: 'interface', detail_courrier_adressage: 'interface',
+  detail_carnet_adresse: 'interface', detail_fse: 'interface', detail_mobilite: 'interface',
+  detail_resultats_bio: 'interface', detail_profil_remplacant: 'interface',
+  detail_prise_en_main: 'interface', detail_droits_acces: 'interface',
+  // Fonctionnalités
+  detail_agenda: 'fonctionnalites', detail_dmp_recuperation: 'fonctionnalites',
+  detail_classement_docs: 'fonctionnalites', detail_ia_scribe: 'fonctionnalites',
+  detail_examens_integration: 'fonctionnalites', detail_ordonnance_numerique: 'fonctionnalites',
+  detail_signature_numerique: 'fonctionnalites', detail_envoi_dmp: 'fonctionnalites',
+  detail_donnees_utiles_prescription: 'fonctionnalites', detail_alertes_ldap: 'fonctionnalites',
+  detail_messagerie_interne: 'fonctionnalites', detail_staffs: 'fonctionnalites',
+  detail_messagerie_securisee: 'fonctionnalites', detail_teleexpertise: 'fonctionnalites',
+  detail_aati: 'fonctionnalites', detail_teleservices: 'fonctionnalites',
+  detail_comptabilite: 'fonctionnalites', detail_teletransmission: 'fonctionnalites',
+  detail_recherche_multicriteres: 'fonctionnalites',
+  // Fiabilité (detail_nps excluded from scoring)
+  detail_stabilite: 'fiabilite', detail_efficience: 'fiabilite',
+  // Éditeur
+  detail_pratiques_commerciales: 'editeur', detail_import_donnees: 'editeur',
+  detail_sav: 'editeur', detail_communication: 'editeur', detail_hebergement: 'editeur',
+  detail_maj: 'editeur', detail_formation: 'editeur', detail_ecoute_besoins: 'editeur',
+  detail_resiliation: 'editeur',
+  // Rapport qualité/prix
+  detail_politique_tarifaire: 'qualite_prix', detail_rapport_qualite_prix: 'qualite_prix',
+}
+
 const CRITERES_PRINCIPAUX = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix']
+
+/** Calcule la note par groupe de critères pour une évaluation individuelle. Renvoie null si aucune donnée. */
+function computeEvalGroupAvg(scores: Record<string, unknown>): number | null {
+  const isNewFormat = Object.keys(scores).some((k) => k.startsWith('detail_'))
+
+  if (isNewFormat) {
+    // Nouveau format detail_* (échelle 0-5) : moyenne des moyennes par groupe
+    const groupSums: Record<string, number[]> = {}
+    for (const [key, value] of Object.entries(scores)) {
+      if (key === 'commentaire') continue
+      const group = DETAIL_CRITERE_MAP[key]
+      if (!group || typeof value !== 'number' || value <= 0) continue
+      if (!groupSums[group]) groupSums[group] = []
+      groupSums[group].push(value)
+    }
+    const groupAvgs = Object.values(groupSums).map(
+      (vals) => vals.reduce((s, v) => s + v, 0) / vals.length
+    )
+    if (groupAvgs.length === 0) return null
+    return groupAvgs.reduce((s, v) => s + v, 0) / groupAvgs.length
+  } else {
+    // Ancien format (échelle 0-10) : diviser par 2
+    const vals: number[] = []
+    for (const key of CRITERES_PRINCIPAUX) {
+      const raw = scores[key]
+      if (typeof raw === 'number' && raw > 0) vals.push(raw / 2)
+    }
+    if (vals.length === 0) return null
+    return vals.reduce((s, v) => s + v, 0) / vals.length
+  }
+}
 
 /**
  * Calcule la note moyenne utilisateurs à partir des scores individuels.
- * Gère les deux échelles : 0-10 (ancien Firebase) et 0-5 (nouveau formulaire).
- * La note globale = moyenne des moyennes par critère de chaque évaluation.
+ * Gère les deux formats : ancien Firebase (0-10) et nouveau detail_* (0-5).
+ * La note globale = moyenne des moyennes par groupe de critères de chaque évaluation.
  */
 export async function getAverageNoteUtilisateurs(
   solutionId: string
@@ -290,24 +358,11 @@ export async function getAverageNoteUtilisateurs(
 
   for (const ev of evaluations) {
     const scores = (ev.scores || {}) as Record<string, unknown>
-    const entries = Object.entries(scores).filter(([k]) => k !== 'commentaire')
-    const isOldScale = entries.some(([, v]) => typeof v === 'number' && v > 5)
-    const divisor = isOldScale ? 2 : 1
-
-    const critereValues: number[] = []
-    for (const key of CRITERES_PRINCIPAUX) {
-      const raw = scores[key]
-      if (typeof raw === 'number' && raw > 0) {
-        critereValues.push(raw / divisor)
-      }
-    }
-
-    if (critereValues.length > 0) {
-      const avgForEval = critereValues.reduce((s, v) => s + v, 0) / critereValues.length
-      allNotes.push(avgForEval)
-      const bucket = String(Math.min(5, Math.max(1, Math.round(avgForEval))))
-      distribution[bucket] = (distribution[bucket] || 0) + 1
-    }
+    const avg = computeEvalGroupAvg(scores)
+    if (avg == null) continue
+    allNotes.push(avg)
+    const bucket = String(Math.min(5, Math.max(1, Math.round(avg))))
+    distribution[bucket] = (distribution[bucket] || 0) + 1
   }
 
   const note = allNotes.length > 0
@@ -320,6 +375,7 @@ export async function getAverageNoteUtilisateurs(
 /**
  * Calcule les résultats agrégés directement depuis les évaluations.
  * Utilisé en fallback quand la table `resultats` est vide.
+ * Gère les deux formats : ancien Firebase (0-10) et nouveau detail_* (0-5).
  */
 const CRITERE_META: Record<string, { nom_court: string; type: string }> = {
   interface: { nom_court: 'Interface utilisateur', type: 'detail' },
@@ -338,7 +394,7 @@ export async function computeAggregatedResultats(
 
   const { data: evaluations, error } = await supabase
     .from('evaluations')
-    .select('scores, moyenne_utilisateur')
+    .select('scores')
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
     .or('statut.eq.publiee,statut.is.null')
@@ -346,16 +402,40 @@ export async function computeAggregatedResultats(
   if (error || !evaluations || evaluations.length === 0) return []
 
   const results: ResultatWithCritere[] = []
+  const allEvalAvgs: number[] = []
 
-  // Moyennes par critère
+  // Moyennes par groupe de critères
   for (const [key, meta] of Object.entries(CRITERE_META)) {
-    const values = evaluations
-      .map((e) => (e.scores as Record<string, number | null>)?.[key])
-      .filter((v): v is number => typeof v === 'number' && v > 0)
+    const groupValues: number[] = []
 
-    if (values.length === 0) continue
+    for (const ev of evaluations) {
+      const scores = (ev.scores || {}) as Record<string, unknown>
+      const isNewFormat = Object.keys(scores).some((k) => k.startsWith('detail_'))
 
-    const avg = values.reduce((sum, v) => sum + v, 0) / values.length
+      if (isNewFormat) {
+        // Nouveau format : moyenne des detail_* appartenant à ce groupe
+        const detailKeys = Object.entries(DETAIL_CRITERE_MAP)
+          .filter(([, group]) => group === key)
+          .map(([k]) => k)
+        const vals = detailKeys
+          .map((k) => scores[k])
+          .filter((v): v is number => typeof v === 'number' && v > 0)
+        if (vals.length > 0) {
+          groupValues.push(vals.reduce((s, v) => s + v, 0) / vals.length)
+        }
+      } else {
+        // Ancien format : clé directe, divisée par 2
+        const raw = scores[key]
+        if (typeof raw === 'number' && raw > 0) {
+          groupValues.push(raw / 2)
+        }
+      }
+    }
+
+    if (groupValues.length === 0) continue
+
+    const avg = groupValues.reduce((sum, v) => sum + v, 0) / groupValues.length
+    allEvalAvgs.push(avg)
 
     results.push({
       id: `computed-${key}`,
@@ -363,7 +443,7 @@ export async function computeAggregatedResultats(
       critere_id: `computed-${key}`,
       moyenne_utilisateurs: avg,
       moyenne_utilisateurs_base5: avg,
-      nb_notes: values.length,
+      nb_notes: groupValues.length,
       note_redac: null,
       note_redac_base5: null,
       avis_redac: null,
@@ -396,19 +476,9 @@ export async function computeAggregatedResultats(
     } as unknown as ResultatWithCritere)
   }
 
-  // Synthèse globale
-  const moyennes = evaluations
-    .map((e) => e.moyenne_utilisateur as number)
-    .filter((v): v is number => v != null)
-
-  if (moyennes.length > 0) {
-    const overallAvg = moyennes.reduce((sum, v) => sum + v, 0) / moyennes.length
-
-    const repartition: Record<string, number> = {}
-    for (const m of moyennes) {
-      const rounded = String(Math.round(m))
-      repartition[rounded] = (repartition[rounded] || 0) + 1
-    }
+  // Synthèse globale : moyenne des moyennes par groupe
+  if (allEvalAvgs.length > 0) {
+    const overallAvg = allEvalAvgs.reduce((sum, v) => sum + v, 0) / allEvalAvgs.length
 
     results.push({
       id: 'computed-synthese',
@@ -416,14 +486,14 @@ export async function computeAggregatedResultats(
       critere_id: 'computed-synthese',
       moyenne_utilisateurs: overallAvg,
       moyenne_utilisateurs_base5: overallAvg,
-      nb_notes: moyennes.length,
+      nb_notes: evaluations.length,
       note_redac: null,
       note_redac_base5: null,
       avis_redac: null,
       notes: null,
       notes_critere: null,
       nps: null,
-      repartition,
+      repartition: null,
       critere: {
         id: 'computed-synthese',
         categorie_id: null,

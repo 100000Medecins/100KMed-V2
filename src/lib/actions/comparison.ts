@@ -1,13 +1,31 @@
 'use server'
 
 import { getAllResultats } from '@/lib/db/resultats'
-import { computeAggregatedResultats } from '@/lib/db/evaluations'
+import { computeAggregatedResultats, DETAIL_CRITERE_MAP } from '@/lib/db/evaluations'
 
 interface ComparisonDataItem {
   nomCourt: string
   type: string
   valueRedac: number | null
   valueUtilisateurs: number | null
+}
+
+export interface DetailGroupItem {
+  parentKey: string
+  parentNom: string
+  items: {
+    critereId: string
+    nomCourt: string
+    valueUtilisateurs: number | null
+  }[]
+}
+
+const GROUP_NAMES: Record<string, string> = {
+  interface: 'Interface utilisateur',
+  fonctionnalites: 'Fonctionnalités',
+  fiabilite: 'Fiabilité',
+  editeur: 'Éditeur',
+  qualite_prix: 'Rapport qualité/prix',
 }
 
 /**
@@ -29,5 +47,48 @@ export async function getComparisonData(solutionId: string): Promise<ComparisonD
       valueRedac: r.note_redac_base5 != null ? Number(r.note_redac_base5) : null,
       valueUtilisateurs: r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null,
     }))
+}
+
+/**
+ * Récupère les notes utilisateurs par sous-critère (detail_*), groupées par critère principal.
+ * Utilisé pour l'accordéon "Comparatif détaillé" dans ComparisonSection.
+ */
+export async function getDetailedComparisonData(solutionId: string): Promise<DetailGroupItem[]> {
+  const resultats = await getAllResultats(solutionId)
+
+  // Garder uniquement les sous-critères (is_enfant = true) avec un identifiant_tech detail_*
+  const subResultats = resultats.filter(
+    (r) => r.critere?.is_enfant === true && r.critere?.identifiant_tech?.startsWith('detail_')
+  )
+
+  if (subResultats.length === 0) return []
+
+  // Grouper par critère principal via DETAIL_CRITERE_MAP
+  const grouped = new Map<string, DetailGroupItem>()
+
+  for (const r of subResultats) {
+    const key = r.critere!.identifiant_tech!
+    const parentKey = DETAIL_CRITERE_MAP[key]
+    if (!parentKey) continue
+
+    if (!grouped.has(parentKey)) {
+      grouped.set(parentKey, {
+        parentKey,
+        parentNom: GROUP_NAMES[parentKey] || parentKey,
+        items: [],
+      })
+    }
+
+    grouped.get(parentKey)!.items.push({
+      critereId: r.critere_id,
+      nomCourt: r.critere?.nom_court || key,
+      valueUtilisateurs: r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null,
+    })
+  }
+
+  // Retourner dans l'ordre des groupes
+  return ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix']
+    .map((key) => grouped.get(key))
+    .filter((g): g is DetailGroupItem => g != null)
 }
 

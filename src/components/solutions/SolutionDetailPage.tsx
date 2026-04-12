@@ -104,6 +104,7 @@ export default function SolutionDetailPage({
 
               <div id="comparaison" className="scroll-mt-[140px]">
                 <ComparisonSection
+                  solutionId={solution.id}
                   solutionNom={solution.nom}
                   resultats={filteredResultats}
                   autreSolutions={autreSolutions || []}
