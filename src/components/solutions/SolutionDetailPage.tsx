@@ -106,6 +106,8 @@ export default function SolutionDetailPage({
                 <ComparisonSection
                   solutionNom={solution.nom}
                   resultats={filteredResultats}
+                  allResultats={resultats}
+                  schemaEvaluation={solution.categorie?.schema_evaluation ?? null}
                   autreSolutions={autreSolutions || []}
                 />
               </div>

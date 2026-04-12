@@ -152,12 +152,12 @@ export default function SolutionHero({
       {/* Anchor tabs */}
       <div className="sticky top-[72px] z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3">
-          <nav className="flex gap-3 overflow-x-auto scrollbar-hide">
+          <nav className="flex flex-wrap gap-2 md:flex-nowrap md:gap-3 md:overflow-x-auto md:scrollbar-hide">
             {anchors.map((anchor) => (
               <a
                 key={anchor.id}
                 href={`#${anchor.id}`}
-                className="flex-shrink-0 px-6 py-2.5 text-sm font-medium text-gray-700 bg-white rounded-full shadow-sm hover:shadow-md hover:text-navy transition-all whitespace-nowrap"
+                className="px-4 py-2 md:px-6 md:py-2.5 text-xs md:text-sm font-medium text-gray-700 bg-white rounded-full shadow-sm hover:shadow-md hover:text-navy transition-all whitespace-nowrap"
               >
                 {anchor.label}
               </a>
