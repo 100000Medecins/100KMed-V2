@@ -5,6 +5,46 @@
 
 ---
 
+## [2026-04-13] — Galerie vidéo, UX comparatif, flux évaluation
+
+### Comparatif (`ComparisonSection.tsx`)
+
+- **Légende sticky** : bandeau collant au scroll affichant le nom de chaque solution au-dessus de sa colonne de barres, dans sa couleur, avec `position: sticky top-[72px]`
+- **`[overflow:clip]`** sur la `<section>` (remplace `overflow-hidden`) pour autoriser les enfants sticky tout en conservant le clipping des coins arrondis
+- **Barres plus grandes** : compact mode `w-16 → w-24` (longueur), `h-1 → h-2` (épaisseur)
+- **Alignement** : noms de solution alignés à gauche (bord de la barre)
+- **Dropdown de swap** : cliquer sur un nom de solution comparée ouvre un menu pour la remplacer par une autre (`handleSwap` — remplace en place, conserve la couleur)
+- **Bouton ×** : suppression directe d'une solution depuis la légende sticky
+- **Bouton +** : ajout d'une solution depuis la légende sticky (dropdown `availableSolutions`) — visible uniquement si `canAddMore`
+- **Dropdown ancré à droite** (`right-0`) pour éviter le débordement hors du cadre
+
+### Galerie solutions (`SolutionGallery.tsx`)
+
+- **Padding** autour de l'image principale (`px-4 py-3` sur le conteneur) pour éviter que l'image lèche les bords de la card
+- **Modale zoom** : clic sur l'image principale → modale plein écran `bg-black/85`, clic n'importe où → ferme ; curseur `cursor-zoom-in / cursor-zoom-out`
+- **Support vidéo YouTube / Vimeo** :
+  - Détection automatique par URL (`isVideoUrl`) — fonctionne même sans champ `type` renseigné
+  - Helpers `getYoutubeId`, `getVimeoId`, `getVideoEmbed`
+  - Vue principale : miniature YouTube avec bouton play rouge, clic → ouvre la modale
+  - Vignettes : miniature + overlay play
+  - Modale vidéo : `<iframe>` avec `autoplay=1` ; clic sur l'iframe ne ferme pas la modale (`stopPropagation`)
+
+### Admin — Galerie éditeur (`SolutionForm.tsx`, `admin.ts`, `admin-solutions.ts`)
+
+- **Bouton "Ajouter une vidéo YouTube / Vimeo"** (rouge pointillé) → crée un item `type: 'video'`
+- **Rendu adaptatif** : items vidéo affichent badge "Vidéo", champ URL dédié, miniature YouTube automatique ; items image conservent le comportement upload existant
+- **Titre section dynamique** : "Galerie (3 images, 1 vidéo)"
+- **`syncGalerie`** (`admin.ts`) : persist le champ `type` en base
+- **`getSolutionByIdAdmin`** (`admin-solutions.ts`) : inclut `type` dans le SELECT Supabase
+
+### Flux évaluation
+
+- **Redirection post-soumission** (`/solution/noter/[...slug]/page.tsx`) : après `submitEvaluation`, redirige vers `/mon-compte/mes-evaluations` (au lieu de la page solution)
+- **Correction `getEvaluationCompletionMap`** (`solutions.ts`) : l'ancien check (comparaison exhaustive de tous les `identifiant_tech` de la catégorie) échouait systématiquement pour le nouveau format `detail_*`. Remplacé par `submitted.size > 0` — dès qu'une évaluation est soumise, le bouton affiche "Modifier mon évaluation" au lieu de "Compléter"
+- **Nettoyage** : requête Supabase sur `criteres` (devenue inutile) supprimée de `getEvaluationCompletionMap` ; join `solution:solutions(categorie_id)` supprimé
+
+---
+
 ## [2026-04-12] — Migration DB critères logiciels métier + refonte du comparatif
 
 ### Contexte

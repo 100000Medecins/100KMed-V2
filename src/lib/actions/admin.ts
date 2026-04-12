@@ -110,7 +110,7 @@ function extractSolutionFromFormData(formData: FormData) {
 }
 
 async function syncGalerie(supabase: ReturnType<typeof createServiceRoleClient>, solutionId: string, galerieJson: string) {
-  let images: Array<{ url: string; titre: string; ordre: number }> = []
+  let images: Array<{ url: string; titre: string; ordre: number; type?: string | null }> = []
   try {
     images = JSON.parse(galerieJson)
   } catch {
@@ -132,6 +132,7 @@ async function syncGalerie(supabase: ReturnType<typeof createServiceRoleClient>,
         url: img.url,
         titre: img.titre || null,
         ordre: img.ordre ?? 0,
+        type: img.type || null,
       }))
 
     if (rows.length > 0) {

@@ -124,7 +124,7 @@ export async function getEvaluationCompletionMap(
   // Récupérer les solutions_utilisees avec leur categorie_id
   const { data: sus } = await supabase
     .from('solutions_utilisees')
-    .select('solution_id, solution:solutions(categorie_id)')
+    .select('solution_id')
     .eq('user_id', userId)
     .neq('statut_evaluation', 'ancienne')
 
@@ -150,35 +150,10 @@ export async function getEvaluationCompletionMap(
   const completionMap: Record<string, boolean> = {}
 
   for (const su of sus) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const catId = (su.solution as any)?.categorie_id as string | null
     const solutionId = su.solution_id as string
     if (!solutionId) continue
-
-    if (!catId) {
-      // Pas de catégorie → on ne peut pas juger → considéré complet
-      completionMap[solutionId] = true
-      continue
-    }
-
-    const { data: criteres } = await supabase
-      .from('criteres')
-      .select('identifiant_tech')
-      .eq('id_categorie', catId)
-      .not('identifiant_tech', 'is', null)
-
-    const expected = (criteres || [])
-      .map((c) => c.identifiant_tech as string)
-      .filter(Boolean)
-
-    if (expected.length === 0) {
-      completionMap[solutionId] = true
-      continue
-    }
-
     const submitted = scoresMap[solutionId] ?? new Set()
-    const isComplete = expected.every((tech) => submitted.has(tech))
-    completionMap[solutionId] = isComplete
+    completionMap[solutionId] = submitted.size > 0
   }
 
   return completionMap

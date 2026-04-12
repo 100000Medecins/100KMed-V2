@@ -749,7 +749,7 @@ export default function NoterPage({ params }: PageProps) {
         dateDebut || null,
         plusUtilise ? (dateFin || null) : null
       )
-      router.push(`/solutions/${categorieSlug}/${solutionSlug}`)
+      router.push('/mon-compte/mes-evaluations')
     } catch (err) {
       console.error('Erreur soumission:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')

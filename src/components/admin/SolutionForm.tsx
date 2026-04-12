@@ -1,17 +1,21 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Play } from 'lucide-react'
 import type { Database } from '@/types/database'
 import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
 import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
 
+function isVideoUrl(url: string): boolean {
+  return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
+}
+
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
 type Editeur = { id: string; nom: string | null }
-type GalerieImage = { id?: string; url: string; titre: string | null; ordre: number | null }
+type GalerieImage = { id?: string; url: string; titre: string | null; ordre: number | null; type?: string | null }
 
 type NoteRedacItem = {
   id: string
@@ -592,7 +596,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
 
       {/* Section 6 — Galerie */}
       <Section
-        title={`Galerie d'images (${galerie.length})`}
+        title={`Galerie (${galerie.filter(g => !isVideoUrl(g.url) && g.type !== 'video').length} image${galerie.filter(g => !isVideoUrl(g.url) && g.type !== 'video').length !== 1 ? 's' : ''}, ${galerie.filter(g => isVideoUrl(g.url) || g.type === 'video').length} vidéo${galerie.filter(g => isVideoUrl(g.url) || g.type === 'video').length !== 1 ? 's' : ''})`}
         isOpen={openSections.galerie}
         onToggle={() => toggleSection('galerie')}
       >
@@ -637,14 +641,50 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
               <GripVertical className="w-5 h-5" />
             </div>
 
-            {img.url && (
-              <img
-                src={img.url}
-                alt={img.titre || ''}
-                className="w-24 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
-              />
+            {isVideoUrl(img.url) || img.type === 'video' ? (() => {
+              const ytId = img.url?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1] ?? null
+              return ytId ? (
+                <div className="w-24 h-16 rounded-lg border border-gray-200 flex-shrink-0 relative overflow-hidden bg-black">
+                  <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt="" className="w-full h-full object-cover opacity-70" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-7 h-7 bg-red-600 rounded-full flex items-center justify-center shadow">
+                      <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-24 h-16 rounded-lg border-2 border-dashed border-gray-200 flex-shrink-0 flex items-center justify-center bg-gray-50">
+                  <Play className="w-6 h-6 text-gray-300" />
+                </div>
+              )
+            })() : (
+              img.url && (
+                <img
+                  src={img.url}
+                  alt={img.titre || ''}
+                  className="w-24 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+                />
+              )
             )}
             <div className="flex-1 space-y-2">
+              {isVideoUrl(img.url) || img.type === 'video' ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 shrink-0">
+                    <Play className="w-2.5 h-2.5 fill-red-600" /> Vidéo
+                  </span>
+                  <input
+                    type="url"
+                    value={img.url}
+                    onChange={(e) => {
+                      const updated = [...galerie]
+                      updated[index] = { ...updated[index], url: e.target.value }
+                      setGalerie(updated)
+                    }}
+                    placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                    className={inputClass}
+                  />
+                </div>
+              ) : (
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -667,6 +707,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                   {galerieUploadingIndex === index ? '⏳' : '⬆ Upload'}
                 </button>
               </div>
+              )}
               <input
                 type="text"
                 value={img.titre ?? ''}
@@ -693,11 +734,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length }])}
+            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length, type: 'image' }])}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Ajouter manuellement
+            Ajouter une image (URL)
           </button>
           <button
             type="button"
@@ -707,6 +748,14 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           >
             <Plus className="w-4 h-4" />
             {bulkUploading ? 'Upload en cours...' : 'Uploader des images'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length, type: 'video' }])}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-red-200 text-red-400 hover:border-red-500 hover:text-red-600 transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            Ajouter une vidéo YouTube / Vimeo
           </button>
         </div>
       </Section>

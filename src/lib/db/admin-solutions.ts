@@ -39,7 +39,7 @@ export async function getSolutionByIdAdmin(id: string) {
     .select(`
       *,
       categorie:categories(id, nom),
-      galerie:solutions_galerie(id, url, titre, ordre)
+      galerie:solutions_galerie(id, url, titre, ordre, type)
     `)
     .eq('id', id)
     .single()
@@ -47,7 +47,7 @@ export async function getSolutionByIdAdmin(id: string) {
   if (error) throw error
 
   const typedData = data as unknown as {
-    galerie: Array<{ id: string; url: string; titre: string | null; ordre: number | null }>
+    galerie: Array<{ id: string; url: string; titre: string | null; ordre: number | null; type: string | null }>
     categorie: { id: string; nom: string } | null
   }
   const galerie = typedData.galerie ?? []

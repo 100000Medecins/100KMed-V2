@@ -120,8 +120,8 @@ function InlineBars({ bars, compact = false }: { bars: BarValue[]; compact?: boo
         const pct = b.value != null ? Math.round((b.value / 5) * 100) : 0
         const isBest = b.value != null && b.value === maxVal && values.filter(v => v === maxVal).length === 1
         return (
-          <div key={i} className={`flex items-center gap-1 ${compact ? 'w-16' : 'w-20'}`}>
-            <div className={`flex-1 rounded-full overflow-hidden ${compact ? 'h-1' : 'h-1.5'} ${isBest ? 'bg-gray-200' : 'bg-gray-100'}`}>
+          <div key={i} className={`flex items-center gap-1 ${compact ? 'w-24' : 'w-20'}`}>
+            <div className={`flex-1 rounded-full overflow-hidden ${compact ? 'h-2' : 'h-2'} ${isBest ? 'bg-gray-200' : 'bg-gray-100'}`}>
               <div
                 className={`h-full rounded-full transition-all duration-300 ${isBest ? 'opacity-100' : 'opacity-60'}`}
                 style={{ width: `${pct}%`, backgroundColor: COLORS[b.colorIdx] }}
@@ -162,6 +162,7 @@ export default function ComparisonSection({
   const [detailMain, setDetailMain] = useState<DetailGroupItem[] | null>(null)
   const [detailComps, setDetailComps] = useState<Record<string, DetailGroupItem[]>>({})
   const [detailLoading, setDetailLoading] = useState(false)
+  const [legendDropdown, setLegendDropdown] = useState<string | null>(null)
 
   // ── Radar ──
   const criteria = resultats.filter(
@@ -208,6 +209,34 @@ export default function ComparisonSection({
       const next = { ...prev }
       delete next[id]
       return next
+    })
+    if (legendDropdown === id) setLegendDropdown(null)
+  }
+
+  const handleSwap = (oldId: string, newSol: { id: string; nom: string; logo_url: string | null }) => {
+    setLegendDropdown(null)
+    startTransition(async () => {
+      const [data, detailData] = await Promise.all([
+        getComparisonData(newSol.id),
+        getDetailedComparisonData(newSol.id),
+      ])
+      const valuesRedac = labels.map((label) => {
+        const match = data.find((d) => d.nomCourt === label)
+        return match ? (match.valueRedac ?? match.valueUtilisateurs ?? 0) : 0
+      })
+      const valuesUtilisateurs = labels.map((label) => {
+        const match = data.find((d) => d.nomCourt === label)
+        return match ? (match.valueUtilisateurs ?? match.valueRedac ?? 0) : 0
+      })
+      setComparisons(prev => prev.map(c =>
+        c.id === oldId ? { id: newSol.id, nom: newSol.nom, valuesRedac, valuesUtilisateurs } : c
+      ))
+      setDetailComps(prev => {
+        const next = { ...prev }
+        delete next[oldId]
+        if (detailData.length > 0) next[newSol.id] = detailData
+        return next
+      })
     })
   }
 
@@ -259,7 +288,7 @@ export default function ComparisonSection({
   }))
 
   return (
-    <section className="bg-white rounded-card shadow-card overflow-hidden">
+    <section className="bg-white rounded-card shadow-card [overflow:clip]">
       {/* Header */}
       <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-navy shrink-0">Radar comparatif</h2>
@@ -349,6 +378,110 @@ export default function ComparisonSection({
           </div>
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${detailExpanded ? 'rotate-180' : ''}`} />
         </button>
+
+        {detailExpanded && (
+          <div className="sticky top-[72px] z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+            <div className="flex items-center px-6 py-2">
+              <div className="flex-1" />
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {allSolutions.map((sol) => {
+                  const label = sol.nom.length > 10 ? sol.nom.slice(0, 10) + '…' : sol.nom
+                  if (sol.id === 'main') {
+                    return (
+                      <div key={sol.id} className="w-24">
+                        <span className="text-[11px] font-semibold leading-tight block" style={{ color: COLORS[sol.colorIdx] }}>
+                          {label}
+                        </span>
+                      </div>
+                    )
+                  }
+                  const swapOptions = autreSolutions.filter(
+                    s => !comparisons.some(c => c.id === s.id && c.id !== sol.id)
+                  )
+                  return (
+                    <div key={sol.id} className="w-24 relative">
+                      <div className="flex items-center justify-between gap-0.5">
+                        <button
+                          onClick={() => setLegendDropdown(d => d === sol.id ? null : sol.id)}
+                          className="flex items-center gap-0.5 min-w-0 hover:opacity-75 transition-opacity"
+                          style={{ color: COLORS[sol.colorIdx] }}
+                        >
+                          <span className="text-[11px] font-semibold leading-tight truncate">{label}</span>
+                          <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${legendDropdown === sol.id ? 'rotate-180' : ''}`} />
+                        </button>
+                        <button
+                          onClick={() => handleRemove(sol.id)}
+                          className="shrink-0 opacity-40 hover:opacity-100 transition-opacity"
+                          style={{ color: COLORS[sol.colorIdx] }}
+                          aria-label={`Retirer ${sol.nom}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      {legendDropdown === sol.id && (
+                        <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-30 max-h-52 overflow-y-auto">
+                          {swapOptions.length === 0 ? (
+                            <p className="text-sm text-gray-400 px-4 py-3">Aucune autre solution disponible</p>
+                          ) : (
+                            swapOptions.map((s) => (
+                              <button
+                                key={s.id}
+                                onClick={() => handleSwap(sol.id, s)}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-light transition-colors first:rounded-t-xl last:rounded-b-xl"
+                              >
+                                {s.logo_url ? (
+                                  <img src={s.logo_url} alt="" className="w-7 h-7 rounded-lg object-contain bg-gray-50 p-0.5 border border-gray-100 shrink-0" />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-lg bg-accent-blue/10 flex items-center justify-center text-xs font-bold text-accent-blue shrink-0">
+                                    {s.nom.substring(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="text-sm font-medium text-navy">{s.nom}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {canAddMore && availableSolutions.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setLegendDropdown(d => d === '__add__' ? null : '__add__')}
+                      className="w-5 h-5 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-navy hover:text-navy transition-colors"
+                      aria-label="Ajouter une solution"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    {legendDropdown === '__add__' && (
+                      <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-30 max-h-52 overflow-y-auto">
+                        {availableSolutions.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => { setLegendDropdown(null); handleSelect(s) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-light transition-colors first:rounded-t-xl last:rounded-b-xl"
+                          >
+                            {s.logo_url ? (
+                              <img src={s.logo_url} alt="" className="w-7 h-7 rounded-lg object-contain bg-gray-50 p-0.5 border border-gray-100 shrink-0" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-lg bg-accent-blue/10 flex items-center justify-center text-xs font-bold text-accent-blue shrink-0">
+                                {s.nom.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-sm font-medium text-navy">{s.nom}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="w-4 shrink-0" />
+            </div>
+          </div>
+        )}
 
         <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${detailExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
           <div className="overflow-hidden">
