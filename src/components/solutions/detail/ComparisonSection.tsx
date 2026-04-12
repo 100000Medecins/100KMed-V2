@@ -3,8 +3,7 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, X, Plus } from 'lucide-react'
 import type { ResultatWithCritere } from '@/types/models'
-import { getComparisonData, getDetailedComparisonData } from '@/lib/actions/comparison'
-import type { SubCritereItem } from '@/lib/actions/comparison'
+import { getComparisonData } from '@/lib/actions/comparison'
 
 const COLORS = ['#4A90D9', '#E8734A', '#9333EA', '#16A34A']
 const COLORS_BG = ['rgba(74,144,217,0.18)', 'rgba(232,115,74,0.15)', 'rgba(147,51,234,0.13)', 'rgba(22,163,74,0.13)']
@@ -18,7 +17,6 @@ interface ComparisonData {
   nom: string
   valuesRedac: number[]
   valuesUtilisateurs: number[]
-  subCriteres: SubCritereItem[]
 }
 
 interface RadarComparison {
@@ -147,14 +145,10 @@ function InlineBars({ bars, compact = false }: { bars: BarValue[]; compact?: boo
 export default function ComparisonSection({
   solutionNom,
   resultats,
-  allResultats,
-  schemaEvaluation,
   autreSolutions,
 }: {
   solutionNom: string
   resultats: ResultatWithCritere[]
-  allResultats: ResultatWithCritere[]
-  schemaEvaluation: unknown
   autreSolutions: { id: string; nom: string; logo_url: string | null }[]
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -184,10 +178,7 @@ export default function ComparisonSection({
   const handleSelect = (sol: { id: string; nom: string; logo_url: string | null }) => {
     setDropdownOpen(false)
     startTransition(async () => {
-      const [data, detailedData] = await Promise.all([
-        getComparisonData(sol.id),
-        getDetailedComparisonData(sol.id),
-      ])
+      const data = await getComparisonData(sol.id)
       const valuesRedac = labels.map((label) => {
         const match = data.find((d) => d.nomCourt === label)
         return match ? (match.valueRedac ?? match.valueUtilisateurs ?? 0) : 0
@@ -196,7 +187,7 @@ export default function ComparisonSection({
         const match = data.find((d) => d.nomCourt === label)
         return match ? (match.valueUtilisateurs ?? match.valueRedac ?? 0) : 0
       })
-      setComparisons(prev => [...prev, { id: sol.id, nom: sol.nom, valuesRedac, valuesUtilisateurs, subCriteres: detailedData }])
+      setComparisons(prev => [...prev, { id: sol.id, nom: sol.nom, valuesRedac, valuesUtilisateurs }])
     })
   }
 
@@ -229,68 +220,9 @@ export default function ComparisonSection({
       : (r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null)
   }
 
-  function getCompValByBis(c: ComparisonData, identifiantBis: string) {
-    const match = c.subCriteres.find(sc => sc.identifiantTech === identifiantBis)
-    if (!match) return null
-    return noteMode === 'redac'
-      ? (match.valueRedac ?? match.valueUtilisateurs ?? null)
-      : (match.valueUtilisateurs ?? match.valueRedac ?? null)
-  }
-
-  // Map identifiant_bis (Firebase ID) → résultat de la solution principale
-  const bisToResultat = new Map<string, ResultatWithCritere>()
-  for (const r of allResultats) {
-    if (r.critere?.identifiant_bis) {
-      bisToResultat.set(r.critere.identifiant_bis, r)
-    }
-  }
-
-  // Parser schema_evaluation : extraire les steps et aplatir les critères (y compris enfants)
-  type StepGroup = { titre: string; critereIds: string[] }
-  const stepGroups: StepGroup[] = []
-  try {
-    const schema = schemaEvaluation as {
-      detail?: { steps?: Array<{ titre?: string; listeCriteres?: Array<Record<string, unknown>> }> }
-    }
-    for (const step of schema?.detail?.steps ?? []) {
-      const titre = step.titre ?? ''
-      const critereIds: string[] = []
-      for (const item of step.listeCriteres ?? []) {
-        const key = Object.keys(item)[0]
-        if (!key) continue
-        critereIds.push(key)
-        // Si le critère a des enfants (valeur = tableau), les inclure aussi
-        const val = item[key]
-        if (Array.isArray(val)) {
-          for (const child of val) {
-            const childKey = Object.keys(child)[0]
-            if (childKey) critereIds.push(childKey)
-          }
-        }
-      }
-      if (critereIds.length > 0) stepGroups.push({ titre, critereIds })
-    }
-  } catch {}
-
-  const detailGroups = stepGroups.map(group => {
-    const childRows = group.critereIds
-      .map(fbId => {
-        const r = bisToResultat.get(fbId)
-        if (!r) return null
-        return {
-          id: fbId,
-          nom: r.critere?.nom_court ?? '',
-          bars: [
-            { colorIdx: 0, value: getVal(r) },
-            ...comparisons.map((c, ci) => ({ colorIdx: ci + 1, value: getCompValByBis(c, fbId) })),
-          ],
-        }
-      })
-      .filter((c): c is NonNullable<typeof c> => c !== null)
-    return { titre: group.titre, children: childRows }
-  }).filter(g => g.children.length > 0)
-
-  const hasDetailedData = detailGroups.length > 0
+  // Accordéon détaillé — sera peuplé après migration DB (étape 6)
+  const detailGroups: { titre: string; children: { id: string; nom: string; bars: { colorIdx: number; value: number | null }[] }[] }[] = []
+  const hasDetailedData = false
 
   return (
     <section className="bg-white rounded-card shadow-card overflow-hidden">
