@@ -3,54 +3,49 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, X, Plus } from 'lucide-react'
 import type { ResultatWithCritere } from '@/types/models'
-import { getComparisonData } from '@/lib/actions/comparison'
+import { getComparisonData, getDetailedComparisonData } from '@/lib/actions/comparison'
+import type { SubCritereItem } from '@/lib/actions/comparison'
 
 const COLORS = ['#4A90D9', '#E8734A', '#9333EA', '#16A34A']
 const COLORS_BG = ['rgba(74,144,217,0.18)', 'rgba(232,115,74,0.15)', 'rgba(147,51,234,0.13)', 'rgba(22,163,74,0.13)']
 const COLORS_LIGHT = ['bg-blue-100 text-blue-700 border-blue-200', 'bg-orange-100 text-orange-700 border-orange-200', 'bg-purple-100 text-purple-700 border-purple-200', 'bg-green-100 text-green-700 border-green-200']
 const MAX_COMPARISONS = 3
 
-interface ComparisonSolutionOption {
-  id: string
-  nom: string
-  logo_url: string | null
-}
+type NoteMode = 'redac' | 'utilisateurs'
 
 interface ComparisonData {
   id: string
   nom: string
+  valuesRedac: number[]
+  valuesUtilisateurs: number[]
+  subCriteres: SubCritereItem[]
+}
+
+interface RadarComparison {
+  id: string
   values: number[]
 }
 
-function RadarChart({
-  labels,
-  mainValues,
-  comparisons,
-}: {
+// ─── Radar SVG ────────────────────────────────────────────────────────────────
+
+function RadarChart({ labels, mainValues, comparisons }: {
   labels: string[]
   mainValues: number[]
-  comparisons: ComparisonData[]
+  comparisons: RadarComparison[]
 }) {
   const n = labels.length
   if (n < 3) return null
-
-  const cx = 240
-  const cy = 195
-  const maxR = 145
-  const levels = 5
-  const labelR = maxR + 30
+  const cx = 240, cy = 195, maxR = 145, levels = 5, labelR = maxR + 30
 
   const getPoint = (index: number, value: number) => {
     const angle = (Math.PI * 2 * index) / n - Math.PI / 2
     const r = (value / 5) * maxR
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) }
   }
-
   const getLabelPos = (index: number) => {
     const angle = (Math.PI * 2 * index) / n - Math.PI / 2
-    return { x: cx + labelR * Math.cos(angle), y: cy + labelR * Math.sin(angle), angle }
+    return { x: cx + labelR * Math.cos(angle), y: cy + labelR * Math.sin(angle) }
   }
-
   const gridPaths = Array.from({ length: levels }, (_, level) => {
     const r = ((level + 1) / levels) * maxR
     const points = Array.from({ length: n }, (_, i) => {
@@ -59,64 +54,41 @@ function RadarChart({
     })
     return `M${points.join('L')}Z`
   })
-
   const axisLines = Array.from({ length: n }, (_, i) => {
     const p = getPoint(i, 5)
     return `M${cx},${cy}L${p.x},${p.y}`
   })
-
   const mainPoints = mainValues.map((v, i) => getPoint(i, v))
   const mainPath = `M${mainPoints.map(p => `${p.x},${p.y}`).join('L')}Z`
 
-  // Labels avec règles spécifiques : jamais couper les mots uniques, couper entre mots si > 1 mot
   function splitLabel(label: string): [string, string | null] {
     const words = label.split(' ')
-    if (words.length === 1) return [label, null] // mot unique → jamais coupé
+    if (words.length === 1) return [label, null]
     const mid = Math.ceil(words.length / 2)
     return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')]
   }
-
-  // Offset supplémentaire selon la position angulaire
-  function getLabelOffset(index: number): { dx: number; dy: number } {
+  function getLabelOffset(index: number) {
     const angle = (Math.PI * 2 * index) / n - Math.PI / 2
     const deg = (angle * 180) / Math.PI
-    // Côté droit du radar (de -30° à 80°) → pousser vers la droite
-    if (deg > -30 && deg < 80) return { dx: 16, dy: 0 }
-    return { dx: 0, dy: 0 }
+    return deg > -30 && deg < 80 ? { dx: 16, dy: 0 } : { dx: 0, dy: 0 }
   }
 
   return (
     <svg viewBox="-10 0 520 400" className="w-full max-w-[540px] mx-auto">
-      {/* Grid */}
-      {gridPaths.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="#e5e7eb" strokeWidth="0.8" />
-      ))}
-      {/* Axes */}
-      {axisLines.map((d, i) => (
-        <path key={i} d={d} stroke="#e5e7eb" strokeWidth="0.8" />
-      ))}
-
-      {/* Comparison polygons (behind) */}
+      {gridPaths.map((d, i) => <path key={i} d={d} fill="none" stroke="#e5e7eb" strokeWidth="0.8" />)}
+      {axisLines.map((d, i) => <path key={i} d={d} stroke="#e5e7eb" strokeWidth="0.8" />)}
       {comparisons.map((comp, ci) => {
         const pts = comp.values.map((v, i) => getPoint(i, v))
         const path = `M${pts.map(p => `${p.x},${p.y}`).join('L')}Z`
         return (
           <g key={comp.id}>
             <path d={path} fill={COLORS_BG[ci + 1]} stroke={COLORS[ci + 1]} strokeWidth="2" />
-            {pts.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r="4" fill={COLORS[ci + 1]} />
-            ))}
+            {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" fill={COLORS[ci + 1]} />)}
           </g>
         )
       })}
-
-      {/* Main polygon */}
       <path d={mainPath} fill={COLORS_BG[0]} stroke={COLORS[0]} strokeWidth="2.5" />
-      {mainPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="4.5" fill={COLORS[0]} />
-      ))}
-
-      {/* Labels — gras, proches des sommets */}
+      {mainPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4.5" fill={COLORS[0]} />)}
       {labels.map((label, i) => {
         const pos = getLabelPos(i)
         const off = getLabelOffset(i)
@@ -124,30 +96,8 @@ function RadarChart({
         const dy = line2 ? -9 : 0
         return (
           <g key={i}>
-            <text
-              x={pos.x + off.dx}
-              y={pos.y + off.dy + dy}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontWeight="700"
-              fontSize="12.5"
-              fill="#1B2A4A"
-            >
-              {line1}
-            </text>
-            {line2 && (
-              <text
-                x={pos.x + off.dx}
-                y={pos.y + off.dy + 9}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontWeight="700"
-                fontSize="12.5"
-                fill="#1B2A4A"
-              >
-                {line2}
-              </text>
-            )}
+            <text x={pos.x + off.dx} y={pos.y + off.dy + dy} textAnchor="middle" dominantBaseline="middle" fontWeight="700" fontSize="12.5" fill="#1B2A4A">{line1}</text>
+            {line2 && <text x={pos.x + off.dx} y={pos.y + off.dy + 9} textAnchor="middle" dominantBaseline="middle" fontWeight="700" fontSize="12.5" fill="#1B2A4A">{line2}</text>}
           </g>
         )
       })}
@@ -155,26 +105,77 @@ function RadarChart({
   )
 }
 
+// ─── Barres côte à côte ───────────────────────────────────────────────────────
+
+interface BarValue {
+  colorIdx: number
+  value: number | null
+  nbNotes?: number | null
+}
+
+function InlineBars({ bars, compact = false }: { bars: BarValue[]; compact?: boolean }) {
+  const values = bars.map(b => b.value)
+  const maxVal = Math.max(...values.filter((v): v is number => v != null))
+  return (
+    <div className="flex items-center gap-2 flex-shrink-0">
+      {bars.map((b, i) => {
+        const pct = b.value != null ? Math.round((b.value / 5) * 100) : 0
+        const isBest = b.value != null && b.value === maxVal && values.filter(v => v === maxVal).length === 1
+        return (
+          <div key={i} className={`flex items-center gap-1 ${compact ? 'w-16' : 'w-20'}`}>
+            <div className={`flex-1 rounded-full overflow-hidden ${compact ? 'h-1' : 'h-1.5'} ${isBest ? 'bg-gray-200' : 'bg-gray-100'}`}>
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${isBest ? 'opacity-100' : 'opacity-60'}`}
+                style={{ width: `${pct}%`, backgroundColor: COLORS[b.colorIdx] }}
+              />
+            </div>
+            <span
+              className={`tabular-nums text-right shrink-0 ${compact ? 'text-[10px] w-5' : 'text-xs w-6'} ${isBest ? 'font-bold' : 'font-medium opacity-60'}`}
+              style={{ color: COLORS[b.colorIdx] }}
+            >
+              {b.value != null ? b.value.toFixed(1) : '—'}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Composant principal ──────────────────────────────────────────────────────
+
 export default function ComparisonSection({
   solutionNom,
   resultats,
+  allResultats,
+  schemaEvaluation,
   autreSolutions,
 }: {
   solutionNom: string
   resultats: ResultatWithCritere[]
+  allResultats: ResultatWithCritere[]
+  schemaEvaluation: unknown
   autreSolutions: { id: string; nom: string; logo_url: string | null }[]
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [comparisons, setComparisons] = useState<ComparisonData[]>([])
+  const [noteMode, setNoteMode] = useState<NoteMode>('redac')
+  const [detailExpanded, setDetailExpanded] = useState(false)
+  const [expandedCriteres, setExpandedCriteres] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
 
+  // ── Radar ──
   const criteria = resultats.filter(
     (r) => r.critere && r.critere.type !== 'synthese' && r.critere.type !== 'nps'
   )
   if (criteria.length < 3) return null
 
   const labels = criteria.map((r) => r.critere?.nom_court || '')
-  const mainValues = criteria.map((r) => Number(r.note_redac_base5 ?? r.moyenne_utilisateurs_base5 ?? 0))
+  const mainValues = criteria.map((r) =>
+    noteMode === 'redac'
+      ? Number(r.note_redac_base5 ?? r.moyenne_utilisateurs_base5 ?? 0)
+      : Number(r.moyenne_utilisateurs_base5 ?? r.note_redac_base5 ?? 0)
+  )
 
   const selectedIds = comparisons.map(c => c.id)
   const availableSolutions = autreSolutions.filter(s => !selectedIds.includes(s.id))
@@ -183,12 +184,19 @@ export default function ComparisonSection({
   const handleSelect = (sol: { id: string; nom: string; logo_url: string | null }) => {
     setDropdownOpen(false)
     startTransition(async () => {
-      const data = await getComparisonData(sol.id)
-      const compValues = labels.map((label) => {
+      const [data, detailedData] = await Promise.all([
+        getComparisonData(sol.id),
+        getDetailedComparisonData(sol.id),
+      ])
+      const valuesRedac = labels.map((label) => {
         const match = data.find((d) => d.nomCourt === label)
-        return match ? match.value : 0
+        return match ? (match.valueRedac ?? match.valueUtilisateurs ?? 0) : 0
       })
-      setComparisons(prev => [...prev, { id: sol.id, nom: sol.nom, values: compValues }])
+      const valuesUtilisateurs = labels.map((label) => {
+        const match = data.find((d) => d.nomCourt === label)
+        return match ? (match.valueUtilisateurs ?? match.valueRedac ?? 0) : 0
+      })
+      setComparisons(prev => [...prev, { id: sol.id, nom: sol.nom, valuesRedac, valuesUtilisateurs, subCriteres: detailedData }])
     })
   }
 
@@ -196,42 +204,130 @@ export default function ComparisonSection({
     setComparisons(prev => prev.filter(c => c.id !== id))
   }
 
-  // All solutions in display order: main + comparisons
+  const toggleCritere = (id: string) => {
+    setExpandedCriteres(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
   const allSolutions = [
     { id: 'main', nom: solutionNom, colorIdx: 0 },
     ...comparisons.map((c, i) => ({ id: c.id, nom: c.nom, colorIdx: i + 1 })),
   ]
 
+  const radarComparisons: RadarComparison[] = comparisons.map(c => ({
+    id: c.id,
+    values: noteMode === 'redac' ? c.valuesRedac : c.valuesUtilisateurs,
+  }))
+
+  // ── Comparatif détaillé : groupé par steps du schema_evaluation ──
+  function getVal(r: ResultatWithCritere) {
+    return noteMode === 'redac'
+      ? (r.note_redac_base5 != null ? Number(r.note_redac_base5) : null)
+      : (r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null)
+  }
+
+  function getCompValByBis(c: ComparisonData, identifiantBis: string) {
+    const match = c.subCriteres.find(sc => sc.identifiantTech === identifiantBis)
+    if (!match) return null
+    return noteMode === 'redac'
+      ? (match.valueRedac ?? match.valueUtilisateurs ?? null)
+      : (match.valueUtilisateurs ?? match.valueRedac ?? null)
+  }
+
+  // Map identifiant_bis (Firebase ID) → résultat de la solution principale
+  const bisToResultat = new Map<string, ResultatWithCritere>()
+  for (const r of allResultats) {
+    if (r.critere?.identifiant_bis) {
+      bisToResultat.set(r.critere.identifiant_bis, r)
+    }
+  }
+
+  // Parser schema_evaluation : extraire les steps et aplatir les critères (y compris enfants)
+  type StepGroup = { titre: string; critereIds: string[] }
+  const stepGroups: StepGroup[] = []
+  try {
+    const schema = schemaEvaluation as {
+      detail?: { steps?: Array<{ titre?: string; listeCriteres?: Array<Record<string, unknown>> }> }
+    }
+    for (const step of schema?.detail?.steps ?? []) {
+      const titre = step.titre ?? ''
+      const critereIds: string[] = []
+      for (const item of step.listeCriteres ?? []) {
+        const key = Object.keys(item)[0]
+        if (!key) continue
+        critereIds.push(key)
+        // Si le critère a des enfants (valeur = tableau), les inclure aussi
+        const val = item[key]
+        if (Array.isArray(val)) {
+          for (const child of val) {
+            const childKey = Object.keys(child)[0]
+            if (childKey) critereIds.push(childKey)
+          }
+        }
+      }
+      if (critereIds.length > 0) stepGroups.push({ titre, critereIds })
+    }
+  } catch {}
+
+  const detailGroups = stepGroups.map(group => {
+    const childRows = group.critereIds
+      .map(fbId => {
+        const r = bisToResultat.get(fbId)
+        if (!r) return null
+        return {
+          id: fbId,
+          nom: r.critere?.nom_court ?? '',
+          bars: [
+            { colorIdx: 0, value: getVal(r) },
+            ...comparisons.map((c, ci) => ({ colorIdx: ci + 1, value: getCompValByBis(c, fbId) })),
+          ],
+        }
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+    return { titre: group.titre, children: childRows }
+  }).filter(g => g.children.length > 0)
+
+  const hasDetailedData = detailGroups.length > 0
+
   return (
     <section className="bg-white rounded-card shadow-card overflow-hidden">
-      {/* Header dans la carte */}
-      <div className="px-6 py-5 border-b border-gray-100">
-        <h2 className="text-xl font-bold text-navy">Radar comparatif</h2>
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-bold text-navy shrink-0">Radar comparatif</h2>
+        <div className="flex items-center rounded-full border border-gray-200 overflow-hidden text-xs md:text-sm font-medium shrink-0">
+          <button
+            onClick={() => setNoteMode('redac')}
+            className={`px-3 py-1.5 md:px-4 transition-colors ${noteMode === 'redac' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy'}`}
+          >
+            Rédaction
+          </button>
+          <button
+            onClick={() => setNoteMode('utilisateurs')}
+            className={`px-3 py-1.5 md:px-4 transition-colors ${noteMode === 'utilisateurs' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy'}`}
+          >
+            Utilisateurs
+          </button>
+        </div>
       </div>
 
+      {/* Radar */}
       <div className="px-6 pt-4 pb-2 md:px-8 md:pt-5 md:pb-3">
-        {/* Chips solutions + bouton Comparer inline */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
           {allSolutions.map((s) => (
-            <div
-              key={s.id}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-semibold ${COLORS_LIGHT[s.colorIdx]}`}
-            >
+            <div key={s.id} className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-semibold ${COLORS_LIGHT[s.colorIdx]}`}>
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[s.colorIdx] }} />
               {s.nom}
               {s.id !== 'main' && (
-                <button
-                  onClick={() => handleRemove(s.id)}
-                  className="ml-1 opacity-60 hover:opacity-100 transition-opacity"
-                  aria-label={`Retirer ${s.nom}`}
-                >
+                <button onClick={() => handleRemove(s.id)} className="ml-1 opacity-60 hover:opacity-100 transition-opacity" aria-label={`Retirer ${s.nom}`}>
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           ))}
 
-          {/* Bouton Comparer — chip inline */}
           {autreSolutions.length > 0 && canAddMore && (
             <div className="relative">
               <button
@@ -242,18 +338,13 @@ export default function ComparisonSection({
                 Comparer
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-
               {dropdownOpen && (
                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-20 max-h-60 overflow-y-auto">
                   {availableSolutions.length === 0 ? (
                     <p className="text-sm text-gray-400 px-4 py-3">Aucune autre solution disponible</p>
                   ) : (
                     availableSolutions.map((sol) => (
-                      <button
-                        key={sol.id}
-                        onClick={() => handleSelect(sol)}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-light transition-colors first:rounded-t-xl last:rounded-b-xl"
-                      >
+                      <button key={sol.id} onClick={() => handleSelect(sol)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-light transition-colors first:rounded-t-xl last:rounded-b-xl">
                         {sol.logo_url ? (
                           <img src={sol.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain bg-gray-50 p-0.5 border border-gray-100" />
                         ) : (
@@ -276,13 +367,58 @@ export default function ComparisonSection({
             <div className="w-8 h-8 border-2 border-navy/20 border-t-navy rounded-full animate-spin" />
           </div>
         ) : (
-          <RadarChart
-            labels={labels}
-            mainValues={mainValues}
-            comparisons={comparisons}
-          />
+          <RadarChart labels={labels} mainValues={mainValues} comparisons={radarComparisons} />
         )}
       </div>
+
+      {/* Comparatif détaillé — accordéon outer */}
+      {hasDetailedData && (
+        <div className="border-t border-gray-100">
+          <button
+            onClick={() => setDetailExpanded(v => !v)}
+            className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-sm font-semibold text-navy">Comparatif détaillé par critères</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${detailExpanded ? 'rotate-180' : ''}`} />
+          </button>
+
+          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${detailExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+              <div className="pb-2">
+                {/* Groupes de sous-critères (steps du schema_evaluation) */}
+                {detailGroups.map((group) => {
+                  const isOpen = expandedCriteres.has(group.titre)
+                  return (
+                    <div key={group.titre} className="border-b border-gray-50 last:border-0">
+                      <button
+                        onClick={() => toggleCritere(group.titre)}
+                        className="w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <span className="flex-1 text-sm font-semibold text-navy">{group.titre}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                        <div className="overflow-hidden">
+                          <div className="bg-gray-50/60">
+                            {group.children.map((child) => (
+                              <div key={child.id} className="flex items-center gap-3 px-6 py-2 border-t border-gray-100 first:border-0">
+                                <span className="flex-1 text-xs text-gray-600 pl-3">{child.nom}</span>
+                                <InlineBars bars={child.bars} compact />
+                                <div className="w-4 shrink-0" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
