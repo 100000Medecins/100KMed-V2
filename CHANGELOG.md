@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-04-13] — Galerie vidéo, UX comparatif, flux évaluation, sécurité commentaires
+
+### Sécurité
+
+- **Fix XSS `PublisherWord.tsx`** : le champ `mot_editeur` était injecté dans `dangerouslySetInnerHTML` sans sanitisation — un script malveillant en base s'exécutait dans le navigateur. Ajout de `sanitizeHtml()` (déjà utilisée ailleurs) autour du contenu avant rendu. `<strong>` reste autorisé pour le markdown `**bold**`.
+- **Blocage URLs dans les commentaires utilisateurs** :
+  - Côté client (`/solution/noter/[...slug]/page.tsx`) : avertissement orange en temps réel sous le textarea dès qu'une URL (`http://`, `https://`, `www.`) est détectée — l'utilisateur est informé et peut corriger avant soumission
+  - Côté serveur (`evaluation.ts`) : fonction `stripUrls()` appelée au début de `submitEvaluation` — supprime toutes les URLs du commentaire avant sauvegarde en base, même si l'avertissement client est ignoré
+
+---
+
 ## [2026-04-13] — Galerie vidéo, UX comparatif, flux évaluation
 
 ### Comparatif (`ComparisonSection.tsx`)
