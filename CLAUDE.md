@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Note pour Claude :** lire `memory/context.md` au début de chaque session — ce fichier contient le profil utilisateur, les préférences de travail, l'état du projet et les décisions techniques importantes. Il est versionné dans le repo pour rester synchronisé entre les postes.
+
 ## Commands
 
 ```bash
