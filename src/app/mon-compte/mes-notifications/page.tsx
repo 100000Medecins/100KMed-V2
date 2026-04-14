@@ -61,6 +61,10 @@ export default function MesNotificationsPage() {
   function handleToggle(key: keyof Prefs, value: boolean) {
     const updated = { ...prefs, [key]: value }
     setPrefs(updated)
+    // Notifier le layout immédiatement pour afficher/masquer l'onglet Études cliniques
+    if (key === 'etudes_cliniques') {
+      window.dispatchEvent(new CustomEvent('etudes-optin-change', { detail: value }))
+    }
     startTransition(async () => {
       await updateNotificationPreferences({ [key]: value })
       setSaved(true)

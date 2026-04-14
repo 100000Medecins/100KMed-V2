@@ -101,34 +101,11 @@ function EtudeCard({
 
   return (
     <div className="bg-white rounded-card shadow-card overflow-hidden flex flex-col">
-      {/* Images */}
-      {etude.images.length > 0 && (
-        <div className="relative aspect-video bg-gray-100">
-          <img
-            src={etude.images[imgIndex]}
-            alt={etude.titre}
-            className="w-full h-full object-cover"
-          />
-          {etude.images.length > 1 && (
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
-              {etude.images.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setImgIndex(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    i === imgIndex ? 'bg-white' : 'bg-white/50'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Contenu */}
       <div className="p-5 flex flex-col flex-1 gap-3">
+        {/* Titre */}
         <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
 
+        {/* Description */}
         {etude.description && (
           <div
             className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none"
@@ -136,7 +113,32 @@ function EtudeCard({
           />
         )}
 
-        <div className="mt-auto pt-3 flex flex-col gap-2">
+        {/* Images */}
+        {etude.images.length > 0 && (
+          <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden">
+            <img
+              src={etude.images[imgIndex]}
+              alt={etude.titre}
+              className="w-full h-full object-cover"
+            />
+            {etude.images.length > 1 && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                {etude.images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setImgIndex(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      i === imgIndex ? 'bg-white' : 'bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Lien + bouton */}
+        <div className="mt-auto pt-2 flex flex-col gap-2">
           {etude.lien && (
             <a
               href={etude.lien}
@@ -145,7 +147,7 @@ function EtudeCard({
               className="flex items-center gap-1.5 text-sm text-accent-blue hover:underline"
             >
               <ExternalLink className="w-4 h-4" />
-              En savoir plus sur l'étude
+              Consulter la page de l'étude
             </a>
           )}
 

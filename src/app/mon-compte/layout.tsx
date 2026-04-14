@@ -33,6 +33,11 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
       setEtudesOptin(data?.etudes_cliniques === true)
     }
     check()
+
+    // Mise à jour immédiate quand l'utilisateur toggle depuis Mes notifications
+    const handler = (e: Event) => setEtudesOptin((e as CustomEvent<boolean>).detail)
+    window.addEventListener('etudes-optin-change', handler)
+    return () => window.removeEventListener('etudes-optin-change', handler)
   }, [user, userRole])
 
   const navItems = [
