@@ -59,7 +59,8 @@ export default function CompleterProfilPage() {
       } else {
         // Chercher l'email_temp dans l'évaluation anonyme liée à ce compte
         const supabase = createClient()
-        const { data: evalAnon } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: evalAnon } = await (supabase as any)
           .from('evaluations')
           .select('email_temp')
           .eq('user_id', user!.id)
