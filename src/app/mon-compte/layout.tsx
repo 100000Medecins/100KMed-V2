@@ -6,7 +6,6 @@ import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical } fro
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { useEffect, useState } from 'react'
 
 const baseNavItems = [
   { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
@@ -16,29 +15,7 @@ const baseNavItems = [
 
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, userRole, signOut, loading } = useAuth()
-  const [etudesOptin, setEtudesOptin] = useState(false)
-
-  // Vérifier si l'utilisateur a opté pour les études cliniques (pour afficher l'onglet)
-  useEffect(() => {
-    if (!user || userRole === 'digital_medical_hub') return
-    const check = async () => {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data } = await (supabase as any)
-        .from('users_notification_preferences')
-        .select('etudes_cliniques')
-        .eq('user_id', user.id)
-        .single()
-      setEtudesOptin(data?.etudes_cliniques === true)
-    }
-    check()
-
-    // Mise à jour immédiate quand l'utilisateur toggle depuis Mes notifications
-    const handler = (e: Event) => setEtudesOptin((e as CustomEvent<boolean>).detail)
-    window.addEventListener('etudes-optin-change', handler)
-    return () => window.removeEventListener('etudes-optin-change', handler)
-  }, [user, userRole])
+  const { userRole, signOut, loading } = useAuth()
 
   const navItems = [
     ...baseNavItems,
@@ -47,9 +24,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
       : []),
     ...(userRole === 'digital_medical_hub'
       ? [{ href: '/mon-compte/health-data-hub', label: 'Études cliniques', icon: FlaskConical }]
-      : etudesOptin
-      ? [{ href: '/mon-compte/etudes-cliniques', label: 'Études cliniques', icon: FlaskConical }]
-      : []),
+      : [{ href: '/mon-compte/etudes-cliniques', label: 'Études cliniques', icon: FlaskConical }]),
   ]
 
   if (loading) {

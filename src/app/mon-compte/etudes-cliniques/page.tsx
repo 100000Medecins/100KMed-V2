@@ -3,17 +3,21 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
-import { FlaskConical, ExternalLink, CheckCircle, Loader2 } from 'lucide-react'
+import { FlaskConical, ExternalLink, CheckCircle, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
 import { sanitizeHtml } from '@/lib/sanitize'
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim()
+}
 
 export default function EtudesCliniquesPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [etudes, setEtudes] = useState<EtudeClinique[]>([])
   const [fetching, setFetching] = useState(true)
-  const [hasAccess, setHasAccess] = useState(false)
   const [sentIds, setSentIds] = useState<Set<string>>(new Set())
+  const [modalEtude, setModalEtude] = useState<EtudeClinique | null>(null)
   const [, startTransition] = useTransition()
 
   useEffect(() => {
@@ -21,29 +25,27 @@ export default function EtudesCliniquesPage() {
     if (!user) { router.replace('/connexion'); return }
 
     const load = async () => {
-      // Vérifier l'opt-in
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data: prefs } = await (supabase as any)
-        .from('users_notification_preferences')
-        .select('etudes_cliniques')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!prefs?.etudes_cliniques) {
-        router.replace('/mon-compte/mes-notifications')
-        return
+      try {
+        const { getEtudesActives } = await import('@/lib/actions/etudes-cliniques')
+        setEtudes(await getEtudesActives())
+      } finally {
+        setFetching(false)
       }
-
-      setHasAccess(true)
-
-      const { getEtudesActives } = await import('@/lib/actions/etudes-cliniques')
-      setEtudes(await getEtudesActives())
-      setFetching(false)
     }
 
     load()
-  }, [user, loading, router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading])
+
+  // Fermer la modale avec Escape
+  useEffect(() => {
+    if (!modalEtude) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalEtude(null)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [modalEtude])
 
   const handleEnSavoirPlus = (etude: EtudeClinique) => {
     startTransition(async () => {
@@ -53,7 +55,7 @@ export default function EtudesCliniquesPage() {
     })
   }
 
-  if (loading || fetching || !hasAccess) {
+  if (loading || fetching) {
     return <div className="animate-pulse text-gray-400 text-sm">Chargement…</div>
   }
 
@@ -63,7 +65,17 @@ export default function EtudesCliniquesPage() {
         <FlaskConical className="w-6 h-6 text-teal-600" />
         <div>
           <h1 className="text-xl font-bold text-navy">Études cliniques</h1>
-          <p className="text-sm text-gray-500">Participez aux études cliniques avec le Digital Medical Hub</p>
+          <p className="text-sm text-gray-500">
+            Participez aux études cliniques avec{' '}
+            <a
+              href="https://www.digitalmedicalhub.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-600 hover:underline font-medium"
+            >
+              le Digital Medical Hub
+            </a>
+          </p>
         </div>
       </div>
 
@@ -79,43 +91,184 @@ export default function EtudesCliniquesPage() {
               etude={etude}
               sent={sentIds.has(etude.id)}
               onEnSavoirPlus={() => handleEnSavoirPlus(etude)}
+              onExpand={() => setModalEtude(etude)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Modale */}
+      {modalEtude && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setModalEtude(null)}
+        >
+          <div
+            className="bg-white rounded-card shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 flex flex-col gap-4">
+              {/* Header modale */}
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="font-bold text-navy text-lg">{modalEtude.titre}</h2>
+                <button
+                  onClick={() => setModalEtude(null)}
+                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Description complète */}
+              {modalEtude.description && (
+                <div
+                  className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(modalEtude.description) }}
+                />
+              )}
+
+              {/* Images avec carousel */}
+              {modalEtude.images.length > 0 && (
+                <ModalImageCarousel images={modalEtude.images} titre={modalEtude.titre} />
+              )}
+
+              {/* Lien + bouton */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                {modalEtude.lien && (
+                  <a
+                    href={modalEtude.lien}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-sm text-accent-blue hover:underline"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Consulter la page de l'étude
+                  </a>
+                )}
+                {sentIds.has(modalEtude.id) ? (
+                  <div className="flex items-center gap-2 text-sm text-teal-600 font-medium">
+                    <CheckCircle className="w-4 h-4" />
+                    Votre demande a été envoyée
+                  </div>
+                ) : (
+                  <ModalEnSavoirPlusButton
+                    onEnSavoirPlus={() => handleEnSavoirPlus(modalEtude)}
+                    onSent={() => setSentIds((prev) => new Set([...prev, modalEtude.id]))}
+                    etudeId={modalEtude.id}
+                    etudeTitre={modalEtude.titre}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
+function ModalImageCarousel({ images, titre }: { images: string[]; titre: string }) {
+  const [imgIndex, setImgIndex] = useState(0)
+  return (
+    <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden">
+      <img src={images[imgIndex]} alt={titre} className="w-full h-full object-cover" />
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={() => setImgIndex((i) => (i - 1 + images.length) % images.length)}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setImgIndex((i) => (i + 1) % images.length)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setImgIndex(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIndex ? 'bg-white' : 'bg-white/50'}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ModalEnSavoirPlusButton({
+  onEnSavoirPlus,
+  onSent,
+  etudeId,
+  etudeTitre,
+}: {
+  onEnSavoirPlus: () => void
+  onSent: () => void
+  etudeId: string
+  etudeTitre: string
+}) {
+  const [isPending, startTransition] = useTransition()
+  return (
+    <button
+      onClick={() => startTransition(async () => { onEnSavoirPlus(); })}
+      disabled={isPending}
+      className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50"
+    >
+      {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+      Je souhaite en savoir plus
+    </button>
+  )
+}
+
+const DESCRIPTION_MAX_CHARS = 150
+
 function EtudeCard({
   etude,
   sent,
   onEnSavoirPlus,
+  onExpand,
 }: {
   etude: EtudeClinique
   sent: boolean
   onEnSavoirPlus: () => void
+  onExpand: () => void
 }) {
   const [isPending, startTransition] = useTransition()
   const [imgIndex, setImgIndex] = useState(0)
 
+  const plainText = etude.description ? stripHtml(etude.description) : ''
+  const isTruncated = plainText.length > DESCRIPTION_MAX_CHARS
+  const truncatedText = isTruncated ? plainText.slice(0, DESCRIPTION_MAX_CHARS) + '…' : plainText
+
   return (
-    <div className="bg-white rounded-card shadow-card overflow-hidden flex flex-col">
+    <div
+      className="bg-white rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-shadow"
+      onClick={onExpand}
+    >
       <div className="p-5 flex flex-col flex-1 gap-3">
         {/* Titre */}
         <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
 
-        {/* Description */}
-        {etude.description && (
-          <div
-            className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(etude.description) }}
-          />
+        {/* Description tronquée */}
+        {plainText && (
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {truncatedText}
+            {isTruncated && (
+              <span className="text-accent-blue font-medium ml-1">Voir plus</span>
+            )}
+          </p>
         )}
 
-        {/* Images */}
+        {/* Image principale */}
         {etude.images.length > 0 && (
-          <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden">
+          <div
+            className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden"
+          >
             <img
               src={etude.images[imgIndex]}
               alt={etude.titre}
@@ -138,7 +291,7 @@ function EtudeCard({
         )}
 
         {/* Lien + bouton */}
-        <div className="mt-auto pt-2 flex flex-col gap-2">
+        <div className="mt-auto pt-2 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
           {etude.lien && (
             <a
               href={etude.lien}

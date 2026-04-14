@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notifications'
+import Link from 'next/link'
 import { Bell, RefreshCw, Mail, CheckCircle, FlaskConical, BookOpen } from 'lucide-react'
 
 interface Prefs {
@@ -61,10 +62,6 @@ export default function MesNotificationsPage() {
   function handleToggle(key: keyof Prefs, value: boolean) {
     const updated = { ...prefs, [key]: value }
     setPrefs(updated)
-    // Notifier le layout immédiatement pour afficher/masquer l'onglet Études cliniques
-    if (key === 'etudes_cliniques') {
-      window.dispatchEvent(new CustomEvent('etudes-optin-change', { detail: value }))
-    }
     startTransition(async () => {
       await updateNotificationPreferences({ [key]: value })
       setSaved(true)
@@ -144,10 +141,15 @@ export default function MesNotificationsPage() {
                 <span className="text-xs text-emerald-600 font-medium">avec le Digital Medica Hub</span>
               </div>
               <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
-                Participez à des études sur l&apos;essai de nouveaux logiciels médicaux
-                ou d&apos;appareils connectés en santé.
+                Recevez des informations à propos d&apos;études cliniques sur de nouveaux logiciels
+                médicaux ou appareils connectés en santé.
               </p>
-              <p className="text-xs text-gray-400 mt-1 italic">Plus d&apos;informations prochainement.</p>
+              <p className="text-xs text-emerald-600 mt-1">
+                Plus d&apos;informations dans l&apos;onglet{' '}
+                <Link href="/mon-compte/etudes-cliniques" className="font-medium underline hover:text-emerald-700">
+                  Études cliniques
+                </Link>.
+              </p>
             </div>
           </div>
           <Toggle

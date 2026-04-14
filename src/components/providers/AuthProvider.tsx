@@ -154,7 +154,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
       ])
     } catch {
-      // Ignorer (AbortError, lock conflicts, timeout) — la session expire côté serveur
+      // Timeout ou lock conflict — nettoyer manuellement le token du localStorage
+      // pour éviter que la session soit restaurée à la prochaine navigation
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        })
+      } catch {
+        // ignore
+      }
     } finally {
       setUser(null)
       setUserRole(null)

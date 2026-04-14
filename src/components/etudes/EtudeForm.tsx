@@ -73,7 +73,7 @@ export default function EtudeForm({ etude, onSave, onCancel }: Props) {
 
       <div>
         <label className={labelClass}>Description</label>
-        <RichTextEditor value={description} onChange={setDescription} />
+        <RichTextEditor initialContent={description} onChange={setDescription} />
       </div>
 
       <div>
