@@ -16,12 +16,15 @@
 
 ## Préférences de travail
 
-- Réponses **courtes et directes** — pas de résumé en fin de message ("voilà ce que j'ai fait")
+- Réponses **courtes et directes**
+- Toujours inclure un résumé en fin de message pour confirmer ce qui a été fait (David préfère savoir ce qui a changé plutôt que de découvrir un diff sans explication)
 - Pas d'emojis
 - Langue française pour toutes les communications
 - Confirmer avant toute action destructive (suppression fichier, force push, reset…)
 - Ne pas ajouter de fonctionnalités non demandées, ni de commentaires/docstrings sur du code non modifié
 - Toujours lire un fichier avant de le modifier
+- David peut changer d'avis en cours de route sur des choix UX/produit — ne pas résister, ajuster sans commentaire
+- Proposer l'architecture avant d'implémenter quand la tâche est non triviale (DB + composants + actions)
 
 ---
 
@@ -35,7 +38,10 @@ npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema pub
 **Pourquoi :** sans ça, Vercel échoue au build avec des erreurs TypeScript sur les nouvelles colonnes.
 
 ### `ignoreBuildErrors: true` dans next.config.mjs
-Activé suite à une migration UTF-16→UTF-8 de `database.ts` qui a exposé ~50 erreurs latentes. Ne pas le retirer sans résoudre les erreurs sous-jacentes.
+Activé suite à une migration UTF-16→UTF-8 de `database.ts` qui a exposé ~50 erreurs TypeScript latentes. Ne pas le retirer sans résoudre les erreurs sous-jacentes d'abord.
+
+### `src/types/database.ts` — ne jamais éditer manuellement
+Fichier auto-généré par Supabase CLI. Si ce fichier se retrouve corrompu ou réduit à quelques octets (peut arriver avec Synology), faire `git restore src/types/database.ts` pour le récupérer depuis git.
 
 ### Schémas dérivés de Firebase (migration ancienne)
 Plusieurs champs existent dans le code mais pas dans les types générés — utiliser `as any` :
@@ -77,10 +83,19 @@ Le composant attend `initialContent` (pas `value`) et `onChange`. Toujours utili
 
 ---
 
+## Déploiement
+
+- **Hébergement** : Vercel (branche `dev` → preview, branche `main` → production)
+- **Git** : toujours travailler sur `dev`, merger sur `main` pour mettre en production
+- **Commande de build** : `npm run build` — doit passer sans erreur avant de merger
+- **Variables d'environnement** : gérées dans Vercel dashboard (ne jamais committer `.env.local`)
+
+---
+
 ## Architecture — points clés
 
 - **Auth** : Supabase email/password + PSC (Pro Santé Connect, flux OIDC manuel). Session cookie via middleware sur `/mon-compte/*`.
 - **Service role** : utiliser `createServiceRoleClient()` uniquement pour les opérations admin/publiques (bypass RLS). `createServerClient()` pour les requêtes utilisateur (RLS enforced).
-- **Emails transactionnels** : SendGrid (`@sendgrid/mail`). Variable `SENDGRID_API_KEY`.
+- **Emails transactionnels** : SendGrid (`@sendgrid/mail`). Variable `SENDGRID_API_KEY`. L'email DMH pour les demandes d'études cliniques est récupéré dynamiquement depuis `users` (l'utilisateur avec rôle `digital_medical_hub`).
 - **Upload images** : endpoint `/api/upload`, bucket Supabase Storage `images`. Sous-dossier `etudes/` pour les études cliniques.
 - **Spécialités PSC** : codes SM résolus via `resolveSpecialite()` dans `src/lib/constants/profil.ts`. SM26/SM53/SM54 = "Médecin généraliste".
