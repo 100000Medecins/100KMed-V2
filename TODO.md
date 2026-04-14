@@ -6,26 +6,13 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### Incrustration logo sur images réseaux sociaux
-- **Quoi :** avant l'envoi à Make.com, composer l'image de couverture de l'article avec le logo 100KM en haut à droite, via `sharp` (déjà installé)
-- **Étapes :**
-  1. Mettre le logo PNG fond transparent dans `public/logo-100km.png`
-  2. Créer un endpoint `src/app/api/composer-image/route.ts` : télécharge l'image de couverture, superpose le logo, upload le résultat dans Supabase Storage, retourne l'URL publique
-  3. Modifier `SocialPanel.tsx` : appeler cet endpoint avant `sendPost()` pour remplacer `image_url` par l'image composée
-- **Prérequis :** logo PNG fond transparent (~300px) à placer dans `public/`
+### Page d'accueil — remplacer "Les enjeux de l'e-santé" par les derniers articles blog
+- **Quoi :** supprimer la section vidéos "Les enjeux de l'e-santé" de la page d'accueil et la remplacer par les 3 derniers articles de blog publiés
+- **Où :** identifier le composant homepage concerné + récupérer les 3 derniers articles (`statut = 'publie'`, triés par `date_publication DESC`, limit 3) depuis Supabase
 
 ### Études cliniques & Questionnaires de recherche (espace utilisateur)
 - **Quoi :** compléter les sections "Études cliniques avec le Digital Medica Hub" et "Questionnaires de recherche" dans la page Mes notifications — actuellement affichées avec "Plus d'informations prochainement"
 - **À faire :** définir avec le partenaire le contenu exact (formulaire d'inscription, lien externe, flux d'envoi), puis implémenter
-
-### Longueur des articles générés par IA
-- **Quoi :** permettre à l'admin de choisir la longueur cible de l'article avant génération (ex : Court ~400 mots / Moyen ~700 mots / Long ~1200 mots)
-- **Où :** `src/components/admin/ArticleForm.tsx` (ajout d'un sélecteur) + `src/app/api/generer-article/route.ts` (passer la longueur dans le prompt)
-
-### Régénération des types Supabase
-- Supprimer le workaround `createServiceRoleClientUntyped()` une fois les types régénérés
-- Commande : `npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo > src/types/database.ts`
-- **Attention :** écrire ce fichier en UTF-16 LE avec BOM sur Windows (ne pas utiliser le Write tool directement)
 
 ### Nettoyage schéma Supabase
 - Supprimer les colonnes inutilisées héritées de la migration Firebase
@@ -37,10 +24,28 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
+### Enrichissement profils PSC depuis la base RPPS publique
+- **Quoi :** ~110 médecins ont un RPPS mais pas de nom/prénom (connectés le 26/02/2026, session BAS). Leur profil se remplit automatiquement à la prochaine connexion PSC (déjà implémenté). Pour les comptes qui ne reviennent jamais : enrichissement batch via le fichier RASS (data.gouv.fr)
+- **Étapes :**
+  1. Vérifier combien de comptes concernés : `SELECT COUNT(*) FROM users WHERE rpps IS NOT NULL AND nom IS NULL`
+  2. Télécharger le fichier RASS sur data.gouv.fr
+  3. Générer un script `UPDATE users SET nom=..., prenom=... WHERE rpps=... AND nom IS NULL`
+- **Priorité :** faible — à faire si après quelques mois ces comptes n'ont toujours pas de nom
+
+---
+
 ## Fait récemment
+- Incrustation logo sur images réseaux sociaux ✅
+- Longueur des articles IA (brève/article/dossier) ✅
+- Régénération types Supabase + suppression `createServiceRoleClientUntyped` ✅
 - Blog IA + publication Make.com (LinkedIn ✅, Facebook ✅, Instagram ✅)
 - OG image articles blog pour vignettes Facebook
 - Blocage envoi Instagram sans image de couverture
 - Persistance messages réseaux sociaux dans localStorage
 - Onglets conditionnels pages solutions
 - Bouton "Modifier mon commentaire" dans Mes évaluations
+- Espace éditeur (rôles, mon-compte/mon-espace-editeur, server actions sécurisées)
+- Admin utilisateurs : pagination >1000, badge PSC via RPPS, pseudo/spécialité/RPPS colonnes, saisie directe de page
+- Galerie vidéo (YouTube/Vimeo) dans pages solutions + admin
+- Fix AbortError AuthProvider sur double événement auth
+- Correction callback PSC : nom/prénom non écrasés si PSC renvoie null

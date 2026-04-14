@@ -2,12 +2,12 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
-import { createServiceRoleClientUntyped } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import DeleteArticleButton from '@/components/admin/DeleteArticleButton'
 import ArticleCategoriesManager from '@/components/admin/ArticleCategoriesManager'
 
 async function getArticlesAdmin() {
-  const supabase = createServiceRoleClientUntyped()
+  const supabase = createServiceRoleClient()
   const { data } = await supabase
     .from('articles')
     .select('id, titre, slug, statut, date_publication, id_categorie, articles_categories(nom)')
@@ -16,7 +16,7 @@ async function getArticlesAdmin() {
 }
 
 async function getArticlesCategories() {
-  const supabase = createServiceRoleClientUntyped()
+  const supabase = createServiceRoleClient()
   const { data } = await supabase
     .from('articles_categories')
     .select('*')

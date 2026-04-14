@@ -1,11 +1,11 @@
 export const dynamic = 'force-dynamic'
 
-import { createServiceRoleClientUntyped } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import ArticleForm from '@/components/admin/ArticleForm'
 import { createArticle } from '@/lib/actions/admin'
 
 async function getCategories() {
-  const supabase = createServiceRoleClientUntyped()
+  const supabase = createServiceRoleClient()
   const { data } = await supabase.from('articles_categories').select('id, nom').order('position', { ascending: true })
   return data ?? []
 }

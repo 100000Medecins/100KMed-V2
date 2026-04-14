@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
-import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { createClient } from '@/lib/supabase/client'
 import { ShieldCheck } from 'lucide-react'
+
+const MSG_EXPIRE = 'Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.'
 
 function ReinitialiserContent() {
   const router = useRouter()
@@ -17,25 +19,39 @@ function ReinitialiserContent() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [ready, setReady] = useState(false)
+  const [done, setDone] = useState(false)
+  // On stocke l'access token pour appeler l'API REST directement (bypass lock Supabase)
+  const accessTokenRef = useRef<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
 
+    const STORAGE_KEY = 'reset_access_token'
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+        if (session?.access_token) {
+          accessTokenRef.current = session.access_token
+          sessionStorage.setItem(STORAGE_KEY, session.access_token)
+        }
+        setReady(true)
+      }
+    })
+
     async function initialize() {
-      // Flux PKCE : ?code= dans les search params
+      // Flux PKCE : ?code=
       const code = new URLSearchParams(window.location.search).get('code')
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-          setError('Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.')
-        } else {
-          setReady(true)
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) setError(MSG_EXPIRE)
+        else if (data.session?.access_token) {
+          accessTokenRef.current = data.session.access_token
+          sessionStorage.setItem(STORAGE_KEY, data.session.access_token)
         }
         return
       }
 
-      // Flux implicite : @supabase/ssr ne traite pas le hash automatiquement,
-      // il faut parser manuellement #access_token=...&type=recovery
+      // Flux implicite : #access_token=...&type=recovery
       const hash = window.location.hash.substring(1)
       if (hash) {
         const params = new URLSearchParams(hash)
@@ -44,31 +60,43 @@ function ReinitialiserContent() {
         const type = params.get('type')
 
         if (accessToken && refreshToken && type === 'recovery') {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
-          if (error) {
-            setError('Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.')
-          } else {
-            setReady(true)
-          }
+          accessTokenRef.current = accessToken
+          sessionStorage.setItem(STORAGE_KEY, accessToken)
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          if (error) setError(MSG_EXPIRE)
           return
         }
       }
 
-      // Vérifier s'il y a déjà une session active (page rechargée après traitement)
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
+      // Token sauvegardé (survit au Fast Refresh)
+      const stored = sessionStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        accessTokenRef.current = stored
         setReady(true)
         return
       }
 
-      setError('Le lien est invalide ou expiré. Demandez un nouveau lien de réinitialisation.')
+      // Session déjà active
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        accessTokenRef.current = session.access_token
+        sessionStorage.setItem(STORAGE_KEY, session.access_token)
+        setReady(true)
+      } else {
+        setError(MSG_EXPIRE)
+      }
     }
 
     initialize()
-  }, [])
+
+    const handleUnload = () => { if (!done) supabase.auth.signOut() }
+    window.addEventListener('beforeunload', handleUnload)
+
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('beforeunload', handleUnload)
+    }
+  }, [done])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,18 +107,41 @@ function ReinitialiserContent() {
       return
     }
 
-    setSubmitting(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({ password })
-    setSubmitting(false)
+    const token = accessTokenRef.current || sessionStorage.getItem('reset_access_token')
+    if (!token) {
+      setError(MSG_EXPIRE)
+      return
+    }
 
-    if (error) {
-      if (error.message.includes('different from the old password'))
-        setError('Le nouveau mot de passe doit être différent de l\'ancien.')
-      else
-        setError(error.message)
-    } else {
-      router.push('/mon-compte/profil')
+    setSubmitting(true)
+    try {
+      // Appel direct à l'API REST Supabase — bypass le lock interne du SDK
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({ password }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        const msg = body?.msg || body?.message || body?.error_description || ''
+        if (msg.includes('different from the old password'))
+          setError('Le nouveau mot de passe doit être différent de l\'ancien.')
+        else
+          setError('Erreur lors de la mise à jour. Demandez un nouveau lien.')
+      } else {
+        setDone(true)
+        sessionStorage.removeItem('reset_access_token')
+        window.location.href = '/mon-compte/profil'
+      }
+    } catch {
+      setError('Une erreur réseau est survenue. Veuillez réessayer.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -146,7 +197,7 @@ function ReinitialiserContent() {
               variant="primary"
               className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
             >
-              Enregistrer le mot de passe
+              {submitting ? 'Enregistrement...' : 'Enregistrer le mot de passe'}
             </Button>
           </form>
         )}
@@ -158,7 +209,11 @@ function ReinitialiserContent() {
 export default function ReinitialiserMotDePassePage() {
   return (
     <>
-      <Navbar />
+      <header className="fixed top-0 left-0 right-0 h-[72px] bg-navy flex items-center justify-center z-50">
+        <Link href="/">
+          <span className="text-white font-bold text-lg">100 000 médecins</span>
+        </Link>
+      </header>
       <main className="pt-[72px] min-h-screen bg-surface-light">
         <Suspense fallback={<div className="max-w-md mx-auto px-6 py-20 text-center text-gray-400">Chargement...</div>}>
           <ReinitialiserContent />

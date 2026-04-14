@@ -22,9 +22,10 @@ function ConnexionContent() {
   )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const resetSuccess = searchParams.get('reset') === 'success'
   const [error, setError] = useState<string | null>(errorParam ? 'Une erreur est survenue lors de la connexion.' : null)
   const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(resetSuccess ? 'Mot de passe mis à jour. Vous pouvez vous connecter.' : null)
 
   // Si déjà connecté, rediriger
   useEffect(() => {

@@ -5,6 +5,107 @@
 
 ---
 
+## [2026-04-14] — Rôle Health Data Hub, reset mot de passe, types Supabase
+
+### Rôle Health Data Hub
+
+- Nouveau rôle `health_data_hub` assignable depuis `/admin/utilisateurs` (badge teal)
+- Page `/mon-compte/health-data-hub` : liste des utilisateurs ayant opté pour les études cliniques (`etudes_cliniques = true`), avec export CSV (UTF-8 BOM pour Excel)
+- Accès conditionnel dans le layout `mon-compte` (lien "Études cliniques" visible uniquement pour ce rôle)
+- Server action `getHdhOptins()` : vérifie le rôle côté serveur avant de retourner les données
+
+### Réinitialisation du mot de passe
+
+- Correction du blocage sur la page `/reinitialiser-mot-de-passe` : `AbortError` causée par collision entre `getSession()` et `onAuthStateChange()` dans `AuthProvider` — suppression de l'appel `getSession()` redondant (l'événement `INITIAL_SESSION` suffit)
+- Contournement du lock interne `@supabase/auth-js` : `updateUser()` remplacé par un appel direct `PUT /auth/v1/user` avec le Bearer token
+- Token de récupération persisté dans `sessionStorage` pour survivre aux Fast Refresh en développement
+- Redirection post-succès via `window.location.href` (rechargement complet) pour éviter le freeze du client Supabase
+- Header simplifié sur la page reset (sans navbar/boutons compte) pour éviter la confusion utilisateur
+- `beforeunload` : déconnexion automatique si l'utilisateur quitte la page sans changer son mot de passe
+
+### Client Supabase
+
+- `createBrowserClient` configuré avec `lock: fn => fn()` pour désactiver `navigator.locks` (source des AbortError)
+- `AuthProvider` : suppression de `getSession()` initial, `onAuthStateChange` seul gère la session initiale via `INITIAL_SESSION`
+
+### Types Supabase
+
+- `src/types/database.ts` régénéré — inclut désormais `articles`, `articles_categories` et toutes les tables créées depuis la dernière génération
+- `createServiceRoleClientUntyped()` supprimé de `server.ts` et tous ses usages remplacés par `createServiceRoleClient()` dans `admin.ts` et les pages blog
+
+### Callback PSC
+
+- `psc-callback/route.ts` : nom/prénom/spécialité non écrasés si PSC renvoie `null` (protège les valeurs saisies manuellement)
+
+---
+
+## [2026-04-12] — Refonte page admin utilisateurs (pagination, colonnes, PSC)
+
+### Admin — Gestion des utilisateurs (`/admin/utilisateurs`) — refonte complète
+
+- **Pagination étendue** : boucle `.range()` côté serveur pour dépasser la limite Supabase de 1000 lignes (`getAllUsers` dans `page.tsx`)
+- **Sélecteur de page directe** : champ numérique cliquable entre « Préc » et « Suiv » pour sauter directement à une page
+- **Boutons première/dernière page** (« / »)
+- **Lignes par page** : choix 50 / 100 / 200
+- **Badge PSC** basé sur `!!user.rpps` (présence du numéro RPPS) et non plus sur l'email — fiable même si l'email n'est pas un placeholder
+- **Colonne Pseudo** : affichée et modifiable inline (`EditableCell`) — sauvegardée via `updateUserField(..., 'pseudo', ...)`
+- **Colonne Spécialité** : affichée en lecture seule
+- **Colonne RPPS** : affiché en monospace, masqué sur petits écrans
+- **Tri** par nom ou date d'inscription, avec direction toggle
+- `updateUserField` : type `field` étendu à `'nom' | 'prenom' | 'email' | 'pseudo'`
+
+---
+
+## [2026-04-13] — Espace éditeur (rôles utilisateurs + mon compte)
+
+### SQL requis (migration Supabase — à exécuter une seule fois)
+```sql
+ALTER TABLE editeurs ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS editeurs_user_id_idx ON editeurs(user_id);
+```
+
+### Admin — Gestion des utilisateurs (`/admin/utilisateurs`)
+
+- **Nouvelle page** `src/app/admin/utilisateurs/page.tsx` + composant `AdminUtilisateursClient.tsx`
+- Liste paginable de tous les utilisateurs avec recherche (email, pseudo, nom)
+- Chaque ligne permet de changer le **rôle** (`médecin` / `éditeur` / `admin`) via un select
+- Si rôle `éditeur` : select secondaire pour associer un éditeur parmi ceux de la base
+- Avertissement "(déjà assigné)" si un éditeur est lié à un autre compte
+- Sauvegarde en un clic "Enregistrer" par ligne (confirmation visuelle)
+- **Lien "Utilisateurs"** ajouté dans `AdminSidebar.tsx` (entre Éditeurs et Catégories)
+
+### Auth — Exposition du rôle (`AuthProvider.tsx`)
+
+- Ajout de `userRole: string | null` dans le contexte `AuthContext`
+- Chargé depuis `public.users` après chaque connexion/changement de session
+- Disponible partout via `useAuth().userRole`
+
+### Mon compte — Espace éditeur (`/mon-compte/mon-espace-editeur`)
+
+- **Visible uniquement** si `userRole === 'editeur'` (lien conditionnel dans le layout)
+- Affiche toutes les solutions liées à l'éditeur associé au compte
+- Chaque solution est un accordéon permettant de modifier :
+  - **Logo éditeur** (URL + prévisualisation)
+  - **Site web**
+  - **Mot de l'éditeur** (texte avec support markdown `**bold**`, liens interdits)
+  - **Galerie** : ajout/suppression/réordonnancement d'images et vidéos YouTube/Vimeo (même interface que l'admin)
+- Lien "Voir la page solution →" vers la page publique
+- Bouton "Enregistrer" par solution avec spinner + confirmation "Enregistré ✓"
+
+### Server actions (`src/lib/actions/admin-users.ts`)
+
+- `assignEditeurToUser(userId, role, editeurId)` — met à jour le rôle et l'association éditeur↔utilisateur
+- `getEditeurDataForUser(userId)` — vérifie le rôle, retourne l'éditeur + ses solutions (avec galerie)
+- `updateSolutionByEditeur(userId, solutionId, fields)` — vérifie l'appartenance avant toute écriture
+- `syncGalerieByEditeur(userId, solutionId, items)` — même vérification, synchronise la galerie
+
+### Sécurité
+
+- Toutes les server actions vérifient côté serveur que la solution appartient bien à l'éditeur de l'utilisateur avant toute écriture (double vérification `editeur.user_id` + `solution.id_editeur`)
+- La page `/mon-compte/mon-espace-editeur` vérifie `userRole === 'editeur'` côté client + `getEditeurDataForUser` vérifie le rôle côté serveur
+
+---
+
 ## [2026-04-13] — Galerie vidéo, UX comparatif, flux évaluation, sécurité commentaires
 
 ### Sécurité

@@ -118,7 +118,15 @@ export async function GET(request: Request) {
         user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub, specialite, mode_exercice: modeExercice },
       })
       // Mettre à jour le profil avec les données PSC fraîches
-      await supabaseAdmin.from('users').update({ nom, prenom, specialite, mode_exercice: modeExercice }).eq('id', userId)
+      // N'écraser nom/prenom que si PSC les fournit (évite d'effacer des valeurs saisies manuellement)
+      const profileUpdates: Record<string, unknown> = {}
+      if (nom) profileUpdates.nom = nom
+      if (prenom) profileUpdates.prenom = prenom
+      if (specialite) profileUpdates.specialite = specialite
+      if (modeExercice) profileUpdates.mode_exercice = modeExercice
+      if (Object.keys(profileUpdates).length > 0) {
+        await supabaseAdmin.from('users').update(profileUpdates).eq('id', userId)
+      }
     }
 
     // 5. Générer un magic link

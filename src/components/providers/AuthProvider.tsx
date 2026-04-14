@@ -8,6 +8,7 @@ import type { User } from '@supabase/supabase-js'
 
 interface AuthContextType {
   user: User | null
+  userRole: string | null
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
@@ -19,6 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  userRole: null,
   loading: false,
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
@@ -49,6 +51,7 @@ function isSupabaseConfigured(): boolean {
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Ne créer le client Supabase que s'il est configuré
@@ -64,27 +67,24 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Récupérer la session initiale
-    const getSession = async () => {
+    const fetchRole = async (userId: string) => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
-      } catch {
-        // Supabase inaccessible
-      } finally {
-        setLoading(false)
+        const { data } = await supabase.from('users').select('role').eq('id', userId).single()
+        setUserRole(data?.role ?? null)
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setUserRole(null)
       }
     }
 
-    getSession()
-
-    // Écouter les changements d'auth
+    // onAuthStateChange émet INITIAL_SESSION dès l'abonnement — pas besoin de getSession() séparé
+    // (les deux simultanés causaient une collision sur le lock navigator.locks de Supabase)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) await fetchRole(session.user.id)
+      else setUserRole(null)
       setLoading(false)
     })
 
@@ -153,7 +153,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ user, userRole, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   )

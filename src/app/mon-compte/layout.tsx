@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, ClipboardCheck, LogOut, UserCircle } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
 
-const navItems = [
+const baseNavItems = [
   { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
   { href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck },
   { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
@@ -15,7 +15,17 @@ const navItems = [
 
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, signOut, loading } = useAuth()
+  const { user, userRole, signOut, loading } = useAuth()
+
+  const navItems = [
+    ...baseNavItems,
+    ...(userRole === 'editeur'
+      ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Mon espace éditeur', icon: Building2 }]
+      : []),
+    ...(userRole === 'health_data_hub'
+      ? [{ href: '/mon-compte/health-data-hub', label: 'Études cliniques', icon: FlaskConical }]
+      : []),
+  ]
 
   if (loading) {
     return (
