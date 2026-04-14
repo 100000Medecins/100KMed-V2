@@ -211,14 +211,10 @@ async function getStats() {
     .slice(0, 8)
 
   // ── Utilisateurs par spécialité ──
-  // SM26, SM53, SM54 sont tous des médecins généralistes — fusionnés sous un seul libellé
-  const SPECIALITE_FUSION: Record<string, string> = {
-    'Spécialiste en Médecine générale': 'Médecine générale',
-  }
+  // SM26, SM53, SM54 → tous résolus en 'Médecin généraliste' via SM_SPECIALITES
   const specCount: Record<string, number> = {}
   for (const u of allUsers) {
-    let spec = resolveSpecialite(u.specialite as string) || 'Non renseignée'
-    spec = SPECIALITE_FUSION[spec] ?? spec
+    const spec = resolveSpecialite(u.specialite as string) || 'Non renseignée'
     specCount[spec] = (specCount[spec] || 0) + 1
   }
   const usersBySpecialite = Object.entries(specCount)
