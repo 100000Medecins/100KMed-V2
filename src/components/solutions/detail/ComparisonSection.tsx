@@ -120,7 +120,7 @@ function InlineBars({ bars, compact = false }: { bars: BarValue[]; compact?: boo
         const pct = b.value != null ? Math.round((b.value / 5) * 100) : 0
         const isBest = b.value != null && b.value === maxVal && values.filter(v => v === maxVal).length === 1
         return (
-          <div key={i} className={`flex items-center gap-1 ${compact ? 'w-24' : 'w-20'}`}>
+          <div key={i} className={`flex items-center gap-1 ${compact ? 'w-16 sm:w-24' : 'w-20'}`}>
             <div className={`flex-1 rounded-full overflow-hidden ${compact ? 'h-2' : 'h-2'} ${isBest ? 'bg-gray-200' : 'bg-gray-100'}`}>
               <div
                 className={`h-full rounded-full transition-all duration-300 ${isBest ? 'opacity-100' : 'opacity-60'}`}
@@ -509,10 +509,12 @@ export default function ComparisonSection({
                         <div className="overflow-hidden">
                           <div className="bg-gray-50/60">
                             {group.children.map((child) => (
-                              <div key={child.id} className="flex items-center gap-3 px-6 py-2 border-t border-gray-100 first:border-0">
-                                <span className="flex-1 text-xs text-gray-600 pl-3 line-clamp-2">{child.nom}</span>
-                                <InlineBars bars={child.bars} compact />
-                                <div className="w-4 shrink-0" />
+                              <div key={child.id} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 px-6 py-2 border-t border-gray-100 first:border-0">
+                                <span className="flex-1 text-xs text-gray-600 pl-3">{child.nom}</span>
+                                <div className="flex items-center pl-3 sm:pl-0">
+                                  <InlineBars bars={child.bars} compact />
+                                  <div className="w-4 shrink-0" />
+                                </div>
                               </div>
                             ))}
                           </div>

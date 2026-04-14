@@ -5,6 +5,41 @@
 
 ---
 
+## [2026-04-15] — Hero animé, UX mobile navbar & comparatifs
+
+### Hero — illustration animée (Framer Motion)
+
+- Installation de `framer-motion@11`
+- Extraction du bloc illustration en `HeroIllustration.tsx` (client component)
+- Flottement indépendant par élément : chaque carte/badge a sa propre amplitude, durée et délai (durées premières entre elles pour éviter toute resynchronisation)
+- Ajout d'une carte "inscrits" (badge teal 👥) dans l'illustration hero : compte en temps réel depuis la table `users` via `getSiteStats` (nouveau champ `nbInscrits`)
+- Repositionnement des badges "avis" et "inscrits" en superposition biais sur d'autres cartes pour plus de dynamisme
+
+### Navbar
+
+- **Desktop** : interversion des boutons — "Évaluer un logiciel" en premier, "Me connecter" en second
+- **Mobile** : bouton "Évaluer" toujours visible dans la barre (colonne dédiée à droite du hamburger), "Me connecter" dans le menu en `variant="white"` (était `ghost`, illisible sur fond sombre)
+
+### Logos partenaires
+
+- Logos SML et Le Bloc augmentés (`h-6`) sur mobile uniquement, les autres partenaires conservent `h-4`
+
+### Comparatifs — barre de tri mobile
+
+- Bouton "Tous critères" affiché sur une deuxième ligne centrée sous le bouton de tri actif (via mesure `getBoundingClientRect`)
+- `router.push` avec `{ scroll: false }` sur tous les changements de tri — la page ne remonte plus en haut
+
+### Page solution — onglets de navigation
+
+- Onglets (Avis rédaction, Galerie, Évaluation détaillée…) centrés sur mobile (`justify-center`), alignés à gauche sur desktop
+
+### Comparatif détaillé par sous-critères (mobile)
+
+- Nom du critère affiché sur sa propre ligne au-dessus des barres (layout `flex-col` sur mobile, `flex-row` sur desktop)
+- Barres réduites à `w-16` sur mobile (au lieu de `w-24`) pour tenir dans l'écran
+
+---
+
 ## [2026-04-14] — Rôle Health Data Hub, reset mot de passe, types Supabase
 
 ### Rôle Health Data Hub

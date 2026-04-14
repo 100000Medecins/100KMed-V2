@@ -55,7 +55,7 @@ export default async function Home() {
     <>
       <Navbar />
       <main>
-        <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} />
+        <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} nbInscrits={siteStats.nbInscrits} />
         <RecommendedSoftware categories={categoriesData} />
         <AboutMission />
         <EHealthVideos />

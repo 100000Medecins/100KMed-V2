@@ -96,7 +96,7 @@ export default function Navbar() {
         boxShadow: isHome && !isScrolled ? 'none' : '0 2px 20px rgba(0,0,0,0.18)',
       }}
     >
-      <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
+      <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
         {/* Logo */}
         <a href="/" className="flex items-center gap-2.5 shrink-0">
           <div className="flex gap-0.5">
@@ -195,7 +195,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* CTA */}
+        {/* CTA desktop */}
         <div className="hidden lg:flex items-center gap-3">
           {!loading && user ? (
             <>
@@ -208,17 +208,17 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Button variant="white" href="/connexion" className={`text-sm py-2.5 px-6 ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}>
-                Me connecter
-              </Button>
               <Button variant={darkNav ? "white" : "primary"} href="/solution/noter" className="text-sm py-2.5 px-6">
                 Évaluer un logiciel
+              </Button>
+              <Button variant="white" href="/connexion" className={`text-sm py-2.5 px-6 ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}>
+                Me connecter
               </Button>
             </>
           )}
         </div>
 
-        {/* Mobile toggle */}
+        {/* Mobile : bouton Évaluer + toggle */}
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
           className={`lg:hidden p-2 transition-colors duration-500 ${darkNav ? 'text-white' : 'text-navy'}`}
@@ -226,6 +226,11 @@ export default function Navbar() {
         >
           {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
+        <div className="lg:hidden">
+          <Button variant="white" href="/solution/noter" className="text-xs py-1.5 px-3">
+            Évaluer
+          </Button>
+        </div>
       </nav>
 
       {/* Mobile menu */}
@@ -319,7 +324,7 @@ export default function Navbar() {
                   <Button variant="primary" href="/solution/noter" className="w-full justify-center">
                     Évaluer un logiciel
                   </Button>
-                  <Button variant="ghost" href="/connexion" className="w-full justify-center">
+                  <Button variant="white" href="/connexion" className="w-full justify-center">
                     Me connecter
                   </Button>
                 </>

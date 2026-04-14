@@ -152,7 +152,7 @@ export default function SolutionHero({
       {/* Anchor tabs */}
       <div className="sticky top-[72px] z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3">
-          <nav className="flex flex-wrap gap-2 md:flex-nowrap md:gap-3 md:overflow-x-auto md:scrollbar-hide">
+          <nav className="flex flex-wrap justify-center gap-2 md:justify-start md:flex-nowrap md:gap-3 md:overflow-x-auto md:scrollbar-hide">
             {anchors.map((anchor) => (
               <a
                 key={anchor.id}
