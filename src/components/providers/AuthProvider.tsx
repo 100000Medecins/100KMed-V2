@@ -146,10 +146,16 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
-    if (!supabase) return
-    await supabase.auth.signOut()
-    setUser(null)
-    window.location.href = '/'
+    if (!supabase) { window.location.href = '/'; return }
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Ignorer les erreurs (AbortError, lock conflicts) — la session expire côté serveur
+    } finally {
+      setUser(null)
+      setUserRole(null)
+      window.location.href = '/'
+    }
   }
 
   return (
