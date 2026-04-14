@@ -61,10 +61,19 @@ export async function getHdhOptins(requestingUserId: string) {
 
   if (requester?.role !== 'health_data_hub') throw new Error('Non autorisé')
 
+  // etudes_cliniques est dans users_notification_preferences, pas dans users
+  const { data: prefs } = await supabase
+    .from('users_notification_preferences')
+    .select('user_id')
+    .eq('etudes_cliniques', true)
+
+  const userIds = (prefs ?? []).map((p) => p.user_id)
+  if (userIds.length === 0) return []
+
   const { data } = await supabase
     .from('users')
     .select('id, email, contact_email, nom, prenom, specialite, created_at')
-    .eq('etudes_cliniques', true)
+    .in('id', userIds)
     .order('created_at', { ascending: false })
 
   return data ?? []
