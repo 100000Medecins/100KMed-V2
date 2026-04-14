@@ -112,6 +112,7 @@ export async function GET(request: Request) {
         prenom,
         specialite,
         mode_exercice: modeExercice,
+        ...(userEmail?.endsWith('@digitalmedicalhub.com') ? { role: 'health_data_hub' } : {}),
       })
     } else {
       await supabaseAdmin.auth.admin.updateUserById(userId, {

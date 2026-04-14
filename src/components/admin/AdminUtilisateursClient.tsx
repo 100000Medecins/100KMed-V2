@@ -34,7 +34,7 @@ const ROLE_LABELS: Record<string, string> = {
   medecin: 'Médecin',
   editeur: 'Éditeur',
   admin: 'Admin',
-  health_data_hub: 'Health Data Hub',
+  health_data_hub: 'Digital Medical Hub',
 }
 
 const ROLE_COLORS: Record<string, string> = {
