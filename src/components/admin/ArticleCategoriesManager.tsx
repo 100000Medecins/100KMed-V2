@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { createArticleCategorie, updateArticleCategorie, deleteArticleCategorie } from '@/lib/actions/admin'
 
-type Cat = { id: string; nom: string; slug: string; position: number }
+type Cat = { id: string; nom: string; slug: string; position: number | null }
 
 function slugify(str: string) {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-')
