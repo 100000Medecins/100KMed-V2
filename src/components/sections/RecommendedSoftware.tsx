@@ -86,7 +86,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
               )}
             </div>
 
-            <div className="flex flex-wrap lg:flex-col gap-2">
+            <div className="grid grid-cols-2 lg:flex lg:flex-col gap-2">
               {categories.map((cat, i) => (
                 <button
                   key={cat.id}

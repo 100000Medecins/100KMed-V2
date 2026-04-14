@@ -101,9 +101,27 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
         </div>
       </div>
 
-      {/* Partners bar */}
+      {/* Mobile : illustration animée + label partenaires (sans logos) */}
+      <div className="lg:hidden border-t border-white/15" style={{ background: 'rgba(255,255,255,0.10)' }}>
+        <div className="flex flex-col items-center py-6 px-6 gap-4">
+          {!heroImage && (
+            <div className="scale-75 origin-top -mb-20">
+              <HeroIllustration
+                nbSolutionsLabel={nbSolutionsLabel}
+                nbEvaluationsLabel={nbEvaluationsLabel}
+                nbInscritsLabel={nbInscritsLabel}
+              />
+            </div>
+          )}
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 text-center">
+            {labelPartenaires}
+          </p>
+        </div>
+      </div>
+
+      {/* Partners bar — desktop uniquement */}
       {partenaires.length > 0 && (
-        <div className="border-t border-white/15" style={{ background: 'rgba(255,255,255,0.18)' }}>
+        <div className="hidden md:block border-t border-white/15" style={{ background: 'rgba(255,255,255,0.18)' }}>
           <div className="max-w-7xl mx-auto px-6 py-6">
             <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 text-center mb-5">
               {labelPartenaires}
