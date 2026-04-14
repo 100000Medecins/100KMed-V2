@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Search, Building2, UserCheck, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { assignEditeurToUser } from '@/lib/actions/admin-users'
+import { resolveSpecialite } from '@/lib/constants/profil'
 
 type User = {
   id: string
@@ -402,7 +403,7 @@ function UserRow({
 
       {/* Spécialité — non modifiable */}
       <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">
-        {user.specialite || <span className="text-gray-300 italic">—</span>}
+        {resolveSpecialite(user.specialite) || <span className="text-gray-300 italic">—</span>}
       </td>
 
       {/* RPPS */}
