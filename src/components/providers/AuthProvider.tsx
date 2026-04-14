@@ -148,9 +148,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     if (!supabase) { window.location.href = '/'; return }
     try {
-      await supabase.auth.signOut()
+      // Timeout 2s — signOut peut rester suspendu si le lock navigator est bloqué
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
+      ])
     } catch {
-      // Ignorer les erreurs (AbortError, lock conflicts) — la session expire côté serveur
+      // Ignorer (AbortError, lock conflicts, timeout) — la session expire côté serveur
     } finally {
       setUser(null)
       setUserRole(null)
