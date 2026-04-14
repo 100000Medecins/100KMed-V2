@@ -5,7 +5,8 @@ import AdminUtilisateursClient from '@/components/admin/AdminUtilisateursClient'
 
 async function getAllUsers(supabase: ReturnType<typeof createServiceRoleClient>) {
   const PAGE = 1000
-  let all: unknown[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let all: any[] = []
   let from = 0
   while (true) {
     const { data, error } = await supabase
