@@ -48,7 +48,7 @@ export async function assignEditeurToUser(
 
 /**
  * Récupère la liste des utilisateurs ayant opté pour les études cliniques.
- * Accessible uniquement aux utilisateurs avec le rôle 'health_data_hub'.
+ * Accessible uniquement aux utilisateurs avec le rôle 'digital_medical_hub'.
  */
 export async function getHdhOptins(requestingUserId: string) {
   const supabase = createServiceRoleClient()
@@ -59,7 +59,7 @@ export async function getHdhOptins(requestingUserId: string) {
     .eq('id', requestingUserId)
     .single()
 
-  if (requester?.role !== 'health_data_hub') throw new Error('Non autorisé')
+  if (requester?.role !== 'digital_medical_hub') throw new Error('Non autorisé')
 
   // etudes_cliniques est dans users_notification_preferences, pas dans users
   const { data: prefs } = await supabase

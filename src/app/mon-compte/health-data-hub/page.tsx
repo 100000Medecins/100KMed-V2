@@ -23,7 +23,7 @@ export default function HealthDataHubPage() {
 
   useEffect(() => {
     if (loading) return
-    if (!user || userRole !== 'health_data_hub') {
+    if (!user || userRole !== 'digital_medical_hub') {
       router.replace('/mon-compte/profil')
       return
     }

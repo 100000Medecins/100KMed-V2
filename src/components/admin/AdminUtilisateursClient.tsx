@@ -34,14 +34,14 @@ const ROLE_LABELS: Record<string, string> = {
   medecin: 'Médecin',
   editeur: 'Éditeur',
   admin: 'Admin',
-  health_data_hub: 'Digital Medical Hub',
+  digital_medical_hub: 'Digital Medical Hub',
 }
 
 const ROLE_COLORS: Record<string, string> = {
   medecin: 'bg-blue-100 text-blue-700',
   editeur: 'bg-purple-100 text-purple-700',
   admin: 'bg-red-100 text-red-700',
-  health_data_hub: 'bg-teal-100 text-teal-700',
+  digital_medical_hub: 'bg-teal-100 text-teal-700',
 }
 
 export default function AdminUtilisateursClient({

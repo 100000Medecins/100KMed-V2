@@ -22,7 +22,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
     ...(userRole === 'editeur'
       ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Mon espace éditeur', icon: Building2 }]
       : []),
-    ...(userRole === 'health_data_hub'
+    ...(userRole === 'digital_medical_hub'
       ? [{ href: '/mon-compte/health-data-hub', label: 'Études cliniques', icon: FlaskConical }]
       : []),
   ]

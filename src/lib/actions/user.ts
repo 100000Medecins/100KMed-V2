@@ -95,7 +95,7 @@ export async function createUserProfile(userId: string, email: string) {
       id: userId,
       email,
       pseudo: email.split('@')[0] || 'Utilisateur',
-      ...(email?.endsWith('@digitalmedicalhub.com') ? { role: 'health_data_hub' } : {}),
+      ...(email?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
     })
   }
 
