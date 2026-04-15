@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
-import type { Avatar, Video, Actualite, DocumentRow, Tag, Critere } from '@/types/models'
+import type { Avatar, Actualite, DocumentRow, Tag, Critere } from '@/types/models'
 
 /**
  * Récupère tous les avatars disponibles.
@@ -20,22 +20,48 @@ export async function getAvatars() {
  * Récupère les vidéos, optionnellement filtrées par "principales".
  * Remplace : fetchVideos
  */
-export async function getVideos(isVideosPrincipales?: boolean) {
+export type VideoRow = {
+  id: string
+  titre: string | null
+  description: string | null
+  url: string | null
+  vignette: string | null
+  type: string | null
+  theme: string | null
+  statut: string | null
+  ordre: number | null
+  is_videos_principales: boolean | null
+}
+
+export async function getVideos(options?: {
+  isVideosPrincipales?: boolean
+  onlyPublished?: boolean
+  limit?: number
+}) {
   const supabase = await createServerClient()
 
-  let query = supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
     .from('videos')
     .select('*')
     .order('ordre', { ascending: true })
 
-  if (isVideosPrincipales !== undefined) {
-    query = query.eq('is_videos_principales', isVideosPrincipales)
+  if (options?.isVideosPrincipales !== undefined) {
+    query = query.eq('is_videos_principales', options.isVideosPrincipales)
+  }
+
+  if (options?.onlyPublished !== false) {
+    query = query.eq('statut', 'publie')
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit)
   }
 
   const { data, error } = await query
 
   if (error) throw error
-  return data as Video[]
+  return (data ?? []) as VideoRow[]
 }
 
 /**

@@ -2,16 +2,31 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users } from 'lucide-react'
+import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks } from 'lucide-react'
 
-const navItems = [
+type NavItem = {
+  href: string
+  label: string
+  icon: React.ElementType
+  children?: { href: string; label: string; icon: React.ElementType }[]
+}
+
+const navItems: NavItem[] = [
   { href: '/admin/index', label: 'Page d\'accueil', icon: Home },
-  { href: '/admin/solutions', label: 'Solutions', icon: Package },
+  {
+    href: '/admin/solutions',
+    label: 'Solutions',
+    icon: Package,
+    children: [
+      { href: '/admin/seo', label: 'SEO', icon: Search },
+      { href: '/admin/questionnaires', label: 'Questionnaires', icon: ListChecks },
+    ],
+  },
   { href: '/admin/editeurs', label: 'Éditeurs', icon: Building2 },
   { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
   { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
-  { href: '/admin/questionnaires', label: 'Questionnaires', icon: ClipboardList },
   { href: '/admin/blog', label: 'Blog', icon: Newspaper },
+  { href: '/admin/videos', label: 'Vidéos & Tutos', icon: Video },
   { href: '/admin/pages', label: 'Pages statiques', icon: FileText },
   { href: '/admin/emails', label: 'Emails', icon: Mail },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
@@ -26,19 +41,45 @@ export default function AdminSidebar() {
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname.startsWith(item.href)
+          const isChildActive = item.children?.some((c) => pathname.startsWith(c.href))
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-accent-blue/10 text-accent-blue'
-                  : 'text-gray-600 hover:bg-surface-light hover:text-navy'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {item.label}
-            </Link>
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isActive || isChildActive
+                    ? 'bg-accent-blue/10 text-accent-blue'
+                    : 'text-gray-600 hover:bg-surface-light hover:text-navy'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {item.label}
+              </Link>
+
+              {item.children && (isActive || isChildActive) && (
+                <div className="ml-4 mt-0.5 pl-3 border-l-2 border-accent-blue/20 space-y-0.5">
+                  {item.children.map((child) => {
+                    const isChildCurrent = pathname.startsWith(child.href)
+                    const ChildIcon = child.icon
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          isChildCurrent
+                            ? 'text-accent-blue bg-accent-blue/10'
+                            : 'text-gray-500 hover:text-navy hover:bg-surface-light'
+                        }`}
+                      >
+                        <ChildIcon className="w-3 h-3" />
+                        {child.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )
         })}
       </nav>

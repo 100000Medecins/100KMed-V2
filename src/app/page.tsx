@@ -3,17 +3,19 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/sections/HeroSection";
 import RecommendedSoftware from "@/components/sections/RecommendedSoftware";
 import AboutMission from "@/components/sections/AboutMission";
-import EHealthVideos from "@/components/sections/EHealthVideos";
+import StoriesSection from "@/components/sections/StoriesSection";
 import EditorCTA from "@/components/sections/EditorCTA";
 import { getCategories } from "@/lib/db/categories";
 import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getSiteStats } from "@/lib/db/solutions";
+import { getVideos } from "@/lib/db/misc";
 
 export const revalidate = 1800;
 
 export default async function Home() {
-  const [categories, siteStats] = await Promise.all([
+  const [categories, siteStats, videos] = await Promise.all([
     getCategories(),
     getSiteStats(),
+    getVideos({ isVideosPrincipales: true, onlyPublished: true, limit: 6 }),
   ]);
 
   const categoriesData = await Promise.all(
@@ -58,7 +60,7 @@ export default async function Home() {
         <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} nbInscrits={siteStats.nbInscrits} />
         <RecommendedSoftware categories={categoriesData} />
         <AboutMission />
-        <EHealthVideos />
+        <StoriesSection videos={videos} />
         <EditorCTA />
       </main>
       <Footer />

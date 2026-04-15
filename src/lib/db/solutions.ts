@@ -101,17 +101,22 @@ export async function getSolutionBySlug(slug: string) {
 
   const { data: tagRows } = await supabase
     .from('solutions_tags')
-    .select('id_tag')
+    .select('id_tag, is_tag_principal')
     .eq('id_solution', data.id)
 
   let tags: Array<{ tag: Record<string, unknown> }> = []
   if (tagRows && tagRows.length > 0) {
+    const principalMap = new Map(tagRows.map((r) => [r.id_tag, r.is_tag_principal ?? false]))
     const tagIds = tagRows.map((r) => r.id_tag).filter((id): id is string => id !== null)
     const { data: tagsData } = await supabase
       .from('tags')
       .select('*')
       .in('id', tagIds)
-    tags = (tagsData || []).map((t: Record<string, unknown>) => ({ tag: t }))
+    tags = (tagsData || [])
+      .sort((a, b) => ((a.ordre as number) ?? 999) - ((b.ordre as number) ?? 999))
+      .map((t: Record<string, unknown>) => ({
+        tag: { ...t, is_tag_principal: principalMap.get(t.id as string) ?? false },
+      }))
   }
 
   return { ...data, tags } as unknown as SolutionWithRelations

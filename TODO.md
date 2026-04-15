@@ -18,19 +18,15 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Supprimer les colonnes inutilisées héritées de la migration Firebase
 - À faire quand le projet est stabilisé
 
+### Admin utilisateurs — export emails CSV
+- **Quoi :** ajouter un bouton dans la page admin utilisateurs pour exporter la liste des emails renseignés en CSV
+- **Détail :** le bouton doit afficher le nombre d'emails disponibles, et déclencher un téléchargement CSV côté client
+
 ### PSC production
 - Migrer ProSanté Connect de l'environnement BAS vers la production ANS
 - Voir checklist dans `memory/project_psc_prod_deployment.md`
 
 ---
-
-### Enrichissement profils PSC depuis la base RPPS publique
-- **Quoi :** ~110 médecins ont un RPPS mais pas de nom/prénom (connectés le 26/02/2026, session BAS). Leur profil se remplit automatiquement à la prochaine connexion PSC (déjà implémenté). Pour les comptes qui ne reviennent jamais : enrichissement batch via le fichier RASS (data.gouv.fr)
-- **Étapes :**
-  1. Vérifier combien de comptes concernés : `SELECT COUNT(*) FROM users WHERE rpps IS NOT NULL AND nom IS NULL`
-  2. Télécharger le fichier RASS sur data.gouv.fr
-  3. Générer un script `UPDATE users SET nom=..., prenom=... WHERE rpps=... AND nom IS NULL`
-- **Priorité :** faible — à faire si après quelques mois ces comptes n'ont toujours pas de nom
 
 ---
 

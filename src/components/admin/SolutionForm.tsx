@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Play } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Play, Sparkles } from 'lucide-react'
 import type { Database } from '@/types/database'
 import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
@@ -86,6 +86,9 @@ function Section({
 export default function SolutionForm({ solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, action }: SolutionFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [metaTitle, setMetaTitle] = useState(solution?.meta_title ?? '')
+  const [metaDescription, setMetaDescription] = useState(solution?.meta_description ?? '')
+  const [isSeoGenerating, setIsSeoGenerating] = useState(false)
   const [galerie, setGalerie] = useState<GalerieImage[]>(
     solution?.galerie ?? []
   )
@@ -826,22 +829,60 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         isOpen={openSections.seo}
         onToggle={() => toggleSection('seo')}
       >
+        {solutionId && (
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-gray-400">Génération automatique via IA</span>
+            <button
+              type="button"
+              disabled={isSeoGenerating}
+              onClick={async () => {
+                setIsSeoGenerating(true)
+                try {
+                  const res = await fetch('/api/admin/generer-seo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: solutionId }),
+                  })
+                  const data = await res.json()
+                  if (res.ok && data.title) {
+                    setMetaTitle(data.title)
+                    setMetaDescription(data.description)
+                  }
+                } finally {
+                  setIsSeoGenerating(false)
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-accent-blue/40 text-accent-blue hover:bg-accent-blue/5 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isSeoGenerating ? 'animate-pulse' : ''}`} />
+              {isSeoGenerating ? 'Génération…' : 'Générer le SEO'}
+            </button>
+          </div>
+        )}
         <div>
-          <label htmlFor="meta_title" className={labelClass}>Meta title</label>
+          <label htmlFor="meta_title" className={labelClass}>
+            Meta title
+            {metaTitle && <span className="ml-2 text-xs text-gray-400 font-normal">{metaTitle.length}/60</span>}
+          </label>
           <input
             id="meta_title"
             type="text"
             name="meta_title"
-            defaultValue={solution?.meta_title ?? ''}
+            value={metaTitle}
+            onChange={(e) => setMetaTitle(e.target.value)}
             className={inputClass}
           />
         </div>
         <div>
-          <label htmlFor="meta_description" className={labelClass}>Meta description</label>
+          <label htmlFor="meta_description" className={labelClass}>
+            Meta description
+            {metaDescription && <span className="ml-2 text-xs text-gray-400 font-normal">{metaDescription.length}/155</span>}
+          </label>
           <textarea
             id="meta_description"
             name="meta_description"
-            defaultValue={solution?.meta_description ?? ''}
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value)}
             rows={3}
             className={textareaClass}
           />

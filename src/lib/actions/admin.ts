@@ -1026,3 +1026,62 @@ export async function publishArticle(id: string) {
   revalidatePath(`/blog/${id}`)
   return { success: true }
 }
+
+// ────────────────────────────────────────────
+// Vidéos / Stories & Tutos
+// ────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractVideoFromFormData(formData: FormData): Record<string, any> {
+  return {
+    titre: (formData.get('titre') as string) || null,
+    url: (formData.get('url') as string) || null,
+    vignette: (formData.get('vignette') as string) || null,
+    description: (formData.get('description') as string) || null,
+    theme: (formData.get('theme') as string) || null,
+    type: (formData.get('type') as string) || null,
+    ordre: formData.get('ordre') ? parseInt(formData.get('ordre') as string, 10) : null,
+    is_videos_principales: formData.get('is_videos_principales') === 'true',
+    statut: (formData.get('statut') as string) || 'publie',
+  }
+}
+
+export async function createVideo(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('videos')
+    .insert({ id: randomUUID(), ...extractVideoFromFormData(formData) })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+  redirect('/admin/videos')
+}
+
+export async function updateVideo(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('videos')
+    .update(extractVideoFromFormData(formData))
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+  redirect('/admin/videos')
+}
+
+export async function deleteVideo(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('videos').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+}
