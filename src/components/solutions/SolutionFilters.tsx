@@ -89,7 +89,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
     const newTags = selectedTagIds.includes(tagId)
       ? selectedTagIds.filter((id) => id !== tagId)
       : [...selectedTagIds, tagId]
-    router.push(buildUrl(newTags))
+    router.push(buildUrl(newTags), { scroll: false })
   }
 
   if (tags.length === 0) return null
@@ -101,7 +101,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-navy">{labelFiltres || 'Fonctionnalités'}</h3>
         {selectedTagIds.length > 0 && (
-          <button onClick={() => router.push(buildUrl([]))} className="text-xs text-accent-blue hover:underline">
+          <button onClick={() => router.push(buildUrl([]), { scroll: false })} className="text-xs text-accent-blue hover:underline">
             Effacer
           </button>
         )}
