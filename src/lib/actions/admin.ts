@@ -1058,15 +1058,22 @@ export async function toggleVideoStatut(id: string, statut: string) {
   revalidatePath('/')
 }
 
-export async function reorderVideos(orderedIds: string[]) {
+export async function reorderVideosAndRubriques(
+  videoUpdates: { id: string; ordre: number; rubrique_id: string | null }[],
+  rubriqueUpdates: { id: string; ordre: number }[]
+) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
-  await Promise.all(
-    orderedIds.map((id, index) =>
+  await Promise.all([
+    ...videoUpdates.map(({ id, ordre, rubrique_id }) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).from('videos').update({ ordre: index }).eq('id', id)
-    )
-  )
+      (supabase as any).from('videos').update({ ordre, rubrique_id }).eq('id', id)
+    ),
+    ...rubriqueUpdates.map(({ id, ordre }) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from('video_rubriques').update({ ordre }).eq('id', id)
+    ),
+  ])
   revalidatePath('/admin/videos')
   revalidatePath('/stories-tutos')
   revalidatePath('/')
@@ -1087,9 +1094,13 @@ export async function createVideoRubrique(nom: string) {
 export async function deleteVideoRubrique(id: string) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
+  // Détacher les vidéos avant de supprimer (évite les erreurs de FK)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('videos').update({ rubrique_id: null }).eq('rubrique_id', id)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any).from('video_rubriques').delete().eq('id', id)
   revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
 }
 
 export async function createVideo(formData: FormData) {
