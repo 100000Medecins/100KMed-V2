@@ -17,7 +17,7 @@ function isAuthorized(req: NextRequest): boolean {
 async function sendRelanceEmail(
   templateId: string,
   toEmail: string,
-  prenom: string | null,
+  nom: string | null,
   solutionNom: string,
   lienReevaluation: string,
   lien1Clic: string,
@@ -33,16 +33,16 @@ async function sendRelanceEmail(
 
   if (!template) return
 
-  const prenomDisplay = prenom || 'Docteur'
+  const nomDisplay = nom ? `Dr. ${nom}` : 'Docteur'
   const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
 
   const sujet = (template.sujet as string)
     .replace(/\{\{solution_nom\}\}/g, solutionNom)
-    .replace(/\{\{prenom\}\}/g, prenomDisplay)
+    .replace(/\{\{prenom\}\}/g, nomDisplay)
 
   const html = (template.contenu_html as string)
     .replace(/\{\{solution_nom\}\}/g, solutionNom)
-    .replace(/\{\{prenom\}\}/g, prenomDisplay)
+    .replace(/\{\{prenom\}\}/g, nomDisplay)
     .replace(/\{\{lien_reevaluation\}\}/g, lienReevaluation)
     .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
     .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: evals1an } = await (supabase as any)
     .from('evaluations')
-    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, prenom)')
+    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, nom)')
     .not('last_date_note', 'is', null)
     .lt('last_date_note', oneYearAgo.toISOString())
     .is('last_relance_sent_at', null)
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
-      await sendRelanceEmail('relance_1an', user.email, user.prenom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
+      await sendRelanceEmail('relance_1an', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('evaluations')
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: evalsRecurrence } = await (supabase as any)
     .from('evaluations')
-    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, prenom)')
+    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, nom)')
     .not('last_relance_sent_at', 'is', null)
     .lt('last_relance_sent_at', threeMonthsAgo.toISOString())
     .gt('relance_count', 0)
@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
-      await sendRelanceEmail('relance_3mois', user.email, user.prenom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
+      await sendRelanceEmail('relance_3mois', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('evaluations')

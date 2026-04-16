@@ -63,11 +63,12 @@ export async function POST(req: NextRequest) {
   for (const user of users) {
     if (!user.email) continue
     try {
+      const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
       const sujet = (template.sujet as string)
-        .replace(/\{\{nom\}\}/g, user.nom || 'Docteur')
+        .replace(/\{\{nom\}\}/g, nomDisplay)
 
       const html = (template.contenu_html as string)
-        .replace(/\{\{nom\}\}/g, user.nom || 'Docteur')
+        .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{lien_etude\}\}/g, lien_etude)
         .replace(/\{\{texte_promoteur\}\}/g, texte_promoteur)
         .replace(/\{\{lien_desabonnement\}\}/g, `${siteUrl}/mon-compte/mes-notifications`)

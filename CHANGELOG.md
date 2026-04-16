@@ -5,6 +5,33 @@
 
 ---
 
+## [2026-04-17] — Système de newsletter mensuelle, refonte emails admin, Dr. NOM
+
+### Système de newsletter mensuelle automatique
+- Nouvelle table SQL `newsletters` (mois, sujet, contenu_html, status draft/sent, timestamps)
+- Cron `GET /api/cron/generer-newsletter-draft` — s'exécute le 22 de chaque mois à 9h : interroge les études cliniques actives, questionnaires de thèse publiés et le CHANGELOG du mois, génère le brouillon HTML via Claude Haiku, notifie l'admin par email
+- Cron `GET /api/cron/rappel-newsletter` — quotidien à 8h30 : relance l'admin par email si un brouillon est en attente depuis plus de 5 jours
+- Route `POST /api/admin/send-newsletter` — envoie la newsletter validée à tous les utilisateurs `marketing_emails: true`
+- Page admin `/admin/newsletters` : liste des brouillons avec prévisualisation iframe, confirmation et envoi
+- `vercel.json` : ajout des deux nouveaux crons
+- Sidebar admin : "Newsletters" ajouté en sous-menu d'Emails
+
+### Admin emails — restructuration en onglets
+- Page `/admin/emails` réécrite avec 3 sections : Notifications système / Études & Thèses / Infos mensuels
+- Nouveau composant `AdminEmailsClient` (onglets) + `AdminEmailsAccordion` rendu générique (`masseApiRoute` dynamique)
+- Route `POST /api/admin/send-infos-mensuels` créée : envoie `infos_mensuels` aux opt-in `marketing_emails`
+
+### Emails — passage à Dr. NOM
+- Tous les envois d'emails (relances cron, lancement, infos mensuels, études, questionnaires) remplacent désormais `{{prenom}}` / `{{nom}}` par `Dr. NOM` (ex : Dr. DUPONT)
+- Sélection `prenom` → `nom` dans toutes les requêtes Supabase des routes d'envoi
+- **SQL requis en prod** : `CREATE TABLE newsletters (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), mois text NOT NULL UNIQUE, sujet text, contenu_html text, status text NOT NULL DEFAULT 'draft', notified_at timestamptz, reminded_at timestamptz, sent_at timestamptz, recipient_count integer, created_at timestamptz DEFAULT now());`
+
+### Design email — prototype hero gradient
+- Script de test `scripts/send-test-email.mjs` : envoie un aperçu du mail de lancement
+- Nouveau design aux couleurs du hero (fond `#0f1e38` + radial-gradients bleu/violet/vert, cards glass `rgba(255,255,255,0.09)`, bandes colorées par section)
+
+---
+
 ## [2026-04-16] — Correctifs UX, admin utilisateurs, filtres ET, hotfix 500
 
 ### Hotfix — erreur 500 en production

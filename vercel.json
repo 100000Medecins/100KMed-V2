@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/relance-psc",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/generer-newsletter-draft",
+      "schedule": "0 9 22 * *"
+    },
+    {
+      "path": "/api/cron/rappel-newsletter",
+      "schedule": "30 8 * * *"
     }
   ]
 }

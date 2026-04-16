@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks } from 'lucide-react'
+import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, Mails } from 'lucide-react'
 
 type NavItem = {
   href: string
@@ -33,10 +33,22 @@ const navItems: NavItem[] = [
   },
   { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
   { href: '/admin/blog', label: 'Blog', icon: Newspaper },
+  { href: '/admin/questionnaires-these', label: 'Études & Thèses', icon: GraduationCap },
   { href: '/admin/videos', label: 'Vidéos & Tutos', icon: Video },
-  { href: '/admin/emails', label: 'Emails', icon: Mail },
+  {
+    href: '/admin/emails',
+    label: 'Emails',
+    icon: Mail,
+    children: [
+      { href: '/admin/newsletters', label: 'Newsletters', icon: Mails },
+    ],
+  },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
+
+function matchPath(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(href + '/')
+}
 
 export default function AdminSidebar() {
   const pathname = usePathname()
@@ -46,8 +58,8 @@ export default function AdminSidebar() {
       <nav className="bg-white rounded-card shadow-card p-4 space-y-1 sticky top-6">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname.startsWith(item.href)
-          const isChildActive = item.children?.some((c) => pathname.startsWith(c.href))
+          const isActive = matchPath(pathname, item.href)
+          const isChildActive = item.children?.some((c) => matchPath(pathname, c.href))
 
           return (
             <div key={item.href}>
@@ -66,7 +78,7 @@ export default function AdminSidebar() {
               {item.children && (isActive || isChildActive) && (
                 <div className="ml-4 mt-0.5 pl-3 border-l-2 border-accent-blue/20 space-y-0.5">
                   {item.children.map((child) => {
-                    const isChildCurrent = pathname.startsWith(child.href)
+                    const isChildCurrent = matchPath(pathname, child.href)
                     const ChildIcon = child.icon
                     return (
                       <Link

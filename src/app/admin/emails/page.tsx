@@ -1,8 +1,21 @@
 import { getEmailTemplate } from '@/lib/actions/emailTemplates'
-import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
+import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
+
+async function getOptedInCount(prefKey: 'etudes_cliniques' | 'questionnaires_these'): Promise<number> {
+  try {
+    const supabase = createServiceRoleClient()
+    const { count } = await (supabase as any)
+      .from('users_notification_preferences')
+      .select('user_id', { count: 'exact', head: true })
+      .eq(prefKey, true)
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
 
 async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_these'): Promise<string[]> {
   try {
@@ -27,7 +40,9 @@ export default async function AdminEmailsPage() {
   const [
     templatePsc, template1an, template3mois, templateLancement,
     templateSuppression, templateReset, templateEtude, templateQuestionnaire,
-    emailsEtudes, emailsQuestionnaires,
+    templateInfosMensuels,
+    emailsEtudes, emailsQuestionnaires, emailsInfosMensuels,
+    countEtudes, countQuestionnaires,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -37,100 +52,134 @@ export default async function AdminEmailsPage() {
     getEmailTemplate('reinitialisation_mot_de_passe'),
     getEmailTemplate('etude_clinique'),
     getEmailTemplate('questionnaire_recherche'),
+    getEmailTemplate('infos_mensuels'),
     getOptedInEmails('etudes_cliniques'),
     getOptedInEmails('questionnaires_these'),
+    getOptedInEmails('etudes_cliniques'), // infos mensuels = toute la base opt-in (réutilisé)
+    getOptedInCount('etudes_cliniques'),
+    getOptedInCount('questionnaires_these'),
   ])
 
-  const templates = [
+  const sections = [
     {
-      id: 'lancement',
-      title: '🚀 Mail de lancement',
-      description: 'Envoyé manuellement à toute la base au moment du lancement du site pour inviter les utilisateurs à renoter.',
-      variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
-      data: templateLancement,
-      defaultSujet: 'Le nouveau 100 000 Médecins est là — votre avis compte !',
-      masseSendable: true,
+      key: 'systeme',
+      label: 'Notifications système',
+      description: 'Emails transactionnels envoyés automatiquement par la plateforme.',
+      templates: [
+        {
+          id: 'relance_1an',
+          title: 'Relance 1 an — 1ʳᵉ relance',
+          description: "Envoyé automatiquement 1 an après la dernière évaluation.",
+          variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
+          data: template1an,
+          defaultSujet: "Votre avis sur {{solution_nom}} est-il toujours d'actualité ?",
+        },
+        {
+          id: 'relance_3mois',
+          title: 'Rappel tous les 3 mois (2ᵉ, 3ᵉ, 4ᵉ relance)',
+          description: "Envoyé tous les 3 mois tant que l'utilisateur n'a pas revalidé son avis.",
+          variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
+          data: template3mois,
+          defaultSujet: 'Rappel : votre avis sur {{solution_nom}}',
+        },
+        {
+          id: 'verification_psc',
+          title: 'Email de vérification PSC',
+          description: 'Envoyé aux nouveaux évaluateurs pour vérifier leur identité via Pro Santé Connect.',
+          variables: ['{{psc_link}}'],
+          data: templatePsc,
+          defaultSujet: 'Validez votre évaluation sur 100 000 Médecins',
+        },
+        {
+          id: 'suppression_compte',
+          title: 'Confirmation de suppression de compte',
+          description: "Envoyé à l'utilisateur après la suppression définitive de son compte.",
+          variables: ['{{prenom}}', '{{nom}}'],
+          data: templateSuppression,
+          defaultSujet: 'Votre compte 100 000 Médecins a été supprimé',
+        },
+        {
+          id: 'reinitialisation_mot_de_passe',
+          title: 'Réinitialisation du mot de passe',
+          description: "Envoyé lorsqu'un utilisateur demande à réinitialiser son mot de passe.",
+          variables: ['{{lien_reinitialisation}}'],
+          data: templateReset,
+          defaultSujet: 'Réinitialisez votre mot de passe — 100 000 Médecins',
+        },
+      ],
     },
     {
-      id: 'relance_1an',
-      title: 'Relance 1 an — 1ʳᵉ relance',
-      description: 'Envoyé automatiquement 1 an après la dernière évaluation. C\'est le premier email de relance reçu par l\'utilisateur.',
-      variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
-      data: template1an,
-      defaultSujet: "Votre avis sur {{solution_nom}} est-il toujours d'actualité ?",
+      key: 'etudes-theses',
+      label: 'Études & Thèses',
+      description: `Emails envoyés manuellement aux utilisateurs opt-in. ${countEtudes} inscrits études · ${countQuestionnaires} inscrits questionnaires.`,
+      templates: [
+        {
+          id: 'etude_clinique',
+          title: '🔬 Nouvelle étude clinique',
+          description: `Envoyé manuellement aux ${emailsEtudes.length} utilisateurs ayant activé "Études cliniques" dans leurs préférences.`,
+          variables: ['{{nom}}', '{{lien_etude}}', '{{texte_promoteur}}', '{{lien_desabonnement}}'],
+          data: templateEtude,
+          defaultSujet: 'Participez à une étude clinique — 100 000 Médecins',
+          targetedSend: {
+            apiRoute: '/api/admin/send-etude',
+            optedInEmails: emailsEtudes,
+            labelLien: "Lien vers le site de l'étude",
+            labelTextePromoteur: 'Texte fourni par le promoteur de l\'étude',
+          },
+        },
+        {
+          id: 'questionnaire_recherche',
+          title: '📋 Nouveau questionnaire de thèse',
+          description: `Envoyé manuellement aux ${emailsQuestionnaires.length} utilisateurs ayant activé "Questionnaires de thèse" dans leurs préférences.`,
+          variables: ['{{nom}}', '{{lien_etude}}', '{{texte_promoteur}}', '{{lien_desabonnement}}'],
+          data: templateQuestionnaire,
+          defaultSujet: 'Participez à un questionnaire de recherche — 100 000 Médecins',
+          targetedSend: {
+            apiRoute: '/api/admin/send-questionnaire',
+            optedInEmails: emailsQuestionnaires,
+            labelLien: 'Lien vers le questionnaire',
+            labelTextePromoteur: 'Texte fourni par le promoteur de l\'étude',
+          },
+        },
+      ],
     },
     {
-      id: 'relance_3mois',
-      title: 'Rappel tous les 3 mois (2ᵉ, 3ᵉ, 4ᵉ relance)',
-      description: "Envoyé tous les 3 mois indéfiniment tant que l'utilisateur n'a pas revalidé son avis (à 1 an 3 mois, 1 an 6 mois, 1 an 9 mois…). S'arrête uniquement si l'utilisateur revalide ou désactive les relances dans ses notifications.",
-      variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
-      data: template3mois,
-      defaultSujet: 'Rappel : votre avis sur {{solution_nom}}',
-    },
-    {
-      id: 'verification_psc',
-      title: 'Email de vérification PSC',
-      description: 'Envoyé aux nouveaux évaluateurs pour vérifier leur identité via Pro Santé Connect.',
-      variables: ['{{psc_link}}'],
-      data: templatePsc,
-      defaultSujet: 'Validez votre évaluation sur 100 000 Médecins',
-    },
-    {
-      id: 'suppression_compte',
-      title: 'Confirmation de suppression de compte',
-      description: 'Envoyé à l\'utilisateur après la suppression définitive de son compte.',
-      variables: ['{{prenom}}', '{{nom}}'],
-      data: templateSuppression,
-      defaultSujet: 'Votre compte 100 000 Médecins a été supprimé',
-    },
-    {
-      id: 'reinitialisation_mot_de_passe',
-      title: 'Réinitialisation du mot de passe',
-      description: 'Envoyé lorsqu\'un utilisateur demande à réinitialiser son mot de passe (depuis la page connexion ou depuis son compte).',
-      variables: ['{{lien_reinitialisation}}'],
-      data: templateReset,
-      defaultSujet: 'Réinitialisez votre mot de passe — 100 000 Médecins',
-    },
-    {
-      id: 'etude_clinique',
-      title: '🔬 Étude clinique',
-      description: `Envoyé manuellement aux ${emailsEtudes.length} utilisateurs ayant activé "Études cliniques" dans leurs préférences de notification.`,
-      variables: ['{{nom}}', '{{lien_etude}}', '{{texte_promoteur}}', '{{lien_desabonnement}}'],
-      data: templateEtude,
-      defaultSujet: 'Participez à une étude clinique — 100 000 Médecins',
-      targetedSend: {
-        apiRoute: '/api/admin/send-etude',
-        optedInEmails: emailsEtudes,
-        labelLien: 'Lien vers le site de l\'étude',
-        labelTextePromoteur: 'Texte fourni par le promoteur de l\'étude',
-      },
-    },
-    {
-      id: 'questionnaire_recherche',
-      title: '📋 Questionnaire de recherche',
-      description: `Envoyé manuellement aux ${emailsQuestionnaires.length} utilisateurs ayant activé "Questionnaires de recherche" dans leurs préférences de notification.`,
-      variables: ['{{nom}}', '{{lien_etude}}', '{{texte_promoteur}}', '{{lien_desabonnement}}'],
-      data: templateQuestionnaire,
-      defaultSujet: 'Participez à un questionnaire de recherche — 100 000 Médecins',
-      targetedSend: {
-        apiRoute: '/api/admin/send-questionnaire',
-        optedInEmails: emailsQuestionnaires,
-        labelLien: 'Lien vers le questionnaire',
-        labelTextePromoteur: 'Texte fourni par le promoteur de l\'étude',
-      },
+      key: 'infos-mensuels',
+      label: 'Infos mensuels',
+      description: 'Newsletter mensuelle envoyée manuellement à toute la base.',
+      templates: [
+        {
+          id: 'lancement',
+          title: '🚀 Mail de lancement',
+          description: 'Envoyé manuellement à toute la base au moment du lancement du site.',
+          variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
+          data: templateLancement,
+          defaultSujet: 'Le nouveau 100 000 Médecins est là — votre avis compte !',
+          masseSendable: true,
+        },
+        {
+          id: 'infos_mensuels',
+          title: '📰 Infos mensuels',
+          description: 'Newsletter mensuelle : nouveautés de la plateforme, nouvelles solutions, actualités e-santé.',
+          variables: ['{{prenom}}', '{{lien_desabonnement}}'],
+          data: templateInfosMensuels,
+          defaultSujet: 'Les infos du mois — 100 000 Médecins',
+          masseSendable: true,
+          masseApiRoute: '/api/admin/send-infos-mensuels',
+        },
+      ],
     },
   ]
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Templates email</h1>
+        <h1 className="text-2xl font-bold text-navy">Emails</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Personnalisez les emails envoyés automatiquement aux utilisateurs.
+          Templates et envois manuels.
         </p>
       </div>
-
-      <AdminEmailsAccordion templates={templates} />
+      <AdminEmailsClient sections={sections} />
     </div>
   )
 }

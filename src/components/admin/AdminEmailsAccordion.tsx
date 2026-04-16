@@ -22,6 +22,8 @@ interface TemplateConfig {
   defaultSujet: string
   /** Si true, affiche un bouton d'envoi masse */
   masseSendable?: boolean
+  /** Route API pour l'envoi masse (défaut : /api/admin/send-lancement) */
+  masseApiRoute?: string
   /** Si défini, affiche le panneau d'envoi ciblé */
   targetedSend?: TargetedSendConfig
 }
@@ -38,11 +40,11 @@ export default function AdminEmailsAccordion({ templates }: AdminEmailsAccordion
   const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
 
-  async function handleSendLancement() {
+  async function handleSendMasse(apiRoute: string) {
     setSendState('sending')
     setSendError(null)
     try {
-      const res = await fetch('/api/admin/send-lancement', { method: 'POST' })
+      const res = await fetch(apiRoute, { method: 'POST' })
       const json = await res.json()
       if (!res.ok) {
         setSendError(json.error ?? 'Erreur inconnue')
@@ -145,7 +147,7 @@ export default function AdminEmailsAccordion({ templates }: AdminEmailsAccordion
                           Confirmer l&apos;envoi à toute la base ?
                         </p>
                         <button
-                          onClick={handleSendLancement}
+                          onClick={() => handleSendMasse(tpl.masseApiRoute ?? '/api/admin/send-lancement')}
                           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
                         >
                           Oui, envoyer

@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   // Récupérer tous les utilisateurs ayant au moins une évaluation finalisée
   const { data: evals } = await supabase
     .from('evaluations')
-    .select('user_id, solution_id, solution:solutions(nom), user:users(email, prenom)')
+    .select('user_id, solution_id, solution:solutions(nom), user:users(email, nom)')
     .not('last_date_note', 'is', null)
     .not('user_id', 'is', null)
     .not('solution_id', 'is', null)
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   // Dédupliquer par user_id (1 email par utilisateur, avec la première solution)
   const seen = new Set<string>()
-  const recipients: { email: string; prenom: string | null; solutionNom: string; userId: string; solutionId: string }[] = []
+  const recipients: { email: string; nom: string | null; solutionNom: string; userId: string; solutionId: string }[] = []
 
   for (const ev of evals) {
     const userId = ev.user_id as string
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     if (!user?.email) continue
     recipients.push({
       email: user.email,
-      prenom: user.prenom ?? null,
+      nom: user.nom ?? null,
       solutionNom: solution?.nom ?? 'votre logiciel',
       userId,
       solutionId: ev.solution_id as string,
@@ -84,12 +84,13 @@ export async function POST(req: NextRequest) {
         ? generateRevalidationLink(r.userId, r.solutionId)
         : `${siteUrl}/mon-compte/mes-evaluations`
 
+      const nomDisplay = r.nom ? `Dr. ${r.nom}` : 'Docteur'
       const sujet = (template.sujet as string)
-        .replace(/\{\{prenom\}\}/g, r.prenom || 'Docteur')
+        .replace(/\{\{prenom\}\}/g, nomDisplay)
         .replace(/\{\{solution_nom\}\}/g, r.solutionNom)
 
       const html = (template.contenu_html as string)
-        .replace(/\{\{prenom\}\}/g, r.prenom || 'Docteur')
+        .replace(/\{\{prenom\}\}/g, nomDisplay)
         .replace(/\{\{solution_nom\}\}/g, r.solutionNom)
         .replace(/\{\{lien_reevaluation\}\}/g, `${siteUrl}/mon-compte/mes-evaluations`)
         .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
