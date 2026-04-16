@@ -6,6 +6,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
+### Questionnaires de thèse
+- **Quoi :** créer un module permettant aux utilisateurs de diffuser des questionnaires dans le cadre de thèses médicales
+- **À définir :** formulaire de soumission, validation admin, affichage public, envoi aux médecins inscrits
+
+
+
 ### Page d'accueil — remplacer "Les enjeux de l'e-santé" par les derniers articles blog
 - **Quoi :** supprimer la section vidéos "Les enjeux de l'e-santé" de la page d'accueil et la remplacer par les 3 derniers articles de blog publiés
 - **Où :** identifier le composant homepage concerné + récupérer les 3 derniers articles (`statut = 'publie'`, triés par `date_publication DESC`, limit 3) depuis Supabase

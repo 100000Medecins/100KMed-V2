@@ -2,6 +2,10 @@ import Link from 'next/link'
 import StarRating from '@/components/ui/StarRating'
 import RatingBadge from '@/components/ui/RatingBadge'
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 interface SolutionListProps {
   solutions: any[]
   categorieSlug?: string
@@ -57,7 +61,7 @@ export default function SolutionList({ solutions, categorieSlug, tri }: Solution
             {/* Description */}
             {solution.description && (
               <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
-                {solution.description}
+                {stripHtml(solution.description)}
               </p>
             )}
 

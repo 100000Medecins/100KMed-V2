@@ -44,10 +44,14 @@ export type VideoRow = {
 export async function getVideoRubriques(): Promise<VideoRubrique[]> {
   const supabase = await createServerClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from('video_rubriques')
     .select('*')
     .order('ordre', { ascending: true })
+  if (error) {
+    console.error('[getVideoRubriques] Supabase error:', error.message)
+    return []
+  }
   return data ?? []
 }
 
@@ -78,7 +82,10 @@ export async function getVideos(options?: {
 
   const { data, error } = await query
 
-  if (error) throw error
+  if (error) {
+    console.error('[getVideos] Supabase error:', error.message)
+    return []
+  }
   return (data ?? []) as VideoRow[]
 }
 

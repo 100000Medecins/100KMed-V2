@@ -5,6 +5,46 @@
 
 ---
 
+## [2026-04-16] — Correctifs UX, admin utilisateurs, filtres ET, hotfix 500
+
+### Hotfix — erreur 500 en production
+- `getVideos()` et `getVideoRubriques()` : remplacement de `throw error` par log + retour tableau vide si la table `video_rubriques` n'existe pas encore en production
+- **SQL requis en prod** : `CREATE TABLE IF NOT EXISTS video_rubriques (...); ALTER TABLE videos ADD COLUMN IF NOT EXISTS rubrique_id uuid REFERENCES video_rubriques(id);`
+
+### Admin solutions — recherche textuelle
+- Nouveau composant `AdminSolutionsTable` (client) : champ de recherche en temps réel par nom, catégorie ou éditeur, avec croix effacement et compteur de résultats
+
+### Admin utilisateurs
+- Export emails CSV : bouton "Exporter emails (N)" avec BOM UTF-8 (compatible Excel), colonnes email/prénom/nom/pseudo/rôle/spécialité/RPPS/inscription
+- Bannière informative (bas de page) : nombre de comptes sans email PSC + nb ayant posté des évaluations
+- Pagination affichée en haut ET en bas du tableau
+- Affichage compteur : "N résultats sur M" uniquement quand une recherche est active
+- Suppression du scroll horizontal (colonnes Pseudo/Spécialité/RPPS masquées sur petits écrans)
+
+### Comparatifs — filtre fonctionnalités ET au lieu de OU
+- `getSolutionsByTags` : comportement corrigé de OU → ET (intersection stricte : une solution doit posséder tous les tags sélectionnés)
+
+### Navbar — flash de liens masqués
+- Liens "Blog" et "Les irritants de l'e-santé" non affichés avant le fetch de la config (`navLoaded` flag) — plus de flash au chargement
+
+### Description solutions — rendu HTML
+- `SolutionHero` : affichage via `dangerouslySetInnerHTML` + `sanitizeHtml` (les `<p>`, `<strong>` etc. s'affichent correctement)
+- `SolutionList` : balises strippées avant affichage `line-clamp-2` dans les cartes
+
+### Formulaire contact
+- Labels * (obligatoire) sur Nom, Email, Message ; "(optionnel)" sur Prénom et Téléphone
+- Suppression du `required` incorrect sur le champ Prénom
+
+### Admin vidéos — rubriques séparateurs
+- Rubriques affichées comme séparateurs glissables dans la liste plate
+- Glisser une vidéo sur/entre rubriques met à jour son `rubrique_id` automatiquement
+- Glisser une rubrique déplace toute la section (rubrique + ses vidéos)
+
+### Navbar mobile
+- Comparatifs dépliés par défaut à l'ouverture du menu mobile
+
+---
+
 ## [2026-04-16] — SEO automatique, Stories & Tutos, performances, admin vidéos enrichi
 
 ### SEO solutions — génération automatique par IA

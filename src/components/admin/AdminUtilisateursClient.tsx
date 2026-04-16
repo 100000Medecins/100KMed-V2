@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Search, Building2, UserCheck, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { Search, Building2, UserCheck, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Download } from 'lucide-react'
 import { assignEditeurToUser } from '@/lib/actions/admin-users'
 import { resolveSpecialite } from '@/lib/constants/profil'
 
@@ -47,9 +47,11 @@ const ROLE_COLORS: Record<string, string> = {
 export default function AdminUtilisateursClient({
   users: initialUsers,
   editeurs: initialEditeurs,
+  notice,
 }: {
   users: User[]
   editeurs: Editeur[]
+  notice?: string | null
 }) {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [editeurs, setEditeurs] = useState<Editeur[]>(initialEditeurs)
@@ -106,6 +108,31 @@ export default function AdminUtilisateursClient({
 
   const goToPage = (n: number) => setPage(Math.max(1, Math.min(totalPages, n)))
 
+  const handleExportCsv = () => {
+    const withEmail = users.filter((u) => u.email)
+    const rows = [
+      ['Email', 'Prénom', 'Nom', 'Pseudo', 'Rôle', 'Spécialité', 'RPPS', 'Inscription'],
+      ...withEmail.map((u) => [
+        u.email ?? '',
+        u.prenom ?? '',
+        u.nom ?? '',
+        u.pseudo ?? '',
+        u.role ?? '',
+        u.specialite ?? '',
+        u.rpps ?? '',
+        u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '',
+      ]),
+    ]
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `utilisateurs-emails-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const getEditeurForUser = (userId: string) => editeurs.find((e) => e.user_id === userId) ?? null
 
   const handleAssign = (userId: string, role: string, editeurId: string | null) => {
@@ -146,7 +173,9 @@ export default function AdminUtilisateursClient({
 
   const Pagination = () => (
     <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-t border-gray-100 text-sm text-gray-500">
-      <span>{filtered.length} utilisateur{filtered.length > 1 ? 's' : ''} ({users.length} total)</span>
+      <span>
+        {search ? `${filtered.length} résultat${filtered.length > 1 ? 's' : ''} sur ${users.length}` : `${users.length} utilisateur${users.length > 1 ? 's' : ''}`}
+      </span>
 
       {/* Navigation pages */}
       <div className="flex items-center gap-2">
@@ -225,6 +254,13 @@ export default function AdminUtilisateursClient({
           <h1 className="text-2xl font-bold text-navy">Utilisateurs</h1>
           <p className="text-sm text-gray-500 mt-1">{users.length} utilisateur{users.length > 1 ? 's' : ''}</p>
         </div>
+        <button
+          onClick={handleExportCsv}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-button text-sm font-semibold bg-white border border-gray-200 text-gray-600 hover:border-accent-blue hover:text-accent-blue shadow-soft transition-all"
+        >
+          <Download className="w-4 h-4" />
+          Exporter emails ({users.filter(u => u.email).length})
+        </button>
       </div>
 
       <div className="relative mb-4">
@@ -240,11 +276,10 @@ export default function AdminUtilisateursClient({
 
       <div className="bg-white rounded-card shadow-card overflow-hidden">
         <Pagination />
-
         {paginated.length === 0 ? (
           <div className="p-12 text-center text-gray-400 text-sm">Aucun utilisateur trouvé.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-sm">
               <thead className="bg-surface-light border-b border-gray-100">
                 <tr>
@@ -253,11 +288,11 @@ export default function AdminUtilisateursClient({
                       Nom <SortIcon field="nom" />
                     </button>
                   </th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Pseudo</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">Pseudo</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Email</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">Spécialité</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 hidden xl:table-cell">Spécialité</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 hidden xl:table-cell">RPPS</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Rôle / Éditeur</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-36">Rôle / Éditeur</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">
                     <button onClick={() => handleSort('created_at')} className="flex items-center hover:text-navy transition-colors">
                       Inscription <SortIcon field="created_at" />
@@ -290,6 +325,12 @@ export default function AdminUtilisateursClient({
 
         <Pagination />
       </div>
+
+      {notice && (
+        <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+          {notice}
+        </div>
+      )}
     </div>
   )
 }
@@ -392,7 +433,7 @@ function UserRow({
       </td>
 
       {/* Pseudo */}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 hidden lg:table-cell">
         <EditableCell value={user.pseudo} userId={user.id} field="pseudo" onUpdate={onInlineUpdate} onSave={onInlineSave} placeholder="pseudo" />
       </td>
 
@@ -402,7 +443,7 @@ function UserRow({
       </td>
 
       {/* Spécialité — non modifiable */}
-      <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">
+      <td className="px-4 py-3 text-xs text-gray-500 hidden xl:table-cell">
         {resolveSpecialite(user.specialite) || <span className="text-gray-300 italic">—</span>}
       </td>
 
@@ -417,7 +458,7 @@ function UserRow({
           <select
             value={role}
             onChange={(e) => { setRole(e.target.value); if (e.target.value !== 'editeur') setEditeurId('') }}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 w-28"
+            className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 w-full"
           >
             {Object.entries(roleLabels).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
@@ -427,7 +468,7 @@ function UserRow({
             <select
               value={editeurId}
               onChange={(e) => setEditeurId(e.target.value)}
-              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 w-full max-w-[180px]"
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 w-full"
             >
               <option value="">— Aucun —</option>
               {editeurs.map((e) => (

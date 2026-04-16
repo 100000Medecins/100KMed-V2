@@ -129,15 +129,24 @@ export async function getSolutionBySlug(slug: string) {
 export async function getSolutionsByTags(categorieId: string, tagIds: string[]) {
   const supabase = await createServerClient()
 
-  // Trouver les solution_ids qui ont les tags demandés
+  // Comportement ET : garder uniquement les solutions qui ont TOUS les tags sélectionnés
   const { data: solutionTagRows, error: tagError } = await supabase
     .from('solutions_tags')
-    .select('id_solution')
+    .select('id_solution, id_tag')
     .in('id_tag', tagIds)
 
   if (tagError) throw tagError
 
-  const solutionIds = Array.from(new Set(solutionTagRows.map((row) => row.id_solution).filter((id): id is string => id !== null)))
+  // Compter combien de tags sélectionnés chaque solution possède
+  const countPerSolution = new Map<string, number>()
+  for (const row of solutionTagRows) {
+    if (!row.id_solution) continue
+    countPerSolution.set(row.id_solution, (countPerSolution.get(row.id_solution) ?? 0) + 1)
+  }
+  // Garder uniquement celles qui ont les N tags (ET)
+  const solutionIds = Array.from(countPerSolution.entries())
+    .filter(([, count]) => count >= tagIds.length)
+    .map(([id]) => id)
 
   if (solutionIds.length === 0) return []
 

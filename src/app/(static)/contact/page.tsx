@@ -41,6 +41,7 @@ export default function ContactPage() {
           <p className="text-gray-500 text-sm mb-8">
             Une question ? N&apos;hésitez pas à nous écrire.
           </p>
+          <p className="text-xs text-gray-400 mb-6">Les champs marqués <span className="text-red-400">*</span> sont obligatoires.</p>
 
           {status === 'success' ? (
             <div className="bg-rating-green/10 text-rating-green p-4 rounded-card text-center">
@@ -50,7 +51,7 @@ export default function ContactPage() {
             <form onSubmit={handleSubmit} className="bg-white rounded-card shadow-card p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Nom</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Nom <span className="text-red-400">*</span></label>
                   <input
                     type="text"
                     required
@@ -60,10 +61,9 @@ export default function ContactPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Prénom</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Prénom <span className="text-gray-400 font-normal">(optionnel)</span></label>
                   <input
                     type="text"
-                    required
                     value={formData.prenom}
                     onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-accent-blue"
@@ -71,7 +71,7 @@ export default function ContactPage() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Email</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Email <span className="text-red-400">*</span></label>
                 <input
                   type="email"
                   required
@@ -81,7 +81,7 @@ export default function ContactPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Téléphone</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Téléphone <span className="text-gray-400 font-normal">(optionnel)</span></label>
                 <input
                   type="tel"
                   value={formData.telephone}
@@ -90,7 +90,7 @@ export default function ContactPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Message</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Message <span className="text-red-400">*</span></label>
                 <textarea
                   required
                   rows={4}

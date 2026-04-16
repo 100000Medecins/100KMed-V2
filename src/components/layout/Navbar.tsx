@@ -37,9 +37,10 @@ export default function Navbar() {
   const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(false);
+  const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(true);
   const [categories, setCategories] = useState<NavCategorie[]>([]);
-  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: true, blog_visible: true });
+  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: false, blog_visible: false });
+  const [navLoaded, setNavLoaded] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,7 +56,8 @@ export default function Navbar() {
       .then((r) => r.json())
       .then((data: NavResponse) => {
         setCategories(data.categories ?? [])
-        setNavConfig(data.navConfig ?? { irritants_visible: true, blog_visible: true })
+        setNavConfig(data.navConfig ?? { irritants_visible: false, blog_visible: false })
+        setNavLoaded(true)
       })
       .catch(() => {})
   }, [])
@@ -176,7 +178,7 @@ export default function Navbar() {
             Qui sommes-nous ?
           </a>
 
-          {navConfig.irritants_visible && (
+          {navLoaded && navConfig.irritants_visible && (
             <a
               href="/irritants-esante"
               className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
@@ -185,7 +187,7 @@ export default function Navbar() {
             </a>
           )}
 
-          {navConfig.blog_visible && (
+          {navLoaded && navConfig.blog_visible && (
             <a
               href="/blog"
               className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
@@ -289,7 +291,7 @@ export default function Navbar() {
               Qui sommes-nous ?
             </a>
 
-            {navConfig.irritants_visible && (
+            {navLoaded && navConfig.irritants_visible && (
               <a
                 href="/irritants-esante"
                 className="block text-sm text-white/85 hover:text-white font-medium py-2"
@@ -299,7 +301,7 @@ export default function Navbar() {
               </a>
             )}
 
-            {navConfig.blog_visible && (
+            {navLoaded && navConfig.blog_visible && (
               <a
                 href="/blog"
                 className="block text-sm text-white/85 hover:text-white font-medium py-2"
