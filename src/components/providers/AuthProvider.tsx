@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js'
 interface AuthContextType {
   user: User | null
   userRole: string | null
+  isEtudiant: boolean
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
@@ -21,6 +22,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   userRole: null,
+  isEtudiant: false,
   loading: false,
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
@@ -52,6 +54,7 @@ function isSupabaseConfigured(): boolean {
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [isEtudiant, setIsEtudiant] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Ne créer le client Supabase que s'il est configuré
@@ -69,11 +72,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchRole = async (userId: string) => {
       try {
-        const { data } = await supabase.from('users').select('role').eq('id', userId).single()
+        const { data } = await supabase.from('users').select('role, mode_exercice').eq('id', userId).single()
         setUserRole(data?.role ?? null)
+        setIsEtudiant((data as { mode_exercice?: string | null } | null)?.mode_exercice === 'Étudiant')
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
         setUserRole(null)
+        setIsEtudiant(false)
       }
     }
 
@@ -84,7 +89,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) await fetchRole(session.user.id)
-      else setUserRole(null)
+      else { setUserRole(null); setIsEtudiant(false) }
       setLoading(false)
     })
 
@@ -146,34 +151,23 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
-    if (!supabase) { window.location.href = '/'; return }
+    // Nettoyage local immédiat (localStorage) pour les tokens éventuellement mis en cache
     try {
-      // Timeout 2s — signOut peut rester suspendu si le lock navigator est bloqué
-      await Promise.race([
-        supabase.auth.signOut(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
-      ])
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('sb-')) localStorage.removeItem(key)
+      })
     } catch {
-      // Timeout ou lock conflict — nettoyer manuellement le token du localStorage
-      // pour éviter que la session soit restaurée à la prochaine navigation
-      try {
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-            localStorage.removeItem(key)
-          }
-        })
-      } catch {
-        // ignore
-      }
-    } finally {
-      setUser(null)
-      setUserRole(null)
-      window.location.href = '/'
+      // ignore
     }
+    setUser(null)
+    setUserRole(null)
+    setIsEtudiant(false)
+    // Déléguer la déconnexion à la route serveur qui nettoie les cookies SSR
+    window.location.href = '/api/auth/signout'
   }
 
   return (
-    <AuthContext.Provider value={{ user, userRole, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ user, userRole, isEtudiant, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   )

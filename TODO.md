@@ -6,36 +6,52 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### Questionnaires de thèse
-- **Quoi :** créer un module permettant aux utilisateurs de diffuser des questionnaires dans le cadre de thèses médicales
-- **À définir :** formulaire de soumission, validation admin, affichage public, envoi aux médecins inscrits
+### Module Études & Thèses — en cours de développement
+- Statut "Étudiant" dans le profil + colonne `is_etudiant` sur `users`
+- Dépôt de questionnaires de thèse par les étudiants (titre, WYSIWYG, lien, image)
+- Page publique `/mon-compte/questionnaires-these` pour tous les utilisateurs (cartes)
+- Admin `/admin/questionnaires-these` : validation avant publication (Publier / Refuser)
+- Section admin "Études & Thèses" : gestion DMH + questionnaires de thèse
+- **SQL requis :**
+  ```sql
+  CREATE TABLE questionnaires_these (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    titre text NOT NULL,
+    description text,
+    lien text NOT NULL,
+    image_url text,
+    created_by uuid REFERENCES users(id),
+    statut text NOT NULL DEFAULT 'en_attente',
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+  );
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_etudiant boolean DEFAULT false;
+  ```
 
+### Intégration études & thèses dans la navigation
+- Insérer les pages études cliniques et questionnaires de thèse sur la page d'accueil
+- Ajouter dans la navbar (desktop + mobile)
 
+### Emails — études cliniques & questionnaires de thèse
+- Nouveau modèle d'email "Nouveaux questionnaires de thèse disponibles" (envoi aux utilisateurs ayant coché la case dans centre de notifications)
+- Nouveau modèle d'email "Nouvelles études cliniques disponibles" (idem)
+- Envoi automatique tous les 3 mois OU manuellement depuis l'admin
+- Centre de notifications : ajouter les cases "Études cliniques" et "Questionnaires de thèse"
+
+### Email mensuel d'informations
+- Modèle d'email mensuel générable depuis l'admin
+- Contenu dynamique : dernières solutions ajoutées (cartes), nouvelles thèses/études depuis le dernier envoi, nouveautés du site
+- Envoi aux utilisateurs ayant coché la case correspondante dans leurs notifications
+- Historique des anciens emails envoyés consultable dans l'admin
+
+### Admin Emails — sous-pages
+- Le nombre de modèles d'email croissant, créer des sous-pages :
+  - Emails d'infos mensuels
+  - Études cliniques & questionnaires de thèse
+  - Notifications système (vérification email, changement mot de passe, etc.)
 
 ### Page d'accueil — remplacer "Les enjeux de l'e-santé" par les derniers articles blog
-- **Quoi :** supprimer la section vidéos "Les enjeux de l'e-santé" de la page d'accueil et la remplacer par les 3 derniers articles de blog publiés
-- **Où :** identifier le composant homepage concerné + récupérer les 3 derniers articles (`statut = 'publie'`, triés par `date_publication DESC`, limit 3) depuis Supabase
-
-### Études cliniques & Questionnaires de recherche (espace utilisateur)
-- **Quoi :** compléter les sections "Études cliniques avec le Digital Medica Hub" et "Questionnaires de recherche" dans la page Mes notifications — actuellement affichées avec "Plus d'informations prochainement"
-- **À faire :** définir avec le partenaire le contenu exact (formulaire d'inscription, lien externe, flux d'envoi), puis implémenter
-
-### Nettoyage schéma Supabase
-- Supprimer les colonnes inutilisées héritées de la migration Firebase
-- À faire quand le projet est stabilisé
-
-### Module Vidéos — rubriques éditables
-- **Quoi :** remplacer le champ `theme` (texte libre) par une FK vers une table `video_rubriques` (id, nom, ordre). Permettre de regrouper les vidéos par rubrique sur la page publique et dans l'admin
-- **Admin :** CRUD des rubriques dans `/admin/videos` (comme les séparateurs de fonctionnalités), sélection via dropdown dans le formulaire vidéo
-- **SQL :** créer table `video_rubriques`, ajouter colonne `rubrique_id` sur `videos`, migrer les données `theme` existantes
-
-### Module Vidéos — admin enrichi
-- **Quoi :** améliorer la liste admin `/admin/videos`
-- **À faire :** aperçu miniature YouTube dans la liste, classement par glisser-déposer (ordre), toggle on/off publication sans quitter la page (comme `ToggleSolutionActif`)
-
-### Admin utilisateurs — export emails CSV
-- **Quoi :** ajouter un bouton dans la page admin utilisateurs pour exporter la liste des emails renseignés en CSV
-- **Détail :** le bouton doit afficher le nombre d'emails disponibles, et déclencher un téléchargement CSV côté client
+- Supprimer la section vidéos hardcodées, la remplacer par les 3 derniers articles publiés (`statut = 'publie'`, triés par `date_publication DESC`, limit 3)
 
 ### PSC production
 - Migrer ProSanté Connect de l'environnement BAS vers la production ANS
@@ -43,20 +59,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
----
-
 ## Fait récemment
+- Module vidéos : rubriques séparateurs glissables-déposables, drag-and-drop, toggle statut, miniatures YouTube ✅
+- SEO automatique par IA (Claude Haiku) + génération en masse ✅
+- ISR sur pages solutions + correctif generateStaticParams (erreur 500 prod) ✅
+- Admin solutions : recherche textuelle temps réel ✅
+- Admin utilisateurs : export CSV emails, pagination haut+bas, fix scroll horizontal ✅
+- Filtre comparatifs ET au lieu de OU ✅
+- Navbar : fix flash liens Blog/Irritants avant fetch ✅
+- Descriptions solutions : rendu HTML (dangerouslySetInnerHTML) ✅
+- Formulaire contact : labels obligatoire/optionnel ✅
 - Incrustation logo sur images réseaux sociaux ✅
-- Longueur des articles IA (brève/article/dossier) ✅
-- Régénération types Supabase + suppression `createServiceRoleClientUntyped` ✅
 - Blog IA + publication Make.com (LinkedIn ✅, Facebook ✅, Instagram ✅)
-- OG image articles blog pour vignettes Facebook
-- Blocage envoi Instagram sans image de couverture
-- Persistance messages réseaux sociaux dans localStorage
-- Onglets conditionnels pages solutions
-- Bouton "Modifier mon commentaire" dans Mes évaluations
-- Espace éditeur (rôles, mon-compte/mon-espace-editeur, server actions sécurisées)
-- Admin utilisateurs : pagination >1000, badge PSC via RPPS, pseudo/spécialité/RPPS colonnes, saisie directe de page
-- Galerie vidéo (YouTube/Vimeo) dans pages solutions + admin
-- Fix AbortError AuthProvider sur double événement auth
-- Correction callback PSC : nom/prénom non écrasés si PSC renvoie null
+- Espace éditeur (rôles, mon-compte/mon-espace-editeur) ✅
+- Admin utilisateurs : pagination >1000, badge PSC, colonnes RPPS ✅

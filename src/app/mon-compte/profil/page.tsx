@@ -452,6 +452,7 @@ export default function ProfilPage() {
                   </div>
                 </div>
               </div>
+
             </>
           )}
         </div>

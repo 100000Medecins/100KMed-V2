@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useEffect, useState } from 'react'
 
 const baseNavItems = [
   { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
@@ -15,16 +16,26 @@ const baseNavItems = [
 
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { userRole, signOut, loading } = useAuth()
+  const { user, userRole, signOut, loading } = useAuth()
+  const [hasQuestionnaires, setHasQuestionnaires] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    import('@/lib/actions/questionnaires-these').then(({ hasMesQuestionnaires }) => {
+      hasMesQuestionnaires().then(setHasQuestionnaires)
+    })
+  }, [user])
 
   const navItems = [
     ...baseNavItems,
     ...(userRole === 'editeur'
       ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Mon espace éditeur', icon: Building2 }]
       : []),
-    ...(userRole === 'digital_medical_hub'
-      ? [{ href: '/mon-compte/health-data-hub', label: 'Études cliniques', icon: FlaskConical }]
-      : [{ href: '/mon-compte/etudes-cliniques', label: 'Études cliniques', icon: FlaskConical }]),
+    { href: '/mon-compte/etudes-cliniques', label: 'Études cliniques', icon: FlaskConical },
+    { href: '/mon-compte/questionnaires-these', label: 'Questionnaires de thèse', icon: BookOpen },
+    ...(hasQuestionnaires || pathname.startsWith('/mon-compte/mes-questionnaires-these')
+      ? [{ href: '/mon-compte/mes-questionnaires-these', label: 'Mes questionnaires de thèse', icon: GraduationCap }]
+      : []),
   ]
 
   if (loading) {

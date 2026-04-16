@@ -88,7 +88,7 @@ export async function createEtudeClinique(formData: FormData) {
     created_by:  user.id,
   })
 
-  revalidatePath('/mon-compte/health-data-hub')
+  revalidatePath('/mon-compte/etudes-cliniques')
   revalidatePath('/mon-compte/etudes-cliniques')
 }
 
@@ -108,7 +108,7 @@ export async function updateEtudeClinique(id: string, formData: FormData) {
     updated_at:  new Date().toISOString(),
   }).eq('id', id)
 
-  revalidatePath('/mon-compte/health-data-hub')
+  revalidatePath('/mon-compte/etudes-cliniques')
   revalidatePath('/mon-compte/etudes-cliniques')
 }
 
@@ -116,8 +116,57 @@ export async function deleteEtudeClinique(id: string) {
   await assertDmhRole()
   const supabase = createServiceRoleClient()
   await supabase.from('etudes_cliniques').delete().eq('id', id)
-  revalidatePath('/mon-compte/health-data-hub')
   revalidatePath('/mon-compte/etudes-cliniques')
+  revalidatePath('/mon-compte/etudes-cliniques')
+}
+
+// ── Admin (accès superadmin sans garde DMH) ───────────────────────────────────
+
+/**
+ * Toutes les études cliniques — pour la page admin /admin/questionnaires-these.
+ */
+export async function getEtudesCliniquesSuperAdmin(): Promise<EtudeClinique[]> {
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('etudes_cliniques')
+    .select('*')
+    .order('created_at', { ascending: false })
+  return (data ?? []).map(normalise)
+}
+
+/**
+ * Met à jour une étude clinique — admin uniquement.
+ */
+export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): Promise<{ error: string | null }> {
+  const supabase = createServiceRoleClient()
+  const images = JSON.parse((formData.get('images') as string) || '[]')
+  const { error } = await supabase.from('etudes_cliniques').update({
+    titre:       formData.get('titre') as string,
+    description: formData.get('description') as string || null,
+    lien:        formData.get('lien') as string || null,
+    images,
+    date_debut:  (formData.get('date_debut') as string) || null,
+    date_fin:    (formData.get('date_fin') as string) || null,
+    updated_at:  new Date().toISOString(),
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/questionnaires-these')
+  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidatePath('/mon-compte/etudes-cliniques')
+  return { error: null }
+}
+
+/**
+ * Supprime une étude clinique — admin uniquement.
+ */
+export async function deleteEtudeCliniqueAdmin(id: string): Promise<{ error: string | null }> {
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('etudes_cliniques').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/questionnaires-these')
+  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidatePath('/mon-compte/etudes-cliniques')
+  return { error: null }
 }
 
 // ── Notification "En savoir plus" ─────────────────────────────────────────────
@@ -136,16 +185,19 @@ export async function demanderInfoEtude(etudeId: string, etudeTitle: string) {
     .eq('id', user.id)
     .single()
 
-  // Email du compte Digital Medical Hub
-  const { data: dmhUser } = await admin
-    .from('users')
-    .select('contact_email, email')
-    .eq('role', 'digital_medical_hub')
-    .limit(1)
-    .single()
-
-  const dmhEmail = dmhUser?.contact_email || dmhUser?.email
-  if (!dmhEmail) throw new Error('Compte Digital Medical Hub introuvable')
+  // Destinataire : variable d'env prioritaire, sinon premier compte DMH trouvé
+  let dmhEmail: string | undefined = process.env.DMH_CONTACT_EMAIL || undefined
+  if (!dmhEmail) {
+    const { data: dmhUser } = await admin
+      .from('users')
+      .select('contact_email, email')
+      .eq('role', 'digital_medical_hub')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single()
+    dmhEmail = dmhUser?.contact_email || dmhUser?.email || undefined
+  }
+  if (!dmhEmail) throw new Error('Destinataire DMH introuvable')
 
   const { resolveSpecialite } = await import('@/lib/constants/profil')
   const specialite = resolveSpecialite(profil?.specialite ?? null) || 'Non renseignée'
