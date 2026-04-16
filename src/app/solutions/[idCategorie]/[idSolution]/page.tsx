@@ -35,11 +35,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-// Retourne vide : les pages seront générées on-demand via ISR
-export async function generateStaticParams() {
-  return []
-}
-
 export default async function SolutionPage({ params }: PageProps) {
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
   if (!solution) notFound()

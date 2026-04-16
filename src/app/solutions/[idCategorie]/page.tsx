@@ -27,10 +27,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export async function generateStaticParams() {
-  return []
-}
-
 // Catégories sans note 100 000 Médecins → pas d'option de tri par note
 const SLUGS_SANS_NOTES_REDAC = ['intelligence-artificielle-medecine', 'ia-documentaires', 'agenda-medical']
 
