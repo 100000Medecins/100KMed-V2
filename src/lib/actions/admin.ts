@@ -1039,11 +1039,57 @@ function extractVideoFromFormData(formData: FormData): Record<string, any> {
     vignette: (formData.get('vignette') as string) || null,
     description: (formData.get('description') as string) || null,
     theme: (formData.get('theme') as string) || null,
+    rubrique_id: (formData.get('rubrique_id') as string) || null,
     type: (formData.get('type') as string) || null,
     ordre: formData.get('ordre') ? parseInt(formData.get('ordre') as string, 10) : null,
     is_videos_principales: formData.get('is_videos_principales') === 'true',
     statut: (formData.get('statut') as string) || 'publie',
   }
+}
+
+export async function toggleVideoStatut(id: string, statut: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('videos').update({ statut }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+}
+
+export async function reorderVideos(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from('videos').update({ ordre: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+}
+
+export async function createVideoRubrique(nom: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: last } = await (supabase as any).from('video_rubriques').select('ordre').order('ordre', { ascending: false }).limit(1).single()
+  const nextOrdre = ((last?.ordre as number) ?? -1) + 1
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('video_rubriques').insert({ id: randomUUID(), nom, ordre: nextOrdre })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+}
+
+export async function deleteVideoRubrique(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('video_rubriques').delete().eq('id', id)
+  revalidatePath('/admin/videos')
 }
 
 export async function createVideo(formData: FormData) {

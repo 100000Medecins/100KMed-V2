@@ -5,23 +5,27 @@
 
 ---
 
-## [2026-04-16] — SEO automatique, Stories & Tutos, performances
+## [2026-04-16] — SEO automatique, Stories & Tutos, performances, admin vidéos enrichi
 
 ### SEO solutions — génération automatique par IA
 
 - Nouvelle route API `POST /api/admin/generer-seo` : appel Claude Haiku avec le contexte de la solution (nom, catégorie, éditeur, tags principaux, points forts), génère `meta.title` et `meta.description` respectant les mots-clés imposés (avis, comparatif, médecin, lgc/logiciel métier si pertinent)
-- Nouvelle page admin `/admin/seo` : table de toutes les solutions avec statut SEO (vert/orange), génération en masse avec barre de progression, bouton "Arrêter", bouton "Regénérer" et "Modifier" par ligne
+- Nouvelle page admin `/admin/seo` : liste div-based (sans tableau pour éviter le scroll horizontal) de toutes les solutions avec statut SEO (vert/orange), génération en masse avec barre de progression, bouton "Arrêter", bouton "Regénérer" et "Modifier" par ligne
 - Bouton "Générer le SEO" dans `SolutionForm` (édition uniquement) avec compteurs de caractères (60/155)
 - Robustesse : parsing nettoyé des blocs markdown, retry automatique sur 429/5xx, délai de 3s entre les appels en bulk
-- "SEO" ajouté comme sous-item de "Solutions" dans la sidebar admin
 
-### Module Stories & Tutos
+### Module Stories & Tutos — v2 enrichie
 
-- Table `videos` : ajout colonnes `theme` (text) et `statut` (text, default `publie`) via migration SQL
-- CRUD admin complet : liste `/admin/videos`, formulaire création/édition, suppression avec confirmation
-- Page publique `/stories-tutos` avec filtre visuel par thème
-- Section homepage `StoriesSection` remplace `EHealthVideos` (données hardcodées) — lit depuis la DB les vidéos `is_videos_principales = true` et `statut = publie`
-- "Vidéos & Tutos" ajouté dans la sidebar admin
+- **Rubriques vidéos** : nouvelle table `video_rubriques` (id, nom, ordre) + colonne `rubrique_id` sur `videos`
+  - SQL requis : `CREATE TABLE video_rubriques (...); ALTER TABLE videos ADD COLUMN rubrique_id uuid REFERENCES video_rubriques(id);`
+- **Admin vidéos enrichi** (`VideosAdminList.tsx`) :
+  - Drag-and-drop natif HTML5 pour réordonner les vidéos (server action `reorderVideos`)
+  - Toggle on/off statut inline (server action `toggleVideoStatut`)
+  - Miniature YouTube automatique via `img.youtube.com/vi/{id}/mqdefault.jpg`
+  - Gestion des rubriques en bas de page (ajout/suppression)
+  - `VideoForm` : remplacement du champ "thème" libre par un dropdown "Rubrique"
+- **Page publique `/stories-tutos`** : groupage par rubriques avec `<h2>` de section, vidéos sans rubrique en section "Autres vidéos", grille 2/3/4/5 colonnes en aspect ratio 9/16 compact
+- Section homepage `StoriesSection` remplace `EHealthVideos` (données hardcodées) — lit depuis la DB les vidéos `is_videos_principales = true` et `statut = publie`, bouton "Voir toutes les vidéos"
 
 ### Performances — ISR sur les pages solutions
 
@@ -31,7 +35,8 @@
 
 ### Sidebar admin
 
-- Sous-navigation pour "Solutions" : SEO et Questionnaires affichés en retrait avec ligne verticale, visibles uniquement quand on est dans la section Solutions
+- Sous-navigation pour "Solutions" : Éditeurs, Catégories, SEO, Questionnaires en retrait avec ligne verticale bleue, visibles uniquement quand on est dans la section Solutions
+- "Pages statiques" en sous-item de "Page d'accueil"
 
 ---
 

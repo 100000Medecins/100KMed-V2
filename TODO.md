@@ -18,6 +18,15 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Supprimer les colonnes inutilisées héritées de la migration Firebase
 - À faire quand le projet est stabilisé
 
+### Module Vidéos — rubriques éditables
+- **Quoi :** remplacer le champ `theme` (texte libre) par une FK vers une table `video_rubriques` (id, nom, ordre). Permettre de regrouper les vidéos par rubrique sur la page publique et dans l'admin
+- **Admin :** CRUD des rubriques dans `/admin/videos` (comme les séparateurs de fonctionnalités), sélection via dropdown dans le formulaire vidéo
+- **SQL :** créer table `video_rubriques`, ajouter colonne `rubrique_id` sur `videos`, migrer les données `theme` existantes
+
+### Module Vidéos — admin enrichi
+- **Quoi :** améliorer la liste admin `/admin/videos`
+- **À faire :** aperçu miniature YouTube dans la liste, classement par glisser-déposer (ordre), toggle on/off publication sans quitter la page (comme `ToggleSolutionActif`)
+
 ### Admin utilisateurs — export emails CSV
 - **Quoi :** ajouter un bouton dans la page admin utilisateurs pour exporter la liste des emails renseignés en CSV
 - **Détail :** le bouton doit afficher le nombre d'emails disponibles, et déclencher un téléchargement CSV côté client

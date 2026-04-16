@@ -12,22 +12,28 @@ type NavItem = {
 }
 
 const navItems: NavItem[] = [
-  { href: '/admin/index', label: 'Page d\'accueil', icon: Home },
+  {
+    href: '/admin/index',
+    label: 'Page d\'accueil',
+    icon: Home,
+    children: [
+      { href: '/admin/pages', label: 'Pages statiques', icon: FileText },
+    ],
+  },
   {
     href: '/admin/solutions',
     label: 'Solutions',
     icon: Package,
     children: [
+      { href: '/admin/editeurs', label: 'Éditeurs', icon: Building2 },
+      { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
       { href: '/admin/seo', label: 'SEO', icon: Search },
       { href: '/admin/questionnaires', label: 'Questionnaires', icon: ListChecks },
     ],
   },
-  { href: '/admin/editeurs', label: 'Éditeurs', icon: Building2 },
   { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
-  { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
   { href: '/admin/blog', label: 'Blog', icon: Newspaper },
   { href: '/admin/videos', label: 'Vidéos & Tutos', icon: Video },
-  { href: '/admin/pages', label: 'Pages statiques', icon: FileText },
   { href: '/admin/emails', label: 'Emails', icon: Mail },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]

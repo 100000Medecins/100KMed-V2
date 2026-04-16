@@ -71,7 +71,7 @@ export default function StoriesSection({ videos }: { videos: VideoRow[] }) {
             href="/stories-tutos"
             className="inline-flex items-center gap-2 bg-navy text-white font-semibold px-6 py-3 rounded-full hover:bg-navy/90 transition-colors"
           >
-            Voir tous les tutos
+            Voir toutes les vidéos
             <span aria-hidden="true">&rarr;</span>
           </Link>
         </div>

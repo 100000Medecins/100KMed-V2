@@ -1,10 +1,11 @@
 'use client'
 
 import { useTransition } from 'react'
-import type { VideoRow } from '@/lib/db/misc'
+import type { VideoRow, VideoRubrique } from '@/lib/db/misc'
 
 interface VideoFormProps {
   video?: VideoRow | null
+  rubriques?: VideoRubrique[]
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
@@ -19,7 +20,7 @@ function getYouTubeId(url: string): string | null {
   return match ? match[1] : null
 }
 
-export default function VideoForm({ video, action }: VideoFormProps) {
+export default function VideoForm({ video, rubriques = [], action }: VideoFormProps) {
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -67,9 +68,13 @@ export default function VideoForm({ video, action }: VideoFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Thème</label>
-            <input type="text" name="theme" defaultValue={video?.theme ?? ''} className={inputClass}
-              placeholder="ex: Agenda médical, IA..." />
+            <label className={labelClass}>Rubrique</label>
+            <select name="rubrique_id" defaultValue={video?.rubrique_id ?? ''} className={inputClass}>
+              <option value="">— Aucune —</option>
+              {rubriques.map((r) => (
+                <option key={r.id} value={r.id}>{r.nom}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className={labelClass}>Type</label>

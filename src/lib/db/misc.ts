@@ -20,6 +20,12 @@ export async function getAvatars() {
  * Récupère les vidéos, optionnellement filtrées par "principales".
  * Remplace : fetchVideos
  */
+export type VideoRubrique = {
+  id: string
+  nom: string
+  ordre: number
+}
+
 export type VideoRow = {
   id: string
   titre: string | null
@@ -31,6 +37,18 @@ export type VideoRow = {
   statut: string | null
   ordre: number | null
   is_videos_principales: boolean | null
+  rubrique_id: string | null
+  rubrique?: VideoRubrique | null
+}
+
+export async function getVideoRubriques(): Promise<VideoRubrique[]> {
+  const supabase = await createServerClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('video_rubriques')
+    .select('*')
+    .order('ordre', { ascending: true })
+  return data ?? []
 }
 
 export async function getVideos(options?: {
@@ -43,7 +61,7 @@ export async function getVideos(options?: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
     .from('videos')
-    .select('*')
+    .select('*, rubrique:video_rubriques(*)')
     .order('ordre', { ascending: true })
 
   if (options?.isVideosPrincipales !== undefined) {
