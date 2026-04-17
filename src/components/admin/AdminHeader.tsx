@@ -10,9 +10,9 @@ export default function AdminHeader() {
         <Image
           src="/logos/logo-secondaire-couleur.svg"
           alt="100 000 Médecins"
-          width={140}
-          height={33}
-          className="h-8 w-auto"
+          width={220}
+          height={52}
+          className="h-[52px] w-auto"
           priority
           unoptimized
         />
