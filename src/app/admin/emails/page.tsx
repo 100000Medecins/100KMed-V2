@@ -1,6 +1,7 @@
 import { getEmailTemplate } from '@/lib/actions/emailTemplates'
 import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import type { Newsletter } from '@/app/admin/newsletters/page'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,12 +38,14 @@ async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_th
 }
 
 export default async function AdminEmailsPage() {
+  const supabase = createServiceRoleClient()
+
   const [
     templatePsc, template1an, template3mois, templateLancement,
     templateSuppression, templateReset, templateEtude, templateQuestionnaire,
-    templateInfosMensuels,
-    emailsEtudes, emailsQuestionnaires, emailsInfosMensuels,
+    emailsEtudes, emailsQuestionnaires,
     countEtudes, countQuestionnaires,
+    { data: newsletters },
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -52,12 +55,15 @@ export default async function AdminEmailsPage() {
     getEmailTemplate('reinitialisation_mot_de_passe'),
     getEmailTemplate('etude_clinique'),
     getEmailTemplate('questionnaire_recherche'),
-    getEmailTemplate('infos_mensuels'),
     getOptedInEmails('etudes_cliniques'),
     getOptedInEmails('questionnaires_these'),
-    getOptedInEmails('etudes_cliniques'), // infos mensuels = toute la base opt-in (réutilisé)
     getOptedInCount('etudes_cliniques'),
     getOptedInCount('questionnaires_these'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('newsletters')
+      .select('id, mois, sujet, contenu_html, status, created_at, sent_at, recipient_count, notified_at, reminded_at')
+      .order('created_at', { ascending: false }),
   ])
 
   const sections = [
@@ -109,10 +115,25 @@ export default async function AdminEmailsPage() {
       ],
     },
     {
+      key: 'newsletter',
+      label: 'Newsletter mensuelle',
+      description: '',
+      templates: [],
+    },
+    {
       key: 'etudes-theses',
       label: 'Études & Thèses',
       description: `Emails envoyés manuellement aux utilisateurs opt-in. ${countEtudes} inscrits études · ${countQuestionnaires} inscrits questionnaires.`,
       templates: [
+        {
+          id: 'lancement',
+          title: '🚀 Mail de lancement',
+          description: 'Envoyé manuellement à toute la base au moment du lancement du site.',
+          variables: ['{{nom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
+          data: templateLancement,
+          defaultSujet: 'Le nouveau 100 000 Médecins est là — votre avis compte !',
+          masseSendable: true,
+        },
         {
           id: 'etude_clinique',
           title: '🔬 Nouvelle étude clinique',
@@ -143,32 +164,6 @@ export default async function AdminEmailsPage() {
         },
       ],
     },
-    {
-      key: 'infos-mensuels',
-      label: 'Infos mensuels',
-      description: 'Newsletter mensuelle envoyée manuellement à toute la base.',
-      templates: [
-        {
-          id: 'lancement',
-          title: '🚀 Mail de lancement',
-          description: 'Envoyé manuellement à toute la base au moment du lancement du site.',
-          variables: ['{{prenom}}', '{{solution_nom}}', '{{lien_1clic}}', '{{lien_reevaluation}}'],
-          data: templateLancement,
-          defaultSujet: 'Le nouveau 100 000 Médecins est là — votre avis compte !',
-          masseSendable: true,
-        },
-        {
-          id: 'infos_mensuels',
-          title: '📰 Infos mensuels',
-          description: 'Newsletter mensuelle : nouveautés de la plateforme, nouvelles solutions, actualités e-santé.',
-          variables: ['{{prenom}}', '{{lien_desabonnement}}'],
-          data: templateInfosMensuels,
-          defaultSujet: 'Les infos du mois — 100 000 Médecins',
-          masseSendable: true,
-          masseApiRoute: '/api/admin/send-infos-mensuels',
-        },
-      ],
-    },
   ]
 
   return (
@@ -179,7 +174,7 @@ export default async function AdminEmailsPage() {
           Templates et envois manuels.
         </p>
       </div>
-      <AdminEmailsClient sections={sections} />
+      <AdminEmailsClient sections={sections} newsletters={(newsletters as Newsletter[]) ?? []} />
     </div>
   )
 }

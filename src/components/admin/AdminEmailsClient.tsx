@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
+import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
+import type { Newsletter } from '@/app/admin/newsletters/page'
 
 interface TemplateConfig {
   id: string
@@ -11,6 +13,7 @@ interface TemplateConfig {
   data: import('@/lib/actions/emailTemplates').EmailTemplate | null
   defaultSujet: string
   masseSendable?: boolean
+  masseApiRoute?: string
   targetedSend?: {
     apiRoute: string
     optedInEmails: string[]
@@ -26,7 +29,12 @@ interface Section {
   templates: TemplateConfig[]
 }
 
-export default function AdminEmailsClient({ sections }: { sections: Section[] }) {
+interface Props {
+  sections: Section[]
+  newsletters?: Newsletter[]
+}
+
+export default function AdminEmailsClient({ sections, newsletters = [] }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
 
   const activeSection = sections.find((s) => s.key === activeTab)
@@ -50,12 +58,16 @@ export default function AdminEmailsClient({ sections }: { sections: Section[] })
         ))}
       </div>
 
-      {/* Description de la section */}
+      {/* Contenu de la section active */}
       {activeSection && (
-        <>
-          <p className="text-sm text-gray-500 mb-4">{activeSection.description}</p>
-          <AdminEmailsAccordion templates={activeSection.templates} />
-        </>
+        activeSection.key === 'newsletter' ? (
+          <NewslettersClient newsletters={newsletters} />
+        ) : (
+          <>
+            <p className="text-sm text-gray-500 mb-4">{activeSection.description}</p>
+            <AdminEmailsAccordion templates={activeSection.templates} />
+          </>
+        )
       )}
     </div>
   )
