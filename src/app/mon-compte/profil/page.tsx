@@ -527,75 +527,122 @@ export default function ProfilPage() {
               )}
             </div>
             {showPasswordForm && (
-              <form onSubmit={handlePasswordChange} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
-                  <PasswordInput
-                    ref={currentPasswordRef}
-                    autoComplete="current-password"
-                    required
-                    autoFocus
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                    placeholder="••••••••"
-                  />
+              isFromPsc ? (
+                /* Utilisateurs PSC : pas d'ancien mot de passe → envoyer un lien de réinitialisation */
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Vous vous êtes connecté via Pro Santé Connect. Pour définir ou modifier votre mot de passe, nous vous envoyons un lien par email.
+                  </p>
                   {resetSent ? (
-                    <p className="text-xs text-green-600 mt-1.5">
-                      Email de réinitialisation envoyé à <span className="font-medium">{contactEmail || user?.email}</span>.
+                    <p className="text-xs text-green-600">
+                      Email envoyé à <span className="font-medium">{contactEmail || user?.email}</span>. Vérifiez votre boîte mail.
                     </p>
                   ) : (
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const email = contactEmail || user?.email
+                          if (!email) return
+                          await resetPassword(email)
+                          setResetSent(true)
+                          setTimeout(() => setResetSent(false), 10000)
+                        }}
+                        className="text-xs font-semibold text-white bg-accent-blue hover:bg-accent-blue/90 px-4 py-2 rounded-xl transition-colors"
+                      >
+                        Envoyer le lien de réinitialisation
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowPasswordForm(false); setResetSent(false) }}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  )}
+                  {resetSent && (
                     <button
                       type="button"
-                      onClick={async () => {
-                        const email = contactEmail || user?.email
-                        if (!email) return
-                        await resetPassword(email)
-                        setResetSent(true)
-                        setTimeout(() => setResetSent(false), 10000)
-                      }}
-                      className="text-xs text-gray-400 hover:text-accent-blue hover:underline mt-1.5 block"
+                      onClick={() => { setShowPasswordForm(false); setResetSent(false) }}
+                      className="text-xs text-gray-400 hover:text-gray-600"
                     >
-                      Mot de passe oublié ?
+                      Fermer
                     </button>
                   )}
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
-                  <PasswordInput
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                    placeholder="6 caractères minimum"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
-                  <PasswordInput
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                    placeholder="6 caractères minimum"
-                  />
-                </div>
-                {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => { setShowPasswordForm(false); setNewPassword(''); setConfirmPassword(''); setPasswordError(null); setResetSent(false) }}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    Annuler
-                  </button>
-                  <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
-                    {passwordSubmitting ? 'Mise à jour...' : 'Confirmer'}
-                  </Button>
-                </div>
-              </form>
+              ) : (
+                <form onSubmit={handlePasswordChange} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
+                    <input
+                      ref={currentPasswordRef}
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      autoFocus
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      placeholder="••••••••"
+                    />
+                    {resetSent ? (
+                      <p className="text-xs text-green-600 mt-1.5">
+                        Email de réinitialisation envoyé à <span className="font-medium">{contactEmail || user?.email}</span>.
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const email = contactEmail || user?.email
+                          if (!email) return
+                          await resetPassword(email)
+                          setResetSent(true)
+                          setTimeout(() => setResetSent(false), 10000)
+                        }}
+                        className="text-xs text-gray-400 hover:text-accent-blue hover:underline mt-1.5 block"
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Nouveau mot de passe</label>
+                    <PasswordInput
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      placeholder="6 caractères minimum"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
+                    <PasswordInput
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      placeholder="6 caractères minimum"
+                    />
+                  </div>
+                  {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setShowPasswordForm(false); setNewPassword(''); setConfirmPassword(''); setPasswordError(null); setResetSent(false) }}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      Annuler
+                    </button>
+                    <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                      {passwordSubmitting ? 'Mise à jour...' : 'Confirmer'}
+                    </Button>
+                  </div>
+                </form>
+              )
             )}
           </div>
         </div>
