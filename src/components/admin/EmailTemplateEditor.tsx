@@ -3,8 +3,16 @@
 import { useState } from 'react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import { saveEmailTemplate } from '@/lib/actions/emailTemplates'
-import { withEmailLogo } from '@/lib/email/logo'
 import { Eye, Check, AlertCircle, Code } from 'lucide-react'
+
+// Version allégée pour l'aperçu (URL relative, évite d'importer le fichier base64 9KB)
+function withPreviewLogo(html: string): string {
+  const LOGO_ROW = `<tr><td style="padding:0 0 6px;text-align:left;"><a href="/" style="display:block;text-decoration:none;line-height:0;margin-left:-36px;"><img src="/logos/logo-secondaire-nb-500.png" alt="100 000 Médecins" width="425" height="100" style="display:block;height:100px;width:auto;" /></a></td></tr>`
+  const anchor = 'style="max-width:580px;width:100%;">'
+  const idx = html.indexOf(anchor)
+  if (idx !== -1) return html.slice(0, idx + anchor.length) + LOGO_ROW + html.slice(idx + anchor.length)
+  return LOGO_ROW + html
+}
 
 interface Props {
   templateId: string
@@ -48,7 +56,7 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
       lien_questionnaire: '#',
     }
     const rendered = contenuHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sampleValues[key] ?? `{{${key}}}`)
-    setPreviewHtml(withEmailLogo(rendered))
+    setPreviewHtml(withPreviewLogo(rendered))
   }
 
   return (
