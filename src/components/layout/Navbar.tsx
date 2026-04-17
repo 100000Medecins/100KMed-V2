@@ -108,11 +108,11 @@ export default function Navbar() {
         {/* Logo */}
         <a href="/" className="flex items-center shrink-0">
           <Image
-            src="/logos/logo-secondaire-couleur.svg"
+            src="/logos/logo-secondaire-nb.svg"
             alt="100 000 Médecins"
-            width={260}
-            height={61}
-            className="h-[61px] w-auto"
+            width={300}
+            height={71}
+            className="h-[71px] w-auto"
             priority
             unoptimized
           />
