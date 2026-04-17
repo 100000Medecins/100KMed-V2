@@ -134,7 +134,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                   <img
                     src={categorie.image_url}
                     alt={categorie.nom}
-                    className="w-full h-48 lg:h-56 object-contain drop-shadow-2xl"
+                    className="w-full max-h-32 lg:max-h-40 object-contain drop-shadow-2xl"
                   />
                 </div>
               )}

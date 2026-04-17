@@ -75,9 +75,11 @@ export async function POST(req: NextRequest) {
 
       const sujet = (template.sujet as string)
         .replace(/\{\{prenom\}\}/g, nomDisplay)
+        .replace(/\{\{nom\}\}/g, nomDisplay)
 
       const html = (template.contenu_html as string)
         .replace(/\{\{prenom\}\}/g, nomDisplay)
+        .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
 
       await sgMail.send({

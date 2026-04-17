@@ -5,6 +5,33 @@
 
 ---
 
+## [2026-04-17] — Design emails hero gradient généralisé, illustrations catégories, template lancement v16
+
+### Design email — hero gradient généralisé sur tous les emails
+- Tous les templates transactionnels et marketing mis à jour via `scripts/update-email-templates.mjs` (7 templates : relance_1an, relance_3mois, relance_incomplet, relance_psc, infos_mensuels, etude_clinique, questionnaire_recherche)
+- Nouveaux HTMLs fournis pour `reinitialisation_mot_de_passe`, `suppression_compte`, `verification_psc` (à insérer en mode "HTML brut" dans l'admin)
+- Convention : fond `#0f1e38` + radial-gradients, logo dots en header, card blanche avec bande colorée en top-border, footer avec lien désabonnement
+
+### Admin emails — mode "HTML brut" + aperçu iframe
+- `EmailTemplateEditor` : ajout d'un mode textarea "HTML brut" bypassant TipTap (qui strippait les styles inline)
+- Aperçu redessiné : `<iframe srcDoc>` isolé du CSS de l'app, variables `{{nom}}` etc. remplacées par des valeurs fictives pour l'aperçu
+
+### Template lancement — v16 avec illustrations catégories
+- Mail de lancement refondu avec illustrations Supabase Storage pour toutes les catégories (logiciels métier, agenda, IA doc, IA scribe)
+- Layout card principale : texte pleine largeur + ligne boutons+image (illustration en bottom-right, sans réduire la largeur du texte)
+- Cards IA doc & IA scribe : 2 colonnes (texte+bouton 58% / image bottom-right 42%), hauteurs équilibrées
+- `scripts/save-lancement-template.mjs` : sauvegarde le HTML v16 en production dans `email_templates` avec variables `{{nom}}`, `{{solution_nom}}`, `{{lien_1clic}}`, `{{lien_reevaluation}}`, `{{lien_desabonnement}}`
+
+### Illustrations catégories — redimensionnement automatique
+- `scripts/upload-category-image.mjs` : resize → 600px webp 85% via sharp, upload Supabase Storage, affiche l'URL publique
+- `/comparatifs` : contraintes `max-h-[155px] max-w-[40%]` pour uniformiser les tailles quelle que soit la transparence de l'image
+- `/solutions/[idCategorie]` : hero image `max-h-32 lg:max-h-40` pour les nouvelles illustrations
+
+### Emails — Dr. NOM cohérent partout
+- `relance-incomplets` et `account.ts` (suppression_compte) : passage de `{{prenom}}` à `Dr. NOM` via `nomDisplay`
+
+---
+
 ## [2026-04-17] — Système de newsletter mensuelle, refonte emails admin, Dr. NOM
 
 ### Système de newsletter mensuelle automatique

@@ -37,7 +37,6 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
   // 3. Envoyer le mail d'au revoir à l'utilisateur (template depuis la DB)
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   try {
-    const prenom = profile?.prenom || 'Docteur'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: template } = await (supabase as any)
       .from('email_templates')
@@ -46,13 +45,13 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
       .single()
 
     if (template?.contenu_html) {
-      const nom = profile?.nom || ''
+      const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
       const sujet = (template.sujet as string)
-        .replace(/\{\{prenom\}\}/g, prenom)
-        .replace(/\{\{nom\}\}/g, nom)
+        .replace(/\{\{nom\}\}/g, nomDisplay)
+        .replace(/\{\{prenom\}\}/g, nomDisplay)
       const html = (template.contenu_html as string)
-        .replace(/\{\{prenom\}\}/g, prenom)
-        .replace(/\{\{nom\}\}/g, nom)
+        .replace(/\{\{nom\}\}/g, nomDisplay)
+        .replace(/\{\{prenom\}\}/g, nomDisplay)
       const recipientEmail = (profile as { contact_email?: string } | null)?.contact_email || user.email!
       await sgMail.send({
         to: recipientEmail,

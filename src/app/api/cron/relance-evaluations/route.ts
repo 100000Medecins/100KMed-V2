@@ -39,10 +39,12 @@ async function sendRelanceEmail(
   const sujet = (template.sujet as string)
     .replace(/\{\{solution_nom\}\}/g, solutionNom)
     .replace(/\{\{prenom\}\}/g, nomDisplay)
+    .replace(/\{\{nom\}\}/g, nomDisplay)
 
   const html = (template.contenu_html as string)
     .replace(/\{\{solution_nom\}\}/g, solutionNom)
     .replace(/\{\{prenom\}\}/g, nomDisplay)
+    .replace(/\{\{nom\}\}/g, nomDisplay)
     .replace(/\{\{lien_reevaluation\}\}/g, lienReevaluation)
     .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
     .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)

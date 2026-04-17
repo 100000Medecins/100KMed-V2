@@ -94,7 +94,7 @@ export default async function ComparatifsPage() {
                         <img
                           src={cat.image_url}
                           alt=""
-                          className="absolute bottom-0 right-4 h-[220px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                          className="absolute bottom-3 right-6 max-h-[155px] max-w-[40%] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
                         />
                       ) : cat.icon ? (
                         <span className="absolute bottom-4 right-6 text-[120px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">

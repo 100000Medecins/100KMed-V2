@@ -1,8 +1,8 @@
-// Script temporaire — envoie un email de test du mail de lancement v6
-// Usage : node scripts/send-test-email.mjs
+// Sauvegarde le template HTML du mail de lancement (v16) dans Supabase
+// Usage : node scripts/save-lancement-template.mjs
 
-import sgMail from '@sendgrid/mail'
 import { readFileSync } from 'fs'
+import { createClient } from '@supabase/supabase-js'
 
 const raw = readFileSync(new URL('../.env.local', import.meta.url), 'utf-8')
 const env = Object.fromEntries(
@@ -12,17 +12,18 @@ const env = Object.fromEntries(
   })
 )
 
-const SENDGRID_API_KEY = env['SENDGRID_API_KEY']
-const TO = 'david.azerad@100000medecins.org'
-const S = 'https://www.100000medecins.org'
+const supabase = createClient(
+  env['NEXT_PUBLIC_SUPABASE_URL'],
+  env['SUPABASE_SERVICE_ROLE_KEY']
+)
 
-// Images catégories (récupérées depuis Supabase)
+const S = 'https://www.100000medecins.org'
 const IMG_LOGICIELS = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/1776433333609-i5l8n5cx4g.png'
-const IMG_AGENDA = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/1776433342670-hszsc70dau.png'
-const IMG_IA_DOC = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/1776432735712-y47ztc96vs.png'
+const IMG_AGENDA    = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/1776433342670-hszsc70dau.png'
+const IMG_IA_DOC    = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/1776432735712-y47ztc96vs.png'
 const IMG_IA_SCRIBE = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/1776432724363-xu3f6oy10nb.png'
 
-const MAILTO_SUBJECT = encodeURIComponent("Tu connais 100 000 Médecins ?")
+const MAILTO_SUBJECT = encodeURIComponent('Tu connais 100 000 Médecins ?')
 const MAILTO_BODY = encodeURIComponent(
 `Salut,
 
@@ -40,7 +41,7 @@ Jette un œil, ça vaut le coup : ${S}
 const BG_COLOR = '#0f1e38'
 const BG_STYLE = `background-color:${BG_COLOR};background-image:radial-gradient(ellipse 70% 60% at 12% 75%,rgba(74,144,217,0.55) 0%,transparent 100%),radial-gradient(ellipse 55% 55% at 82% 12%,rgba(138,92,246,0.45) 0%,transparent 100%),radial-gradient(ellipse 50% 45% at 58% 92%,rgba(16,185,129,0.30) 0%,transparent 100%)`
 
-const html = `<!DOCTYPE html>
+const contenu_html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -64,7 +65,7 @@ const html = `<!DOCTYPE html>
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F5A623;margin-right:8px;vertical-align:middle;"></span>
             <span style="font-size:15px;font-weight:700;color:#ffffff;vertical-align:middle;letter-spacing:-0.3px;">100000médecins<span style="color:#4A90D9;">.org</span></span>
           </td>
-          <!-- Nav droite — légèrement décalée vers la gauche pour aligner avec le bord du cadre -->
+          <!-- Nav droite -->
           <td align="right" valign="middle" style="padding-right:22px;">
             <a href="${S}/solutions" style="font-size:11px;color:rgba(255,255,255,0.45);text-decoration:none;margin-left:16px;">Logiciels</a>
             <a href="${S}/mon-compte/mes-evaluations" style="font-size:11px;color:rgba(255,255,255,0.45);text-decoration:none;margin-left:16px;">Évaluations</a>
@@ -84,9 +85,9 @@ const html = `<!DOCTYPE html>
           <td style="padding:36px 40px 30px;">
             <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#4A90D9;text-transform:uppercase;letter-spacing:1.2px;">Nouveauté</p>
             <h1 style="margin:0 0 20px;font-size:24px;font-weight:800;color:#0f1e38;line-height:1.2;white-space:nowrap;letter-spacing:-0.5px;">Le nouveau 100&nbsp;000 Médecins est là ✨</h1>
-            <p style="margin:0 0 14px;font-size:15px;font-weight:600;color:#0f1e38;">Bonjour Dr. AZERAD,</p>
+            <p style="margin:0 0 14px;font-size:15px;font-weight:600;color:#0f1e38;">Bonjour {{nom}},</p>
             <p style="margin:0 0 14px;font-size:14px;color:#4A5568;line-height:1.8;">
-              Nous avons entièrement refondu la plateforme — design repensé, nouvelles catégories, partenariats inédits. Et votre avis sur <strong style="color:#0f1e38;">MonLogiciel Pro</strong>, déposé il y a quelques mois, est toujours là. Un clic suffit pour le confirmer ou l'ajuster.
+              Nous avons entièrement refondu la plateforme — design repensé, nouvelles catégories, partenariats inédits. Et votre avis sur <strong style="color:#0f1e38;">{{solution_nom}}</strong>, déposé il y a quelques mois, est toujours là. Un clic suffit pour le confirmer ou l'ajuster.
             </p>
             <p style="margin:0 0 16px;font-size:14px;color:#4A5568;line-height:1.8;">
               Chaque avis compte : c'est grâce à des retours comme le vôtre que vos confrères font de meilleurs choix — et que les éditeurs sont poussés à améliorer leurs produits.
@@ -98,11 +99,11 @@ const html = `<!DOCTYPE html>
                   <table cellpadding="0" cellspacing="0">
                     <tr>
                       <td style="background:#0f1e38;border-radius:12px;">
-                        <a href="${S}/mon-compte/mes-evaluations" style="display:inline-block;padding:14px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;white-space:nowrap;">✓&nbsp; Confirmer mon avis en 1 clic</a>
+                        <a href="{{lien_1clic}}" style="display:inline-block;padding:14px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;white-space:nowrap;">✓&nbsp; Confirmer mon avis en 1 clic</a>
                       </td>
                       <td width="10"></td>
                       <td style="border:2px solid #e2e8f0;border-radius:12px;">
-                        <a href="${S}/mon-compte/mes-evaluations" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:600;color:#0f1e38;text-decoration:none;white-space:nowrap;">Réévaluer</a>
+                        <a href="{{lien_reevaluation}}" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:600;color:#0f1e38;text-decoration:none;white-space:nowrap;">Réévaluer</a>
                       </td>
                     </tr>
                   </table>
@@ -135,7 +136,6 @@ const html = `<!DOCTYPE html>
             <p style="margin:0 0 14px;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.65;">Doctolib, Maiia, Médistory… Quel agenda s'adapte le mieux à votre pratique ? Délais, ergonomie, tarifs — comparez les avis de vos confrères et faites le bon choix.</p>
             <a href="${S}/solutions/agenda-medical" style="display:inline-block;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">Explorer les agendas →</a>
           </td>
-          <!-- Image bottom-right comme sur /comparatifs -->
           <td style="text-align:right;vertical-align:bottom;padding:0 0 10px 0;width:42%;">
             <img src="${IMG_AGENDA}" alt="Agenda médical" width="190" style="display:block;width:190px;height:auto;max-height:150px;object-fit:contain;opacity:0.9;" />
           </td>
@@ -279,7 +279,7 @@ const html = `<!DOCTYPE html>
         <span style="font-size:11px;color:rgba(255,255,255,0.35);vertical-align:middle;">100 000 Médecins · contact@100000medecins.org</span>
       </p>
       <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.25);">
-        <a href="${S}/mon-compte/mes-notifications" style="color:rgba(255,255,255,0.25);text-decoration:underline;">Me désabonner des communications</a>
+        <a href="{{lien_desabonnement}}" style="color:rgba(255,255,255,0.25);text-decoration:underline;">Me désabonner des communications</a>
       </p>
     </td>
   </tr>
@@ -290,11 +290,19 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`
 
-sgMail.setApiKey(SENDGRID_API_KEY)
-await sgMail.send({
-  to: TO,
-  from: 'contact@100000medecins.org',
-  subject: '[TEST v16] Le nouveau 100 000 Médecins est là ✨',
-  html,
-})
-console.log('✅ Email de test v6 envoyé à', TO)
+// eslint-disable-next-line no-unused-vars
+const { error } = await supabase
+  .from('email_templates')
+  .upsert({
+    id: 'lancement',
+    sujet: 'Le nouveau 100 000 Médecins est là ✨',
+    contenu_html,
+  }, { onConflict: 'id' })
+
+if (error) {
+  console.error('❌ Erreur Supabase :', error.message)
+  process.exit(1)
+}
+
+console.log('✅ Template "lancement" sauvegardé dans Supabase avec succès.')
+console.log('   Variables utilisées : {{nom}}, {{solution_nom}}, {{lien_1clic}}, {{lien_reevaluation}}, {{lien_desabonnement}}')

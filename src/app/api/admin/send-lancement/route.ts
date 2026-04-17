@@ -87,10 +87,12 @@ export async function POST(req: NextRequest) {
       const nomDisplay = r.nom ? `Dr. ${r.nom}` : 'Docteur'
       const sujet = (template.sujet as string)
         .replace(/\{\{prenom\}\}/g, nomDisplay)
+        .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{solution_nom\}\}/g, r.solutionNom)
 
       const html = (template.contenu_html as string)
         .replace(/\{\{prenom\}\}/g, nomDisplay)
+        .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{solution_nom\}\}/g, r.solutionNom)
         .replace(/\{\{lien_reevaluation\}\}/g, `${siteUrl}/mon-compte/mes-evaluations`)
         .replace(/\{\{lien_1clic\}\}/g, lien1Clic)

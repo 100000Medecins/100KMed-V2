@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
           slug
         )
       ),
-      user:users ( email, prenom )
+      user:users ( email, nom )
     `)
     .is('relance_incomplet_sent_at', null)
     .not('user_id', 'is', null)
@@ -108,15 +108,17 @@ export async function GET(req: NextRequest) {
     // Construire le lien de reprise direct sur l'évaluation incomplète
     const lienReprise = `${siteUrl}/solution/noter/${categorie.slug}/${solution.slug}`
     const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
-    const prenomDisplay = user.prenom || 'Docteur'
+    const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
 
     const sujet = (template.sujet as string)
       .replace(/\{\{solution_nom\}\}/g, solution.nom)
-      .replace(/\{\{prenom\}\}/g, prenomDisplay)
+      .replace(/\{\{nom\}\}/g, nomDisplay)
+      .replace(/\{\{prenom\}\}/g, nomDisplay)
 
     const html = (template.contenu_html as string)
       .replace(/\{\{solution_nom\}\}/g, solution.nom)
-      .replace(/\{\{prenom\}\}/g, prenomDisplay)
+      .replace(/\{\{nom\}\}/g, nomDisplay)
+      .replace(/\{\{prenom\}\}/g, nomDisplay)
       .replace(/\{\{lien_reprise\}\}/g, lienReprise)
       .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
 
