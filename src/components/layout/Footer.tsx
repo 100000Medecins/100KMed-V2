@@ -1,21 +1,21 @@
+import Image from 'next/image'
+
 export default function Footer() {
   return (
     <footer className="bg-navy-dark text-gray-400">
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex gap-0.5">
-              <span className="w-2 h-2 rounded-full bg-accent-blue" />
-              <span className="w-2 h-2 rounded-full bg-accent-orange" />
-              <span className="w-2 h-2 rounded-full bg-accent-pink" />
-              <span className="w-2 h-2 rounded-full bg-rating-green" />
-              <span className="w-2 h-2 rounded-full bg-accent-yellow" />
-            </div>
-            <span className="text-sm font-bold text-white">
-              100000médecins<span className="text-accent-blue">.org</span>
-            </span>
-          </div>
+          <a href="/" className="shrink-0">
+            <Image
+              src="/logos/logo-principal-couleur.svg"
+              alt="100 000 Médecins"
+              width={120}
+              height={84}
+              className="h-[72px] w-auto"
+              unoptimized
+            />
+          </a>
 
           {/* Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs">

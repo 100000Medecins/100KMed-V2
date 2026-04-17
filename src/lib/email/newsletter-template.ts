@@ -181,12 +181,11 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td valign="middle">
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4A90D9;margin-right:3px;vertical-align:middle;"></span>
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E8734A;margin-right:3px;vertical-align:middle;"></span>
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F5A623;margin-right:8px;vertical-align:middle;"></span>
-            <span style="font-size:15px;font-weight:700;color:#ffffff;vertical-align:middle;letter-spacing:-0.3px;">100000médecins<span style="color:#4A90D9;">.org</span></span>
+            <a href="${S}" style="text-decoration:none;">
+              <img src="${S}/logos/logo-secondaire-couleur-500.png" alt="100 000 Médecins" width="180" height="43" style="display:block;height:43px;width:auto;" />
+            </a>
           </td>
-          <td align="right" valign="middle" style="padding-right:22px;">
+          <td align="right" valign="middle">
             <span style="font-size:11px;color:rgba(255,255,255,0.35);">Infos du mois · ${moisLabel}</span>
           </td>
         </tr>
@@ -270,11 +269,13 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
   <!-- FOOTER -->
   <tr>
     <td style="text-align:center;border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;">
+      <p style="margin:0 0 8px;">
+        <a href="${S}" style="text-decoration:none;">
+          <img src="${S}/logos/logo-secondaire-couleur-500.png" alt="100 000 Médecins" width="120" height="28" style="display:inline-block;opacity:0.55;" />
+        </a>
+      </p>
       <p style="margin:0 0 5px;">
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4A90D9;margin-right:2px;vertical-align:middle;"></span>
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#E8734A;margin-right:2px;vertical-align:middle;"></span>
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#F5A623;margin-right:6px;vertical-align:middle;"></span>
-        <span style="font-size:11px;color:rgba(255,255,255,0.35);vertical-align:middle;">100 000 Médecins · contact@100000medecins.org</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.35);">contact@100000medecins.org</span>
       </p>
       <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.25);">
         <a href="{{lien_desabonnement}}" style="color:rgba(255,255,255,0.25);text-decoration:underline;">Me désabonner</a>

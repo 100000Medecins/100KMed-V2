@@ -18,6 +18,14 @@ export const metadata: Metadata = {
   description:
     "Trouvez les logiciels médicaux les plus adaptés à votre pratique grâce aux avis de vos confrères.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://10000medecins.org"),
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+  },
   openGraph: {
     type: "website",
     locale: "fr_FR",
