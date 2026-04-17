@@ -7,7 +7,7 @@ import { Eye, Check, AlertCircle, Code } from 'lucide-react'
 
 // Version allégée pour l'aperçu (URL relative, évite d'importer le fichier base64 9KB)
 function withPreviewLogo(html: string): string {
-  const LOGO_ROW = `<tr><td style="padding:0 0 6px;text-align:left;"><a href="/" style="display:block;text-decoration:none;line-height:0;margin-left:-36px;"><img src="/logos/logo-secondaire-nb-500.png" alt="100 000 Médecins" width="425" height="100" style="display:block;height:100px;width:auto;" /></a></td></tr>`
+  const LOGO_ROW = `<tr><td style="padding:16px 0 8px;text-align:left;"><a href="/" style="display:block;text-decoration:none;line-height:0;"><img src="/logos/logo-secondaire-couleur-500.png" alt="100 000 Médecins" width="340" height="80" style="display:block;height:80px;width:auto;" /></a></td></tr>`
   const anchor = 'style="max-width:580px;width:100%;">'
   const idx = html.indexOf(anchor)
   if (idx !== -1) return html.slice(0, idx + anchor.length) + LOGO_ROW + html.slice(idx + anchor.length)
