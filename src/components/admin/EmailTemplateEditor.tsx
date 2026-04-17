@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import { saveEmailTemplate } from '@/lib/actions/emailTemplates'
+import { withEmailLogo } from '@/lib/email/logo'
 import { Eye, Check, AlertCircle, Code } from 'lucide-react'
 
 interface Props {
@@ -47,7 +48,7 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
       lien_questionnaire: '#',
     }
     const rendered = contenuHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sampleValues[key] ?? `{{${key}}}`)
-    setPreviewHtml(rendered)
+    setPreviewHtml(withEmailLogo(rendered))
   }
 
   return (
