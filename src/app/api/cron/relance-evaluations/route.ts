@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
 import sgMail from '@sendgrid/mail'
+import { withEmailLogo } from '@/lib/email/logo'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +55,7 @@ async function sendRelanceEmail(
     to: toEmail,
     from: 'contact@100000medecins.org',
     subject: sujet,
-    html,
+    html: withEmailLogo(html),
   })
 }
 

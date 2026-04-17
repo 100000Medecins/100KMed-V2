@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import sgMail from '@sendgrid/mail'
+import { withEmailLogo } from '@/lib/email/logo'
 
 function generateToken(): string {
   return createHmac('sha256', process.env.ADMIN_PASSWORD!).update('admin-session').digest('hex')
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
         .replace(/\{\{texte_promoteur\}\}/g, texte_promoteur)
         .replace(/\{\{lien_desabonnement\}\}/g, `${siteUrl}/mon-compte/mes-notifications`)
 
-      await sgMail.send({ to: user.email, from: 'contact@100000medecins.org', subject: sujet, html })
+      await sgMail.send({ to: user.email, from: 'contact@100000medecins.org', subject: sujet, html: withEmailLogo(html) })
       sent++
     } catch (e) {
       errors.push(`${user.email}: ${e}`)
