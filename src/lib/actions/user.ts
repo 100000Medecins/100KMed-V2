@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
+import { withEmailLogo } from '@/lib/email/logo'
 
 /**
  * Envoie un email de réinitialisation de mot de passe via SendGrid
@@ -44,7 +45,7 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
       to: email,
       from: 'contact@100000medecins.org',
       subject: sujet,
-      html,
+      html: withEmailLogo(html),
     })
   } catch {
     return { error: 'Erreur lors de l\'envoi de l\'email.' }

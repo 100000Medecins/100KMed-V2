@@ -2,6 +2,7 @@
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import sgMail from '@sendgrid/mail'
+import { withEmailLogo } from '@/lib/email/logo'
 
 interface DeleteAccountOptions {
   supprimerAvis: boolean
@@ -57,7 +58,7 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
         to: recipientEmail,
         from: 'contact@100000medecins.org',
         subject: sujet,
-        html,
+        html: withEmailLogo(html),
       })
     }
   } catch {
