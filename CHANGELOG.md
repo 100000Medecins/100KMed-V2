@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-04-18] — Refonte logos plateforme (navbar, footer, admin, emails)
+
+### Nouveaux logos — plateforme
+- Dossier `public/logos/` créé avec 4 variantes : `logo-principal-couleur.svg`, `logo-principal-nb.svg`, `logo-secondaire-couleur.svg`, `logo-secondaire-nb.svg`
+- PNG 500px pour emails : `logo-secondaire-couleur-500.png`, `logo-secondaire-nb-500.png`
+- Favicons multi-tailles : `favicon.png`, `favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png`
+- Composant `src/components/ui/Logo.tsx` créé (variante + couleur + taille configurables)
+
+### Navbar
+- Logo secondaire NB (`logo-secondaire-nb.svg`) inline, 80px de hauteur, légèrement débordant
+
+### Footer
+- Logo principal NB (`logo-principal-nb.svg`), 140px, `brightness-0 invert` pour apparaître blanc sur fond `navy-dark`
+
+### Admin header
+- Logo secondaire couleur (`logo-secondaire-couleur.svg`), 52px + séparateur `|` + label "Admin"
+
+### Emails transactionnels — logo injecté côté serveur
+- `src/lib/email/logo.ts` : `withEmailLogo()` injecte le logo comme premier `<tr>` dans le conteneur `max-width:580px` de chaque email
+- Logo **couleur** (base64 PNG) utilisé pour compatibilité maximale — CSS `filter` non supporté par Outlook/Gmail
+- Tous les points d'envoi SendGrid wrappés : 6 routes API + 2 actions serveur (`user.ts`, `account.ts`)
+- Aperçu admin (`EmailTemplateEditor`) : `withPreviewLogo()` inline avec URL relative `/logos/logo-secondaire-couleur-500.png`
+- Anciens headers HTML (dots + nav) supprimés de tous les templates Supabase via script Node.js
+
+---
+
 ## [2026-04-17] — Design emails hero gradient généralisé, illustrations catégories, template lancement v16
 
 ### Design email — hero gradient généralisé sur tous les emails
