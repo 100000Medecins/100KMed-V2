@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Send, Eye, EyeOff, CheckCircle, Loader2, AlertCircle, Mail, Clock,
-  Sparkles, Pencil, X, Maximize2, ChevronDown, ChevronUp,
+  Sparkles, Pencil, X, Maximize2, ChevronDown, ChevronUp, CalendarClock, XCircle,
 } from 'lucide-react'
 import type { Newsletter } from './page'
 
@@ -58,6 +58,14 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [fullscreenId, setFullscreenId] = useState<string | null>(null)
 
+  // — Programmation —
+  const [schedulingId, setSchedulingId] = useState<string | null>(null)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('07:30')
+  const [savingSchedule, setSavingSchedule] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [scheduledAt, setScheduledAt] = useState<Record<string, string | null>>({})
+
   // — Édition structurée —
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editFields, setEditFields] = useState<{
@@ -71,6 +79,61 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
   function getSendState(id: string): SendState { return sendState[id] ?? 'idle' }
   function setSend(id: string, s: SendState) { setSendState(p => ({ ...p, [id]: s })) }
   function setField(key: keyof typeof editFields) { return (v: string) => setEditFields(p => ({ ...p, [key]: v })) }
+
+  // ── Programmation ─────────────────────────────────────────────────────────
+  function getScheduledAt(nl: Newsletter): string | null {
+    return scheduledAt[nl.id] !== undefined ? scheduledAt[nl.id] : nl.scheduled_at ?? null
+  }
+
+  function startSchedule(nl: Newsletter) {
+    const current = getScheduledAt(nl)
+    if (current) {
+      const d = new Date(current)
+      setScheduleDate(d.toISOString().slice(0, 10))
+      setScheduleTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+    } else {
+      // Prochain mardi à 7h30
+      const next = new Date()
+      next.setDate(next.getDate() + ((2 - next.getDay() + 7) % 7 || 7))
+      setScheduleDate(next.toISOString().slice(0, 10))
+      setScheduleTime('07:30')
+    }
+    setSchedulingId(nl.id)
+    setScheduleError(null)
+  }
+
+  async function handleSaveSchedule(id: string) {
+    if (!scheduleDate) { setScheduleError('Choisissez une date.'); return }
+    setSavingSchedule(true)
+    setScheduleError(null)
+    const scheduled_at = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString()
+    try {
+      const res = await fetch('/api/admin/programmer-newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, scheduled_at }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setScheduleError(json.error ?? 'Erreur'); return }
+      setScheduledAt(p => ({ ...p, [id]: scheduled_at }))
+      setSchedulingId(null)
+    } catch (e) {
+      setScheduleError(String(e))
+    } finally {
+      setSavingSchedule(false)
+    }
+  }
+
+  async function handleCancelSchedule(id: string) {
+    try {
+      await fetch('/api/admin/programmer-newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, scheduled_at: null }),
+      })
+      setScheduledAt(p => ({ ...p, [id]: null }))
+    } catch { /* silencieux */ }
+  }
 
   // ── Génération ────────────────────────────────────────────────────────────
   async function handleGenerate() {
@@ -252,6 +315,8 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
             const result = sendResults[nl.id]
             const j = nl.contenu_json
             const hasArticles = (j?.articles?.length ?? 0) > 0
+            const nlScheduledAt = getScheduledAt(nl)
+            const isScheduling = schedulingId === nl.id
 
             return (
               <div key={nl.id} className="bg-white rounded-card shadow-card overflow-hidden">
@@ -288,7 +353,25 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                         {isPreviewOpen ? 'Fermer' : 'Aperçu'}
                       </button>
                     )}
-                    {!isSent && state === 'idle' && !isEditing && (
+                    {/* Programmation */}
+                    {!isSent && !isEditing && !isScheduling && state === 'idle' && (
+                      nlScheduledAt ? (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+                          {new Date(nlScheduledAt).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} à {new Date(nlScheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          <button onClick={() => startSchedule(nl)} className="ml-1 hover:text-blue-900 underline">Modifier</button>
+                          <button onClick={() => handleCancelSchedule(nl.id)} className="ml-0.5 hover:text-red-600" title="Annuler la programmation">
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => startSchedule(nl)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors">
+                          <CalendarClock className="w-3.5 h-3.5" />
+                          Programmer
+                        </button>
+                      )
+                    )}
+                    {!isSent && state === 'idle' && !isEditing && !nlScheduledAt && (
                       <button onClick={() => setSend(nl.id, 'confirming')} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-navy text-white hover:bg-navy/90 transition-colors">
                         <Send className="w-3.5 h-3.5" />
                         Envoyer
@@ -324,6 +407,49 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                     <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
                       <AlertCircle className="w-4 h-4 shrink-0" />{sendErrors[nl.id]}
                     </div>
+                  </div>
+                )}
+
+                {/* ── Formulaire de programmation ── */}
+                {isScheduling && !isSent && (
+                  <div className="border-t border-gray-100 px-6 py-4 space-y-3 bg-blue-50/40">
+                    <p className="text-xs font-semibold text-blue-800">Programmer l&apos;envoi automatique</p>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                        <input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={e => setScheduleDate(e.target.value)}
+                          min={new Date().toISOString().slice(0, 10)}
+                          className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Heure</label>
+                        <input
+                          type="time"
+                          value={scheduleTime}
+                          onChange={e => setScheduleTime(e.target.value)}
+                          className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                        />
+                      </div>
+                      <div className="self-end flex items-center gap-2 pb-0.5">
+                        <button
+                          onClick={() => handleSaveSchedule(nl.id)}
+                          disabled={savingSchedule}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-accent-blue text-white hover:bg-accent-blue/90 disabled:opacity-50 transition-colors"
+                        >
+                          {savingSchedule ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarClock className="w-3.5 h-3.5" />}
+                          {savingSchedule ? 'Enregistrement…' : 'Confirmer'}
+                        </button>
+                        <button onClick={() => { setSchedulingId(null); setScheduleError(null) }} className="text-xs text-gray-400 hover:text-gray-600">
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                    {scheduleError && <p className="text-xs text-red-600">{scheduleError}</p>}
+                    <p className="text-xs text-blue-600/70">Le cron tourne à 7h30 chaque jour — l&apos;envoi se fera le matin de la date choisie.</p>
                   </div>
                 )}
 

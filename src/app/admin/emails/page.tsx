@@ -62,7 +62,7 @@ export default async function AdminEmailsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('newsletters')
-      .select('id, mois, sujet, contenu_html, status, created_at, sent_at, recipient_count, notified_at, reminded_at')
+      .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, scheduled_at, recipient_count, notified_at, reminded_at')
       .order('created_at', { ascending: false }),
   ])
 

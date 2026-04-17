@@ -25,6 +25,7 @@ export type Newsletter = {
   status: 'draft' | 'sent'
   created_at: string
   sent_at: string | null
+  scheduled_at: string | null
   recipient_count: number | null
   notified_at: string | null
   reminded_at: string | null
@@ -35,7 +36,7 @@ export default async function AdminNewslettersPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newsletters } = await (supabase as any)
     .from('newsletters')
-    .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, recipient_count, notified_at, reminded_at')
+    .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, scheduled_at, recipient_count, notified_at, reminded_at')
     .order('created_at', { ascending: false })
 
   return (
