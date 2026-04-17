@@ -4,21 +4,64 @@
 const S = 'https://www.100000medecins.org'
 const BG_STYLE = `background-color:#0f1e38;background-image:radial-gradient(ellipse 70% 60% at 12% 75%,rgba(74,144,217,0.55) 0%,transparent 100%),radial-gradient(ellipse 55% 55% at 82% 12%,rgba(138,92,246,0.45) 0%,transparent 100%),radial-gradient(ellipse 50% 45% at 58% 92%,rgba(16,185,129,0.30) 0%,transparent 100%)`
 
-type Item = { titre: string; description?: string | null; lien?: string | null; date_fin?: string | null }
+const MAILTO_SUBJECT = encodeURIComponent('Tu connais 100 000 Médecins ?')
+const MAILTO_BODY = encodeURIComponent(
+`Salut,
+
+Je voulais te parler d'une plateforme que j'utilise : 100 000 Médecins.
+
+Le principe : des médecins évaluent leurs logiciels médicaux (LGC, agenda, dictée IA...), et ça permet à tout le monde de comparer sur la base de vrais retours de terrain — pas de pub, pas de marketing.
+
+Plus on est nombreux, plus c'est utile pour tous.
+
+Jette un œil : ${S}
+
+À bientôt,`
+)
+
+export type ArticleItem = {
+  titre: string
+  extrait?: string | null
+  slug: string
+  accroche?: string | null
+}
+
+export type Item = {
+  titre: string
+  description?: string | null
+  lien?: string | null
+  date_fin?: string | null
+}
 
 export interface NewsletterContent {
   sujet: string
   intro: string
   conclusion: string
   nouveautes?: string | null
-  etudes: Item[]
-  questionnaires: Item[]
+  articles: ArticleItem[]
+  etude: Item | null
+  questionnaire: Item | null
   moisLabel: string
 }
 
 function dateFin(date_fin: string | null | undefined): string {
   if (!date_fin) return ''
-  return `<p style="margin:0 0 8px;font-size:11px;color:#6B7280;">📅 Jusqu'au ${new Date(date_fin).toLocaleDateString('fr-FR')}</p>`
+  return `<p style="margin:4px 0 8px;font-size:11px;color:#6B7280;">📅 Jusqu'au ${new Date(date_fin).toLocaleDateString('fr-FR')}</p>`
+}
+
+function articleCard(a: ArticleItem): string {
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;margin-bottom:8px;">
+    <tr><td style="background:linear-gradient(90deg,#4A90D9,#8A5CF6);height:3px;font-size:0;">&nbsp;</td></tr>
+    <tr>
+      <td style="padding:18px 22px;">
+        ${a.accroche ? `<p style="margin:0 0 10px;font-size:12px;font-style:italic;color:#6B7280;line-height:1.6;">${a.accroche}</p>` : ''}
+        <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#0f1e38;line-height:1.4;">${a.titre}</p>
+        ${a.extrait ? `<p style="margin:0 0 12px;font-size:12px;color:#4A5568;line-height:1.65;">${a.extrait.slice(0, 220)}${a.extrait.length > 220 ? '…' : ''}</p>` : ''}
+        <a href="${S}/blog/${a.slug}" style="display:inline-block;background:#0f1e38;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;color:#ffffff;text-decoration:none;">Lire l'article →</a>
+      </td>
+    </tr>
+  </table>`
 }
 
 function etudeCard(e: Item): string {
@@ -34,7 +77,7 @@ function etudeCard(e: Item): string {
             </td>
             <td style="padding-left:12px;" valign="top">
               <p style="margin:0 0 5px;font-size:13px;font-weight:700;color:#0f1e38;">${e.titre}</p>
-              ${e.description ? `<p style="margin:0 0 8px;font-size:12px;color:#4A5568;line-height:1.65;">${e.description}</p>` : ''}
+              ${e.description ? `<p style="margin:0 0 6px;font-size:12px;color:#4A5568;line-height:1.65;">${e.description.slice(0, 200)}${e.description.length > 200 ? '…' : ''}</p>` : ''}
               ${dateFin(e.date_fin)}
               <a href="${e.lien || S + '/mon-compte/etudes-cliniques'}" style="display:inline-block;background:#10B981;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;color:#ffffff;text-decoration:none;">En savoir plus →</a>
             </td>
@@ -58,7 +101,7 @@ function questionnaireCard(q: Item): string {
             </td>
             <td style="padding-left:12px;" valign="top">
               <p style="margin:0 0 5px;font-size:13px;font-weight:700;color:#0f1e38;">${q.titre}</p>
-              ${q.description ? `<p style="margin:0 0 8px;font-size:12px;color:#4A5568;line-height:1.65;">${q.description}</p>` : ''}
+              ${q.description ? `<p style="margin:0 0 6px;font-size:12px;color:#4A5568;line-height:1.65;">${q.description.slice(0, 200)}${q.description.length > 200 ? '…' : ''}</p>` : ''}
               ${dateFin(q.date_fin)}
               <a href="${q.lien || S + '/mon-compte/questionnaires-these'}" style="display:inline-block;background:#8A5CF6;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;color:#ffffff;text-decoration:none;">Participer →</a>
             </td>
@@ -70,21 +113,29 @@ function questionnaireCard(q: Item): string {
 }
 
 export function buildNewsletterHtml(data: NewsletterContent): string {
-  const { intro, conclusion, etudes, questionnaires, nouveautes, moisLabel } = data
+  const { intro, conclusion, etude, questionnaire, nouveautes, moisLabel, articles } = data
 
-  const etudesSection = etudes.length > 0 ? `
+  const articlesSection = articles.length > 0 ? `
   <tr>
     <td style="padding:0 0 4px;">
-      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Études cliniques en cours</p>
-      ${etudes.map(etudeCard).join('')}
+      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Du côté du blog</p>
+      ${articles.map(articleCard).join('')}
     </td>
   </tr>` : ''
 
-  const questionnairesSection = questionnaires.length > 0 ? `
+  const etudeSection = etude ? `
   <tr>
     <td style="padding:0 0 4px;">
-      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Questionnaires de thèse</p>
-      ${questionnaires.map(questionnaireCard).join('')}
+      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Étude clinique en cours</p>
+      ${etudeCard(etude)}
+    </td>
+  </tr>` : ''
+
+  const questionnaireSection = questionnaire ? `
+  <tr>
+    <td style="padding:0 0 4px;">
+      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Questionnaire de thèse</p>
+      ${questionnaireCard(questionnaire)}
     </td>
   </tr>` : ''
 
@@ -94,7 +145,7 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;">
         <tr><td style="background:#4A90D9;height:3px;font-size:0;">&nbsp;</td></tr>
         <tr>
-          <td style="padding:20px 24px;">
+          <td style="padding:18px 22px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td width="36" valign="top">
@@ -160,8 +211,9 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
     </td>
   </tr>
 
-  ${etudesSection}
-  ${questionnairesSection}
+  ${articlesSection}
+  ${etudeSection}
+  ${questionnaireSection}
 
   <!-- CARD ÉVALUATIONS -->
   <tr>
@@ -169,7 +221,7 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;">
         <tr><td style="background:#0f1e38;height:3px;font-size:0;">&nbsp;</td></tr>
         <tr>
-          <td style="padding:20px 24px;">
+          <td style="padding:18px 22px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td width="36" valign="top">
@@ -189,6 +241,31 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
   </tr>
 
   ${nouveautesSection}
+
+  <!-- CARD PARTAGE -->
+  <tr>
+    <td style="padding:0 0 10px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBEB;border-radius:16px;border:1.5px solid #FDE68A;overflow:hidden;">
+        <tr><td style="background:#F5A623;height:3px;font-size:0;">&nbsp;</td></tr>
+        <tr>
+          <td style="padding:18px 22px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="36" valign="top">
+                  <div style="width:34px;height:34px;border-radius:10px;background:#FEF3C7;text-align:center;line-height:34px;font-size:18px;">📢</div>
+                </td>
+                <td style="padding-left:12px;" valign="top">
+                  <p style="margin:0 0 5px;font-size:13px;font-weight:700;color:#0f1e38;">Un confrère devrait connaître la plateforme ?</p>
+                  <p style="margin:0 0 10px;font-size:12px;color:#4A5568;line-height:1.65;">La force de 100&nbsp;000 Médecins, c'est le nombre. Si vous pensez à un collègue qui utilise des logiciels au cabinet — un clic suffit pour lui transmettre ce message.</p>
+                  <a href="mailto:?subject=${MAILTO_SUBJECT}&body=${MAILTO_BODY}" style="display:inline-block;background:#F5A623;border-radius:8px;padding:9px 16px;font-size:11px;font-weight:700;color:#0f1e38;text-decoration:none;white-space:nowrap;">✉️&nbsp; Transférer à un confrère</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
 
   <!-- FOOTER -->
   <tr>

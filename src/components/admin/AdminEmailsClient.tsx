@@ -61,7 +61,15 @@ export default function AdminEmailsClient({ sections, newsletters = [] }: Props)
       {/* Contenu de la section active */}
       {activeSection && (
         activeSection.key === 'newsletter' ? (
-          <NewslettersClient newsletters={newsletters} />
+          <div className="space-y-8">
+            <NewslettersClient newsletters={newsletters} />
+            {activeSection.templates.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Envois ponctuels</p>
+                <AdminEmailsAccordion templates={activeSection.templates} />
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">{activeSection.description}</p>

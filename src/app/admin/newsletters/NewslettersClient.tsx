@@ -22,6 +22,24 @@ function renderPreview(html: string): string {
   return html.replace(/\{\{(\w+)\}\}/g, (_, key) => SAMPLE_VALUES[key] ?? `{{${key}}}`)
 }
 
+// Champ textarea réutilisable
+function Field({ label, value, onChange, rows = 3, hint }: {
+  label: string; value: string; onChange: (v: string) => void; rows?: number; hint?: string
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      {hint && <p className="text-xs text-gray-400 mb-1.5">{hint}</p>}
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        rows={rows}
+        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y text-gray-700"
+      />
+    </div>
+  )
+}
+
 export default function NewslettersClient({ newsletters: initialNewsletters }: Props) {
   const [newsletters, setNewsletters] = useState<Newsletter[]>(initialNewsletters)
 
@@ -40,15 +58,19 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [fullscreenId, setFullscreenId] = useState<string | null>(null)
 
-  // — Édition HTML —
+  // — Édition structurée —
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editContent, setEditContent] = useState('')
-  const [editSubject, setEditSubject] = useState('')
+  const [editFields, setEditFields] = useState<{
+    sujet: string; intro: string
+    accroche_article_1: string; accroche_article_2: string
+    conclusion: string; nouveautes: string
+  }>({ sujet: '', intro: '', accroche_article_1: '', accroche_article_2: '', conclusion: '', nouveautes: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
   function getSendState(id: string): SendState { return sendState[id] ?? 'idle' }
   function setSend(id: string, s: SendState) { setSendState(p => ({ ...p, [id]: s })) }
+  function setField(key: keyof typeof editFields) { return (v: string) => setEditFields(p => ({ ...p, [key]: v })) }
 
   // ── Génération ────────────────────────────────────────────────────────────
   async function handleGenerate() {
@@ -61,11 +83,7 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
         body: JSON.stringify({ promptUtilisateur }),
       })
       const json = await res.json()
-      if (!res.ok) {
-        setGenerateError(json.error ?? 'Erreur inconnue')
-        return
-      }
-      // Upsert local : remplace si même mois, sinon ajoute en tête
+      if (!res.ok) { setGenerateError(json.error ?? 'Erreur inconnue'); return }
       const generated: Newsletter = json.newsletter
       setNewsletters(prev => {
         const without = prev.filter(n => n.mois !== generated.mois)
@@ -92,11 +110,7 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
         body: JSON.stringify({ id }),
       })
       const json = await res.json()
-      if (!res.ok) {
-        setSendErrors(p => ({ ...p, [id]: json.error ?? 'Erreur inconnue' }))
-        setSend(id, 'error')
-        return
-      }
+      if (!res.ok) { setSendErrors(p => ({ ...p, [id]: json.error ?? 'Erreur' })); setSend(id, 'error'); return }
       setSendResults(p => ({ ...p, [id]: { sent: json.sent, total: json.total } }))
       setSend(id, 'done')
       setNewsletters(prev => prev.map(n => n.id === id ? { ...n, status: 'sent' } : n))
@@ -108,10 +122,18 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
 
   // ── Édition ───────────────────────────────────────────────────────────────
   function startEdit(nl: Newsletter) {
+    const j = nl.contenu_json ?? {}
     setEditingId(nl.id)
-    setEditContent(nl.contenu_html ?? '')
-    setEditSubject(nl.sujet ?? '')
+    setEditFields({
+      sujet: nl.sujet ?? '',
+      intro: j.intro ?? '',
+      accroche_article_1: j.accroche_article_1 ?? j.articles?.[0]?.accroche ?? '',
+      accroche_article_2: j.accroche_article_2 ?? j.articles?.[1]?.accroche ?? '',
+      conclusion: j.conclusion ?? '',
+      nouveautes: j.nouveautes ?? '',
+    })
     setEditError(null)
+    setPreviewId(null)
   }
 
   async function handleSaveEdit(id: string) {
@@ -121,14 +143,30 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
       const res = await fetch('/api/admin/update-newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, sujet: editSubject, contenu_html: editContent }),
+        body: JSON.stringify({ id, ...editFields }),
       })
       const json = await res.json()
       if (!res.ok) { setEditError(json.error ?? 'Erreur'); return }
       setNewsletters(prev => prev.map(n =>
-        n.id === id ? { ...n, sujet: editSubject, contenu_html: editContent } : n
+        n.id === id
+          ? {
+              ...n,
+              sujet: editFields.sujet,
+              contenu_html: json.contenu_html,
+              contenu_json: {
+                ...n.contenu_json,
+                sujet: editFields.sujet,
+                intro: editFields.intro,
+                accroche_article_1: editFields.accroche_article_1,
+                accroche_article_2: editFields.accroche_article_2,
+                conclusion: editFields.conclusion,
+                nouveautes: editFields.nouveautes,
+              },
+            }
+          : n
       ))
       setEditingId(null)
+      setPreviewId(id) // ouvrir l'aperçu après sauvegarde
     } catch (e) {
       setEditError(String(e))
     } finally {
@@ -151,7 +189,7 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
           </div>
           <div className="flex-1 text-left">
             <p className="text-sm font-semibold text-navy">Générer la newsletter du mois</p>
-            <p className="text-xs text-gray-400">Claude génère le brouillon à partir des études, questionnaires et nouveautés du mois.</p>
+            <p className="text-xs text-gray-400">Claude génère le brouillon à partir des articles du blog, des études et questionnaires du mois.</p>
           </div>
           {showGenForm ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
         </button>
@@ -166,11 +204,11 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                 value={promptUtilisateur}
                 onChange={e => setPromptUtilisateur(e.target.value)}
                 rows={4}
-                placeholder="Ex : Mets en avant l'étude sur l'IA documentaire en premier. Ton enthousiaste car c'est notre première newsletter. Mentionne aussi que les nouvelles catégories Agenda et IA scribe viennent d'arriver."
+                placeholder="Ex : Mets en avant l'article sur l'IA en premier. Ton particulièrement enthousiaste ce mois-ci car c'est notre premier anniversaire sur la plateforme."
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-none text-gray-700 placeholder:text-gray-300"
               />
               <p className="text-xs text-gray-400 mt-1.5">
-                Sans instruction, Claude se base uniquement sur les données du mois (études, questionnaires, changelog).
+                Sans instruction, Claude se base sur les 2 derniers articles de blog, la dernière étude et le dernier questionnaire ouverts.
               </p>
             </div>
             {generateError && (
@@ -188,10 +226,7 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                 {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {generating ? 'Génération en cours…' : 'Générer'}
               </button>
-              <button
-                onClick={() => { setShowGenForm(false); setGenerateError(null) }}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={() => { setShowGenForm(false); setGenerateError(null) }} className="text-xs text-gray-400 hover:text-gray-600">
                 Annuler
               </button>
             </div>
@@ -204,9 +239,7 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
         <div className="bg-white rounded-card shadow-card p-10 text-center">
           <Mail className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-gray-500">Aucune newsletter générée pour l&apos;instant.</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Utilisez le formulaire ci-dessus ou attendez la génération automatique le 22 du mois à 9h.
-          </p>
+          <p className="text-xs text-gray-400 mt-1">Utilisez le formulaire ci-dessus ou attendez la génération automatique le 22 du mois à 9h.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -217,6 +250,8 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
             const moisLabel = new Date(nl.mois + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
             const isSent = nl.status === 'sent' || state === 'done'
             const result = sendResults[nl.id]
+            const j = nl.contenu_json
+            const hasArticles = (j?.articles?.length ?? 0) > 0
 
             return (
               <div key={nl.id} className="bg-white rounded-card shadow-card overflow-hidden">
@@ -225,7 +260,6 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                   <div className={`p-2 rounded-xl shrink-0 ${isSent ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-500'}`}>
                     {isSent ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                   </div>
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-navy capitalize">{moisLabel}</span>
@@ -235,7 +269,6 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{nl.sujet ?? '(sans objet)'}</p>
                   </div>
-
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                     {isSent && (nl.recipient_count ?? result?.sent) != null && (
                       <span className="text-xs text-gray-400 hidden sm:block">
@@ -243,62 +276,41 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                         {nl.sent_at && ` · ${new Date(nl.sent_at).toLocaleDateString('fr-FR')}`}
                       </span>
                     )}
-
-                    {/* Modifier (brouillon uniquement) */}
                     {!isSent && !isEditing && (
-                      <button
-                        onClick={() => startEdit(nl)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors"
-                      >
+                      <button onClick={() => startEdit(nl)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors">
                         <Pencil className="w-3.5 h-3.5" />
                         Modifier
                       </button>
                     )}
-
-                    {/* Aperçu */}
                     {nl.contenu_html && !isEditing && (
-                      <button
-                        onClick={() => setPreviewId(isPreviewOpen ? null : nl.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors"
-                      >
+                      <button onClick={() => setPreviewId(isPreviewOpen ? null : nl.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors">
                         {isPreviewOpen ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         {isPreviewOpen ? 'Fermer' : 'Aperçu'}
                       </button>
                     )}
-
-                    {/* Envoi */}
                     {!isSent && state === 'idle' && !isEditing && (
-                      <button
-                        onClick={() => setSend(nl.id, 'confirming')}
-                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-navy text-white hover:bg-navy/90 transition-colors"
-                      >
+                      <button onClick={() => setSend(nl.id, 'confirming')} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-navy text-white hover:bg-navy/90 transition-colors">
                         <Send className="w-3.5 h-3.5" />
                         Envoyer
                       </button>
                     )}
                     {!isSent && state === 'confirming' && (
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleSend(nl.id)}
-                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
-                        >
+                        <button onClick={() => handleSend(nl.id)} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors">
                           Confirmer l&apos;envoi
                         </button>
-                        <button onClick={() => setSend(nl.id, 'idle')} className="text-xs text-gray-500 hover:text-gray-700 px-2">
-                          Annuler
-                        </button>
+                        <button onClick={() => setSend(nl.id, 'idle')} className="text-xs text-gray-500 hover:text-gray-700 px-2">Annuler</button>
                       </div>
                     )}
                     {!isSent && state === 'sending' && (
                       <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Envoi…
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />Envoi…
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Résultat envoi */}
+                {/* Résultats */}
                 {state === 'done' && result && (
                   <div className="px-6 pb-4">
                     <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
@@ -310,33 +322,44 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                 {state === 'error' && sendErrors[nl.id] && (
                   <div className="px-6 pb-4">
                     <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      {sendErrors[nl.id]}
+                      <AlertCircle className="w-4 h-4 shrink-0" />{sendErrors[nl.id]}
                     </div>
                   </div>
                 )}
 
-                {/* ── Mode édition ── */}
+                {/* ── Mode édition structurée ── */}
                 {isEditing && (
-                  <div className="border-t border-gray-100 px-6 py-5 space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Objet de l&apos;email</label>
-                      <input
-                        type="text"
-                        value={editSubject}
-                        onChange={e => setEditSubject(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">HTML brut</label>
-                      <textarea
-                        value={editContent}
-                        onChange={e => setEditContent(e.target.value)}
-                        rows={20}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y"
-                      />
-                    </div>
+                  <div className="border-t border-gray-100 px-6 py-5 space-y-5">
+                    <Field label="Objet de l'email" value={editFields.sujet} onChange={setField('sujet')} rows={1} />
+                    <Field label="Introduction (après « Bonjour Dr. NOM, »)" value={editFields.intro} onChange={setField('intro')} rows={3} />
+
+                    {hasArticles && (
+                      <div className="space-y-4 p-4 bg-surface-light rounded-xl">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Articles de blog</p>
+                        {j?.articles?.map((a, i) => (
+                          <div key={a.slug} className="space-y-1">
+                            <p className="text-xs font-medium text-gray-700">{i + 1}. {a.titre}</p>
+                            <textarea
+                              value={i === 0 ? editFields.accroche_article_1 : editFields.accroche_article_2}
+                              onChange={e => setField(i === 0 ? 'accroche_article_1' : 'accroche_article_2')(e.target.value)}
+                              rows={2}
+                              placeholder="Phrase d'accroche courte et percutante…"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-none text-gray-700 placeholder:text-gray-300"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <Field label="Conclusion (section « Votre avis compte »)" value={editFields.conclusion} onChange={setField('conclusion')} rows={2} />
+                    <Field
+                      label="Nouveautés techniques"
+                      value={editFields.nouveautes}
+                      onChange={setField('nouveautes')}
+                      rows={2}
+                      hint="Laisser vide si aucune nouveauté à mentionner."
+                    />
+
                     {editError && <p className="text-xs text-red-600">{editError}</p>}
                     <div className="flex items-center gap-3">
                       <button
@@ -345,12 +368,9 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 transition-colors"
                       >
                         {savingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                        {savingEdit ? 'Enregistrement…' : 'Enregistrer'}
+                        {savingEdit ? 'Enregistrement…' : 'Enregistrer et prévisualiser'}
                       </button>
-                      <button
-                        onClick={() => { setEditingId(null); setEditError(null) }}
-                        className="text-xs text-gray-400 hover:text-gray-600"
-                      >
+                      <button onClick={() => { setEditingId(null); setEditError(null) }} className="text-xs text-gray-400 hover:text-gray-600">
                         Annuler
                       </button>
                     </div>
@@ -362,14 +382,10 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                   <div className="border-t border-gray-100">
                     <div className="px-4 py-2 bg-gray-50 flex items-center justify-between">
                       <span className="text-xs text-gray-500 font-medium">
-                        Aperçu — les variables {'{{nom}}'} et {'{{lien_desabonnement}}'} sont remplacées par des valeurs fictives
+                        Aperçu — variables remplacées par des valeurs fictives
                       </span>
-                      <button
-                        onClick={() => setFullscreenId(nl.id)}
-                        className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
-                      >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                        Plein écran
+                      <button onClick={() => setFullscreenId(nl.id)} className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
+                        <Maximize2 className="w-3.5 h-3.5" />Plein écran
                       </button>
                     </div>
                     <iframe

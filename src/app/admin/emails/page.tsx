@@ -118,12 +118,6 @@ export default async function AdminEmailsPage() {
       key: 'newsletter',
       label: 'Newsletter mensuelle',
       description: '',
-      templates: [],
-    },
-    {
-      key: 'etudes-theses',
-      label: 'Études & Thèses',
-      description: `Emails envoyés manuellement aux utilisateurs opt-in. ${countEtudes} inscrits études · ${countQuestionnaires} inscrits questionnaires.`,
       templates: [
         {
           id: 'lancement',
@@ -134,6 +128,13 @@ export default async function AdminEmailsPage() {
           defaultSujet: 'Le nouveau 100 000 Médecins est là — votre avis compte !',
           masseSendable: true,
         },
+      ],
+    },
+    {
+      key: 'etudes-theses',
+      label: 'Études & Thèses',
+      description: `Emails envoyés manuellement aux utilisateurs opt-in. ${countEtudes} inscrits études · ${countQuestionnaires} inscrits questionnaires.`,
+      templates: [
         {
           id: 'etude_clinique',
           title: '🔬 Nouvelle étude clinique',
