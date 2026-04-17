@@ -106,13 +106,13 @@ export default function Navbar() {
     >
       <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
         {/* Logo */}
-        <a href="/" className="flex items-center shrink-0 overflow-visible">
+        <a href="/" className="flex items-center shrink-0">
           <Image
-            src="/logos/logo-principal-nb.svg"
+            src="/logos/logo-secondaire-couleur.svg"
             alt="100 000 Médecins"
-            width={100}
-            height={70}
-            className="h-[80px] w-auto object-contain translate-y-1"
+            width={200}
+            height={47}
+            className="h-[47px] w-auto"
             priority
             unoptimized
           />
