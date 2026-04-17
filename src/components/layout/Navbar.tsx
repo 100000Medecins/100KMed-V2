@@ -110,9 +110,9 @@ export default function Navbar() {
           <Image
             src="/logos/logo-secondaire-couleur.svg"
             alt="100 000 Médecins"
-            width={200}
-            height={47}
-            className="h-[47px] w-auto"
+            width={260}
+            height={61}
+            className="h-[61px] w-auto"
             priority
             unoptimized
           />
