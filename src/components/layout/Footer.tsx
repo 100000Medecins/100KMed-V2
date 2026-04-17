@@ -10,9 +10,9 @@ export default function Footer() {
             <Image
               src="/logos/logo-principal-nb.svg"
               alt="100 000 Médecins"
-              width={172}
-              height={120}
-              className="h-[120px] w-auto"
+              width={200}
+              height={140}
+              className="h-[140px] w-auto brightness-0 invert"
               unoptimized
             />
           </a>
