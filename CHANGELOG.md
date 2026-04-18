@@ -5,6 +5,29 @@
 
 ---
 
+## [2026-04-18] — Refonte logos emails alignement + site navbar/footer + PSC logo officiel
+
+### Emails transactionnels — refonte design logos (11 templates)
+- **Fix alignement logo** : remplacement de `<td align="center">` par `<table align="center">` sur le wrapper 580px — évite la cascade `text-align:center` de Gmail sur tous les descendants
+- **Logos PNG rognés** (`trim-all-logos.mjs`) : tous les SVG convertis en PNG 500px via `sharp.trim({ threshold:10 })` pour supprimer le blanc transparent équilibré qui centraient visuellement les logos malgré les styles d'alignement
+  * `logo-principal-nb-trimmed.png`, `logo-principal-couleur-trimmed.png`
+  * `logo-secondaire-nb-trimmed.png`, `logo-secondaire-couleur-trimmed.png`
+- **Logo header** : `logo-secondaire-couleur-trimmed.png` à 325px, anchor `display:block`, td `padding:10px 0 16px`
+- **Logo footer** : `logo-principal-couleur-trimmed.png` à 120px, centré, lien désabonnement en `rgba(255,255,255,0.7)`
+- **Fond gradient** : bleu clair positionné à `52% 6%` (bord droit du logo header) pour faire ressortir le logo
+- **Illustration logiciels** (relance_1an, relance_3mois) : 120px en haut à droite de la carte via layout 2 colonnes
+- **Logo PSC officiel** dans templates `verification_psc` et `relance_psc` : `ProSanteConnect_sidentifier_COULEURS.png` (260px) en remplacement du bouton texte
+- **Salutation** : "Bonjour Dr {{nom}}," restaurée sur tous les templates avec salutation
+- `scripts/save-relance1an.mjs` : template canonique de référence pour relance_1an
+- `scripts/bake-logo-in-templates.mjs` : refonte complète appliquant le design sur les 11 templates Supabase
+
+### Site web — logos navbar et footer
+- **Navbar** : logo `logo-secondaire-couleur-trimmed.png` (PNG rogné, 38px de hauteur) — visuellement équivalent à l'ancienne version SVG 80px avec transparence
+- **Footer** : `logo-principal-couleur.svg` sans filtre CSS — l'ancien `logo-principal-nb.svg + brightness-0 invert` affichait des blocs blancs opaques sur fond sombre
+- **Page connexion** : bouton PSC remplacé par logo officiel `ProSanteConnect_sidentifier_COULEURS.svg` (h-14)
+
+---
+
 ## [2026-04-18] — Fix logos emails : URL absolue, restauration 11 templates
 
 ### Emails — logo via URL absolue (fix critique)

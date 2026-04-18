@@ -8,11 +8,11 @@ export default function Footer() {
           {/* Logo */}
           <a href="/" className="shrink-0">
             <Image
-              src="/logos/logo-principal-nb.svg"
+              src="/logos/logo-principal-couleur.svg"
               alt="100 000 Médecins"
               width={200}
               height={140}
-              className="h-[140px] w-auto brightness-0 invert"
+              className="h-[140px] w-auto"
               unoptimized
             />
           </a>

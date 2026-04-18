@@ -96,13 +96,16 @@ function ConnexionContent() {
 
         {mode === 'choice' && (
           <div className="space-y-3">
-            <Button
-              variant="primary"
-              className="w-full justify-center"
+            <button
               onClick={signInWithPSC}
+              className="w-full flex justify-center"
             >
-              Se connecter avec Pro Santé Connect
-            </Button>
+              <img
+                src="/logos/ProSanteConnect_sidentifier_COULEURS.svg"
+                alt="S'identifier avec Pro Santé Connect"
+                className="h-14 w-auto"
+              />
+            </button>
 
             <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-gray-200" />

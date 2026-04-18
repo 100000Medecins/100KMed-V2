@@ -26,7 +26,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 // Valeurs fictives pour remplacer les variables
 const sampleValues = {
-  nom: 'AZERAD',
+  nom: 'Azerad',
   prenom: 'David',
   solution_nom: 'MonLogiciel Pro',
   lien_1clic: 'https://www.100000medecins.org',
