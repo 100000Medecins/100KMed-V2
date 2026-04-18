@@ -55,11 +55,19 @@ function articleCard(a: ArticleItem): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;margin-bottom:8px;">
     <tr><td style="background:linear-gradient(90deg,#4A90D9,#8A5CF6);height:3px;font-size:0;">&nbsp;</td></tr>
     <tr>
-      <td style="padding:18px 22px;">
-        ${a.accroche ? `<p style="margin:0 0 10px;font-size:12px;font-style:italic;color:#6B7280;line-height:1.6;">${a.accroche}</p>` : ''}
-        <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#0f1e38;line-height:1.4;">${a.titre}</p>
-        ${a.extrait ? `<p style="margin:0 0 12px;font-size:12px;color:#4A5568;line-height:1.65;">${a.extrait.slice(0, 220)}${a.extrait.length > 220 ? '…' : ''}</p>` : ''}
-        <a href="${S}/blog/${a.slug}" style="display:inline-block;background:#0f1e38;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;color:#ffffff;text-decoration:none;">Lire l'article →</a>
+      <td style="padding:20px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="38" valign="top">
+              <div style="width:36px;height:36px;border-radius:10px;background:#EFF6FF;text-align:center;line-height:36px;font-size:20px;">📖</div>
+            </td>
+            <td style="padding-left:14px;" valign="top">
+              <p style="margin:0 0 7px;font-size:15px;font-weight:700;color:#0f1e38;line-height:1.4;">${a.titre}</p>
+              ${a.extrait ? `<p style="margin:0 0 14px;font-size:13px;color:#4A5568;line-height:1.7;">${a.extrait.slice(0, 220)}${a.extrait.length > 220 ? '…' : ''}</p>` : ''}
+              <a href="${S}/blog/${a.slug}" style="display:inline-block;background:#4A90D9;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">Lire l'article →</a>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>`
@@ -70,17 +78,17 @@ function etudeCard(e: Item): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;margin-bottom:8px;">
     <tr><td style="background:#10B981;height:3px;font-size:0;">&nbsp;</td></tr>
     <tr>
-      <td style="padding:18px 22px;">
+      <td style="padding:20px 24px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <td width="36" valign="top">
-              <div style="width:34px;height:34px;border-radius:10px;background:#ECFDF5;text-align:center;line-height:34px;font-size:18px;">🔬</div>
+            <td width="38" valign="top">
+              <div style="width:36px;height:36px;border-radius:10px;background:#ECFDF5;text-align:center;line-height:36px;font-size:20px;">🔬</div>
             </td>
-            <td style="padding-left:12px;" valign="top">
-              <p style="margin:0 0 5px;font-size:13px;font-weight:700;color:#0f1e38;">${e.titre}</p>
-              ${e.description ? `<p style="margin:0 0 6px;font-size:12px;color:#4A5568;line-height:1.65;">${e.description.slice(0, 200)}${e.description.length > 200 ? '…' : ''}</p>` : ''}
+            <td style="padding-left:14px;" valign="top">
+              <p style="margin:0 0 7px;font-size:15px;font-weight:700;color:#0f1e38;">${e.titre}</p>
+              ${e.description ? `<p style="margin:0 0 8px;font-size:13px;color:#4A5568;line-height:1.7;">${e.description.slice(0, 200)}${e.description.length > 200 ? '…' : ''}</p>` : ''}
               ${dateFin(e.date_fin)}
-              <a href="${e.lien || S + '/mon-compte/etudes-cliniques'}" style="display:inline-block;background:#10B981;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;color:#ffffff;text-decoration:none;">En savoir plus →</a>
+              <a href="${e.lien || S + '/mon-compte/etudes-cliniques'}" style="display:inline-block;background:#10B981;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">En savoir plus →</a>
             </td>
           </tr>
         </table>
@@ -94,17 +102,17 @@ function questionnaireCard(q: Item): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;margin-bottom:8px;">
     <tr><td style="background:#8A5CF6;height:3px;font-size:0;">&nbsp;</td></tr>
     <tr>
-      <td style="padding:18px 22px;">
+      <td style="padding:20px 24px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <td width="36" valign="top">
-              <div style="width:34px;height:34px;border-radius:10px;background:#F5F3FF;text-align:center;line-height:34px;font-size:18px;">📋</div>
+            <td width="38" valign="top">
+              <div style="width:36px;height:36px;border-radius:10px;background:#F5F3FF;text-align:center;line-height:36px;font-size:20px;">📋</div>
             </td>
-            <td style="padding-left:12px;" valign="top">
-              <p style="margin:0 0 5px;font-size:13px;font-weight:700;color:#0f1e38;">${q.titre}</p>
-              ${q.description ? `<p style="margin:0 0 6px;font-size:12px;color:#4A5568;line-height:1.65;">${q.description.slice(0, 200)}${q.description.length > 200 ? '…' : ''}</p>` : ''}
+            <td style="padding-left:14px;" valign="top">
+              <p style="margin:0 0 7px;font-size:15px;font-weight:700;color:#0f1e38;">${q.titre}</p>
+              ${q.description ? `<p style="margin:0 0 8px;font-size:13px;color:#4A5568;line-height:1.7;">${q.description.slice(0, 200)}${q.description.length > 200 ? '…' : ''}</p>` : ''}
               ${dateFin(q.date_fin)}
-              <a href="${q.lien || S + '/mon-compte/questionnaires-these'}" style="display:inline-block;background:#8A5CF6;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;color:#ffffff;text-decoration:none;">Participer →</a>
+              <a href="${q.lien || S + '/mon-compte/questionnaires-these'}" style="display:inline-block;background:#8A5CF6;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">Participer →</a>
             </td>
           </tr>
         </table>
@@ -118,43 +126,44 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
 
   const articlesSection = articles.length > 0 ? `
   <tr>
-    <td style="padding:0 0 4px;">
-      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Du côté du blog</p>
+    <td style="padding:20px 0 6px;">
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);text-transform:uppercase;letter-spacing:1.5px;">Du côté du blog</p>
       ${articles.map(articleCard).join('')}
     </td>
   </tr>` : ''
 
   const etudeSection = etude ? `
   <tr>
-    <td style="padding:0 0 4px;">
-      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Étude clinique en cours</p>
+    <td style="padding:20px 0 6px;">
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);text-transform:uppercase;letter-spacing:1.5px;">Étude clinique en cours</p>
       ${etudeCard(etude)}
     </td>
   </tr>` : ''
 
   const questionnaireSection = questionnaire ? `
   <tr>
-    <td style="padding:0 0 4px;">
-      <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Questionnaire de thèse</p>
+    <td style="padding:20px 0 6px;">
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);text-transform:uppercase;letter-spacing:1.5px;">Questionnaire de thèse</p>
       ${questionnaireCard(questionnaire)}
     </td>
   </tr>` : ''
 
   const nouveautesSection = nouveautes?.trim() ? `
   <tr>
-    <td style="padding:0 0 10px;">
+    <td style="padding:20px 0 6px;">
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);text-transform:uppercase;letter-spacing:1.5px;">Nouveautés de la plateforme</p>
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;">
         <tr><td style="background:#4A90D9;height:3px;font-size:0;">&nbsp;</td></tr>
         <tr>
-          <td style="padding:18px 22px;">
+          <td style="padding:20px 24px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td width="36" valign="top">
-                  <div style="width:34px;height:34px;border-radius:10px;background:#EFF6FF;text-align:center;line-height:34px;font-size:18px;">🛠</div>
+                <td width="38" valign="top">
+                  <div style="width:36px;height:36px;border-radius:10px;background:#EFF6FF;text-align:center;line-height:36px;font-size:20px;">🛠</div>
                 </td>
-                <td style="padding-left:12px;" valign="top">
-                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0f1e38;">Ce qui a changé ce mois-ci</p>
-                  <p style="margin:0;font-size:12px;color:#4A5568;line-height:1.7;">${nouveautes}</p>
+                <td style="padding-left:14px;" valign="top">
+                  <p style="margin:0 0 7px;font-size:15px;font-weight:700;color:#0f1e38;">Ce qui a changé ce mois-ci</p>
+                  <p style="margin:0;font-size:13px;color:#4A5568;line-height:1.7;">${nouveautes}</p>
                 </td>
               </tr>
             </table>
@@ -181,9 +190,9 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
 
   <!-- HEADER -->
   <tr>
-    <td style="padding:0 0 26px;">
+    <td style="padding:10px 0 16px;">
       <a href="${S}" style="text-decoration:none;">
-        <img src="${SUPABASE_STORAGE}/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="180" height="43" style="display:block;height:43px;width:auto;" />
+        <img src="${SUPABASE_STORAGE}/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="325" style="display:block;width:325px;height:auto;border:0;" />
       </a>
     </td>
   </tr>
