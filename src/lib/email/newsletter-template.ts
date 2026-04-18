@@ -173,26 +173,17 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
 <body style="margin:0;padding:0;${BG_STYLE};">
 <table width="100%" cellpadding="0" cellspacing="0" style="${BG_STYLE};">
 <tr><td align="center" style="padding:24px 16px 48px;">
-  <p style="margin:0 0 14px;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;">
-    <a href="{{lien_navigateur}}" style="color:rgba(255,255,255,0.3);text-decoration:underline;">Voir dans le navigateur</a>
+  <p style="margin:0 0 14px;font-size:11px;color:rgba(255,255,255,0.45);text-align:center;">
+    <a href="{{lien_navigateur}}" style="color:rgba(255,255,255,0.45);text-decoration:underline;">Voir dans le navigateur</a>
   </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
 
   <!-- HEADER -->
   <tr>
     <td style="padding:0 0 26px;">
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td valign="middle">
-            <a href="${S}" style="text-decoration:none;">
-              <img src="${S}/logos/logo-secondaire-couleur-500.png" alt="100 000 Médecins" width="180" height="43" style="display:block;height:43px;width:auto;" />
-            </a>
-          </td>
-          <td align="right" valign="middle">
-            <span style="font-size:11px;color:rgba(255,255,255,0.35);">Infos du mois · ${moisLabel}</span>
-          </td>
-        </tr>
-      </table>
+      <a href="${S}" style="text-decoration:none;">
+        <img src="${S}/logos/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="180" height="43" style="display:block;height:43px;width:auto;" />
+      </a>
     </td>
   </tr>
 
@@ -272,16 +263,13 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
   <!-- FOOTER -->
   <tr>
     <td style="text-align:center;border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;">
-      <p style="margin:0 0 8px;">
+      <p style="margin:0 0 10px;">
         <a href="${S}" style="text-decoration:none;">
-          <img src="${S}/logos/logo-secondaire-couleur-500.png" alt="100 000 Médecins" width="120" height="28" style="display:inline-block;opacity:0.55;" />
+          <img src="${S}/logos/logo-principal-couleur-trimmed.png" alt="100 000 Médecins" width="120" style="display:block;margin:0 auto;width:120px;height:auto;" />
         </a>
       </p>
-      <p style="margin:0 0 5px;">
-        <span style="font-size:11px;color:rgba(255,255,255,0.35);">contact@100000medecins.org</span>
-      </p>
-      <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.25);">
-        <a href="{{lien_desabonnement}}" style="color:rgba(255,255,255,0.25);text-decoration:underline;">Me désabonner</a>
+      <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);">
+        <a href="{{lien_desabonnement}}" style="color:rgba(255,255,255,0.45);text-decoration:underline;">Me désabonner</a>
       </p>
     </td>
   </tr>
