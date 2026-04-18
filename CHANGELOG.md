@@ -5,6 +5,20 @@
 
 ---
 
+## [2026-04-18] — Fix logos emails : URL absolue, restauration 11 templates
+
+### Emails — logo via URL absolue (fix critique)
+- Réécriture complète de `scripts/bake-logo-in-templates.mjs` :
+  * Logo header via URL absolue `https://www.100000medecins.org/logos/logo-secondaire-couleur-500.png`
+  * Suppression du base64 — bloqué par Gmail, Outlook, Apple Mail (données URI interdites)
+  * Footer avec les dots originaux restaurés (plus de logo image en footer)
+  * Wrapper `max-width:580px` correct sur tous les templates
+  * Les 3 templates manquants recréés : `verification_psc`, `suppression_compte`, `reinitialisation_mot_de_passe`
+- `scripts/send-test-logo.mjs` nettoyé : plus d'injection base64 (logo baked dans le template)
+- Aperçu admin : le logo s'affiche via l'URL absolue dans l'iframe `srcDoc`
+
+---
+
 ## [2026-04-18] — Refonte logos plateforme (navbar, footer, admin, emails)
 
 ### Nouveaux logos — plateforme
