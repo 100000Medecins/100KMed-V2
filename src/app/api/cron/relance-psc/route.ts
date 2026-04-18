@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import sgMail from '@sendgrid/mail'
-import { withEmailLogo } from '@/lib/email/logo'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,7 +95,7 @@ export async function GET(req: NextRequest) {
         to: ev.email_temp,
         from: 'contact@100000medecins.org',
         subject: sujet,
-        html: withEmailLogo(html),
+        html: html,
       })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

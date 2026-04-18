@@ -4,7 +4,6 @@ import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
 import sgMail from '@sendgrid/mail'
-import { withEmailLogo } from '@/lib/email/logo'
 
 function generateToken(): string {
   return createHmac('sha256', process.env.ADMIN_PASSWORD!)
@@ -103,7 +102,7 @@ export async function POST(req: NextRequest) {
         to: r.email,
         from: 'contact@100000medecins.org',
         subject: sujet,
-        html: withEmailLogo(html),
+        html: html,
       })
       sent++
     } catch (e) {
