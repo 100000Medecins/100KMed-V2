@@ -112,7 +112,7 @@ export default function Navbar() {
             alt="100 000 Médecins"
             width={400}
             height={100}
-            className="h-[38px] w-auto"
+            className="h-[32px] w-auto"
             priority
             unoptimized
           />
