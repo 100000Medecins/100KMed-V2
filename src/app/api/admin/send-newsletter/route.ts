@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
       const html = (newsletter.contenu_html as string)
         .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
+        .replace(/\{\{lien_navigateur\}\}/g, `${siteUrl}/nl/${id}`)
 
       const sujet = (newsletter.sujet as string)
         .replace(/\{\{nom\}\}/g, nomDisplay)

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Send, Eye, EyeOff, CheckCircle, Loader2, AlertCircle, Mail, Clock,
-  Sparkles, Pencil, X, Maximize2, ChevronDown, ChevronUp, CalendarClock, XCircle,
+  Sparkles, Pencil, X, Maximize2, ChevronDown, ChevronUp, CalendarClock, XCircle, ExternalLink,
 } from 'lucide-react'
 import type { Newsletter } from './page'
 
@@ -16,6 +16,7 @@ type SendState = 'idle' | 'confirming' | 'sending' | 'done' | 'error'
 const SAMPLE_VALUES: Record<string, string> = {
   nom: 'Dr. DUPONT',
   lien_desabonnement: '#',
+  lien_navigateur: '#',
 }
 
 function renderPreview(html: string): string {
@@ -340,6 +341,17 @@ export default function NewslettersClient({ newsletters: initialNewsletters }: P
                         {result?.sent ?? nl.recipient_count} envoyé{(result?.sent ?? nl.recipient_count ?? 0) > 1 ? 's' : ''}
                         {nl.sent_at && ` · ${new Date(nl.sent_at).toLocaleDateString('fr-FR')}`}
                       </span>
+                    )}
+                    {isSent && (
+                      <a
+                        href={`/nl/${nl.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Voir en ligne
+                      </a>
                     )}
                     {!isSent && !isEditing && (
                       <button onClick={() => startEdit(nl)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-surface-light transition-colors">

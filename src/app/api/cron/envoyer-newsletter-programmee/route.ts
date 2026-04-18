@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
         const html = (newsletter.contenu_html as string)
           .replace(/\{\{nom\}\}/g, nomDisplay)
           .replace(/\{\{lien_desabonnement\}\}/g, `${siteUrl}/mon-compte/mes-notifications`)
+          .replace(/\{\{lien_navigateur\}\}/g, `${siteUrl}/nl/${newsletter.id}`)
         const sujet = (newsletter.sujet as string).replace(/\{\{nom\}\}/g, nomDisplay)
         await sgMail.send({
           to: user.email,
