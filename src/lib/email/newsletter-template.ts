@@ -2,6 +2,7 @@
 // Claude génère uniquement le contenu (JSON) — ce fichier gère le design.
 
 const S = 'https://www.100000medecins.org'
+const SUPABASE_STORAGE = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/logos'
 const BG_STYLE = `background-color:#0f1e38;background-image:radial-gradient(ellipse 70% 60% at 12% 75%,rgba(74,144,217,0.55) 0%,transparent 100%),radial-gradient(ellipse 55% 55% at 82% 12%,rgba(138,92,246,0.45) 0%,transparent 100%),radial-gradient(ellipse 50% 45% at 58% 92%,rgba(16,185,129,0.30) 0%,transparent 100%)`
 
 const MAILTO_SUBJECT = encodeURIComponent('Tu connais 100 000 Médecins ?')
@@ -182,7 +183,7 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
   <tr>
     <td style="padding:0 0 26px;">
       <a href="${S}" style="text-decoration:none;">
-        <img src="${S}/logos/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="180" height="43" style="display:block;height:43px;width:auto;" />
+        <img src="${SUPABASE_STORAGE}/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="180" height="43" style="display:block;height:43px;width:auto;" />
       </a>
     </td>
   </tr>
@@ -265,7 +266,7 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
     <td style="text-align:center;border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;">
       <p style="margin:0 0 10px;">
         <a href="${S}" style="text-decoration:none;">
-          <img src="${S}/logos/logo-principal-couleur-trimmed.png" alt="100 000 Médecins" width="120" style="display:block;margin:0 auto;width:120px;height:auto;" />
+          <img src="${SUPABASE_STORAGE}/logo-principal-couleur-trimmed.png" alt="100 000 Médecins" width="120" style="display:block;margin:0 auto;width:120px;height:auto;" />
         </a>
       </p>
       <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);">
