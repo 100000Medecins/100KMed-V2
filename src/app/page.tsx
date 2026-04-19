@@ -5,6 +5,8 @@ import RecommendedSoftware from "@/components/sections/RecommendedSoftware";
 import AboutMission from "@/components/sections/AboutMission";
 import StoriesSection from "@/components/sections/StoriesSection";
 import EditorCTA from "@/components/sections/EditorCTA";
+import BlogPreview from "@/components/sections/BlogPreview";
+import CommunautePreview from "@/components/sections/CommunautePreview";
 import { getCategories } from "@/lib/db/categories";
 import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getSiteStats } from "@/lib/db/solutions";
 import { getVideos } from "@/lib/db/misc";
@@ -60,6 +62,8 @@ export default async function Home() {
         <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} nbInscrits={siteStats.nbInscrits} />
         <RecommendedSoftware categories={categoriesData} />
         <AboutMission />
+        <BlogPreview />
+        <CommunautePreview />
         <StoriesSection videos={videos} />
         <EditorCTA />
       </main>

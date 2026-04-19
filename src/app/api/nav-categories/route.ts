@@ -11,7 +11,13 @@ export type NavCategorie = {
 
 export type NavResponse = {
   categories: NavCategorie[]
-  navConfig: { irritants_visible: boolean; blog_visible: boolean }
+  navConfig: {
+    irritants_visible: boolean
+    blog_visible: boolean
+    etudes_visible: boolean
+    questionnaires_visible: boolean
+    section_communaute_visible: boolean
+  }
 }
 
 export async function GET() {
@@ -29,7 +35,7 @@ export async function GET() {
       (supabase as any)
         .from('site_config')
         .select('cle, valeur')
-        .in('cle', ['nav_irritants_visible', 'nav_blog_visible']),
+        .in('cle', ['nav_irritants_visible', 'nav_blog_visible', 'nav_etudes_visible', 'nav_questionnaires_visible', 'section_communaute_visible']),
     ])
 
     const categories: NavCategorie[] = (categoriesData ?? []).map((c: Record<string, unknown>) => {
@@ -49,10 +55,13 @@ export async function GET() {
     const navConfig = {
       irritants_visible: configMap['nav_irritants_visible'] !== 'false',
       blog_visible: configMap['nav_blog_visible'] !== 'false',
+      etudes_visible: configMap['nav_etudes_visible'] !== 'false',
+      questionnaires_visible: configMap['nav_questionnaires_visible'] !== 'false',
+      section_communaute_visible: configMap['section_communaute_visible'] !== 'false',
     }
 
     return NextResponse.json({ categories, navConfig } satisfies NavResponse)
   } catch {
-    return NextResponse.json({ categories: [], navConfig: { irritants_visible: true, blog_visible: true } })
+    return NextResponse.json({ categories: [], navConfig: { irritants_visible: true, blog_visible: true, etudes_visible: true, questionnaires_visible: true, section_communaute_visible: true } })
   }
 }

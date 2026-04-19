@@ -5,6 +5,62 @@
 
 ---
 
+## [2026-04-19] — Navigation Communauté + sections page d'accueil + corrections
+
+### Navbar — menu Communauté
+- Nouveau dropdown "Communauté" regroupant : Blog, Vidéos & tutoriels (`/stories-tutos`), Irritants de l'e-santé (toggle), Études cliniques (toggle), Questionnaires de thèse (toggle)
+- Les anciens liens top-level Blog et Irritants sont supprimés du header
+- Ordre : Comparatifs → Communauté → Qui sommes-nous ?
+- Menu mobile : section "Communauté" avec les mêmes liens et toggles
+
+### Page d'accueil — nouvelles sections
+- **BlogPreview** : 3 derniers articles publiés en grille 3 colonnes, titre "Ce qu'on décrypte pour vous", lien "Voir tous les articles →", photo sans texte incrusté, extrait dans la zone blanche
+- **CommunautePreview** : 2 études cliniques + 2 questionnaires de thèse en grille 4 colonnes, compacte, cachée si aucun contenu ou toggle off — descriptions HTML strippées
+- Espacement des sections réduit (py-20/28 → py-12/16) sur AboutMission, BlogPreview, StoriesSection, CommunautePreview
+
+### Admin — toggles navigation & accueil
+- Accordéon "Navigation & sections" : 3 nouveaux toggles (`nav_etudes_visible`, `nav_questionnaires_visible`, `section_communaute_visible`)
+- API `/api/nav-categories` mise à jour avec les 3 nouvelles clés `site_config`
+
+### Corrections
+- `ScrollRestoration` : désactive la restauration de scroll du navigateur au refresh (évitait le saut visible vers le milieu de la page)
+- Supabase Auth Rate Limits ajustés dans le dashboard : emails 30→100/h, sign-ups 30→60/h
+
+---
+
+## [2026-04-18] — Newsletter mensuelle : lien navigateur + page web + corrections template
+
+### Newsletter — lien "Voir dans le navigateur"
+- **Template** (`newsletter-template.ts`) : ajout du placeholder `{{lien_navigateur}}` en haut de chaque email
+- **Routes d'envoi** (`send-newsletter`, `envoyer-newsletter-programmee`) : substitution `{{lien_navigateur}}` → `/nl/{id}`
+- **Page publique** `/nl/[id]` (route handler) : affiche le HTML brut de la newsletter avec variables génériques — accessible dès la création du brouillon, conservée indéfiniment
+- **Admin** (`NewslettersClient`) : bouton "Voir en ligne" sur chaque newsletter envoyée + icône `ExternalLink`
+
+### Newsletter — corrections template
+- **Logos** : migration vers Supabase Storage (`images/logos/`) — URL stables en local, preview et prod (le domaine principal n'est pas encore relié aux DNS Vercel)
+  * Header : `logo-secondaire-couleur-trimmed.png` (153×37px)
+  * Footer : `logo-principal-couleur-trimmed.png` (120px centré)
+- Suppression "Infos du mois · moisLabel" dans le header (redondant avec la carte)
+- Suppression `contact@100000medecins.org` dans le footer
+- Lien "Voir dans le navigateur" et désabonnement : `rgba(255,255,255,0.45)` pour meilleure lisibilité
+
+### Migration base de données
+- **`004_newsletters_etudiant_questionnaires.sql`** : migration idempotente — tables `newsletters`, `questionnaires_these`, `etudes_cliniques`, colonne `is_etudiant` sur `users`, colonnes `etudes_cliniques` + `questionnaires_these` sur `users_notification_preferences`
+- **`scripts/run-migration-004.mjs`** : tente `supabase db push`, sinon affiche le SQL à coller dans le dashboard
+- **`scripts/send-test-newsletter.mjs`** : envoie la newsletter du mois à l'adresse de test avec variables substituées
+
+### Newsletter — mise en forme finale des cartes
+- Toutes les cartes (blog, études, questionnaires, nouveautés) normalisées : titre 15px gras, description 13px, padding 20×24px, icône 36px
+- Intertitres de section : 13px, `rgba(255,255,255,0.85)`, `padding-top:20px` pour aérer entre sections
+- Logo header : `padding:10px 0 16px` (cohérent avec les autres templates)
+- Suppression accroche italique sur les cartes articles (redondant avec le titre)
+- Bouton "Lire l'article" en bleu `#4A90D9` (cohérent avec la barre de couleur de la carte)
+
+### Navbar
+- Logo réduit de 38px → 32px (×0.85)
+
+---
+
 ## [2026-04-18] — Refonte logos emails alignement + site navbar/footer + PSC logo officiel
 
 ### Emails transactionnels — refonte design logos (11 templates)

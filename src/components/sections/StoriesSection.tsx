@@ -10,7 +10,7 @@ export default function StoriesSection({ videos }: { videos: VideoRow[] }) {
   if (videos.length === 0) return null
 
   return (
-    <section className="py-20 md:py-28 bg-white">
+    <section className="py-12 md:py-16 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-14">
           <h2 className="text-2xl md:text-3xl font-extrabold text-navy mb-2">

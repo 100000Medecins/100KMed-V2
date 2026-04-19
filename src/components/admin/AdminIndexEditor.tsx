@@ -362,16 +362,28 @@ export default function AdminIndexEditor({ config, pages, partenaires }: Props) 
       </Accordeon>
 
       {/* Accordéon 4 : Navigation */}
-      <Accordeon title="Navigation (header)">
+      <Accordeon title="Navigation & sections (header + accueil)">
+        <p className="text-xs text-gray-400 mb-4">Menu "Communauté" — liens toujours visibles : Blog, Vidéos & tutoriels</p>
         <NavToggleField
           cle="nav_irritants_visible"
           initialValue={config['nav_irritants_visible'] !== 'false'}
-          label={`Afficher "Les irritants de l'e-santé" dans le header`}
+          label={`Afficher "Irritants de l'e-santé" dans le menu Communauté`}
         />
         <NavToggleField
-          cle="nav_blog_visible"
-          initialValue={config['nav_blog_visible'] !== 'false'}
-          label={`Afficher "Blog" dans le header`}
+          cle="nav_etudes_visible"
+          initialValue={config['nav_etudes_visible'] !== 'false'}
+          label={`Afficher "Études cliniques" dans le menu Communauté`}
+        />
+        <NavToggleField
+          cle="nav_questionnaires_visible"
+          initialValue={config['nav_questionnaires_visible'] !== 'false'}
+          label={`Afficher "Questionnaires de thèse" dans le menu Communauté`}
+        />
+        <div className="border-t border-gray-100 my-4" />
+        <NavToggleField
+          cle="section_communaute_visible"
+          initialValue={config['section_communaute_visible'] !== 'false'}
+          label={`Afficher la section "Communauté" sur la page d'accueil`}
         />
       </Accordeon>
     </div>

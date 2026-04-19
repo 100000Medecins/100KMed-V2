@@ -40,12 +40,15 @@ export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(true);
   const [categories, setCategories] = useState<NavCategorie[]>([]);
-  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: false, blog_visible: false });
+  const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: false, blog_visible: false, etudes_visible: false, questionnaires_visible: false, section_communaute_visible: false });
   const [navLoaded, setNavLoaded] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isCommunauteMenuOpen, setIsCommunauteMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
+  const communauteMenuRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const communauteCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -70,6 +73,9 @@ export default function Navbar() {
     function handleClickOutside(e: MouseEvent) {
       if (megaMenuRef.current && !megaMenuRef.current.contains(e.target as Node)) {
         setIsMegaMenuOpen(false)
+      }
+      if (communauteMenuRef.current && !communauteMenuRef.current.contains(e.target as Node)) {
+        setIsCommunauteMenuOpen(false)
       }
       if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
         setIsAccountMenuOpen(false)
@@ -176,30 +182,63 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Dropdown Communauté */}
+          <div
+            ref={communauteMenuRef}
+            className="relative"
+            onMouseEnter={() => { if (communauteCloseTimer.current) clearTimeout(communauteCloseTimer.current); setIsCommunauteMenuOpen(true) }}
+            onMouseLeave={() => { communauteCloseTimer.current = setTimeout(() => setIsCommunauteMenuOpen(false), 150) }}
+          >
+            <button
+              type="button"
+              className={`flex items-center gap-1 text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
+              onClick={() => setIsCommunauteMenuOpen(v => !v)}
+            >
+              Communauté
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCommunauteMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isCommunauteMenuOpen && (
+              <div
+                className="absolute left-1/2 -translate-x-1/2 top-full mt-3 rounded-2xl py-2 min-w-[220px]"
+                style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.97) 0%, rgba(80,30,130,0.95) 55%, rgba(20,50,110,0.97) 100%)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.35)' }}
+                onMouseEnter={() => { if (communauteCloseTimer.current) clearTimeout(communauteCloseTimer.current) }}
+                onMouseLeave={() => { communauteCloseTimer.current = setTimeout(() => setIsCommunauteMenuOpen(false), 150) }}
+              >
+                <a href="/blog" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                  📝 Blog
+                </a>
+                <a href="/stories-tutos" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                  🎬 Vidéos & tutoriels
+                </a>
+                {navLoaded && navConfig.irritants_visible && (
+                  <a href="/irritants-esante" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                    ⚡ Irritants de l'e-santé
+                  </a>
+                )}
+                {navLoaded && navConfig.etudes_visible && (
+                  <>
+                    <div className="mx-4 my-1 border-t border-white/10" />
+                    <a href="/mon-compte/etudes-cliniques" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                      🔬 Études cliniques
+                    </a>
+                  </>
+                )}
+                {navLoaded && navConfig.questionnaires_visible && (
+                  <a href="/mon-compte/questionnaires-these" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                    📋 Questionnaires de thèse
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+
           <a
             href="/qui-sommes-nous"
             className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
           >
             Qui sommes-nous ?
           </a>
-
-          {navLoaded && navConfig.irritants_visible && (
-            <a
-              href="/irritants-esante"
-              className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
-            >
-              Les irritants de l'e-santé
-            </a>
-          )}
-
-          {navLoaded && navConfig.blog_visible && (
-            <a
-              href="/blog"
-              className={`text-sm font-medium transition-colors duration-500 ${darkNav ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-navy'}`}
-            >
-              Blog
-            </a>
-          )}
         </div>
 
         {/* CTA desktop */}
@@ -326,25 +365,21 @@ export default function Navbar() {
               Qui sommes-nous ?
             </a>
 
-            {navLoaded && navConfig.irritants_visible && (
-              <a
-                href="/irritants-esante"
-                className="block text-sm text-white/85 hover:text-white font-medium py-2"
-                onClick={() => setIsMobileOpen(false)}
-              >
-                Les irritants de l'e-santé
-              </a>
-            )}
-
-            {navLoaded && navConfig.blog_visible && (
-              <a
-                href="/blog"
-                className="block text-sm text-white/85 hover:text-white font-medium py-2"
-                onClick={() => setIsMobileOpen(false)}
-              >
-                Blog
-              </a>
-            )}
+            {/* Communauté mobile */}
+            <div className="border-t border-white/10 pt-2 mt-1">
+              <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1 px-0">Communauté</p>
+              <a href="/blog" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📝 Blog</a>
+              <a href="/stories-tutos" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>🎬 Vidéos & tutoriels</a>
+              {navLoaded && navConfig.irritants_visible && (
+                <a href="/irritants-esante" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>⚡ Irritants de l'e-santé</a>
+              )}
+              {navLoaded && navConfig.etudes_visible && (
+                <a href="/mon-compte/etudes-cliniques" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>🔬 Études cliniques</a>
+              )}
+              {navLoaded && navConfig.questionnaires_visible && (
+                <a href="/mon-compte/questionnaires-these" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📋 Questionnaires de thèse</a>
+              )}
+            </div>
 
             <div className="pt-4 space-y-2">
               {!loading && user ? (

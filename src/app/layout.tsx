@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import AuthProvider from "@/components/providers/AuthProvider";
+import ScrollRestoration from "@/components/providers/ScrollRestoration";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className={poppins.variable}>
       <body className="overflow-x-hidden">
+        <ScrollRestoration />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
