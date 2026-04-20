@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       to: adminEmail,
       from: 'contact@100000medecins.org',
       subject: daysLeft === 0
-        ? '[Action requise] La sélection vidéos page d'accueil a expiré'
+        ? "[Action requise] La sélection vidéos page d'accueil a expiré"
         : `[Rappel] Sélection vidéos accueil — expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:520px;color:#1a1a2e;">
