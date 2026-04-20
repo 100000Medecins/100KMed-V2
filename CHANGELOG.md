@@ -5,6 +5,43 @@
 
 ---
 
+## [2026-04-21] — Glossaire e-Santé · Propositions d'acronymes · Améliorations UI
+
+### Nouvelles fonctionnalités
+- **Glossaire public `/glossaire`** : page hero + barre de recherche + ancres alphabétiques + groupes par catégorie, `revalidate = 3600`
+- **Admin `/admin/acronymes`** : CRUD inline avec groupement par catégorie, autocomplete catégorie, recherche — déplacé en sous-item de "Page d'accueil" dans la sidebar
+- **Propositions d'acronymes** : formulaire public en bas du glossaire (sigle + définition + email optionnel) → table `suggestions_acronymes` ; onglet "Propositions" dans l'admin avec approbation inline (éditable avant publication) ou rejet
+- **Pré-remplissage email** : si l'utilisateur est connecté, son email est pré-rempli et remplacé par une checkbox "Me notifier lors de la publication"
+- **Bouton "Ajouter un acronyme"** : placé à côté de la barre de recherche, scrolle vers le formulaire et l'ouvre avec focus automatique sur le champ Sigle (via `#proposer` + `hashchange`)
+- **Liens officiels** : 20 acronymes enrichis avec leur URL officielle (sesam-vitale.fr, cnda.ameli.fr, esante.gouv.fr, has-sante.fr…)
+- **Navbar** : lien Glossaire ajouté dans le dropdown Communauté (desktop + mobile)
+
+### Cartes solutions (comparatifs & noter)
+- Fond dégradé harmonisé avec le hero (`#148080 → #7c35c0 → #1e4da0`) sur `/comparatifs` et `/solution/noter`
+- Illustrations centrées verticalement, taille réduite
+
+### SQL requis (Supabase)
+```sql
+CREATE TABLE suggestions_acronymes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  sigle text NOT NULL, definition text NOT NULL,
+  description text, email text, created_at timestamptz DEFAULT now()
+);
+ALTER TABLE suggestions_acronymes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "insert public" ON suggestions_acronymes FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "read admin only" ON suggestions_acronymes FOR SELECT USING (false);
+ALTER TABLE acronymes ADD COLUMN IF NOT EXISTS categorie text;
+```
+
+### Nouveaux fichiers
+- `src/app/glossaire/page.tsx` — page publique glossaire
+- `src/components/GlossaireClient.tsx` — client recherche + ancres alphabétiques
+- `src/components/GlossaireSuggestForm.tsx` — formulaire de proposition
+- `src/app/admin/acronymes/page.tsx` — page admin acronymes
+- `src/components/admin/AcronymesAdminClient.tsx` — CRUD + onglet propositions
+
+---
+
 ## [2026-04-20] — Recherche navbar · Vidéos accueil admin · Améliorations UI mobile · Corrections
 
 ### Nouvelles fonctionnalités

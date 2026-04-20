@@ -1172,3 +1172,90 @@ export async function deleteVideo(id: string) {
   revalidatePath('/stories-tutos')
   revalidatePath('/')
 }
+
+// ────────────────────────────────────────────
+// Acronymes
+// ────────────────────────────────────────────
+
+export async function createAcronyme(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('acronymes').insert({
+    id: randomUUID(),
+    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    definition: (formData.get('definition') as string).trim(),
+    description: (formData.get('description') as string)?.trim() || null,
+    lien: (formData.get('lien') as string)?.trim() || null,
+    categorie: (formData.get('categorie') as string)?.trim() || null,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+export async function updateAcronyme(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('acronymes').update({
+    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    definition: (formData.get('definition') as string).trim(),
+    description: (formData.get('description') as string)?.trim() || null,
+    lien: (formData.get('lien') as string)?.trim() || null,
+    categorie: (formData.get('categorie') as string)?.trim() || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+export async function deleteAcronyme(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('acronymes').delete().eq('id', id)
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+// ────────────────────────────────────────────
+// Suggestions d'acronymes (public)
+// ────────────────────────────────────────────
+
+export async function suggestAcronyme(formData: FormData) {
+  const supabase = createServiceRoleClient()
+  const sigle = (formData.get('sigle') as string)?.trim()
+  const definition = (formData.get('definition') as string)?.trim()
+  const email = (formData.get('email') as string)?.trim() || null
+  if (!sigle || !definition) return { error: 'Sigle et définition requis.' }
+  const { error } = await supabase.from('suggestions_acronymes').insert({ sigle, definition, email })
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+export async function approveSuggestion(id: string, payload: {
+  sigle: string
+  definition: string
+  description: string | null
+  categorie: string | null
+}) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('acronymes').insert({
+    id: randomUUID(),
+    sigle: payload.sigle.trim(),
+    definition: payload.definition.trim(),
+    description: payload.description || null,
+    categorie: payload.categorie || null,
+    lien: null,
+  })
+  if (error) return { error: error.message }
+  await supabase.from('suggestions_acronymes').delete().eq('id', id)
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+export async function rejectSuggestion(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('suggestions_acronymes').delete().eq('id', id)
+  revalidatePath('/admin/acronymes')
+}

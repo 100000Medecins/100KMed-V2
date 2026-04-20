@@ -108,8 +108,8 @@ export default function ChoisirSolutionPage() {
                     className="relative overflow-hidden rounded-3xl min-h-[100px] flex flex-col justify-start p-5 text-left transition-all duration-200 group"
                     style={{
                       background: isActive
-                        ? 'linear-gradient(135deg, #5A7FA0 0%, #9A4070 55%, #A07040 100%)'
-                        : 'linear-gradient(135deg, #8BAFC4 0%, #C47A9A 55%, #C9A06A 100%)',
+                        ? 'linear-gradient(135deg, #0e7070 0%, #6b2aaa 55%, #1a3f8a 100%)'
+                        : 'linear-gradient(135deg, #148080 0%, #7c35c0 55%, #1e4da0 100%)',
                       outline: isActive ? '2px solid rgba(255,255,255,0.6)' : 'none',
                       outlineOffset: '-2px',
                     }}
@@ -118,15 +118,15 @@ export default function ChoisirSolutionPage() {
                       <img
                         src={cat.image_url}
                         alt=""
-                        className="absolute bottom-0 right-3 h-[110px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                        className="absolute top-1/2 -translate-y-1/2 right-8 h-[80px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
                       />
                     ) : cat.icon ? (
                       <span className="absolute bottom-3 right-4 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
                         {cat.icon}
                       </span>
                     ) : null}
-                    <span className="text-lg font-extrabold text-navy mb-2 leading-snug relative z-10">{cat.nom}</span>
-                    <span className="inline-flex items-center gap-1 bg-white/40 backdrop-blur-sm text-navy font-semibold px-3 py-1.5 rounded-full text-xs w-fit relative z-10">
+                    <span className="text-lg font-extrabold text-white mb-2 leading-snug relative z-10">{cat.nom}</span>
+                    <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white font-semibold px-3 py-1.5 rounded-full text-xs w-fit relative z-10">
                       {cat.count} logiciel{cat.count > 1 ? 's' : ''}
                     </span>
                   </button>

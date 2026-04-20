@@ -87,7 +87,7 @@ export default async function ComparatifsPage() {
                       key={cat.slug}
                       href={`/solutions/${cat.slug}`}
                       className="relative overflow-hidden rounded-2xl md:rounded-3xl min-h-[130px] md:min-h-[220px] flex flex-col justify-start p-4 md:p-8 group"
-                      style={{ background: 'linear-gradient(135deg, #8BAFC4 0%, #C47A9A 55%, #C9A06A 100%)' }}
+                      style={{ background: 'linear-gradient(135deg, #148080 0%, #7c35c0 55%, #1e4da0 100%)' }}
                     >
                       {/* Illustration : image uploadée ou emoji en fallback */}
                       {cat.image_url ? (
@@ -101,8 +101,8 @@ export default async function ComparatifsPage() {
                           {cat.icon}
                         </span>
                       ) : null}
-                      <span className="text-sm md:text-xl font-extrabold text-navy mb-2 md:mb-3 leading-snug relative z-10">{cat.nom}</span>
-                      <span className="inline-flex items-center gap-1 bg-white/40 backdrop-blur-sm text-navy font-semibold px-2.5 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm w-fit group-hover:bg-white/60 transition-colors duration-200 relative z-10">
+                      <span className="text-sm md:text-xl font-extrabold text-white mb-2 md:mb-3 leading-snug relative z-10">{cat.nom}</span>
+                      <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white font-semibold px-2.5 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm w-fit group-hover:bg-white/35 transition-colors duration-200 relative z-10">
                         Explorer →
                       </span>
                     </Link>

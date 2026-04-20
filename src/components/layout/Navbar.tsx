@@ -223,6 +223,9 @@ export default function Navbar() {
                 <a href="/stories-tutos" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                   🎬 Vidéos & tutoriels
                 </a>
+                <a href="/glossaire" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                  📖 Glossaire e-Santé
+                </a>
                 {navLoaded && navConfig.irritants_visible && (
                   <a href="/irritants-esante" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                     ⚡ Irritants de l'e-santé
@@ -387,6 +390,7 @@ export default function Navbar() {
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1 px-0">Communauté</p>
               <a href="/blog" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📝 Blog</a>
               <a href="/stories-tutos" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>🎬 Vidéos & tutoriels</a>
+              <a href="/glossaire" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📖 Glossaire e-Santé</a>
               {navLoaded && navConfig.irritants_visible && (
                 <a href="/irritants-esante" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>⚡ Irritants de l'e-santé</a>
               )}
