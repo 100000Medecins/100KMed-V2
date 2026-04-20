@@ -18,7 +18,7 @@ function isOlderThanOneYear(dateStr: string | null): boolean {
 }
 
 export default function MesEvaluationsPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
   const revalideOk = searchParams.get('revalide') === '1'
   const lienErreur = searchParams.get('erreur')
@@ -32,7 +32,8 @@ export default function MesEvaluationsPage() {
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+    if (!user) { setLoading(false); return }
     const supabase = createClient()
 
     Promise.all([
@@ -57,8 +58,8 @@ export default function MesEvaluationsPage() {
       setLastDates(dateMap)
       setCompletionMap(complMap)
       setLoading(false)
-    })
-  }, [user])
+    }).catch(() => setLoading(false))
+  }, [user, authLoading])
 
   function handleReconfirmer(su: any) {
     startTransition(async () => {

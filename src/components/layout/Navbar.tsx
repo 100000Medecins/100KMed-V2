@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, ChevronDown, LogOut, UserCircle } from "lucide-react";
+import { Menu, X, ChevronDown, LogOut, UserCircle, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { NavCategorie, NavResponse } from "@/app/api/nav-categories/route";
+import dynamic from 'next/dynamic';
+const SearchOverlay = dynamic(() => import('@/components/search/SearchOverlay'), { ssr: false });
 
 type Groupe = {
   nom: string
@@ -44,6 +46,7 @@ export default function Navbar() {
   const [navLoaded, setNavLoaded] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isCommunauteMenuOpen, setIsCommunauteMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const communauteMenuRef = useRef<HTMLDivElement>(null);
@@ -110,22 +113,31 @@ export default function Navbar() {
         boxShadow: isHome && !isScrolled ? 'none' : '0 2px 20px rgba(0,0,0,0.18)',
       }}
     >
-      <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto_auto] lg:grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
-        {/* Logo */}
-        <a href="/" className="flex items-center shrink-0">
-          <Image
-            src="/logos/logo-secondaire-couleur-trimmed.png"
-            alt="100 000 Médecins"
-            width={400}
-            height={100}
-            className="h-[32px] w-auto"
-            priority
-            unoptimized
-          />
-        </a>
+      <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
+        {/* Col 1 : Logo + burger mobile */}
+        <div className="flex items-center gap-2">
+          <a href="/" className="flex items-center shrink-0">
+            <Image
+              src="/logos/logo-secondaire-couleur-trimmed.png"
+              alt="100 000 Médecins"
+              width={400}
+              height={100}
+              className="h-[26px] sm:h-[32px] w-auto"
+              priority
+              unoptimized
+            />
+          </a>
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className={`min-[1150px]:hidden p-2 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
+            aria-label="Menu"
+          >
+            {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center justify-center gap-6 min-w-0">
+        <div className="hidden min-[1150px]:flex items-center justify-center gap-6 min-w-0">
           {/* Mega-menu Comparatifs */}
           <div
             ref={megaMenuRef}
@@ -239,79 +251,92 @@ export default function Navbar() {
           >
             Qui sommes-nous ?
           </a>
+
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className={`p-2 rounded-full transition-colors duration-500 hover:bg-white/10 ${darkNav ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-navy'}`}
+            aria-label="Rechercher"
+          >
+            <Search className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* CTA desktop */}
-        <div className="hidden lg:flex items-center gap-3">
-          {!loading && user ? (
-            <>
-              <Button variant={darkNav ? "white" : "primary"} href="/solution/noter">
-                Évaluer un logiciel
-              </Button>
-              {/* Dropdown Mon compte */}
-              <div ref={accountMenuRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsAccountMenuOpen((v) => !v)}
-                  className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm transition-all duration-300 border-2 border-white text-white hover:bg-white hover:text-navy ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}
-                >
-                  Mon compte
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {isAccountMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 rounded-xl overflow-hidden shadow-xl border border-white/10"
-                    style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.97) 0%, rgba(80,30,130,0.95) 55%, rgba(20,50,110,0.97) 100%)', backdropFilter: 'blur(8px)' }}>
-                    <a
-                      href="/mon-compte/profil"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-3 text-sm text-white/85 hover:text-white hover:bg-white/10 transition-colors"
-                    >
-                      <UserCircle className="w-4 h-4" />
-                      Mon compte
-                    </a>
-                    <div className="border-t border-white/10" />
-                    <button
-                      type="button"
-                      onClick={() => { setIsAccountMenuOpen(false); signOut() }}
-                      className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white/85 hover:text-white hover:bg-white/10 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Se déconnecter
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <Button variant={darkNav ? "white" : "primary"} href="/solution/noter">
-                Évaluer un logiciel
-              </Button>
-              <Button variant="white" href="/connexion" className={darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}>
-                Me connecter
-              </Button>
-            </>
-          )}
-        </div>
+        {/* Col 3 : mobile (loupe + évaluer) / desktop (loupe + CTAs) */}
+        <div className="flex items-center gap-2 justify-self-end">
+          {/* Loupe mobile */}
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className={`min-[1150px]:hidden p-2 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white/80' : 'text-navy'}`}
+            aria-label="Rechercher"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          {/* Bouton Évaluer mobile */}
+          <div className="min-[1150px]:hidden">
+            <Button variant="white" href="/solution/noter" className="text-xs py-1.5 px-3">
+              Évaluer
+            </Button>
+          </div>
 
-        {/* Mobile : bouton Évaluer + toggle */}
-        <button
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className={`lg:hidden p-2 transition-colors duration-500 ${darkNav ? 'text-white' : 'text-navy'}`}
-          aria-label="Menu"
-        >
-          {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-        <div className="lg:hidden">
-          <Button variant="white" href="/solution/noter" className="text-xs py-1.5 px-3">
-            Évaluer
-          </Button>
+          {/* CTAs desktop */}
+          <div className="hidden min-[1150px]:flex items-center gap-3">
+            {!loading && user ? (
+              <>
+                <Button variant={darkNav ? "white" : "primary"} href="/solution/noter">
+                  Évaluer un logiciel
+                </Button>
+                <div ref={accountMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAccountMenuOpen((v) => !v)}
+                    className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm transition-all duration-300 border-2 border-white text-white hover:bg-white hover:text-navy ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}
+                  >
+                    Mon compte
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isAccountMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl overflow-hidden shadow-xl border border-white/10"
+                      style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.97) 0%, rgba(80,30,130,0.95) 55%, rgba(20,50,110,0.97) 100%)', backdropFilter: 'blur(8px)' }}>
+                      <a
+                        href="/mon-compte/profil"
+                        onClick={() => setIsAccountMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-white/85 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <UserCircle className="w-4 h-4" />
+                        Mon compte
+                      </a>
+                      <div className="border-t border-white/10" />
+                      <button
+                        type="button"
+                        onClick={() => { setIsAccountMenuOpen(false); signOut() }}
+                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white/85 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Se déconnecter
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Button variant={darkNav ? "white" : "primary"} href="/solution/noter">
+                  Évaluer un logiciel
+                </Button>
+                <Button variant="white" href="/connexion" className={darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}>
+                  Me connecter
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
       {/* Mobile menu */}
       {isMobileOpen && (
-        <div className="lg:hidden border-t border-white/10 shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.95) 0%, rgba(80,30,130,0.92) 55%, rgba(20,50,110,0.95) 100%)', backdropFilter: 'blur(16px)' }}>
+        <div className="min-[1150px]:hidden border-t border-white/10 shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.95) 0%, rgba(80,30,130,0.92) 55%, rgba(20,50,110,0.95) 100%)', backdropFilter: 'blur(16px)' }}>
           <div className="px-6 py-6 space-y-2">
             {/* Comparatifs accordion */}
             <div>
@@ -357,14 +382,6 @@ export default function Navbar() {
               )}
             </div>
 
-            <a
-              href="/qui-sommes-nous"
-              className="block text-sm text-white/85 hover:text-white font-medium py-2"
-              onClick={() => setIsMobileOpen(false)}
-            >
-              Qui sommes-nous ?
-            </a>
-
             {/* Communauté mobile */}
             <div className="border-t border-white/10 pt-2 mt-1">
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1 px-0">Communauté</p>
@@ -379,6 +396,23 @@ export default function Navbar() {
               {navLoaded && navConfig.questionnaires_visible && (
                 <a href="/mon-compte/questionnaires-these" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📋 Questionnaires de thèse</a>
               )}
+            </div>
+
+            <div className="border-t border-white/10 pt-2 mt-1 space-y-0.5">
+              <a
+                href="/qui-sommes-nous"
+                className="block text-sm text-white/85 hover:text-white font-medium py-1.5"
+                onClick={() => setIsMobileOpen(false)}
+              >
+                Qui sommes-nous ?
+              </a>
+              <a
+                href="/contact"
+                className="block text-sm text-white/85 hover:text-white font-medium py-1.5"
+                onClick={() => setIsMobileOpen(false)}
+              >
+                Nous contacter
+              </a>
             </div>
 
             <div className="pt-4 space-y-2">
@@ -414,6 +448,8 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
     </header>
   );
 }

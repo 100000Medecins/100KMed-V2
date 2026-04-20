@@ -106,16 +106,16 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
       <Navbar />
       <main className="pt-[72px]">
         {/* Hero catégorie */}
-        <section className="bg-hero-gradient pt-4 pb-12 md:pb-14">
+        <section className="bg-hero-gradient pt-3 pb-4 md:pb-14">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="mb-12">
+            <div className="mb-3 md:mb-12">
               <Breadcrumb variant="light" items={[{ label: 'Accueil', href: '/' }, { label: 'Comparatifs', href: '/comparatifs' }, { label: categorie.nom }]} />
             </div>
-            <div className="flex items-center gap-10">
+            <div className="flex items-center gap-2 md:gap-10">
               <div className="flex-1">
                 {/* Titre */}
-                <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                  {categorie.icon && <span className="text-3xl">{categorie.icon}</span>}
+                <h1 className="text-xl md:text-3xl font-bold text-white mb-2 md:mb-6 flex items-center gap-3">
+                  {categorie.icon && <span className="text-2xl md:text-3xl">{categorie.icon}</span>}
                   {categorie.nom}
                 </h1>
 
@@ -128,13 +128,13 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                 )}
               </div>
 
-              {/* Image : masquée sur mobile */}
+              {/* Image : petite sur mobile, grande sur desktop */}
               {categorie.image_url && (
-                <div className="hidden md:block shrink-0 w-56 lg:w-72">
+                <div className="shrink-0 w-20 md:w-56 lg:w-72 mr-6 md:mr-0">
                   <img
                     src={categorie.image_url}
                     alt={categorie.nom}
-                    className="w-full max-h-32 lg:max-h-40 object-contain drop-shadow-2xl"
+                    className="w-full max-h-16 md:max-h-32 lg:max-h-40 object-contain drop-shadow-2xl"
                   />
                 </div>
               )}

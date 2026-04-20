@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
-import { GripVertical, Pencil, Plus, Trash2 } from 'lucide-react'
-import { toggleVideoStatut, reorderVideosAndRubriques, createVideoRubrique, deleteVideoRubrique } from '@/lib/actions/admin'
+import { GripVertical, Pencil, Plus, Trash2, Home, Check } from 'lucide-react'
+import { toggleVideoStatut, reorderVideosAndRubriques, createVideoRubrique, deleteVideoRubrique, setHomepageVideos } from '@/lib/actions/admin'
 import DeleteVideoButton from '@/components/admin/DeleteVideoButton'
 import type { VideoRow, VideoRubrique } from '@/lib/db/misc'
 
@@ -52,6 +52,17 @@ function computeAssignments(items: Item[]) {
   return { videoUpdates, rubriqueUpdates }
 }
 
+function formatExpiry(pinnedAt: string): { label: string; urgent: boolean } {
+  const expiry = new Date(new Date(pinnedAt).getTime() + 30 * 24 * 60 * 60 * 1000)
+  const daysLeft = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  if (daysLeft <= 0) return { label: 'Expiré', urgent: true }
+  if (daysLeft <= 7) return { label: `Expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`, urgent: true }
+  return {
+    label: `Expire le ${expiry.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`,
+    urgent: false,
+  }
+}
+
 // ─── Sous-composants ──────────────────────────────────────────────────────────
 
 function YouTubeThumbnail({ url, titre }: { url: string | null; titre: string | null }) {
@@ -80,6 +91,146 @@ function ToggleStatut({ id, statut }: { id: string; statut: string | null }) {
   )
 }
 
+// ─── Bandeau page d'accueil ───────────────────────────────────────────────────
+
+function HomepageBanner({
+  videos,
+  selectedIds,
+  onToggle,
+  onReorder,
+  onSave,
+  isSaving,
+  isDirty,
+}: {
+  videos: VideoRow[]
+  selectedIds: string[]
+  onToggle: (id: string) => void
+  onReorder: (newIds: string[]) => void
+  onSave: () => void
+  isSaving: boolean
+  isDirty: boolean
+}) {
+  const dragIdRef = useRef<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+
+  function handleDragStart(id: string) {
+    dragIdRef.current = id
+  }
+
+  function handleDragEnter(id: string) {
+    if (!dragIdRef.current || dragIdRef.current === id) return
+    setDragOverId(id)
+  }
+
+  function handleDrop(dropId: string) {
+    const fromId = dragIdRef.current
+    setDragOverId(null)
+    dragIdRef.current = null
+    if (!fromId || fromId === dropId) return
+    const next = [...selectedIds]
+    const fromIdx = next.indexOf(fromId)
+    const toIdx = next.indexOf(dropId)
+    if (fromIdx === -1 || toIdx === -1) return
+    next.splice(fromIdx, 1)
+    next.splice(toIdx, 0, fromId)
+    onReorder(next)
+  }
+
+  // Déterminer le mode actuel (basé sur les données initiales en DB)
+  const pinnedVideos = videos
+    .filter(v => v.homepage_pinned_at)
+    .sort((a, b) => (a.homepage_ordre ?? 99) - (b.homepage_ordre ?? 99))
+
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const activePinned = pinnedVideos.filter(v => new Date(v.homepage_pinned_at!).getTime() > thirtyDaysAgo)
+  const isForced = activePinned.length > 0
+
+  const expiryInfo = isForced && activePinned[0]?.homepage_pinned_at
+    ? formatExpiry(activePinned[0].homepage_pinned_at)
+    : null
+
+  return (
+    <div className="bg-white rounded-card shadow-card overflow-hidden mb-6">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+        <Home className="w-4 h-4 text-accent-blue shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-navy">Vidéos affichées sur la page d'accueil</p>
+          {!isDirty && (
+            <p className={`text-xs mt-0.5 ${expiryInfo?.urgent ? 'text-red-500' : 'text-gray-400'}`}>
+              {isForced
+                ? `Mode forcé · ${expiryInfo?.label}`
+                : 'Mode automatique · 6 dernières vidéos publiées'}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className={`text-xs font-semibold ${selectedIds.length >= 4 ? 'text-accent-blue' : 'text-gray-400'}`}>
+            {selectedIds.length}/4 sélectionnée{selectedIds.length > 1 ? 's' : ''}
+          </span>
+          {isDirty && (
+            <button
+              onClick={onSave}
+              disabled={isSaving || selectedIds.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue text-white text-xs font-semibold rounded-lg hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
+            >
+              <Check className="w-3.5 h-3.5" />
+              {isSaving ? 'Sauvegarde…' : 'Sauvegarder'}
+            </button>
+          )}
+          {!isDirty && isForced && (
+            <button
+              onClick={onSave}
+              disabled={isSaving || selectedIds.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-xs font-semibold rounded-lg hover:bg-navy-dark transition-colors disabled:opacity-50"
+            >
+              {isSaving ? 'Sauvegarde…' : 'Renouveler (+30 j)'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {selectedIds.length === 0 && !isDirty && (
+        <p className="px-5 py-3 text-xs text-gray-400">
+          Cochez jusqu'à 6 vidéos ci-dessous pour forcer la sélection pendant 30 jours.
+        </p>
+      )}
+
+      {selectedIds.length > 0 && (
+        <div className="px-5 py-3 flex flex-wrap gap-2">
+          {selectedIds.length > 1 && (
+            <p className="w-full text-[10px] text-gray-400 mb-0.5">Glisser-déposer pour réordonner</p>
+          )}
+          {selectedIds.map((id, i) => {
+            const v = videos.find(x => x.id === id)
+            if (!v) return null
+            const isOver = dragOverId === id
+            return (
+              <span
+                key={id}
+                draggable
+                onDragStart={() => handleDragStart(id)}
+                onDragEnter={() => handleDragEnter(id)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={() => handleDrop(id)}
+                onDragEnd={() => { setDragOverId(null); dragIdRef.current = null }}
+                className={`inline-flex items-center gap-1.5 text-xs bg-accent-blue/10 text-accent-blue font-semibold px-2.5 py-1 rounded-full cursor-grab active:cursor-grabbing select-none transition-all ${isOver ? 'ring-2 ring-accent-blue scale-105' : ''}`}
+              >
+                <span className="w-4 h-4 rounded-full bg-accent-blue text-white text-[10px] flex items-center justify-center shrink-0">{i + 1}</span>
+                {v.titre ?? '(sans titre)'}
+                <button
+                  onClick={() => onToggle(id)}
+                  onMouseDown={e => e.stopPropagation()}
+                  className="ml-0.5 text-accent-blue/60 hover:text-accent-blue"
+                >×</button>
+              </span>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function VideosAdminList({ initialVideos, rubriques }: { initialVideos: VideoRow[]; rubriques: VideoRubrique[] }) {
@@ -87,10 +238,41 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
   const [newRubrique, setNewRubrique] = useState('')
   const [isPending, startTransition] = useTransition()
 
+  // Homepage selection state
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const initialSelected = initialVideos
+    .filter(v => v.homepage_pinned_at && new Date(v.homepage_pinned_at).getTime() > thirtyDaysAgo)
+    .sort((a, b) => (a.homepage_ordre ?? 99) - (b.homepage_ordre ?? 99))
+    .map(v => v.id)
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelected)
+  const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, startSaving] = useTransition()
+
   // Drag state
   const dragId = useRef<string | null>(null)
   const dragKind = useRef<'video' | 'rubrique' | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+
+  function toggleHomepage(id: string) {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id)
+      if (prev.length >= 4) return prev
+      return [...prev, id]
+    })
+    setIsDirty(true)
+  }
+
+  function handleReorderHomepage(newIds: string[]) {
+    setSelectedIds(newIds)
+    setIsDirty(true)
+  }
+
+  function handleSaveHomepage() {
+    startSaving(async () => {
+      await setHomepageVideos(selectedIds)
+      setIsDirty(false)
+    })
+  }
 
   function handleDragStart(id: string, kind: 'video' | 'rubrique') {
     dragId.current = id
@@ -99,7 +281,6 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
 
   function handleDragEnter(id: string, targetKind: 'video' | 'rubrique') {
     if (!dragId.current) return
-    // Une rubrique ne peut être déposée que sur une autre rubrique
     if (dragKind.current === 'rubrique' && targetKind !== 'rubrique') return
     setDragOverId(id)
   }
@@ -118,7 +299,6 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
     if (fromIdx === -1) return
 
     if (kind === 'rubrique') {
-      // Trouver la fin de la section (jusqu'à la prochaine rubrique ou fin)
       let sectionEnd = next.length
       for (let i = fromIdx + 1; i < next.length; i++) {
         if (next[i].kind === 'rubrique') { sectionEnd = i; break }
@@ -131,13 +311,11 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
         next.splice(dropIdx, 0, ...section)
       }
     } else {
-      // Vidéo : déplacer un seul item
       const [moved] = next.splice(fromIdx, 1)
       const dropIdx = next.findIndex(i => i.id === dropId)
       if (dropIdx === -1) {
         next.push(moved)
       } else if (next[dropIdx].kind === 'rubrique') {
-        // Déposer juste après la rubrique = premier élément de cette section
         next.splice(dropIdx + 1, 0, moved)
       } else {
         next.splice(dropIdx, 0, moved)
@@ -153,14 +331,12 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
     if (!newRubrique.trim()) return
     const nom = newRubrique.trim()
     setNewRubrique('')
-    // Ajout optimiste
     const tempId = 'tmp-' + Date.now()
     setItems(prev => [...prev, { kind: 'rubrique', id: tempId, nom, ordre: prev.filter(i => i.kind === 'rubrique').length }])
     startTransition(() => createVideoRubrique(nom))
   }
 
   function handleDeleteRubrique(id: string) {
-    // Retirer la rubrique et détacher ses vidéos (elles passent sans rubrique)
     setItems(prev =>
       prev
         .filter(i => !(i.kind === 'rubrique' && i.id === id))
@@ -169,8 +345,21 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
     startTransition(() => deleteVideoRubrique(id))
   }
 
+  const allVideos = items.filter((i): i is VideoItem => i.kind === 'video').map(i => ({ ...i }))
+
   return (
     <div className="space-y-6">
+      {/* Bandeau page d'accueil */}
+      <HomepageBanner
+        videos={allVideos}
+        selectedIds={selectedIds}
+        onToggle={toggleHomepage}
+        onReorder={handleReorderHomepage}
+        onSave={handleSaveHomepage}
+        isSaving={isSaving}
+        isDirty={isDirty}
+      />
+
       {/* Liste plate : rubriques + vidéos */}
       <div className="bg-white rounded-card shadow-card overflow-hidden">
         {items.length === 0 ? (
@@ -208,6 +397,10 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
                 )
               }
 
+              const homepagePos = selectedIds.indexOf(item.id)
+              const isSelected = homepagePos !== -1
+              const canSelect = item.statut === 'publie' && (isSelected || selectedIds.length < 6)
+
               return (
                 <div
                   key={item.id}
@@ -224,11 +417,31 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
                     <div className="font-medium text-navy text-sm truncate">
                       {item.titre ?? <span className="text-gray-300 italic">Sans titre</span>}
                     </div>
-                    {item.is_videos_principales && (
-                      <span className="text-xs text-gray-400">· Page d'accueil</span>
-                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
+                    {/* Checkbox page d'accueil */}
+                    <button
+                      type="button"
+                      title={
+                        item.statut !== 'publie'
+                          ? "Publiez d'abord la vidéo"
+                          : isSelected
+                            ? `Retirer de l'accueil (position ${homepagePos + 1})`
+                            : selectedIds.length >= 4
+                              ? '6 vidéos déjà sélectionnées'
+                              : "Afficher sur la page d'accueil"
+                      }
+                      disabled={!canSelect}
+                      onClick={() => toggleHomepage(item.id)}
+                      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold transition-colors disabled:opacity-30 ${
+                        isSelected
+                          ? 'bg-accent-blue/10 text-accent-blue'
+                          : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Home className="w-3.5 h-3.5" />
+                      {isSelected ? `#${homepagePos + 1}` : '—'}
+                    </button>
                     <ToggleStatut id={item.id} statut={item.statut} />
                     <Link
                       href={`/admin/videos/${item.id}/modifier`}

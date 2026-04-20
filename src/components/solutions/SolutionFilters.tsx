@@ -107,6 +107,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
         )}
       </div>
 
+      <div className="grid grid-cols-2 gap-x-3 sm:block">
       {groups.map((group) => {
         const hasSelected = group.items.some((t) => selectedTagIds.includes(t.id))
         const isOpen = openGroups[group.id] ?? false
@@ -118,7 +119,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
               <button
                 type="button"
                 onClick={() => toggleGroup(group.id)}
-                className="flex items-center justify-between w-full pt-3 pb-1 sm:cursor-default"
+                className="flex items-center gap-1.5 w-full pt-3 pb-1 sm:cursor-default"
               >
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                   {group.label}
@@ -127,13 +128,13 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
                   )}
                 </p>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-gray-300 transition-transform duration-200 sm:hidden ${isOpen ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 sm:hidden shrink-0 ${isOpen ? 'rotate-180' : ''}`}
                 />
               </button>
             )}
 
             {/* Items — toujours visibles sur desktop, accordéon sur mobile */}
-            <div className={`flex flex-col gap-1.5 mt-1 ${group.label ? (isOpen ? 'block' : 'hidden sm:flex') : 'flex'} sm:flex`}>
+            <div className={`mt-1 flex flex-col gap-1 sm:gap-1.5 ${group.label ? (!isOpen ? 'hidden sm:flex' : '') : ''}`}>
               {group.items.map((tag) => {
                 const isSelected = selectedTagIds.includes(tag.id)
                 const isImplied = impliedParentIds.has(tag.id)
@@ -143,7 +144,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
                     onClick={() => !isImplied && toggleTag(tag.id)}
                     disabled={isImplied}
                     title={isImplied ? 'Inclus implicitement' : undefined}
-                    className={`text-sm px-3 py-1.5 rounded-full border transition-colors text-left ${
+                    className={`text-xs sm:text-sm px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border transition-colors text-left ${
                       isSelected
                         ? 'bg-navy text-white border-navy'
                         : isImplied
@@ -160,6 +161,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
           </div>
         )
       })}
+      </div>
     </div>
   )
 }

@@ -123,18 +123,11 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {sortedSolutions.slice(0, 3).map((sol) => (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                  {sortedSolutions.map((sol) => (
                     <SolutionCardItem key={sol.id} solution={sol} sortMode={effectiveSortMode} />
                   ))}
                 </div>
-                {sortedSolutions.length > 3 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
-                    {sortedSolutions.slice(3, 6).map((sol) => (
-                      <SolutionCardItem key={sol.id} solution={sol} sortMode={effectiveSortMode} />
-                    ))}
-                  </div>
-                )}
                 <div className="mt-8 text-center">
                   <Link
                     href={`/solutions/${active.slug}`}

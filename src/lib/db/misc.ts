@@ -39,6 +39,9 @@ export type VideoRow = {
   is_videos_principales: boolean | null
   rubrique_id: string | null
   rubrique?: VideoRubrique | null
+  homepage_pinned_at: string | null
+  homepage_ordre: number | null
+  created_at: string | null
 }
 
 export async function getVideoRubriques(): Promise<VideoRubrique[]> {
@@ -53,6 +56,42 @@ export async function getVideoRubriques(): Promise<VideoRubrique[]> {
     return []
   }
   return data ?? []
+}
+
+/**
+ * Page d'accueil : retourne les 6 vidéos à afficher.
+ * Mode forcé : si des vidéos ont homepage_pinned_at < 30 jours → on les utilise (triées par homepage_ordre).
+ * Mode auto : les 6 dernières publiées (par created_at desc).
+ */
+export async function getHomepageVideos(): Promise<VideoRow[]> {
+  const supabase = await createServerClient()
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: pinned } = await (supabase as any)
+    .from('videos')
+    .select('*, rubrique:video_rubriques(*)')
+    .eq('statut', 'publie')
+    .not('homepage_pinned_at', 'is', null)
+    .gt('homepage_pinned_at', thirtyDaysAgo)
+    .order('homepage_ordre', { ascending: true })
+    .limit(4)
+
+  if (pinned && pinned.length > 0) return pinned as VideoRow[]
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: latest, error } = await (supabase as any)
+    .from('videos')
+    .select('*, rubrique:video_rubriques(*)')
+    .eq('statut', 'publie')
+    .order('ordre', { ascending: true })
+    .limit(4)
+
+  if (error) {
+    console.error('[getHomepageVideos] Supabase error:', error.message)
+    return []
+  }
+  return (latest ?? []) as VideoRow[]
 }
 
 export async function getVideos(options?: {

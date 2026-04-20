@@ -78,15 +78,15 @@ export default async function ComparatifsPage() {
           <div className="space-y-10">
             {groupes.map((groupe) => (
               <div key={groupe.id}>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">
+                <h2 className="text-sm md:text-xs font-bold md:font-semibold uppercase tracking-wider text-gray-600 md:text-gray-400 mb-5">
                   {groupe.nom}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-2 gap-3 md:gap-5">
                   {groupe.categories.map((cat) => (
                     <Link
                       key={cat.slug}
                       href={`/solutions/${cat.slug}`}
-                      className="relative overflow-hidden rounded-3xl min-h-[220px] flex flex-col justify-start p-8 group"
+                      className="relative overflow-hidden rounded-2xl md:rounded-3xl min-h-[130px] md:min-h-[220px] flex flex-col justify-start p-4 md:p-8 group"
                       style={{ background: 'linear-gradient(135deg, #8BAFC4 0%, #C47A9A 55%, #C9A06A 100%)' }}
                     >
                       {/* Illustration : image uploadée ou emoji en fallback */}
@@ -94,15 +94,15 @@ export default async function ComparatifsPage() {
                         <img
                           src={cat.image_url}
                           alt=""
-                          className="absolute bottom-3 right-6 max-h-[155px] max-w-[40%] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                          className="absolute bottom-2 right-2 md:bottom-3 md:right-6 max-h-[75px] md:max-h-[155px] max-w-[45%] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
                         />
                       ) : cat.icon ? (
-                        <span className="absolute bottom-4 right-6 text-[120px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                        <span className="absolute bottom-2 right-2 md:bottom-4 md:right-6 text-[60px] md:text-[120px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
                           {cat.icon}
                         </span>
                       ) : null}
-                      <span className="text-xl font-extrabold text-navy mb-3 leading-snug relative z-10">{cat.nom}</span>
-                      <span className="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm text-navy font-semibold px-4 py-2 rounded-full text-sm w-fit group-hover:bg-white/60 transition-colors duration-200 relative z-10">
+                      <span className="text-sm md:text-xl font-extrabold text-navy mb-2 md:mb-3 leading-snug relative z-10">{cat.nom}</span>
+                      <span className="inline-flex items-center gap-1 bg-white/40 backdrop-blur-sm text-navy font-semibold px-2.5 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm w-fit group-hover:bg-white/60 transition-colors duration-200 relative z-10">
                         Explorer →
                       </span>
                     </Link>

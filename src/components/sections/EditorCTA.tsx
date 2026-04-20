@@ -3,7 +3,7 @@ import Button from "@/components/ui/Button";
 
 export default function EditorCTA() {
   return (
-    <section className="bg-cta-gradient py-20 md:py-28">
+    <section className="bg-cta-gradient pt-10 pb-6 md:pt-14 md:pb-8">
       <div className="max-w-3xl mx-auto px-6 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
           Vous êtes éditeur ?

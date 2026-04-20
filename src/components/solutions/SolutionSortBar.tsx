@@ -115,15 +115,14 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
 
   return (
     <div className="sticky top-[80px] z-10 bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-card py-3 px-4 mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex flex-row items-center justify-between gap-3">
         <span className="text-sm text-gray-400 shrink-0">
           {count} solution{count > 1 ? 's' : ''}
         </span>
-        <div className="flex-1 h-px bg-gray-100 hidden sm:block" />
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <span className="text-xs font-medium text-gray-400 shrink-0">Trier par :</span>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 w-full sm:w-auto">
+          <div className="flex flex-row flex-wrap items-center gap-1.5">
 
             {/* Ligne des boutons de tri */}
             <div ref={sortRowRef} className="flex gap-1.5 flex-wrap items-center">

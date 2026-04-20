@@ -9,7 +9,7 @@ import BlogPreview from "@/components/sections/BlogPreview";
 import CommunautePreview from "@/components/sections/CommunautePreview";
 import { getCategories } from "@/lib/db/categories";
 import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getSiteStats } from "@/lib/db/solutions";
-import { getVideos } from "@/lib/db/misc";
+import { getHomepageVideos } from "@/lib/db/misc";
 
 export const revalidate = 1800;
 
@@ -17,7 +17,7 @@ export default async function Home() {
   const [categories, siteStats, videos] = await Promise.all([
     getCategories(),
     getSiteStats(),
-    getVideos({ isVideosPrincipales: true, onlyPublished: true, limit: 6 }),
+    getHomepageVideos(),
   ]);
 
   const categoriesData = await Promise.all(

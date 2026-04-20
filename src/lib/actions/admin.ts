@@ -16,6 +16,14 @@ function generateToken(): string {
     .digest('hex')
 }
 
+const ADMIN_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24 * 7, // 7 jours
+  path: '/',
+}
+
 export async function loginAdmin(formData: FormData) {
   const password = formData.get('password') as string
 
@@ -24,13 +32,7 @@ export async function loginAdmin(formData: FormData) {
   }
 
   const cookieStore = await cookies()
-  cookieStore.set('admin_token', generateToken(), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24,
-    path: '/',
-  })
+  cookieStore.set('admin_token', generateToken(), ADMIN_COOKIE_OPTIONS)
 
   redirect('/admin/solutions')
 }
@@ -51,6 +53,8 @@ async function assertAdmin() {
   if (token !== generateToken()) {
     redirect('/admin')
   }
+  // Renouveler le cookie à chaque action pour éviter l'expiration en cours de session
+  cookieStore.set('admin_token', token!, ADMIN_COOKIE_OPTIONS)
 }
 
 // ────────────────────────────────────────────
@@ -1101,6 +1105,32 @@ export async function deleteVideoRubrique(id: string) {
   await (supabase as any).from('video_rubriques').delete().eq('id', id)
   revalidatePath('/admin/videos')
   revalidatePath('/stories-tutos')
+}
+
+export async function setHomepageVideos(ids: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const now = new Date().toISOString()
+  const limited = ids.slice(0, 4)
+
+  // Retirer le pin de toutes les vidéos (filtre requis par Supabase JS v2)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('videos').update({ homepage_pinned_at: null, homepage_ordre: null }).not('id', 'is', null)
+
+  if (limited.length > 0) {
+    await Promise.all(
+      limited.map((id, i) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from('videos')
+          .update({ homepage_pinned_at: now, homepage_ordre: i + 1 })
+          .eq('id', id)
+      )
+    )
+  }
+
+  revalidatePath('/admin/videos')
+  revalidatePath('/')
 }
 
 export async function createVideo(formData: FormData) {

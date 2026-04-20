@@ -79,14 +79,14 @@ export async function POST(request: NextRequest) {
     ? (sol.evaluation_redac_points_forts as string[]).slice(0, 3).join(', ')
     : ''
 
-  const prompt = `Tu génères des métadonnées SEO pour la page d'évaluation d'un logiciel médical sur le site 100 000 Médecins, destiné aux médecins libéraux français.
+  const prompt = `Tu génères des métadonnées SEO pour la page d'évaluation d'un outil numérique médical sur le site 100 000 Médecins, destiné aux médecins libéraux français.
 
 Logiciel : ${sol.nom}
 Catégorie : ${categorie}${editeur ? `\nÉditeur : ${editeur}` : ''}${description ? `\nDescription : ${description.substring(0, 500)}` : ''}${tagNames.length > 0 ? `\nFonctionnalités clés : ${tagNames.join(', ')}` : ''}${pointsForts ? `\nPoints forts : ${pointsForts}` : ''}
 
 Génère :
-1. Un meta title (max 60 caractères) : doit contenir le nom du logiciel, les mots "avis", "comparatif" et "médecin" (ou "médecins"). Si la catégorie est un logiciel de gestion de cabinet ou logiciel métier, inclure aussi "lgc" ou "logiciel métier" à la place ou en complément de la catégorie. Structure recommandée : "{Nom} — Avis médecins | Comparatif {catégorie}" ou "{Nom} LGC — Avis & comparatif médecins". Adapte si le nom est long.
-2. Une meta description (max 155 caractères) : décrit l'outil, mentionne les avis authentiques de médecins et invite à consulter la fiche. Inclure "logiciel métier" ou "lgc" si pertinent pour la catégorie.
+1. Un meta title (max 60 caractères) : doit contenir le nom du logiciel et les mots "avis" et "médecins". Utilise la catégorie réelle comme mot-clé (ex : "agenda médical", "IA scribe", "IA documentaire", "logiciel métier" uniquement si la catégorie l'est vraiment). Structure recommandée : "{Nom} — Avis médecins | {catégorie}". Adapte si le nom est long.
+2. Une meta description (max 155 caractères) : décrit l'outil en lien avec sa catégorie réelle, mentionne les avis authentiques de médecins et invite à consulter la fiche. N'utilise jamais "logiciel métier" ou "lgc" si la catégorie est une IA, un agenda, ou autre chose.
 
 Ne mentionne que des faits présents dans les données ci-dessus. Réponds UNIQUEMENT en JSON valide sans markdown :
 {"title": "...", "description": "..."}`

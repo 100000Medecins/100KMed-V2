@@ -12,7 +12,7 @@ import { Check, Lock, Mail, Trash2, KeyRound } from 'lucide-react'
 import { useRef } from 'react'
 
 export default function ProfilPage() {
-  const { user, resetPassword } = useAuth()
+  const { user, loading: authLoading, resetPassword } = useAuth()
 
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
@@ -53,7 +53,8 @@ export default function ProfilPage() {
 
   // Charger le profil existant
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+    if (!user) { setLoading(false); return }
     const supabase = createClient()
     supabase
       .from('users')
@@ -83,7 +84,8 @@ export default function ProfilPage() {
         }
         setLoading(false)
       })
-  }, [user])
+      .catch(() => setLoading(false))
+  }, [user, authLoading])
 
   // Charger/vérifier le changement d'email en attente
   useEffect(() => {

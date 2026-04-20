@@ -9,7 +9,7 @@ export default function MissionCard({ item }: MissionCardProps) {
   return (
     <a href={item.href} className="group block">
       <div
-        className="w-full aspect-[4/3] rounded-2xl mb-5 overflow-hidden"
+        className="w-full aspect-[2/1] md:aspect-[4/3] rounded-2xl mb-3 md:mb-5 overflow-hidden"
         style={{ backgroundColor: item.color }}
       >
         {item.image ? (

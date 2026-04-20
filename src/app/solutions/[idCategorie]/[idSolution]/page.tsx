@@ -26,9 +26,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description: meta?.description || solution.description || undefined,
         images: solution.logo_url ? [{ url: solution.logo_url }] : undefined,
       },
-      alternates: {
-        canonical: meta?.canonical || undefined,
-      },
     }
   } catch {
     return { title: 'Solution' }

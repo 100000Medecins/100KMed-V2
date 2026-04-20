@@ -21,11 +21,14 @@ export default function StoriesSection({ videos }: { videos: VideoRow[] }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {videos.map((video) => {
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 lg:max-w-4xl lg:mx-auto">
+          {videos.map((video, index) => {
             const youtubeId = video.url ? getYouTubeId(video.url) : null
+            // Sur mobile (2 col), cacher les cartes qui créeraient un orphelin
+            // On affiche au max le dernier nombre pair de cartes sur mobile
+            const totalMobile = videos.length % 2 === 0 ? videos.length : videos.length - 1
             return (
-              <div key={video.id} className="group flex flex-col">
+              <div key={video.id} className={`group flex flex-col${index >= totalMobile ? ' hidden sm:flex' : ''}`}>
                 <div className="relative rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 bg-surface-light">
                   {youtubeId ? (
                     <div className="w-full aspect-[9/16]">

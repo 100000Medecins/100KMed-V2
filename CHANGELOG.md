@@ -5,6 +5,43 @@
 
 ---
 
+## [2026-04-20] — Recherche navbar · Vidéos accueil admin · Améliorations UI mobile · Corrections
+
+### Nouvelles fonctionnalités
+- **Recherche navbar** : loupe → overlay de recherche debounced, 3 sections (Solutions / Articles / Catégories) via `pg_trgm` + RPC Supabase, page `/recherche?q=...` pour résultats complets
+- **Vidéos page d'accueil** : sélection de 4 vidéos depuis `/admin/videos` avec drag & drop des pills, expiration 30 jours, email de rappel (cron lundi 8h), fallback auto sur les 4 dernières publiées ; SQL requis : `ALTER TABLE videos ADD COLUMN homepage_pinned_at timestamptz, ADD COLUMN homepage_ordre int, ADD COLUMN created_at timestamptz DEFAULT now()`
+- **Session admin** : durée étendue à 7 jours + renouvellement automatique du cookie à chaque action (corrige les déconnexions intempestives lors des toggles de fonctionnalités)
+
+### Améliorations UI mobile
+- **Navbar mobile** : loupe + Évaluer justifiés à droite, burger à gauche, breakpoint custom `min-[1150px]`
+- **Comparatifs mobile** : 2 cartes par ligne, textes catégories plus lisibles
+- **Hero catégorie mobile** : illustration visible, filtres fonctionnalités sur 2 colonnes, boutons taille réduite
+- **Stories & Tutos** : 2 colonnes mobile (orphelin masqué), 4 colonnes desktop dans `max-w-4xl lg:mx-auto`
+- **SolutionSortBar** : tri sur une ligne, justifié à droite
+- **SolutionFilters** : intertitres et fonctionnalités sur 2 colonnes, taille boutons réduite
+
+### Footer & layout
+- Footer recentré (colonne unique), liens en haut, logo en bas (100px)
+- EditorCTA : padding réduit (`pt-10 pb-6`)
+- StoriesSection : `max-w-4xl` + `gap-8` desktop, max 4 vidéos
+
+### Corrections
+- **Mon compte** : correction race condition auth (profil & évaluations restaient en loading)
+- **SEO auto** : prompt corrigé (n'utilisait plus toujours "logiciel métier")
+- **Canonical vide** : supprimé des pages solution
+- **`setHomepageVideos`** : correction `update()` sans filtre (rejeté par Supabase JS v2)
+- **`getHomepageVideos`** : mode auto trie par `ordre` (évite le tri sur `created_at` NULL)
+
+### Nouveaux fichiers
+- `src/app/api/search/route.ts` — endpoint de recherche
+- `src/components/search/SearchOverlay.tsx` — overlay de recherche
+- `src/app/recherche/page.tsx` — page résultats complets
+- `src/app/api/cron/rappel-accueil-videos/route.ts` — cron rappel expiration sélection vidéos
+- `scripts/regenerate-seo-non-lgc.mjs` — régénération masse SEO hors LGC
+- `scripts/search-functions.sql` — fonctions RPC + index pg_trgm (à exécuter dans Supabase)
+
+---
+
 ## [2026-04-19] — Navigation Communauté + sections page d'accueil + corrections
 
 ### Navbar — menu Communauté
