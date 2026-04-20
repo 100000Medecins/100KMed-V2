@@ -6,52 +6,25 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### Module Études & Thèses — en cours de développement
-- Statut "Étudiant" dans le profil + colonne `is_etudiant` sur `users`
-- Dépôt de questionnaires de thèse par les étudiants (titre, WYSIWYG, lien, image)
-- Page publique `/mon-compte/questionnaires-these` pour tous les utilisateurs (cartes)
-- Admin `/admin/questionnaires-these` : validation avant publication (Publier / Refuser)
-- Section admin "Études & Thèses" : gestion DMH + questionnaires de thèse
-- **SQL requis :**
-  ```sql
-  CREATE TABLE questionnaires_these (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    titre text NOT NULL,
-    description text,
-    lien text NOT NULL,
-    image_url text,
-    created_by uuid REFERENCES users(id),
-    statut text NOT NULL DEFAULT 'en_attente',
-    created_at timestamptz DEFAULT now(),
-    updated_at timestamptz DEFAULT now()
-  );
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_etudiant boolean DEFAULT false;
-  ```
+### Page Glossaire — Acronymes de l'e-Santé
+- Page publique `/glossaire` ou `/acronymes` listant les acronymes courants de l'e-santé (ANS, DMP, INS, PSC, LGC, HDS, RPPS, etc.)
+- Affichage alphabétique avec ancres, recherche/filtre en temps réel
+- Contenu éditable depuis l'admin (CRUD acronyme : sigle, définition, description, lien externe optionnel)
+- SQL requis : table `acronymes` (id, sigle, definition, description, lien, created_at)
 
-### Intégration études & thèses dans la navigation
-- Insérer les pages études cliniques et questionnaires de thèse sur la page d'accueil
-- Ajouter dans la navbar (desktop + mobile)
+### Tooltips acronymes — détection automatique sur toutes les pages ⚠️ Moyen-difficile
+- Quand un acronyme de la table est repéré dans le texte d'une page, afficher sa définition au survol (infobulle)
+- **Approche recommandée** : composant client global `AcronymHighlighter` dans le layout, qui après montage parcourt les nœuds texte (TreeWalker API) et enveloppe les correspondances dans un `<abbr>` avec tooltip
+- Acronymes chargés une fois via `/api/acronymes` et mis en cache (SWR ou fetch avec `cache`)
+- Détection par mot entier uniquement (regex `\b`) pour éviter les faux positifs
+- Zones exclues : `<input>`, `<button>`, `<code>`, `<pre>`, `<a>`, titres `<h1>`
+- **Complexité** : risque de conflit avec l'hydratation React, performance à surveiller si table volumineuse, tester soigneusement avant de déployer
 
-### Emails — études cliniques & questionnaires de thèse
-- Nouveau modèle d'email "Nouveaux questionnaires de thèse disponibles" (envoi aux utilisateurs ayant coché la case dans centre de notifications)
-- Nouveau modèle d'email "Nouvelles études cliniques disponibles" (idem)
-- Envoi automatique tous les 3 mois OU manuellement depuis l'admin
-- Centre de notifications : ajouter les cases "Études cliniques" et "Questionnaires de thèse"
+### UI — Comparatifs : réduire la taille des illustrations dans les cartes
+- Page `/comparatifs` : baisser la hauteur/taille des illustrations dans les cartes catégories
 
-### Email mensuel d'informations
-- Modèle d'email mensuel générable depuis l'admin
-- Contenu dynamique : dernières solutions ajoutées (cartes), nouvelles thèses/études depuis le dernier envoi, nouveautés du site
-- Envoi aux utilisateurs ayant coché la case correspondante dans leurs notifications
-- Historique des anciens emails envoyés consultable dans l'admin
-
-### Admin Emails — sous-pages
-- Le nombre de modèles d'email croissant, créer des sous-pages :
-  - Emails d'infos mensuels
-  - Études cliniques & questionnaires de thèse
-  - Notifications système (vérification email, changement mot de passe, etc.)
-
-### Page d'accueil — remplacer "Les enjeux de l'e-santé" par les derniers articles blog
-- Supprimer la section vidéos hardcodées, la remplacer par les 3 derniers articles publiés (`statut = 'publie'`, triés par `date_publication DESC`, limit 3)
+### Bug — Comparatifs : champ de recherche à réparer
+- Page `/comparatifs` : le champ de recherche ne fonctionne pas correctement, à investiguer et corriger
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
@@ -80,6 +53,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Recherche navbar : overlay debounced, 3 sections, page `/recherche?q=...`, pg_trgm ✅
+- Module Études & Thèses complet : dépôt questionnaires (tous utilisateurs), pages mon-compte, admin validation, emails dédiés, centre de notifications ✅
+- Email mensuel (newsletter) : génération auto le 22 du mois, brouillon éditable, envoi depuis admin, historique, page web `/nl/[id]` ✅
+- Admin Emails restructuré (sous-sections études, questionnaires, notifications) ✅
+- Page d'accueil : BlogPreview (3 derniers articles) + CommunautePreview ✅
+- Vidéos accueil admin : sélection 4 vidéos drag & drop, expiration 30 jours, cron rappel ✅
+- Menu Communauté navbar (Blog, Vidéos, Irritants, Études, Thèses) ✅
+- Session admin étendue à 7 jours avec renouvellement automatique ✅
 - Éditeur Sephira renommé en Orisha ✅
 - SEO : correction prompt génération (catégorie réelle au lieu de "logiciel métier" systématique) + script régénération masse hors LGC ✅
 - SEO manuel : PraxySanté, Desmos Médecin, HyperMed régénérés via admin ✅
