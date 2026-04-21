@@ -43,6 +43,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Glossaire — ancres inter-acronymes : sigles cliquables dans définitions/descriptions → navigation directe `#SIGLE` ✅
+- Glossaire — intégration dans la recherche navbar (overlay + API) ✅
+- Glossaire — suppression du système de catégories (formulaire, CRUD, types, affichage) ✅
 - Glossaire e-Santé `/glossaire` : page publique, ancres alphabétiques, recherche, formulaire de suggestion, admin CRUD + onglet propositions ✅
 - Recherche navbar : overlay debounced, 3 sections, page `/recherche?q=...`, pg_trgm ✅
 - Module Études & Thèses complet : dépôt questionnaires (tous utilisateurs), pages mon-compte, admin validation, emails dédiés, centre de notifications ✅
