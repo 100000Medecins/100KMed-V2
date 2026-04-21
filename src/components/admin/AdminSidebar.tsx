@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap } from 'lucide-react'
+import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen } from 'lucide-react'
 
 type NavItem = {
   href: string
@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
     icon: Home,
     children: [
       { href: '/admin/pages', label: 'Pages statiques', icon: FileText },
+      { href: '/admin/acronymes', label: 'Glossaire', icon: BookOpen },
     ],
   },
   {
