@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ExternalLink, Search, Lightbulb } from 'lucide-react'
 
 type Acronyme = {
@@ -9,11 +9,29 @@ type Acronyme = {
   definition: string
   description: string | null
   lien: string | null
-  categorie: string | null
+}
+
+function linkifyText(text: string, siglesCourant: string, regex: RegExp): React.ReactNode[] {
+  const parts = text.split(regex)
+  return parts.map((part, i) => {
+    if (i % 2 === 1 && part !== siglesCourant) {
+      return (
+        <a key={i} href={`#${part}`} className="text-accent-blue hover:underline font-medium">
+          {part}
+        </a>
+      )
+    }
+    return part
+  })
 }
 
 export default function GlossaireClient({ acronymes, letters }: { acronymes: Acronyme[]; letters: string[] }) {
   const [search, setSearch] = useState('')
+
+  const siglesRegex = useMemo(() => {
+    const escaped = acronymes.map(a => a.sigle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    return new RegExp(`\\b(${escaped.join('|')})\\b`, 'g')
+  }, [acronymes])
 
   const filtered = search.trim()
     ? acronymes.filter(a =>
@@ -23,16 +41,6 @@ export default function GlossaireClient({ acronymes, letters }: { acronymes: Acr
       )
     : acronymes
 
-  // Groupement par catégorie
-  const grouped = filtered.reduce<Record<string, Acronyme[]>>((acc, a) => {
-    const key = a.categorie?.trim() || 'Autres'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(a)
-    return acc
-  }, {})
-  const groupKeys = Object.keys(grouped).sort((a, b) => a === 'Autres' ? 1 : b === 'Autres' ? -1 : a.localeCompare(b))
-
-  // Lettres actives pour les ancres (mode sans recherche uniquement)
   const activeLetters = Array.from(new Set(filtered.map(a => a.sigle[0].toUpperCase()))).sort()
 
   return (
@@ -76,52 +84,44 @@ export default function GlossaireClient({ acronymes, letters }: { acronymes: Acr
       {filtered.length === 0 ? (
         <p className="text-center text-gray-400 text-sm py-12">Aucun résultat pour &laquo; {search} &raquo;</p>
       ) : search ? (
-        /* Mode recherche : liste plate sans groupes */
         <div className="bg-white rounded-2xl shadow-card overflow-hidden divide-y divide-gray-50">
           {filtered.map(a => (
-            <AcronymeRow key={a.id} a={a} />
+            <AcronymeRow key={a.id} a={a} siglesRegex={siglesRegex} />
           ))}
         </div>
       ) : (
-        /* Mode normal : groupé par catégorie, puis ancres alphabétiques */
-        <div className="space-y-8">
-          {groupKeys.map(group => {
-            const items = grouped[group]
-            const groupLetters = Array.from(new Set(items.map(a => a.sigle[0].toUpperCase()))).sort()
-            return (
-              <div key={group}>
-                {/* Titre catégorie */}
-                <h2 className="text-xs font-bold uppercase tracking-widest text-accent-blue mb-4 px-1">{group}</h2>
-                {groupLetters.map(letter => (
-                  <div key={letter} id={`lettre-${letter}`} className="mb-5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-xl font-extrabold text-navy">{letter}</span>
-                      <div className="flex-1 h-px bg-gray-200" />
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-card overflow-hidden divide-y divide-gray-50">
-                      {items.filter(a => a.sigle[0].toUpperCase() === letter).map(a => (
-                        <AcronymeRow key={a.id} a={a} />
-                      ))}
-                    </div>
-                  </div>
+        <div className="space-y-5">
+          {activeLetters.map(letter => (
+            <div key={letter} id={`lettre-${letter}`}>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-xl font-extrabold text-navy">{letter}</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <div className="bg-white rounded-2xl shadow-card overflow-hidden divide-y divide-gray-50">
+                {filtered.filter(a => a.sigle[0].toUpperCase() === letter).map(a => (
+                  <AcronymeRow key={a.id} a={a} siglesRegex={siglesRegex} />
                 ))}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-function AcronymeRow({ a }: { a: Acronyme }) {
+function AcronymeRow({ a, siglesRegex }: { a: Acronyme; siglesRegex: RegExp }) {
   return (
-    <div className="flex items-start gap-4 px-5 py-4">
+    <div id={a.sigle} className="flex items-start gap-4 px-5 py-4 scroll-mt-24">
       <span className="text-sm font-extrabold text-navy w-24 shrink-0 pt-0.5">{a.sigle}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800">{a.definition}</p>
+        <p className="text-sm font-semibold text-gray-800">
+          {linkifyText(a.definition, a.sigle, new RegExp(siglesRegex.source, 'g'))}
+        </p>
         {a.description && (
-          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{a.description}</p>
+          <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+            {linkifyText(a.description, a.sigle, new RegExp(siglesRegex.source, 'g'))}
+          </p>
         )}
         {a.lien && (
           <a href={a.lien} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline mt-1">

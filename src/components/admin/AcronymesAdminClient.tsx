@@ -10,7 +10,6 @@ type Acronyme = {
   definition: string
   description: string | null
   lien: string | null
-  categorie: string | null
   created_at: string
 }
 
@@ -28,26 +27,23 @@ type FormState = {
   definition: string
   description: string
   lien: string
-  categorie: string
 }
 
-const emptyForm: FormState = { sigle: '', definition: '', description: '', lien: '', categorie: '' }
+const emptyForm: FormState = { sigle: '', definition: '', description: '', lien: '' }
 
 function AcronymeForm({
   initial,
-  categories,
   onSave,
   onCancel,
   isPending,
 }: {
   initial: FormState
-  categories: string[]
   onSave: (f: FormState) => void
   onCancel: () => void
   isPending: boolean
 }) {
   const [form, setForm] = useState(initial)
-  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }))
 
   return (
@@ -72,30 +68,15 @@ function AcronymeForm({
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Catégorie</label>
-          <input
-            value={form.categorie}
-            onChange={set('categorie')}
-            list="categories-list"
-            placeholder="ex. Téléservices AM…"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
-          />
-          <datalist id="categories-list">
-            {categories.map(c => <option key={c} value={c} />)}
-          </datalist>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-500 mb-1 block">Lien externe</label>
-          <input
-            value={form.lien}
-            onChange={set('lien')}
-            placeholder="https://…"
-            type="url"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
-          />
-        </div>
+      <div>
+        <label className="text-xs font-semibold text-gray-500 mb-1 block">Lien externe</label>
+        <input
+          value={form.lien}
+          onChange={set('lien')}
+          placeholder="https://…"
+          type="url"
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
+        />
       </div>
       <div>
         <label className="text-xs font-semibold text-gray-500 mb-1 block">Description</label>
@@ -139,22 +120,10 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
   const [search, setSearch] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  // Catégories existantes pour l'autocomplete
-  const categories = Array.from(new Set(acronymes.map(a => a.categorie).filter(Boolean) as string[]))
-
   const filtered = acronymes.filter(a =>
     a.sigle.toLowerCase().includes(search.toLowerCase()) ||
     a.definition.toLowerCase().includes(search.toLowerCase())
   )
-
-  // Groupement par catégorie puis alphabétique
-  const grouped = filtered.reduce<Record<string, Acronyme[]>>((acc, a) => {
-    const key = a.categorie?.trim() || '—'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(a)
-    return acc
-  }, {})
-  const groupKeys = Object.keys(grouped).sort((a, b) => a === '—' ? 1 : b === '—' ? -1 : a.localeCompare(b))
 
   function handleCreate(form: FormState) {
     const fd = new FormData()
@@ -167,7 +136,6 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
         definition: form.definition,
         description: form.description || null,
         lien: form.lien || null,
-        categorie: form.categorie || null,
         created_at: new Date().toISOString(),
       }].sort((a, b) => a.sigle.localeCompare(b.sigle)))
       setShowAdd(false)
@@ -185,7 +153,6 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
         definition: form.definition,
         description: form.description || null,
         lien: form.lien || null,
-        categorie: form.categorie || null,
       } : a).sort((a, b) => a.sigle.localeCompare(b.sigle)))
       setEditId(null)
     })
@@ -201,7 +168,7 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
 
   function handleStartApprove(s: Suggestion) {
     setApprovingId(s.id)
-    setApproveForm({ sigle: s.sigle, definition: s.definition, description: s.description ?? '', lien: '', categorie: '' })
+    setApproveForm({ sigle: s.sigle, definition: s.definition, description: s.description ?? '', lien: '' })
   }
 
   function handleApprove(form: FormState) {
@@ -212,7 +179,6 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
         sigle: form.sigle,
         definition: form.definition,
         description: form.description || null,
-        categorie: form.categorie || null,
       })
       setSuggestions(prev => prev.filter(s => s.id !== id))
       setAcronymes(prev => [...prev, {
@@ -221,7 +187,6 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
         definition: form.definition,
         description: form.description || null,
         lien: null,
-        categorie: form.categorie || null,
         created_at: new Date().toISOString(),
       }].sort((a, b) => a.sigle.localeCompare(b.sigle)))
       setApprovingId(null)
@@ -273,7 +238,6 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
                   <p className="text-xs text-gray-400 mb-3">Modifier avant publication :</p>
                   <AcronymeForm
                     initial={approveForm}
-                    categories={categories}
                     onSave={handleApprove}
                     onCancel={() => setApprovingId(null)}
                     isPending={isPending}
@@ -332,65 +296,51 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
       {showAdd && (
         <AcronymeForm
           initial={emptyForm}
-          categories={categories}
           onSave={handleCreate}
           onCancel={() => setShowAdd(false)}
           isPending={isPending}
         />
       )}
 
-      {groupKeys.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="bg-white rounded-card shadow-card px-6 py-16 text-center text-gray-400 text-sm">
           {search ? 'Aucun résultat.' : 'Aucun acronyme. Cliquez sur "Ajouter" pour commencer.'}
         </div>
       ) : (
-        <div className="space-y-4">
-          {groupKeys.map(group => (
-            <div key={group} className="bg-white rounded-card shadow-card overflow-hidden">
-              {/* Séparateur catégorie */}
-              <div className="flex items-center gap-3 px-5 py-2.5 border-l-4 border-accent-blue bg-blue-50/50">
-                <span className="text-xs font-bold text-navy uppercase tracking-wider">{group}</span>
-                <span className="text-xs text-gray-400">{grouped[group].length} acronyme{grouped[group].length > 1 ? 's' : ''}</span>
-              </div>
-
-              <div className="divide-y divide-gray-50">
-                {grouped[group].map(a => (
-                  <div key={a.id}>
-                    {editId === a.id ? (
-                      <div className="px-5 py-3">
-                        <AcronymeForm
-                          initial={{ sigle: a.sigle, definition: a.definition, description: a.description ?? '', lien: a.lien ?? '', categorie: a.categorie ?? '' }}
-                          categories={categories}
-                          onSave={(f) => handleUpdate(a.id, f)}
-                          onCancel={() => setEditId(null)}
-                          isPending={isPending}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-start gap-4 px-5 py-3 hover:bg-surface-light transition-colors group">
-                        <span className="text-sm font-bold text-navy w-24 shrink-0 pt-0.5">{a.sigle}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-700">{a.definition}</p>
-                          {a.description && <p className="text-xs text-gray-400 mt-0.5">{a.description}</p>}
-                          {a.lien && (
-                            <a href={a.lien} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline mt-0.5">
-                              <ExternalLink className="w-3 h-3" /> {a.lien}
-                            </a>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => { setEditId(a.id); setShowAdd(false) }} className="p-1.5 text-gray-400 hover:text-accent-blue hover:bg-accent-blue/10 rounded-lg transition-colors">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => handleDelete(a.id, a.sigle)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+        <div className="bg-white rounded-card shadow-card overflow-hidden divide-y divide-gray-50">
+          {filtered.map(a => (
+            <div key={a.id}>
+              {editId === a.id ? (
+                <div className="px-5 py-3">
+                  <AcronymeForm
+                    initial={{ sigle: a.sigle, definition: a.definition, description: a.description ?? '', lien: a.lien ?? '' }}
+                    onSave={(f) => handleUpdate(a.id, f)}
+                    onCancel={() => setEditId(null)}
+                    isPending={isPending}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-start gap-4 px-5 py-3 hover:bg-surface-light transition-colors group">
+                  <span className="text-sm font-bold text-navy w-24 shrink-0 pt-0.5">{a.sigle}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700">{a.definition}</p>
+                    {a.description && <p className="text-xs text-gray-400 mt-0.5">{a.description}</p>}
+                    {a.lien && (
+                      <a href={a.lien} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline mt-0.5">
+                        <ExternalLink className="w-3 h-3" /> {a.lien}
+                      </a>
                     )}
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => { setEditId(a.id); setShowAdd(false) }} className="p-1.5 text-gray-400 hover:text-accent-blue hover:bg-accent-blue/10 rounded-lg transition-colors">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDelete(a.id, a.sigle)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

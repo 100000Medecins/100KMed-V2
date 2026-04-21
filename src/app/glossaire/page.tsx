@@ -19,14 +19,13 @@ type Acronyme = {
   definition: string
   description: string | null
   lien: string | null
-  categorie: string | null
 }
 
 async function getAcronymes(): Promise<Acronyme[]> {
   const supabase = await createServerClient()
   const { data } = await supabase
     .from('acronymes')
-    .select('id, sigle, definition, description, lien, categorie')
+    .select('id, sigle, definition, description, lien')
     .order('sigle', { ascending: true })
   return (data ?? []) as Acronyme[]
 }

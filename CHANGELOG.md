@@ -5,6 +5,31 @@
 
 ---
 
+## [2026-04-22] — Glossaire : suppression catégories · Ancres inter-acronymes · Recherche navbar
+
+### Nouvelles fonctionnalités
+- **Ancres inter-acronymes** : dans le glossaire public, chaque sigle détecté dans une définition ou description est rendu cliquable et pointe directement vers l'entrée correspondante (`#SIGLE`) — sans TreeWalker, via regex JSX côté client sur les données déjà chargées
+- **Recherche navbar — Glossaire** : les acronymes apparaissent désormais dans l'overlay de recherche global (section "Glossaire"), avec navigation directe vers `/glossaire#SIGLE`
+
+### Suppressions / simplifications
+- **Catégories d'acronymes supprimées** : champ retiré du formulaire admin, du groupement public, des actions CRUD (`createAcronyme`, `updateAcronyme`, `approveSuggestion`) et des types TypeScript — affichage alphabétique simple dans l'admin et le glossaire public
+
+### SQL requis (Supabase)
+```sql
+-- Nouveaux acronymes à insérer (voir session 2026-04-22)
+-- La colonne `categorie` reste en base (données existantes), seul le code l'ignore désormais
+```
+
+### Fichiers modifiés
+- `src/components/GlossaireClient.tsx` — ancres `id={sigle}`, `linkifyText()`, suppression groupement catégories
+- `src/components/admin/AcronymesAdminClient.tsx` — suppression champ catégorie, liste plate
+- `src/app/glossaire/page.tsx` — suppression `categorie` du select SQL et du type
+- `src/lib/actions/admin.ts` — suppression `categorie` des 3 actions acronymes
+- `src/app/api/search/route.ts` — ajout requête `acronymes` (ilike sigle + définition, max 5)
+- `src/components/search/SearchOverlay.tsx` — section "Glossaire" dans l'overlay
+
+---
+
 ## [2026-04-21] — Tooltips acronymes · Navbar CTA · Améliorations UI
 
 ### Nouvelles fonctionnalités

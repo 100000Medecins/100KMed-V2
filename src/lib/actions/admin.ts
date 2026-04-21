@@ -1186,7 +1186,6 @@ export async function createAcronyme(formData: FormData) {
     definition: (formData.get('definition') as string).trim(),
     description: (formData.get('description') as string)?.trim() || null,
     lien: (formData.get('lien') as string)?.trim() || null,
-    categorie: (formData.get('categorie') as string)?.trim() || null,
   })
   if (error) return { error: error.message }
   revalidatePath('/admin/acronymes')
@@ -1201,7 +1200,6 @@ export async function updateAcronyme(id: string, formData: FormData) {
     definition: (formData.get('definition') as string).trim(),
     description: (formData.get('description') as string)?.trim() || null,
     lien: (formData.get('lien') as string)?.trim() || null,
-    categorie: (formData.get('categorie') as string)?.trim() || null,
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/acronymes')
@@ -1235,7 +1233,6 @@ export async function approveSuggestion(id: string, payload: {
   sigle: string
   definition: string
   description: string | null
-  categorie: string | null
 }) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
@@ -1244,7 +1241,6 @@ export async function approveSuggestion(id: string, payload: {
     sigle: payload.sigle.trim(),
     definition: payload.definition.trim(),
     description: payload.description || null,
-    categorie: payload.categorie || null,
     lien: null,
   })
   if (error) return { error: error.message }

@@ -8,6 +8,7 @@ type SearchResult = {
   solutions: { id: string; nom: string; slug: string; logo_url: string | null; categorie_nom: string | null; categorie_slug: string | null }[]
   articles: { id: string; titre: string; slug: string; extrait: string | null; image_couverture: string | null }[]
   categories: { id: string; nom: string; slug: string; icon: string | null }[]
+  acronymes: { sigle: string; definition: string }[]
 }
 
 interface SearchOverlayProps {
@@ -69,7 +70,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
   const hasResults = results && (
     results.solutions.length > 0 ||
     results.articles.length > 0 ||
-    results.categories.length > 0
+    results.categories.length > 0 ||
+    results.acronymes.length > 0
   )
 
   return (
@@ -176,6 +178,24 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                           }
                         </div>
                         <p className="text-sm font-semibold text-navy truncate flex-1">{a.titre}</p>
+                        <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Acronymes */}
+                {results.acronymes.length > 0 && (
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Glossaire</p>
+                    {results.acronymes.map((a) => (
+                      <button
+                        key={a.sigle}
+                        onClick={() => navigate(`/glossaire#${a.sigle}`)}
+                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
+                      >
+                        <span className="text-xs font-extrabold text-accent-blue w-20 shrink-0">{a.sigle}</span>
+                        <p className="text-sm text-gray-600 truncate flex-1">{a.definition}</p>
                         <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
                       </button>
                     ))}
