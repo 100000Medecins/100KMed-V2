@@ -1,5 +1,7 @@
 import StarRating from '@/components/ui/StarRating'
 import { sanitizeHtml } from '@/lib/sanitize'
+import AcronymText from '@/components/AcronymText'
+import AcronymHtml from '@/components/AcronymHtml'
 
 interface EditorialReviewProps {
   avisRedaction: string | null
@@ -32,9 +34,9 @@ export default function EditorialReview({
       </div>
 
       {avisRedaction && (
-        <div
+        <AcronymHtml
+          html={sanitizeHtml(avisRedaction)}
           className="text-gray-600 leading-relaxed mb-6 whitespace-pre-line"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(avisRedaction) }}
         />
       )}
 
@@ -50,7 +52,7 @@ export default function EditorialReview({
                 {fortsList.map((point, i) => (
                   <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                     <span className="text-rating-green mt-0.5 flex-shrink-0">&#10003;</span>
-                    {point}
+                    <AcronymText text={point} />
                   </li>
                 ))}
               </ul>
@@ -66,7 +68,7 @@ export default function EditorialReview({
                 {faiblesList.map((point, i) => (
                   <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                     <span className="text-accent-orange mt-0.5 flex-shrink-0">&#10007;</span>
-                    {point}
+                    <AcronymText text={point} />
                   </li>
                 ))}
               </ul>

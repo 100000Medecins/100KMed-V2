@@ -287,7 +287,7 @@ export default function Navbar() {
           <div className="hidden min-[1150px]:flex items-center gap-3">
             {!loading && user ? (
               <>
-                <Button variant={darkNav ? "white" : "primary"} href="/solution/noter">
+                <Button variant="primary" href="/solution/noter" className="border-2 border-white">
                   Évaluer un logiciel
                 </Button>
                 <div ref={accountMenuRef} className="relative">
@@ -325,7 +325,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Button variant={darkNav ? "white" : "primary"} href="/solution/noter">
+                <Button variant="primary" href="/solution/noter" className="border-2 border-white">
                   Évaluer un logiciel
                 </Button>
                 <Button variant="white" href="/connexion" className={darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}>
@@ -422,7 +422,7 @@ export default function Navbar() {
             <div className="pt-4 space-y-2">
               {!loading && user ? (
                 <>
-                  <Button variant="primary" href="/solution/noter" className="w-full justify-center">
+                  <Button variant="primary" href="/solution/noter" className="w-full justify-center border border-white/40">
                     Évaluer un logiciel
                   </Button>
                   <Button variant="white" href="/mon-compte/profil" className="w-full justify-center" onClick={() => setIsMobileOpen(false)}>
@@ -440,7 +440,7 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Button variant="primary" href="/solution/noter" className="w-full justify-center">
+                  <Button variant="primary" href="/solution/noter" className="w-full justify-center border border-white/40">
                     Évaluer un logiciel
                   </Button>
                   <Button variant="white" href="/connexion" className="w-full justify-center">

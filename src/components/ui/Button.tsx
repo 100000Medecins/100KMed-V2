@@ -19,6 +19,8 @@ const variantStyles: Record<ButtonVariant, string> = {
     "text-navy hover:bg-surface-light",
   white:
     "border-2 border-white text-white hover:bg-white hover:text-navy",
+  cta:
+    "bg-accent-yellow border-2 border-accent-yellow text-navy font-bold hover:brightness-110 shadow-md",
 };
 
 export default function Button({

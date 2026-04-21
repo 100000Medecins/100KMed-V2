@@ -5,6 +5,21 @@
 
 ---
 
+## [2026-04-21] — Tooltips acronymes · Navbar CTA · Améliorations UI
+
+### Nouvelles fonctionnalités
+- **Tooltips acronymes** : détection automatique des acronymes de la table `acronymes` dans les zones de texte importantes — tooltip natif `<abbr title="...">` au survol
+  - Route `/api/acronymes` (cache `revalidate = 3600`)
+  - `AcronymText` pour le texte brut, `AcronymHtml` pour le contenu HTML (injection HTML-safe sur les nœuds texte uniquement)
+  - Cache module-level partagé (1 seul fetch par session)
+  - Zones couvertes : description solution, avis rédaction, points forts/faibles, mot de l'éditeur, extrait et corps des articles de blog
+
+### Améliorations UI
+- **Navbar — bouton "Évaluer un logiciel"** : fond navy + contour blanc `border-2` (desktop), contour blanc léger `border white/40` (mobile burger), pour le différencier du bouton "Mon compte"
+- **Button** : nouvelle variante `cta` disponible (fond accent-yellow)
+
+---
+
 ## [2026-04-21] — Glossaire e-Santé · Propositions d'acronymes · Améliorations UI
 
 ### Nouvelles fonctionnalités

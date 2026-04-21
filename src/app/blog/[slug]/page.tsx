@@ -7,6 +7,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import AcronymText from '@/components/AcronymText'
+import AcronymHtml from '@/components/AcronymHtml'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -109,16 +111,18 @@ export default async function ArticlePage({ params }: PageProps) {
         <div className="max-w-3xl mx-auto px-6 py-12">
           {/* Extrait en chapeau */}
           {article.extrait && (
-            <p className="text-lg text-gray-600 leading-relaxed font-medium mb-8 pb-8 border-b border-gray-100">
-              {article.extrait}
-            </p>
+            <AcronymText
+              as="p"
+              text={article.extrait}
+              className="text-lg text-gray-600 leading-relaxed font-medium mb-8 pb-8 border-b border-gray-100"
+            />
           )}
 
           {/* Corps de l'article */}
           {article.contenu && (
-            <div
+            <AcronymHtml
+              html={article.contenu}
               className="prose-custom"
-              dangerouslySetInnerHTML={{ __html: article.contenu }}
             />
           )}
 

@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react'
+import AcronymHtml from '@/components/AcronymHtml'
 import type { Editeur } from '@/types/models'
 
 interface PublisherWordProps {
@@ -33,11 +34,10 @@ export default function PublisherWord({ motEditeur, editeur }: PublisherWordProp
             </div>
           )}
           <div className="flex-1">
-            <p
+            <AcronymHtml
+              as="p"
+              html={`\u201C${motEditeur.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}\u201D`}
               className="text-gray-600 leading-relaxed italic whitespace-pre-line"
-              dangerouslySetInnerHTML={{
-                __html: `\u201C${motEditeur.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}\u201D`,
-              }}
             />
             {editeur?.website && (
               <a

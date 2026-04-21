@@ -4,6 +4,7 @@ import StarRating from '@/components/ui/StarRating'
 import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { sanitizeHtml } from '@/lib/sanitize'
+import AcronymHtml from '@/components/AcronymHtml'
 import type { SolutionWithRelations } from '@/types/models'
 
 const SVG_GRADIENT_BG = `url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMzg0MCIgaGVpZ2h0PSIyMTYwIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImIiIGN4PSIxMDAlIiBjeT0iMTAwJSIgcj0iMTAwJSIgZng9IjEwMCUiIGZ5PSIxMDAlIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KDAgLTEgLjU2MjUgMCAuNDM4IDIpIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMkM3QjhDIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjNUNBQ0E5IiBzdG9wLW9wYWNpdHk9IjAiLz48L3JhZGlhbEdyYWRpZW50PjxyYWRpYWxHcmFkaWVudCBpZD0iYyIgY3g9IjAlIiBjeT0iMCUiIHI9IjEwMi4yNDklIiBmeD0iMCUiIGZ5PSIwJSIgZ3JhZGllbnRUcmFuc2Zvcm09InNjYWxlKC41NjI1IDEuMDEwMjYpIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMzk3NEI3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMzk3NEI3IiBzdG9wLW9wYWNpdHk9IjAiLz48L3JhZGlhbEdyYWRpZW50PjxyYWRpYWxHcmFkaWVudCBpZD0iZCIgY3g9IjAlIiBjeT0iMTAwJSIgcj0iMTAwJSIgZng9IjAlIiBmeT0iMTAwJSIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgwIC0xIC41NjI1IDAgLS41NjMgMSkiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNGMUI5ODYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNGMUI5ODYiIHN0b3Atb3BhY2l0eT0iMCIvPjwvcmFkaWFsR3JhZGllbnQ+PHJhZGlhbEdyYWRpZW50IGlkPSJlIiBjeD0iNDEuNjU1JSIgY3k9IjU3LjQ3NCUiIHI9IjUxLjc3MSUiIGZ4PSI0MS42NTUlIiBmeT0iNTcuNDc0JSIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgwIDEgLS44MDE3OSAwIC44NzcgLjE1OCkiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNFRjkxQTEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNFRjkxQTEiIHN0b3Atb3BhY2l0eT0iMCIvPjwvcmFkaWFsR3JhZGllbnQ+PHBhdGggaWQ9ImEiIGQ9Ik0wIDBoMzg0MHYyMTYwSDB6Ii8+PC9kZWZzPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgdHJhbnNmb3JtPSJyb3RhdGUoMTgwIDE5MjAgMTA4MCkiPjx1c2UgeGxpbms6aHJlZj0iI2EiIGZpbGw9InVybCgjYikiLz48dXNlIHhsaW5rOmhyZWY9IiNhIiBmaWxsPSJ1cmwoI2MpIi8+PHVzZSB4bGluazpocmVmPSIjYSIgZmlsbD0idXJsKCNkKSIvPjx1c2UgeGxpbms6aHJlZj0iI2EiIGZpbGw9InVybCgjZSkiLz48L2c+PC9zdmc+) center/cover no-repeat`
@@ -107,9 +108,9 @@ export default function SolutionHero({
 
             {/* Description */}
             {solution.description && (
-              <div
+              <AcronymHtml
+                html={sanitizeHtml(solution.description)}
                 className="text-gray-600 leading-relaxed mb-6 text-sm md:text-base prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(solution.description) }}
               />
             )}
 

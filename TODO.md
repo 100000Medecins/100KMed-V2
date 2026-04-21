@@ -6,25 +6,13 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### Page Glossaire — Acronymes de l'e-Santé
-- Page publique `/glossaire` ou `/acronymes` listant les acronymes courants de l'e-santé (ANS, DMP, INS, PSC, LGC, HDS, RPPS, etc.)
-- Affichage alphabétique avec ancres, recherche/filtre en temps réel
-- Contenu éditable depuis l'admin (CRUD acronyme : sigle, définition, description, lien externe optionnel)
-- SQL requis : table `acronymes` (id, sigle, definition, description, lien, created_at)
-
-### Tooltips acronymes — détection automatique sur toutes les pages ⚠️ Moyen-difficile
+### Tooltips acronymes — détection automatique sur toutes les pages
 - Quand un acronyme de la table est repéré dans le texte d'une page, afficher sa définition au survol (infobulle)
 - **Approche recommandée** : composant client global `AcronymHighlighter` dans le layout, qui après montage parcourt les nœuds texte (TreeWalker API) et enveloppe les correspondances dans un `<abbr>` avec tooltip
 - Acronymes chargés une fois via `/api/acronymes` et mis en cache (SWR ou fetch avec `cache`)
 - Détection par mot entier uniquement (regex `\b`) pour éviter les faux positifs
 - Zones exclues : `<input>`, `<button>`, `<code>`, `<pre>`, `<a>`, titres `<h1>`
 - **Complexité** : risque de conflit avec l'hydratation React, performance à surveiller si table volumineuse, tester soigneusement avant de déployer
-
-### UI — Comparatifs : réduire la taille des illustrations dans les cartes
-- Page `/comparatifs` : baisser la hauteur/taille des illustrations dans les cartes catégories
-
-### Bug — Comparatifs : champ de recherche à réparer
-- Page `/comparatifs` : le champ de recherche ne fonctionne pas correctement, à investiguer et corriger
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
@@ -44,15 +32,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Avatars
 - Changer les avatars utilisateurs
 
-### Recherche navbar
-- Loupe dans la navbar → overlay de recherche
-- Route `/api/search?q=...` avec pg_trgm sur solutions, articles, catégories
-- Dropdown avec sections "Solutions" / "Articles" / "Catégories" (3-4 résultats chacun)
-- Page `/recherche?q=...` pour les résultats complets
-
 ---
 
 ## Fait récemment
+- Glossaire e-Santé `/glossaire` : page publique, ancres alphabétiques, recherche, formulaire de suggestion, admin CRUD + onglet propositions ✅
 - Recherche navbar : overlay debounced, 3 sections, page `/recherche?q=...`, pg_trgm ✅
 - Module Études & Thèses complet : dépôt questionnaires (tous utilisateurs), pages mon-compte, admin validation, emails dédiés, centre de notifications ✅
 - Email mensuel (newsletter) : génération auto le 22 du mois, brouillon éditable, envoi depuis admin, historique, page web `/nl/[id]` ✅
