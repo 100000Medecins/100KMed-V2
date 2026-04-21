@@ -6,6 +6,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
+### Glossaire — étoffer les acronymes
+- Enrichir la table `acronymes` : ajouter de nouveaux acronymes de l'e-santé (HAS, CNAM, ARS, CPAM, FINESS, etc.)
+- Compléter les définitions et liens officiels existants
+
+### Glossaire — supprimer les catégories
+- Enlever le champ catégorie sur la page publique `/glossaire`
+- Enlever le champ catégorie dans l'admin `/admin/acronymes`
+
 ### Tooltips acronymes — détection automatique sur toutes les pages
 - Quand un acronyme de la table est repéré dans le texte d'une page, afficher sa définition au survol (infobulle)
 - **Approche recommandée** : composant client global `AcronymHighlighter` dans le layout, qui après montage parcourt les nœuds texte (TreeWalker API) et enveloppe les correspondances dans un `<abbr>` avec tooltip
