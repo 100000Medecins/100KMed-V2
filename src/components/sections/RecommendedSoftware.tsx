@@ -152,22 +152,22 @@ function SolutionCardItem({ solution, sortMode }: { solution: SolutionCard; sort
   return (
     <Link
       href={`/solutions/${solution.categorieSlug}/${solution.slug}`}
-      className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-6 flex flex-col items-center text-center group"
+      className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-6 flex flex-col items-center text-center group"
     >
-      <span className="text-sm font-semibold text-navy mb-3">{solution.nom}</span>
+      <span className="text-xs sm:text-sm font-semibold text-navy mb-2 sm:mb-3 line-clamp-2">{solution.nom}</span>
 
       {note ? (
-        <div className="flex items-center gap-2 mb-4">
-          <RatingBadge rating={note} />
-          <StarRating rating={note} />
+        <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 mb-3 sm:mb-4">
+          <RatingBadge rating={note} size="sm" />
+          <StarRating rating={note} size="sm" />
         </div>
       ) : (
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <span className="text-xs text-gray-400">Pas encore noté</span>
         </div>
       )}
 
-      <div className="w-full h-20 rounded-xl bg-surface-light flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+      <div className="w-full h-16 sm:h-20 rounded-xl bg-surface-light flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden">
         {solution.logo_url ? (
           <img
             src={solution.logo_url}

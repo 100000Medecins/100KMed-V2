@@ -8,10 +8,11 @@ async function getData() {
   const supabase = await createServerClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = supabase as any
+  const today = new Date().toISOString().slice(0, 10)
 
   const [{ data: etudes }, { data: questionnaires }, { data: config }] = await Promise.all([
-    s.from('etudes_cliniques').select('id, titre, description, date_fin').order('created_at', { ascending: false }).limit(2),
-    s.from('questionnaires_these').select('id, titre, description, date_fin').eq('statut', 'publie').order('created_at', { ascending: false }).limit(2),
+    s.from('etudes_cliniques').select('id, titre, description, date_fin').or(`date_fin.is.null,date_fin.gte.${today}`).order('created_at', { ascending: false }).limit(2),
+    s.from('questionnaires_these').select('id, titre, description, date_fin').eq('statut', 'publie').or(`date_fin.is.null,date_fin.gte.${today}`).order('created_at', { ascending: false }).limit(2),
     s.from('site_config').select('cle, valeur').eq('cle', 'section_communaute_visible').single(),
   ])
 
@@ -103,7 +104,7 @@ export default async function CommunautePreview() {
               couleur="#8A5CF6"
               badge="Questionnaire de thèse"
               titre={q.titre}
-              description={q.description}
+              description={stripHtml(q.description)}
               date_fin={q.date_fin}
               href="/mon-compte/questionnaires-these"
               cta="Participer"
