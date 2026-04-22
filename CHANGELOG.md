@@ -5,6 +5,172 @@
 
 ---
 
+## [2026-04-22] — PSC relay : test connexion prod sur dev.100000medecins.org
+
+> **Fonctionnalité critique — authentification Pro Santé Connect**
+> Cette section documente en détail le mécanisme de relay OAuth mis en place pour tester
+> la connexion PSC production depuis le nouveau site (dev.100000medecins.org) sans
+> modifier la configuration PSC ni impacter les utilisateurs du site actuel.
+> En cas de problème, voir la section **Rollback** ci-dessous.
+
+### Contexte et contrainte
+
+Pro Santé Connect (ANS) n'autorise qu'**une seule `redirect_uri` par application**.
+L'application PSC `100000medecins` a comme redirect_uri enregistrée :
+```
+https://www.100000medecins.org/connexionPsc
+```
+
+Le nouveau site est servi sur `dev.100000medecins.org` (Next.js).
+Il ne peut pas recevoir directement le callback PSC sans changer cette URI.
+
+### Architecture en place (avant ce changement)
+
+```
+Ancien site (www — Vue.js SPA statique sur Apache/Gandi)
+  ↓ bouton "Se connecter avec PSC"
+PSC prod → redirect vers https://www.100000medecins.org/connexionPsc?code=XXX
+  ↓ (route Vue Router côté client)
+Firebase Cloud Function connectPSC (échange code → token)
+  ↓
+Session dans sessionStorage
+```
+
+### Solution implémentée : relay OAuth via Apache
+
+**Principe** : l'ancien site Apache peut intercepter les requêtes entrantes au niveau
+serveur (`.htaccess`) AVANT que le JavaScript Vue.js ne charge. On détecte si le
+`state` OAuth commence par `dev_` et on redirige vers le nouveau site.
+
+Le nouveau site (dev) initie le flux PSC en :
+1. Utilisant `https://www.100000medecins.org/connexionPsc` comme `redirect_uri`
+   (l'URI enregistrée chez PSC — inchangée)
+2. Préfixant le `state` OAuth avec `dev_` pour être identifiable au retour
+3. Utilisant le `client_id` et `client_secret` PSC production
+
+```
+Nouveau site (dev.100000medecins.org — Next.js)
+  ↓ bouton "Se connecter avec PSC"
+  ↓ redirect_uri = https://www.100000medecins.org/connexionPsc
+  ↓ state = "dev_<uuid>"
+PSC prod → redirect vers https://www.100000medecins.org/connexionPsc?code=XXX&state=dev_YYY
+  ↓ Apache .htaccess détecte state=dev_* (AVANT que Vue.js charge)
+  ↓ 302 vers https://dev.100000medecins.org/api/auth/psc-callback?code=XXX&state=dev_YYY
+Nouveau site reçoit le callback
+  ↓ échange code → token avec PSC (redirect_uri = https://www.100000medecins.org/connexionPsc)
+  ↓ session Supabase créée
+Utilisateur connecté sur dev ✓
+```
+
+**Pourquoi le site actuel (www) n'est pas affecté :**
+L'ancien site Vue.js n'envoie AUCUN paramètre `state` dans ses requêtes PSC
+(visible dans le code compilé `407.80b8b265.js`). La règle `.htaccess` ne se
+déclenche donc jamais pour les vrais utilisateurs sur www.
+
+### Variable d'environnement à ajouter
+
+```
+NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI=https://www.100000medecins.org/connexionPsc
+```
+
+Cette variable active le mode relay. Quand elle est absente, le comportement
+est identique à l'état précédent (redirect_uri = origine courante + /api/auth/psc-callback).
+
+**À définir :** dans le dashboard Vercel du projet `dev.100000medecins.org`,
+ou dans `.env.local` pour les tests en local.
+
+**Après basculement DNS (www → Next.js)** : cette variable peut rester définie
+(elle pointe vers le même domaine, le relay devient un simple pass-through),
+ou être supprimée (le comportement direct reprend). Dans les deux cas, aucune
+modification de la configuration PSC n'est nécessaire.
+
+### Fichiers modifiés
+
+#### `htdocs/.htaccess` (site V1 — à uploader sur Gandi)
+Ajout de 2 lignes avant les règles SPA existantes :
+```apache
+RewriteCond %{QUERY_STRING} (?:^|&)state=dev_
+RewriteRule ^connexionPsc$ https://dev.100000medecins.org/api/auth/psc-callback [R=302,L,QSA]
+```
+- `RewriteCond` : vérifie que le query string contient `state=dev_` (en début ou après `&`)
+- `RewriteRule` : redirige `/connexionPsc` vers le callback du nouveau site
+- `QSA` (Query String Append) : transmet tous les paramètres (`code`, `state`, `session_state`…)
+- `L` : stop processing (ne pas appliquer les règles suivantes)
+- Le flag `R=302` (temporaire) est intentionnel — ne pas mettre 301 (mis en cache par le navigateur)
+
+#### `src/lib/auth/psc.ts`
+
+**`connectWithPsc()`** (flux client — bouton PSC dans la navbar) :
+- Si `NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI` défini → `redirect_uri` = cette valeur, `state` = `dev_<uuid>`
+- Sinon → comportement antérieur (`redirect_uri` = `origin/api/auth/psc-callback`, `state` = `<uuid>`)
+- Note : le cookie `psc_state` stocke toujours le `stateUuid` nu (sans préfixe `dev_`),
+  ce qui est cohérent avec la vérification future éventuelle
+
+**`exchangePscCode(code, redirectUri)`** (signature modifiée) :
+- Ancienne signature : `(code: string, origin: string)` → construisait `${origin}/api/auth/psc-callback`
+- Nouvelle signature : `(code: string, redirectUri: string)` → utilise la valeur telle quelle
+- CRITIQUE : PSC vérifie que le `redirect_uri` de l'échange token est identique à celui
+  de la demande d'autorisation initiale. En mode relay, les deux doivent être
+  `https://www.100000medecins.org/connexionPsc`.
+
+#### `src/app/api/auth/psc-initier/route.ts`
+
+Flux serveur (lien email vers évaluation anonyme PSC). Même logique que `connectWithPsc()` :
+- Si relay → `redirect_uri` = relay URI, state = `dev_<stateUuid>[|token]`
+- Sinon → comportement antérieur
+
+#### `src/app/api/auth/psc-callback/route.ts`
+
+- Parsing du `state` : strip du préfixe `dev_` avant d'extraire le `verificationToken` (après `|`)
+- Calcul du `callbackRedirectUri` : relay URI si définie, sinon `origin/api/auth/psc-callback`
+- Ce `callbackRedirectUri` est passé à `exchangePscCode` (voir ci-dessus)
+
+#### `src/app/connexionPsc/route.ts` (nouveau fichier)
+
+Route Next.js à `/connexionPsc`. Double rôle :
+
+**Phase de test (DNS encore sur Gandi)** : jamais appelée sur dev car le `.htaccess`
+redirige directement vers `/api/auth/psc-callback`. Présente pour complétude.
+
+**Après basculement DNS (www → Next.js)** : PSC redirige vers
+`https://www.100000medecins.org/connexionPsc` qui arrive maintenant sur ce serveur.
+Cette route redirige en 302 vers `/api/auth/psc-callback` en préservant tous les
+query params. **Aucune modification de la config PSC requise.**
+
+### Rollback
+
+**Rollback immédiat (si le test plante)** :
+1. Ouvrir le `.htaccess` téléchargé localement
+2. Supprimer les 2 lignes du bloc PSC RELAY (le `RewriteCond` et le `RewriteRule`)
+3. Re-uploader sur Gandi via FTP
+4. Le site www reprend son comportement normal en quelques secondes
+
+**Rollback côté dev** :
+- Supprimer `NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI` du dashboard Vercel → redéployer
+- Les connexions PSC sur dev échoueront (attendu : PSC refusera le redirect_uri)
+- Aucun impact sur les utilisateurs de www
+
+### Migration DNS (quand www bascule vers Next.js)
+
+Quand les DNS de `www.100000medecins.org` pointeront vers Vercel/Next.js :
+1. Le `.htaccess` Gandi devient inactif (plus de trafic vers Gandi)
+2. `src/app/connexionPsc/route.ts` prend le relais automatiquement
+3. `NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI` peut être gardée ou supprimée — indifférent
+4. **Zéro retouche de la configuration PSC** (l'URI enregistrée reste valide)
+
+### Notes pour un développeur externe
+
+- Le flux PSC est entièrement implémenté en mode manuel (sans lib OIDC tierce)
+- Les endpoints PSC prod sont dans `src/lib/auth/psc.ts` → `PSC_ENVS.production`
+- Le `client_secret` PSC ne doit jamais être exposé côté client (var sans `NEXT_PUBLIC_`)
+- Les codes OAuth PSC sont à usage unique — si le callback échoue, l'utilisateur doit relancer
+- L'ancien site (Firebase Function `connectPSC`) et le nouveau site (Next.js) utilisent
+  le même `client_id` (`100000medecins`) mais des `client_secret` différents potentiellement
+- Le `state` OAuth n'est pas vérifié contre le cookie en callback (dette technique préexistante,
+  hors scope de cette PR)
+
+---
+
 ## [2026-04-22] — Glossaire : suppression catégories · Ancres inter-acronymes · Recherche navbar
 
 ### Nouvelles fonctionnalités

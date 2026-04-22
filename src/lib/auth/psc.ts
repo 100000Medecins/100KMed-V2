@@ -37,18 +37,26 @@ export function connectWithPsc(): void {
     return
   }
 
-  const state = crypto.randomUUID()
+  // Mode relay : si NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI est défini, on utilise
+  // l'URI enregistrée chez PSC (www.100000medecins.org/connexionPsc) comme
+  // redirect_uri, et on préfixe le state avec "dev_" pour que le .htaccess
+  // de l'ancien site puisse identifier et relayer ce callback vers dev.
+  const relayRedirectUri = process.env.NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI
+  const redirectUri = relayRedirectUri ?? `${window.location.origin}/api/auth/psc-callback`
+
+  const stateUuid = crypto.randomUUID()
+  const state = relayRedirectUri ? `dev_${stateUuid}` : stateUuid
   const nonce = crypto.randomUUID()
 
   // Stocker dans des cookies (survivent aux redirects cross-contexte)
   const expires = new Date(Date.now() + 10 * 60 * 1000).toUTCString()
-  document.cookie = `psc_state=${state}; path=/; expires=${expires}; SameSite=Lax`
+  document.cookie = `psc_state=${stateUuid}; path=/; expires=${expires}; SameSite=Lax`
   document.cookie = `psc_nonce=${nonce}; path=/; expires=${expires}; SameSite=Lax`
 
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
-    redirect_uri: `${window.location.origin}/api/auth/psc-callback`,
+    redirect_uri: redirectUri,
     scope: 'openid scope_all',
     acr_values: 'eidas1',
     state,
@@ -61,14 +69,22 @@ export function connectWithPsc(): void {
 /**
  * Échange le code d'autorisation PSC contre des tokens.
  */
-export async function exchangePscCode(code: string, origin: string) {
+/**
+ * Échange le code d'autorisation PSC contre des tokens.
+ * @param code   Code OAuth reçu en callback
+ * @param redirectUri  URI exacte utilisée dans la demande d'autorisation initiale.
+ *                     Doit correspondre à la lettre à ce qui a été envoyé à PSC.
+ *                     En mode relay : https://www.100000medecins.org/connexionPsc
+ *                     En mode direct : https://<domaine>/api/auth/psc-callback
+ */
+export async function exchangePscCode(code: string, redirectUri: string) {
   const res = await fetch(PSC_ENDPOINTS.token, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: `${origin}/api/auth/psc-callback`,
+      redirect_uri: redirectUri,
       client_id: process.env.NEXT_PUBLIC_PSC_CLIENT_ID!,
       client_secret: process.env.PSC_CLIENT_SECRET!,
     }),

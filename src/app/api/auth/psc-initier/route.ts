@@ -21,8 +21,14 @@ export async function GET(request: Request) {
 
   const stateUuid = crypto.randomUUID()
   const nonce = crypto.randomUUID()
-  // Format : "stateUuid|tokenVerification" — le callback extrait le token après le pipe
-  const state = token ? `${stateUuid}|${token}` : stateUuid
+
+  // Mode relay : préfixe "dev_" pour que le .htaccess Gandi identifie ce callback
+  // et le redirige vers dev.100000medecins.org plutôt que de le traiter en local.
+  // Format state : "[dev_]stateUuid[|tokenVerification]"
+  const relayRedirectUri = process.env.NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI
+  const statePrefix = relayRedirectUri ? 'dev_' : ''
+  const state = token ? `${statePrefix}${stateUuid}|${token}` : `${statePrefix}${stateUuid}`
+  const redirectUri = relayRedirectUri ?? `${origin}/api/auth/psc-callback`
 
   const cookieStore = await cookies()
   const expires = new Date(Date.now() + 10 * 60 * 1000)
@@ -32,7 +38,7 @@ export async function GET(request: Request) {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
-    redirect_uri: `${origin}/api/auth/psc-callback`,
+    redirect_uri: redirectUri,
     scope: 'openid scope_all',
     acr_values: 'eidas1',
     state,

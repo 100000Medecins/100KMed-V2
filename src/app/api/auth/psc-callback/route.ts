@@ -31,10 +31,13 @@ export async function GET(request: Request) {
   const error = searchParams.get('error')
   const state = searchParams.get('state')
 
-  // Extraire le token de vérification depuis le state (format "stateUuid|token")
+  // Extraire le token de vérification depuis le state.
+  // Format possible : "stateUuid|token" ou "dev_stateUuid|token" (mode relay)
+  // On strip le préfixe "dev_" avant de parser.
   let verificationToken: string | null = null
-  if (state && state.includes('|')) {
-    verificationToken = state.split('|')[1] || null
+  if (state) {
+    const stateClean = state.startsWith('dev_') ? state.substring(4) : state
+    if (stateClean.includes('|')) verificationToken = stateClean.split('|')[1] || null
   }
 
   if (error || !code) {
@@ -43,8 +46,13 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. Échanger le code contre des tokens
-    const tokens = await exchangePscCode(code, origin)
+    // 1. Échanger le code contre des tokens.
+    // CRITIQUE : redirect_uri doit être identique à celle envoyée lors de la demande
+    // d'autorisation. En mode relay, c'est NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI
+    // (https://www.100000medecins.org/connexionPsc). En mode direct, c'est origin + /api/auth/psc-callback.
+    const relayRedirectUri = process.env.NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI
+    const callbackRedirectUri = relayRedirectUri ?? `${origin}/api/auth/psc-callback`
+    const tokens = await exchangePscCode(code, callbackRedirectUri)
 
     // 2. Récupérer les infos utilisateur
     const userInfo = await getPscUserInfo(tokens.access_token)

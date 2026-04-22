@@ -6,20 +6,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### Audit DNS Gandi — 100000medecins.org
-- Faire le point sur tous les enregistrements DNS existants (A, CNAME, TXT, MX…)
-- Identifier et supprimer les entrées obsolètes (ancien hébergeur, anciens environnements)
-- Nettoyer les entrées `dev` en conflit (A + CNAME vers ancien hébergeur) avant mise en prod
-
 ### Backups base de données Supabase
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
 - Le code (git) ne sauvegarde pas les données : utilisateurs, avis, articles, études, évaluations sont uniquement dans Supabase
 - Options : script bash automatisé via cron local ou Windows Task Scheduler, export vers le NAS
-
-### Emails auth Supabase → SendGrid SMTP
-- Configurer le SMTP custom dans Supabase dashboard (Authentication → SMTP Settings) avec les credentials SendGrid
-- Zéro changement de code, 5 minutes dans le dashboard
-- Supprime la limite de 3 emails/heure du plan gratuit Supabase
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
@@ -29,12 +19,20 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Nouvelles catégories de solutions
 - Créer les catégories : Télétransmission, Téléconsultation, Téléexpertise
 
-### PSC production
-- Migrer ProSanté Connect de l'environnement BAS vers la production ANS
-- Voir checklist dans `memory/project_psc_prod_deployment.md`
-
 ### Avatars
 - Changer les avatars utilisateurs
+
+### PSC prod sur dev.100000medecins.org (test temporaire)
+- Configurer une redirect URI `https://dev.100000medecins.org/api/auth/psc-callback` dans l'application PSC production ANS
+- Permet de tester le flux PSC prod sans basculer le DNS principal
+- À retirer une fois la mise en prod complète effectuée
+
+### PSC production + DNS mise en prod *(à faire ensemble)*
+- Migrer ProSanté Connect de l'environnement BAS vers la production ANS (checklist dans `memory/project_psc_prod_deployment.md`)
+- `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)
+- `www` : remplacer CNAME `webacc8.sd6.ghst.net` par `cname.vercel-dns.com.`
+- Supprimer les 4 CNAME SSL sectigo/comodoca (certificats ancien hébergeur)
+- Vérifier que le wildcard `* CNAME webredir.vip.gandi.net.` n'interfère pas
 
 ---
 
