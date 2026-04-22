@@ -2,24 +2,33 @@
 
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { createUserProfile } from '@/lib/actions/user'
+import { createUserProfile, sendPasswordReset } from '@/lib/actions/user'
+import { connectWithPsc } from '@/lib/auth/psc'
 import type { User } from '@supabase/supabase-js'
 
 interface AuthContextType {
   user: User | null
+  userRole: string | null
+  isEtudiant: boolean
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
+  resetPassword: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  userRole: null,
+  isEtudiant: false,
   loading: false,
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
   signUpWithEmail: async () => ({ error: null }),
+  resetPassword: async () => ({ error: null }),
+  updatePassword: async () => ({ error: null }),
   signOut: async () => {},
 })
 
@@ -44,6 +53,8 @@ function isSupabaseConfigured(): boolean {
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [isEtudiant, setIsEtudiant] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Ne créer le client Supabase que s'il est configuré
@@ -59,27 +70,26 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Récupérer la session initiale
-    const getSession = async () => {
+    const fetchRole = async (userId: string) => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
-      } catch {
-        // Supabase inaccessible
-      } finally {
-        setLoading(false)
+        const { data } = await supabase.from('users').select('role, mode_exercice').eq('id', userId).single()
+        setUserRole(data?.role ?? null)
+        setIsEtudiant((data as { mode_exercice?: string | null } | null)?.mode_exercice === 'Étudiant')
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setUserRole(null)
+        setIsEtudiant(false)
       }
     }
 
-    getSession()
-
-    // Écouter les changements d'auth
+    // onAuthStateChange émet INITIAL_SESSION dès l'abonnement — pas besoin de getSession() séparé
+    // (les deux simultanés causaient une collision sur le lock navigator.locks de Supabase)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) await fetchRole(session.user.id)
+      else { setUserRole(null); setIsEtudiant(false) }
       setLoading(false)
     })
 
@@ -87,24 +97,22 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase])
 
   /**
-   * Connexion via Pro Santé Connect (PSC).
-   * Utilise le provider OIDC custom configuré dans Supabase.
+   * Connexion via Pro Santé Connect (PSC) — flux direct BAS.
+   * Redirige vers wallet.bas.psc.esante.gouv.fr/auth.
+   * Le retour est géré par /onboarding/signincallback.
    */
   const signInWithPSC = async () => {
-    if (!supabase) return
-    await supabase.auth.signInWithOAuth({
-      provider: 'keycloak' as any, // PSC utilise Keycloak sous le capot
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-        scopes: 'openid scope_all',
-      },
-    })
+    connectWithPsc()
   }
 
   const signInWithEmail = async (email: string, password: string) => {
     if (!supabase) return { error: 'Supabase non configuré' }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: error.message }
+    if (error) {
+      if (error.message === 'Invalid login credentials')
+        return { error: 'Email ou mot de passe incorrect.' }
+      return { error: error.message }
+    }
     return { error: null }
   }
 
@@ -131,15 +139,35 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
+  const resetPassword = async (email: string) => {
+    return await sendPasswordReset(email)
+  }
+
+  const updatePassword = async (password: string) => {
+    if (!supabase) return { error: 'Supabase non configuré' }
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return { error: error.message }
+    return { error: null }
+  }
+
   const signOut = async () => {
-    if (!supabase) return
-    await supabase.auth.signOut()
+    // Nettoyage local immédiat (localStorage) pour les tokens éventuellement mis en cache
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('sb-')) localStorage.removeItem(key)
+      })
+    } catch {
+      // ignore
+    }
     setUser(null)
-    window.location.href = '/'
+    setUserRole(null)
+    setIsEtudiant(false)
+    // Déléguer la déconnexion à la route serveur qui nettoie les cookies SSR
+    window.location.href = '/api/auth/signout'
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithPSC, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, userRole, isEtudiant, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   )

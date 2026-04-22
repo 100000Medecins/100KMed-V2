@@ -1,5 +1,8 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import type { Categorie } from '@/types/models'
+
+export type Groupe = { id: string; nom: string; ordre: number }
 
 /**
  * Récupère toutes les catégories actives, triées par position.
@@ -12,6 +15,21 @@ export async function getCategories() {
     .from('categories')
     .select('*')
     .eq('actif', true)
+    .order('position', { ascending: true })
+
+  if (error) throw error
+  return data as Categorie[]
+}
+
+/**
+ * Récupère toutes les catégories (actives ET inactives) pour l'interface admin.
+ */
+export async function getAllCategoriesAdmin() {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
     .order('position', { ascending: true })
 
   if (error) throw error
@@ -66,6 +84,38 @@ export async function getCategorieBySlug(slug: string) {
 
   if (error) throw error
   return data as Categorie
+}
+
+/**
+ * Récupère tous les groupes de catégories, triés par ordre.
+ */
+export async function getGroupes(): Promise<Groupe[]> {
+  const supabase = createServiceRoleClient()
+  const { data, error } = await (supabase as any)
+    .from('groupes_categories')
+    .select('id, nom, ordre')
+    .order('ordre', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as Groupe[]
+}
+
+/**
+ * Récupère les catégories actives avec leur groupe, pour la navbar et la page hub.
+ */
+export async function getCategoriesAvecGroupe() {
+  const supabase = await createServerClient()
+  const { data, error } = await (supabase as any)
+    .from('categories')
+    .select('nom, slug, groupe_id, groupes_categories(id, nom, ordre)')
+    .eq('actif', true)
+    .order('position', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as Array<{
+    nom: string
+    slug: string | null
+    groupe_id: string | null
+    groupes_categories: { id: string; nom: string; ordre: number } | null
+  }>
 }
 
 /**

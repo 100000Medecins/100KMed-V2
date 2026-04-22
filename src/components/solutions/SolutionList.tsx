@@ -2,12 +2,17 @@ import Link from 'next/link'
 import StarRating from '@/components/ui/StarRating'
 import RatingBadge from '@/components/ui/RatingBadge'
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 interface SolutionListProps {
   solutions: any[]
   categorieSlug?: string
+  tri?: string
 }
 
-export default function SolutionList({ solutions, categorieSlug }: SolutionListProps) {
+export default function SolutionList({ solutions, categorieSlug, tri }: SolutionListProps) {
   if (solutions.length === 0) {
     return (
       <div className="text-center py-12">
@@ -17,7 +22,7 @@ export default function SolutionList({ solutions, categorieSlug }: SolutionListP
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
       {solutions.map((solution) => {
         const catSlug = categorieSlug || solution.categorie?.slug
         const href = catSlug
@@ -56,7 +61,7 @@ export default function SolutionList({ solutions, categorieSlug }: SolutionListP
             {/* Description */}
             {solution.description && (
               <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
-                {solution.description}
+                {stripHtml(solution.description)}
               </p>
             )}
 
@@ -75,25 +80,29 @@ export default function SolutionList({ solutions, categorieSlug }: SolutionListP
             )}
 
             {/* Note */}
-            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-              {solution.resultat?.moyenne_utilisateurs_base5 ? (
-                <>
-                  <RatingBadge rating={solution.resultat.moyenne_utilisateurs_base5} />
-                  <StarRating rating={solution.resultat.moyenne_utilisateurs_base5} />
-                  <span className="text-xs text-gray-400">
-                    ({solution.resultat.nb_notes || 0})
-                  </span>
-                </>
-              ) : solution.noteRedacBase5 ? (
-                <>
-                  <RatingBadge rating={solution.noteRedacBase5} />
-                  <StarRating rating={solution.noteRedacBase5} />
-                  <span className="text-xs text-gray-400">Note de la rédaction</span>
-                </>
-              ) : (
-                <span className="text-xs text-gray-400">Pas encore noté</span>
-              )}
-            </div>
+            {(() => {
+              const isUtilisateurs = tri === 'note_utilisateurs'
+              const displayNote = solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5) ?? solution.noteRedacBase5
+              const nbAvis: number | null = solution.nbNotesUtilisateurs ?? null
+              const noteLabel = isUtilisateurs && nbAvis
+                ? `${nbAvis} avis`
+                : isUtilisateurs
+                ? 'Utilisateurs'
+                : ''
+              return (
+                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                  {displayNote ? (
+                    <>
+                      <RatingBadge rating={displayNote} />
+                      <StarRating rating={displayNote} />
+                      {noteLabel && <span className="text-xs text-gray-400">{noteLabel}</span>}
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400">Pas encore noté</span>
+                  )}
+                </div>
+              )
+            })()}
           </Link>
         )
       })}

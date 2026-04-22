@@ -110,3 +110,51 @@ export async function deleteSolutionUtilisee(solutionUtiliseeId: string) {
   revalidatePath('/mon-compte/mes-evaluations')
   return { status: 'SUCCESS' }
 }
+
+/**
+ * Calcule côté serveur (service role, bypass RLS) si chaque évaluation est complète.
+ * Compare les identifiant_tech des critères de la catégorie avec les clés des scores soumis.
+ * Retourne une map solution_id -> true (complet) | false (incomplet).
+ */
+export async function getEvaluationCompletionMap(
+  userId: string
+): Promise<Record<string, boolean>> {
+  const supabase = createServiceRoleClient()
+
+  // Récupérer les solutions_utilisees avec leur categorie_id
+  const { data: sus } = await supabase
+    .from('solutions_utilisees')
+    .select('solution_id')
+    .eq('user_id', userId)
+    .neq('statut_evaluation', 'ancienne')
+
+  // Récupérer les scores des évaluations
+  const { data: evals } = await supabase
+    .from('evaluations')
+    .select('solution_id, scores')
+    .eq('user_id', userId)
+
+  if (!sus || !evals) return {}
+
+  // Construire la map solution_id -> scores keys
+  const scoresMap: Record<string, Set<string>> = {}
+  const nonScoreKeys = new Set(['commentaire', 'date_debut', 'date_fin'])
+  for (const ev of evals) {
+    if (!ev.solution_id) continue
+    const keys = Object.keys((ev.scores || {}) as Record<string, unknown>)
+      .filter((k) => !nonScoreKeys.has(k))
+    scoresMap[ev.solution_id] = new Set(keys)
+  }
+
+  // Pour chaque solution, récupérer les identifiant_tech attendus par catégorie
+  const completionMap: Record<string, boolean> = {}
+
+  for (const su of sus) {
+    const solutionId = su.solution_id as string
+    if (!solutionId) continue
+    const submitted = scoresMap[solutionId] ?? new Set()
+    completionMap[solutionId] = submitted.size > 0
+  }
+
+  return completionMap
+}

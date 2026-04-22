@@ -7,45 +7,66 @@ import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { Search } from 'lucide-react'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 interface SolutionItem {
   id: string
   nom: string
   slug: string | null
   logo_url: string | null
-  categorie: { slug: string | null; nom: string } | null
+  categorie: { slug: string | null; nom: string; icon: string | null; image_url: string | null } | null
+}
+
+interface CategorieCard {
+  slug: string
+  nom: string
+  icon: string | null
+  image_url: string | null
+  count: number
 }
 
 export default function ChoisirSolutionPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { loading: authLoading } = useAuth()
   const router = useRouter()
   const [solutions, setSolutions] = useState<SolutionItem[]>([])
   const [search, setSearch] = useState('')
+  const [selectedCategorie, setSelectedCategorie] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (authLoading) return
-    if (!user) {
-      router.push('/connexion?redirect=/solution/noter')
-      return
-    }
 
     const supabase = createClient()
     supabase
       .from('solutions')
-      .select('id, nom, slug, logo_url, categorie:categories(slug, nom)')
+      .select('id, nom, slug, logo_url, categorie:categories(slug, nom, icon, image_url)')
+      .eq('actif', true)
       .order('nom', { ascending: true })
       .then(({ data }) => {
         setSolutions((data as unknown as SolutionItem[]) || [])
         setLoading(false)
       })
-  }, [user, authLoading, router])
+  }, [authLoading])
 
-  const filtered = search.trim()
-    ? solutions.filter((s) =>
-        s.nom.toLowerCase().includes(search.toLowerCase())
-      )
-    : solutions
+  // Construire les cartes de catégories depuis les solutions chargées
+  const categories: CategorieCard[] = (() => {
+    const map = new Map<string, CategorieCard>()
+    for (const s of solutions) {
+      const cat = s.categorie
+      if (!cat?.slug) continue
+      if (!map.has(cat.slug)) {
+        map.set(cat.slug, { slug: cat.slug, nom: cat.nom, icon: cat.icon, image_url: cat.image_url, count: 0 })
+      }
+      map.get(cat.slug)!.count++
+    }
+    return Array.from(map.values()).sort((a, b) => a.nom.localeCompare(b.nom))
+  })()
+
+  const filtered = solutions.filter((s) => {
+    const matchSearch = !search.trim() || s.nom.toLowerCase().includes(search.toLowerCase())
+    const matchCat = !selectedCategorie || s.categorie?.slug === selectedCategorie
+    return matchSearch && matchCat
+  })
 
   if (authLoading || loading) {
     return (
@@ -62,16 +83,60 @@ export default function ChoisirSolutionPage() {
     <>
       <Navbar />
       <main className="pt-[72px] min-h-screen bg-surface-light">
-        <div className="max-w-2xl mx-auto px-6 py-10">
-          <h1 className="text-xl font-bold text-navy mb-2">
+        <div className="max-w-4xl mx-auto px-6 pt-4 pb-0">
+          <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Évaluer un logiciel' }]} />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-extrabold text-navy mb-1">
             Évaluer un logiciel
           </h1>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 mb-8">
             Sélectionnez le logiciel que vous souhaitez évaluer.
           </p>
 
+          {/* Cartes de catégories style comparatifs */}
+          {categories.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+              {categories.map((cat) => {
+                const isActive = selectedCategorie === cat.slug
+                return (
+                  <button
+                    key={cat.slug}
+                    type="button"
+                    onClick={() => setSelectedCategorie(isActive ? null : cat.slug)}
+                    className="relative overflow-hidden rounded-3xl min-h-[100px] flex flex-col justify-start p-5 text-left transition-all duration-200 group"
+                    style={{
+                      background: isActive
+                        ? 'linear-gradient(135deg, #0e7070 0%, #6b2aaa 55%, #1a3f8a 100%)'
+                        : 'linear-gradient(135deg, #148080 0%, #7c35c0 55%, #1e4da0 100%)',
+                      outline: isActive ? '2px solid rgba(255,255,255,0.6)' : 'none',
+                      outlineOffset: '-2px',
+                    }}
+                  >
+                    {cat.image_url ? (
+                      <img
+                        src={cat.image_url}
+                        alt=""
+                        className="absolute top-1/2 -translate-y-1/2 right-8 h-[80px] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                      />
+                    ) : cat.icon ? (
+                      <span className="absolute bottom-3 right-4 text-[80px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                        {cat.icon}
+                      </span>
+                    ) : null}
+                    <span className="text-lg font-extrabold text-white mb-2 leading-snug relative z-10">{cat.nom}</span>
+                    <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white font-semibold px-3 py-1.5 rounded-full text-xs w-fit relative z-10">
+                      {cat.count} logiciel{cat.count > 1 ? 's' : ''}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           {/* Barre de recherche */}
-          <div className="relative mb-6">
+          <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -87,7 +152,7 @@ export default function ChoisirSolutionPage() {
             {filtered.length === 0 ? (
               <div className="bg-white rounded-card shadow-card p-8 text-center">
                 <p className="text-gray-500 text-sm">
-                  {search ? 'Aucun logiciel trouvé.' : 'Aucun logiciel disponible.'}
+                  {search || selectedCategorie ? 'Aucun logiciel trouvé.' : 'Aucun logiciel disponible.'}
                 </p>
               </div>
             ) : (

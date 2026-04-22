@@ -1,0 +1,216 @@
+'use server'
+
+export interface EditeurSuggestion {
+  nom: string
+  nom_commercial: string | null
+  description: string | null
+  website: string | null
+  contact_email: string | null
+  contact_telephone: string | null
+  contact_adresse: string | null
+  contact_cp: string | null
+  contact_ville: string | null
+  contact_pays: string | null
+  nb_employes: number | null
+  siret: string | null
+  logo_url: string | null
+}
+
+async function tavilySearch(query: string, apiKey: string) {
+  const res = await fetch('https://api.tavily.com/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      api_key: apiKey,
+      query,
+      search_depth: 'advanced',
+      include_answer: true,
+      max_results: 5,
+    }),
+  })
+  if (!res.ok) return null
+  return res.json() as Promise<{
+    answer?: string
+    results?: Array<{ title: string; url: string; content: string }>
+  }>
+}
+
+async function tavilyExtract(url: string, apiKey: string): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.tavily.com/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: apiKey, urls: [url] }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.results?.[0]?.raw_content?.slice(0, 3000) ?? null
+  } catch {
+    return null
+  }
+}
+
+function buildContext(
+  frData: Awaited<ReturnType<typeof tavilySearch>>,
+  enData: Awaited<ReturnType<typeof tavilySearch>>,
+  siteContent: string | null
+): string {
+  const parts: string[] = []
+
+  if (frData?.answer) parts.push(`[Recherche FR] ${frData.answer}`)
+  if (enData?.answer) parts.push(`[Search EN] ${enData.answer}`)
+
+  for (const r of frData?.results ?? []) {
+    parts.push(`Source: ${r.url}\n${r.content}`)
+  }
+  for (const r of enData?.results ?? []) {
+    parts.push(`Source: ${r.url}\n${r.content}`)
+  }
+  if (siteContent) {
+    parts.push(`[Contenu site officiel]\n${siteContent}`)
+  }
+
+  return parts.join('\n\n').slice(0, 12000)
+}
+
+export async function searchEditeurInfo(
+  nom: string
+): Promise<{ data?: EditeurSuggestion; error?: string }> {
+  const tavilyKey = process.env.TAVILY_API_KEY
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+
+  if (!tavilyKey) return { error: 'Clé Tavily manquante dans .env.local' }
+  if (!anthropicKey) return { error: 'Clé Anthropic manquante dans .env.local' }
+
+  // 1. Deux recherches en parallèle (FR + EN)
+  const [frData, enData] = await Promise.all([
+    tavilySearch(`${nom} éditeur logiciel médical site officiel`, tavilyKey),
+    tavilySearch(`${nom} medical software company healthcare official site`, tavilyKey),
+  ])
+
+  // 2. Si un site officiel est détecté dans les résultats, on l'extrait
+  const allUrls = [
+    ...(frData?.results ?? []).map((r) => r.url),
+    ...(enData?.results ?? []).map((r) => r.url),
+  ]
+  const officialSiteUrl = allUrls.find((u) => {
+    const lower = u.toLowerCase()
+    const nomLower = nom.toLowerCase().replace(/\s+/g, '')
+    return (
+      lower.includes(nomLower) &&
+      !lower.includes('linkedin') &&
+      !lower.includes('youtube') &&
+      !lower.includes('facebook') &&
+      !lower.includes('twitter') &&
+      !lower.includes('wikipedia')
+    )
+  })
+
+  const siteContent = officialSiteUrl
+    ? await tavilyExtract(officialSiteUrl, tavilyKey)
+    : null
+
+  const context = buildContext(frData, enData, siteContent)
+
+  if (!context.trim()) return { error: 'Aucune information trouvée pour cet éditeur.' }
+
+  // 3. Claude structure les données
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      tools: [
+        {
+          name: 'extraire_infos_editeur',
+          description: 'Extrait les informations structurées d\'un éditeur de logiciel médical',
+          input_schema: {
+            type: 'object',
+            properties: {
+              nom_commercial: { type: 'string', description: 'Nom de marque si différent du nom légal, sinon null' },
+              description: { type: 'string', description: 'Description 2-3 phrases en français' },
+              website: { type: 'string', description: 'URL complète du site officiel ou null' },
+              contact_email: { type: 'string', description: 'Email de contact ou null' },
+              contact_telephone: { type: 'string', description: 'Numéro ou null' },
+              contact_adresse: { type: 'string', description: 'Rue et numéro ou null' },
+              contact_cp: { type: 'string', description: 'Code postal ou null' },
+              contact_ville: { type: 'string', description: 'Ville ou null' },
+              contact_pays: { type: 'string', description: 'Pays ou null' },
+              nb_employes: { type: 'number', description: 'Nombre entier ou null' },
+              siret: { type: 'string', description: '14 chiffres ou null' },
+            },
+            required: ['description'],
+          },
+        },
+      ],
+      tool_choice: { type: 'tool', name: 'extraire_infos_editeur' },
+      messages: [
+        {
+          role: 'user',
+          content: `Tu es un rédacteur pour un site comparatif de logiciels médicaux destiné aux médecins libéraux français.
+
+Ton style éditorial : factuel, direct, légèrement ironique. Tu évites absolument le jargon marketing ("acteur incontournable", "pionnier", "leader", "engagé pour la santé numérique", etc.). Tu parles à des médecins qui veulent savoir qui est derrière un logiciel : taille de la boîte, origine, spécialité réelle, sans la brochure commerciale.
+
+Extrais les informations disponibles sur "${nom}" à partir du contexte ci-dessous.
+Génère aussi une description courte (2-3 phrases) en français dans ce style : qui est cette société, ce qu'elle fait vraiment, et quelques faits concrets (taille, pays, ancienneté si pertinent).
+Si la société est basée au Royaume-Uni ou ailleurs, indique le pays réel.
+
+Contexte :
+${context}`,
+        },
+      ],
+    }),
+  })
+
+  if (!claudeRes.ok) {
+    const err = await claudeRes.text()
+    return { error: `Erreur Claude API : ${claudeRes.status} — ${err.slice(0, 200)}` }
+  }
+
+  const claudeData = await claudeRes.json()
+
+  try {
+    const toolUse = claudeData.content?.find((b: { type: string }) => b.type === 'tool_use')
+    const parsed = toolUse?.input ?? JSON.parse(claudeData.content[0].text.trim())
+
+    // Logo via logo.dev (remplace Clearbit, déprécié)
+    let logo_url: string | null = null
+    const site = parsed.website || officialSiteUrl || ''
+    const logoToken = process.env.LOGO_DEV_TOKEN
+    if (site) {
+      try {
+        const domain = new URL(site).hostname.replace(/^www\./, '')
+        logo_url = logoToken
+          ? `https://img.logo.dev/${domain}?token=${logoToken}&size=200&format=png`
+          : `https://logo.clearbit.com/${domain}`
+      } catch {
+        // URL invalide
+      }
+    }
+
+    return {
+      data: {
+        nom,
+        nom_commercial: parsed.nom_commercial ?? null,
+        description: parsed.description ?? null,
+        website: parsed.website ?? null,
+        contact_email: parsed.contact_email ?? null,
+        contact_telephone: parsed.contact_telephone ?? null,
+        contact_adresse: parsed.contact_adresse ?? null,
+        contact_cp: parsed.contact_cp ?? null,
+        contact_ville: parsed.contact_ville ?? null,
+        contact_pays: parsed.contact_pays ?? null,
+        nb_employes: parsed.nb_employes ?? null,
+        siret: parsed.siret ?? null,
+        logo_url,
+      },
+    }
+  } catch {
+    return { error: 'Impossible de parser la réponse de Claude.' }
+  }
+}

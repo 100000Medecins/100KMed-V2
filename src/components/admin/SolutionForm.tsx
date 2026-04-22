@@ -1,14 +1,21 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Play, Sparkles } from 'lucide-react'
 import type { Database } from '@/types/database'
+import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
+import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
+
+function isVideoUrl(url: string): boolean {
+  return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
+}
 
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
-type Editeur = { id: string; nom: string }
-type GalerieImage = { id?: string; url: string; titre: string | null; ordre: number | null }
+type Editeur = { id: string; nom: string | null }
+type GalerieImage = { id?: string; url: string; titre: string | null; ordre: number | null; type?: string | null }
 
 type NoteRedacItem = {
   id: string
@@ -33,6 +40,8 @@ interface SolutionFormProps {
   categories: Categorie[]
   editeurs: Editeur[]
   notesRedac?: NoteRedacItem[]
+  tagsForSolution?: TagForSolution[]
+  solutionId?: string
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
@@ -74,9 +83,12 @@ function Section({
   )
 }
 
-export default function SolutionForm({ solution, categories, editeurs, notesRedac, action }: SolutionFormProps) {
+export default function SolutionForm({ solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, action }: SolutionFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [metaTitle, setMetaTitle] = useState(solution?.meta_title ?? '')
+  const [metaDescription, setMetaDescription] = useState(solution?.meta_description ?? '')
+  const [isSeoGenerating, setIsSeoGenerating] = useState(false)
   const [galerie, setGalerie] = useState<GalerieImage[]>(
     solution?.galerie ?? []
   )
@@ -200,6 +212,8 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     tarification: false,
     editorial: false,
     criteres: false,
+    fonctionnalites: false,
+    fonctionnalitesAssociees: false,
     galerie: false,
     dates: false,
     seo: false,
@@ -278,7 +292,18 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             </select>
           </div>
           <div>
-            <label htmlFor="editeur_id" className={labelClass}>Éditeur</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="editeur_id" className="text-sm font-medium text-navy">Éditeur</label>
+              <a
+                href="/admin/editeurs/nouveau"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline"
+              >
+                <Plus className="w-3 h-3" />
+                Créer un éditeur
+              </a>
+            </div>
             <select
               id="editeur_id"
               name="editeur_id"
@@ -379,7 +404,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           <textarea
             id="prix"
             name="prix"
-            defaultValue={solution?.prix ? JSON.stringify(solution.prix, null, 2) : ''}
+            defaultValue={(solution as any)?.prix ? JSON.stringify((solution as any).prix, null, 2) : ''}
             rows={4}
             className={textareaClass}
             placeholder='{ "mensuel": 99, "annuel": 990 }'
@@ -544,9 +569,37 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         </Section>
       )}
 
+      {/* Section — Fonctionnalités associées (pour filtrage) */}
+      {tagsForSolution && solutionId && (
+        <Section
+          title={`Fonctionnalités (${tagsForSolution.filter((t) => t.enabled).length} associées)`}
+          isOpen={openSections.fonctionnalitesAssociees}
+          onToggle={() => toggleSection('fonctionnalitesAssociees')}
+        >
+          <FonctionnalitesAssocieesSection
+            solutionId={solutionId}
+            initialTags={tagsForSolution}
+          />
+        </Section>
+      )}
+
+      {/* Section — Fonctionnalités principales (affichées sur la page solution) */}
+      {tagsForSolution && solutionId && (
+        <Section
+          title={`Fonctionnalités principales (${tagsForSolution.filter((t) => t.is_principale).length} affichées)`}
+          isOpen={openSections.fonctionnalites}
+          onToggle={() => toggleSection('fonctionnalites')}
+        >
+          <FonctionnalitesSection
+            solutionId={solutionId}
+            initialTags={tagsForSolution}
+          />
+        </Section>
+      )}
+
       {/* Section 6 — Galerie */}
       <Section
-        title={`Galerie d'images (${galerie.length})`}
+        title={`Galerie (${galerie.filter(g => !isVideoUrl(g.url) && g.type !== 'video').length} image${galerie.filter(g => !isVideoUrl(g.url) && g.type !== 'video').length !== 1 ? 's' : ''}, ${galerie.filter(g => isVideoUrl(g.url) || g.type === 'video').length} vidéo${galerie.filter(g => isVideoUrl(g.url) || g.type === 'video').length !== 1 ? 's' : ''})`}
         isOpen={openSections.galerie}
         onToggle={() => toggleSection('galerie')}
       >
@@ -591,14 +644,50 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
               <GripVertical className="w-5 h-5" />
             </div>
 
-            {img.url && (
-              <img
-                src={img.url}
-                alt={img.titre || ''}
-                className="w-24 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
-              />
+            {isVideoUrl(img.url) || img.type === 'video' ? (() => {
+              const ytId = img.url?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1] ?? null
+              return ytId ? (
+                <div className="w-24 h-16 rounded-lg border border-gray-200 flex-shrink-0 relative overflow-hidden bg-black">
+                  <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt="" className="w-full h-full object-cover opacity-70" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-7 h-7 bg-red-600 rounded-full flex items-center justify-center shadow">
+                      <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-24 h-16 rounded-lg border-2 border-dashed border-gray-200 flex-shrink-0 flex items-center justify-center bg-gray-50">
+                  <Play className="w-6 h-6 text-gray-300" />
+                </div>
+              )
+            })() : (
+              img.url && (
+                <img
+                  src={img.url}
+                  alt={img.titre || ''}
+                  className="w-24 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
+                />
+              )
             )}
             <div className="flex-1 space-y-2">
+              {isVideoUrl(img.url) || img.type === 'video' ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 shrink-0">
+                    <Play className="w-2.5 h-2.5 fill-red-600" /> Vidéo
+                  </span>
+                  <input
+                    type="url"
+                    value={img.url}
+                    onChange={(e) => {
+                      const updated = [...galerie]
+                      updated[index] = { ...updated[index], url: e.target.value }
+                      setGalerie(updated)
+                    }}
+                    placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                    className={inputClass}
+                  />
+                </div>
+              ) : (
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -621,6 +710,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
                   {galerieUploadingIndex === index ? '⏳' : '⬆ Upload'}
                 </button>
               </div>
+              )}
               <input
                 type="text"
                 value={img.titre ?? ''}
@@ -647,11 +737,11 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length }])}
+            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length, type: 'image' }])}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Ajouter manuellement
+            Ajouter une image (URL)
           </button>
           <button
             type="button"
@@ -661,6 +751,14 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           >
             <Plus className="w-4 h-4" />
             {bulkUploading ? 'Upload en cours...' : 'Uploader des images'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setGalerie([...galerie, { url: '', titre: null, ordre: galerie.length, type: 'video' }])}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-button text-sm font-medium border-2 border-dashed border-red-200 text-red-400 hover:border-red-500 hover:text-red-600 transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            Ajouter une vidéo YouTube / Vimeo
           </button>
         </div>
       </Section>
@@ -731,22 +829,60 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
         isOpen={openSections.seo}
         onToggle={() => toggleSection('seo')}
       >
+        {solutionId && (
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-gray-400">Génération automatique via IA</span>
+            <button
+              type="button"
+              disabled={isSeoGenerating}
+              onClick={async () => {
+                setIsSeoGenerating(true)
+                try {
+                  const res = await fetch('/api/admin/generer-seo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: solutionId }),
+                  })
+                  const data = await res.json()
+                  if (res.ok && data.title) {
+                    setMetaTitle(data.title)
+                    setMetaDescription(data.description)
+                  }
+                } finally {
+                  setIsSeoGenerating(false)
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-accent-blue/40 text-accent-blue hover:bg-accent-blue/5 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isSeoGenerating ? 'animate-pulse' : ''}`} />
+              {isSeoGenerating ? 'Génération…' : 'Générer le SEO'}
+            </button>
+          </div>
+        )}
         <div>
-          <label htmlFor="meta_title" className={labelClass}>Meta title</label>
+          <label htmlFor="meta_title" className={labelClass}>
+            Meta title
+            {metaTitle && <span className="ml-2 text-xs text-gray-400 font-normal">{metaTitle.length}/60</span>}
+          </label>
           <input
             id="meta_title"
             type="text"
             name="meta_title"
-            defaultValue={solution?.meta_title ?? ''}
+            value={metaTitle}
+            onChange={(e) => setMetaTitle(e.target.value)}
             className={inputClass}
           />
         </div>
         <div>
-          <label htmlFor="meta_description" className={labelClass}>Meta description</label>
+          <label htmlFor="meta_description" className={labelClass}>
+            Meta description
+            {metaDescription && <span className="ml-2 text-xs text-gray-400 font-normal">{metaDescription.length}/155</span>}
+          </label>
           <textarea
             id="meta_description"
             name="meta_description"
-            defaultValue={solution?.meta_description ?? ''}
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value)}
             rows={3}
             className={textareaClass}
           />
@@ -764,7 +900,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
       </Section>
 
       {/* Submit */}
-      <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
+      <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4 flex-wrap">
         <button
           type="submit"
           disabled={isPending}
@@ -776,6 +912,17 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
               ? 'Mettre à jour'
               : 'Créer la solution'}
         </button>
+        {solution && !solution.actif && (
+          <button
+            type="submit"
+            name="_activer"
+            value="true"
+            disabled={isPending}
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-rating-green text-white hover:bg-rating-green/90 shadow-soft transition-all disabled:opacity-50"
+          >
+            Mettre à jour et activer
+          </button>
+        )}
         <a
           href="/admin/solutions"
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"

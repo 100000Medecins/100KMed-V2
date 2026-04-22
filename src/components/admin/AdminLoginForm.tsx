@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { loginAdmin } from '@/lib/actions/admin'
 import { ShieldCheck } from 'lucide-react'
+import PasswordInput from '@/components/ui/PasswordInput'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -44,12 +45,12 @@ export default function AdminLoginForm() {
           </div>
         )}
         <form action={handleSubmit}>
-          <input
-            type="password"
+          <PasswordInput
             name="password"
             placeholder="Mot de passe"
             required
             className="w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3 mb-4"
+            wrapperClassName="mb-4"
           />
           <SubmitButton />
         </form>

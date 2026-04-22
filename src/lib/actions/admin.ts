@@ -16,6 +16,14 @@ function generateToken(): string {
     .digest('hex')
 }
 
+const ADMIN_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24 * 7, // 7 jours
+  path: '/',
+}
+
 export async function loginAdmin(formData: FormData) {
   const password = formData.get('password') as string
 
@@ -24,13 +32,7 @@ export async function loginAdmin(formData: FormData) {
   }
 
   const cookieStore = await cookies()
-  cookieStore.set('admin_token', generateToken(), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24,
-    path: '/',
-  })
+  cookieStore.set('admin_token', generateToken(), ADMIN_COOKIE_OPTIONS)
 
   redirect('/admin/solutions')
 }
@@ -49,8 +51,10 @@ async function assertAdmin() {
   const cookieStore = await cookies()
   const token = cookieStore.get('admin_token')?.value
   if (token !== generateToken()) {
-    throw new Error('Non autorisé')
+    redirect('/admin')
   }
+  // Renouveler le cookie à chaque action pour éviter l'expiration en cours de session
+  cookieStore.set('admin_token', token!, ADMIN_COOKIE_OPTIONS)
 }
 
 // ────────────────────────────────────────────
@@ -110,7 +114,7 @@ function extractSolutionFromFormData(formData: FormData) {
 }
 
 async function syncGalerie(supabase: ReturnType<typeof createServiceRoleClient>, solutionId: string, galerieJson: string) {
-  let images: Array<{ url: string; titre: string; ordre: number }> = []
+  let images: Array<{ url: string; titre: string; ordre: number; type?: string | null }> = []
   try {
     images = JSON.parse(galerieJson)
   } catch {
@@ -132,6 +136,7 @@ async function syncGalerie(supabase: ReturnType<typeof createServiceRoleClient>,
         url: img.url,
         titre: img.titre || null,
         ordre: img.ordre ?? 0,
+        type: img.type || null,
       }))
 
     if (rows.length > 0) {
@@ -223,6 +228,12 @@ export async function updateSolution(id: string, formData: FormData) {
   const supabase = createServiceRoleClient()
   const data = extractSolutionFromFormData(formData)
 
+  // Si le bouton "Mettre à jour et activer" a été cliqué
+  const activer = formData.get('_activer') === 'true'
+  if (activer) {
+    (data as Record<string, unknown>).actif = true
+  }
+
   const { error } = await supabase
     .from('solutions')
     .update(data)
@@ -246,7 +257,7 @@ export async function updateSolution(id: string, formData: FormData) {
 
   revalidatePath('/admin', 'layout')
   revalidatePath('/solutions', 'layout')
-  redirect('/admin/solutions')
+  redirect(`/admin/solutions?scroll=${id}`)
 }
 
 export async function deleteSolution(id: string) {
@@ -280,8 +291,8 @@ function extractCategorieFromFormData(formData: FormData) {
     slug,
     icon: (formData.get('icon') as string) || null,
     intro: (formData.get('intro') as string) || null,
-    position: formData.get('position') ? Number(formData.get('position')) : null,
-    actif: formData.get('actif') === 'on',
+    image_url: (formData.get('image_url') as string) || null,
+    label_filtres: (formData.get('label_filtres') as string) || null,
   }
 }
 
@@ -322,6 +333,121 @@ export async function updateCategorie(id: string, formData: FormData) {
   revalidatePath('/admin', 'layout')
   revalidatePath('/solutions', 'layout')
   redirect('/admin/categories')
+}
+
+export async function updateCategorieImageUrl(id: string, imageUrl: string | null) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('categories')
+    .update({ image_url: imageUrl })
+    .eq('id', id)
+  if (error) return { error: error.message }
+}
+
+export async function updateCategorieLabelFiltres(id: string, labelFiltres: string | null) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('categories').update({ label_filtres: labelFiltres }).eq('id', id)
+  revalidatePath('/admin/categories')
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function reorderCategories(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('categories').update({ position: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/categories')
+  revalidatePath('/solutions', 'layout')
+}
+
+// ────────────────────────────────────────────
+// Groupes de catégories CRUD
+// ────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabase = any
+
+export async function createGroupe(nom: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { data: existing } = await supabase
+    .from('groupes_categories')
+    .select('ordre')
+    .order('ordre', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const nextOrdre = existing ? (existing.ordre as number) + 1 : 0
+  const { error } = await supabase
+    .from('groupes_categories')
+    .insert({ id: randomUUID(), nom, ordre: nextOrdre })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function updateGroupe(id: string, nom: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('groupes_categories')
+    .update({ nom })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function deleteGroupe(id: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { error } = await supabase.from('groupes_categories').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function reorderGroupes(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('groupes_categories').update({ ordre: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function updateCategorieGroupe(categorieId: string, groupeId: string | null) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('categories')
+    .update({ groupe_id: groupeId })
+    .eq('id', categorieId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/categories')
+  revalidatePath('/comparatifs')
+  revalidatePath('/', 'layout')
+}
+
+export async function toggleSolutionActif(id: string, actif: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('solutions').update({ actif }).eq('id', id)
+  if (error) return { error: `Erreur : ${error.message}` }
+  revalidatePath('/admin/solutions')
+  revalidatePath('/solutions', 'layout')
 }
 
 export async function toggleCategorieActif(id: string, actif: boolean) {
@@ -386,16 +512,46 @@ export async function deleteCategorie(id: string, force = false) {
 // Pages Statiques (Blog)
 // ────────────────────────────────────────────
 
+export async function createPageStatique(formData: FormData): Promise<void> {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const slug = (formData.get('slug') as string).trim()
+  const titre = (formData.get('titre') as string).trim()
+  if (!slug || !titre) redirect('/admin/pages')
+
+  const { error } = await supabase.from('pages_statiques').insert({
+    id: randomUUID(),
+    slug,
+    titre,
+    contenu: null,
+    meta_description: null,
+  })
+  if (error) redirect('/admin/pages')
+
+  revalidatePath('/admin/pages')
+  redirect('/admin/pages')
+}
+
 export async function updatePageStatique(id: string, formData: FormData) {
   await assertAdmin()
 
   const supabase = createServiceRoleClient()
 
-  const updateData = {
+  const metadataRaw = formData.get('metadata') as string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: Record<string, any> = {
     titre: formData.get('titre') as string,
     image_couverture: (formData.get('image_couverture') as string) || null,
     contenu: (formData.get('contenu') as string) || null,
     meta_description: (formData.get('meta_description') as string) || null,
+  }
+  if (metadataRaw) {
+    try {
+      updateData.metadata = JSON.parse(metadataRaw)
+    } catch {
+      return { error: 'Format des membres fondateurs invalide.' }
+    }
   }
 
   const { error } = await supabase
@@ -420,4 +576,682 @@ export async function updatePageStatique(id: string, formData: FormData) {
   }
 
   redirect('/admin/pages')
+}
+
+// ────────────────────────────────────────────
+// Partenaires
+// ────────────────────────────────────────────
+
+export async function createPartenaire(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('partenaires').insert({
+    id: randomUUID(),
+    nom: formData.get('nom') as string,
+    logo_url: (formData.get('logo_url') as string) || null,
+    lien_url: (formData.get('lien_url') as string) || null,
+    actif: true,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+  redirect('/admin/partenaires')
+}
+
+export async function updatePartenaire(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('partenaires').update({
+    nom: formData.get('nom') as string,
+    logo_url: (formData.get('logo_url') as string) || null,
+    lien_url: (formData.get('lien_url') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+  redirect('/admin/partenaires')
+}
+
+export async function deletePartenaire(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('partenaires').delete().eq('id', id)
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+}
+
+export async function togglePartenaireActif(id: string, actif: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('partenaires').update({ actif }).eq('id', id)
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+}
+
+// ────────────────────────────────────────────
+// Éditeurs
+// ────────────────────────────────────────────
+
+export async function createEditeur(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { data, error } = await supabase.from('editeurs').insert({
+    id: randomUUID(),
+    nom: formData.get('nom') as string,
+    nom_commercial: (formData.get('nom_commercial') as string) || null,
+    description: (formData.get('description') as string) || null,
+    logo_url: (formData.get('logo_url') as string) || null,
+    logo_titre: (formData.get('logo_titre') as string) || null,
+    website: (formData.get('website') as string) || null,
+    contact_email: (formData.get('contact_email') as string) || null,
+    contact_telephone: (formData.get('contact_telephone') as string) || null,
+    contact_adresse: (formData.get('contact_adresse') as string) || null,
+    contact_cp: (formData.get('contact_cp') as string) || null,
+    contact_ville: (formData.get('contact_ville') as string) || null,
+    contact_pays: (formData.get('contact_pays') as string) || null,
+    nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
+    siret: (formData.get('siret') as string) || null,
+    mot_editeur: (formData.get('mot_editeur') as string) || null,
+  }).select('id').single()
+  if (error) return { error: error.message }
+  revalidatePath('/admin/editeurs')
+  redirect(`/admin/editeurs/${data.id}/modifier`)
+}
+
+export async function updateEditeur(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('editeurs').update({
+    nom: formData.get('nom') as string,
+    nom_commercial: (formData.get('nom_commercial') as string) || null,
+    description: (formData.get('description') as string) || null,
+    logo_url: (formData.get('logo_url') as string) || null,
+    logo_titre: (formData.get('logo_titre') as string) || null,
+    website: (formData.get('website') as string) || null,
+    contact_email: (formData.get('contact_email') as string) || null,
+    contact_telephone: (formData.get('contact_telephone') as string) || null,
+    contact_adresse: (formData.get('contact_adresse') as string) || null,
+    contact_cp: (formData.get('contact_cp') as string) || null,
+    contact_ville: (formData.get('contact_ville') as string) || null,
+    contact_pays: (formData.get('contact_pays') as string) || null,
+    nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
+    siret: (formData.get('siret') as string) || null,
+    mot_editeur: (formData.get('mot_editeur') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/editeurs')
+  revalidatePath(`/editeur/${id}`)
+  redirect('/admin/editeurs')
+}
+
+export async function deleteEditeur(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('editeurs').delete().eq('id', id)
+  revalidatePath('/admin/editeurs')
+}
+
+// ────────────────────────────────────────────
+// Tags — gestion catégorie (CRUD global)
+// ────────────────────────────────────────────
+
+export async function createFonctionnalite(categorieId: string | null, libelle: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const { data, error } = await supabase
+    .from('tags')
+    .insert({ id: randomUUID(), id_categorie: categorieId, libelle })
+    .select('id, libelle, ordre')
+    .single()
+
+  if (error) return { error: error.message }
+  revalidatePath('/solutions', 'layout')
+  return {
+    tag: {
+      id: data.id as string,
+      libelle: data.libelle as string | null,
+      ordre: data.ordre as number | null,
+      parent_id: null as string | null,
+    },
+  }
+}
+
+export async function deleteFonctionnalite(tagId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('solutions_tags').delete().eq('id_tag', tagId)
+  await supabase.from('tags').delete().eq('id', tagId)
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function reorderFonctionnalites(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('tags').update({ ordre: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function createSeparateur(categorieId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('tags')
+    .insert({ id: randomUUID(), id_categorie: categorieId, libelle: 'Nouveau groupe', is_separator: true })
+    .select('id, libelle, ordre')
+    .single()
+  if (error) return { error: error.message as string }
+  revalidatePath('/solutions', 'layout')
+  return {
+    tag: {
+      id: data.id as string,
+      libelle: data.libelle as string | null,
+      ordre: data.ordre as number | null,
+      parent_ids: [] as string[],
+      is_separator: true,
+    },
+  }
+}
+
+export async function renameFonctionnalite(tagId: string, libelle: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('tags').update({ libelle }).eq('id', tagId)
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function updateTagParents(tagId: string, parentIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // parent_ids sera dans le type après migration + regen — cast nécessaire pour l'instant
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('tags').update({ parent_ids: parentIds }).eq('id', tagId)
+  revalidatePath('/solutions', 'layout')
+}
+
+// ────────────────────────────────────────────
+// Tags — association solution (par solution)
+// ────────────────────────────────────────────
+
+/** Helper : remonte les IDs de tous les ancêtres d'un tag (BFS sur parent_ids[]) */
+async function getAncestorTagIds(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  tagId: string
+): Promise<string[]> {
+  const ancestors = new Set<string>()
+  const queue = [tagId]
+  const visited = new Set<string>()
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    if (visited.has(currentId)) continue
+    visited.add(currentId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).from('tags').select('parent_ids').eq('id', currentId).maybeSingle()
+    const parentIds = (data?.parent_ids ?? []) as string[]
+    for (const pid of parentIds) {
+      if (!visited.has(pid)) {
+        ancestors.add(pid)
+        queue.push(pid)
+      }
+    }
+  }
+  return Array.from(ancestors)
+}
+
+/**
+ * Active/désactive l'association d'un tag avec une solution.
+ * Quand on active, les ancêtres (parents) sont également auto-associés.
+ */
+export async function toggleTagAssociation(solutionId: string, tagId: string, enabled: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  if (enabled) {
+    const { data: existing } = await supabase
+      .from('solutions_tags')
+      .select('id')
+      .eq('id_solution', solutionId)
+      .eq('id_tag', tagId)
+      .maybeSingle()
+
+    if (!existing) {
+      await supabase.from('solutions_tags').insert({
+        id_solution: solutionId,
+        id_tag: tagId,
+        is_tag_principal: false,
+      })
+    }
+
+    // Auto-associer les ancêtres (ex: cocher V2 coche aussi V1)
+    const ancestors = await getAncestorTagIds(supabase, tagId)
+    for (const ancestorId of ancestors) {
+      const { data: existingAncestor } = await supabase
+        .from('solutions_tags')
+        .select('id')
+        .eq('id_solution', solutionId)
+        .eq('id_tag', ancestorId)
+        .maybeSingle()
+      if (!existingAncestor) {
+        await supabase.from('solutions_tags').insert({
+          id_solution: solutionId,
+          id_tag: ancestorId,
+          is_tag_principal: false,
+        })
+      }
+    }
+  } else {
+    await supabase.from('solutions_tags')
+      .delete()
+      .eq('id_solution', solutionId)
+      .eq('id_tag', tagId)
+  }
+
+  revalidatePath('/solutions', 'layout')
+}
+
+/**
+ * Active/désactive le statut "principale" d'un tag pour une solution.
+ * Le tag doit déjà être associé ; si ce n'est pas le cas et principale=true, on l'associe.
+ */
+export async function toggleTagPrincipale(solutionId: string, tagId: string, principale: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const { data: existing } = await supabase
+    .from('solutions_tags')
+    .select('id')
+    .eq('id_solution', solutionId)
+    .eq('id_tag', tagId)
+    .maybeSingle()
+
+  if (existing) {
+    await supabase.from('solutions_tags')
+      .update({ is_tag_principal: principale })
+      .eq('id', existing.id)
+  } else if (principale) {
+    await supabase.from('solutions_tags').insert({
+      id_solution: solutionId,
+      id_tag: tagId,
+      is_tag_principal: true,
+    })
+  }
+
+  revalidatePath('/solutions', 'layout')
+}
+
+export async function reorderPartenaires(orderedIds: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('partenaires').update({ position: index }).eq('id', id)
+    )
+  )
+  revalidatePath('/admin/partenaires')
+  revalidatePath('/')
+}
+
+export async function updateSiteConfig(cle: string, valeur: string) {
+  await assertAdmin()
+  const supabase: AnySupabase = createServiceRoleClient()
+  await supabase
+    .from('site_config')
+    .upsert({ cle, valeur }, { onConflict: 'cle' })
+  revalidatePath('/')
+}
+
+// ────────────────────────────────────────────
+// Blog — Catégories
+// ────────────────────────────────────────────
+
+export async function createArticleCategorie(nom: string, slug: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles_categories')
+    .insert({ id: randomUUID(), nom, slug })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+export async function updateArticleCategorie(id: string, nom: string, slug: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles_categories')
+    .update({ nom, slug })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+export async function deleteArticleCategorie(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles_categories')
+    .delete()
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+// ────────────────────────────────────────────
+// Blog — Articles
+// ────────────────────────────────────────────
+
+
+function extractArticleFromFormData(formData: FormData) {
+  const titre = formData.get('titre') as string
+  const slug = (formData.get('slug') as string) || slugify(titre)
+  const statut = (formData.get('statut') as string) || 'brouillon'
+  const datePublication = statut === 'publié' ? new Date().toISOString() : null
+  return {
+    titre,
+    slug,
+    extrait: (formData.get('extrait') as string) || null,
+    contenu: (formData.get('contenu') as string) || null,
+    image_couverture: (formData.get('image_couverture') as string) || null,
+    meta_description: (formData.get('meta_description') as string) || null,
+    id_categorie: (formData.get('id_categorie') as string) || null,
+    statut,
+    date_publication: datePublication,
+  }
+}
+
+export async function createArticle(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const data = extractArticleFromFormData(formData)
+  const { error } = await supabase
+    .from('articles')
+    .insert({ id: randomUUID(), ...data })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  redirect('/admin/blog')
+}
+
+export async function updateArticle(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const data = extractArticleFromFormData(formData)
+  const { error } = await supabase
+    .from('articles')
+    .update(data)
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  redirect('/admin/blog')
+}
+
+export async function deleteArticle(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles')
+    .delete()
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+}
+
+export async function updateArticleImageCouverture(id: string, imageUrl: string | null) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles')
+    .update({ image_couverture: imageUrl })
+    .eq('id', id)
+  if (error) return { error: error.message }
+}
+
+export async function publishArticle(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('articles')
+    .update({ statut: 'publié', date_publication: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  revalidatePath(`/blog/${id}`)
+  return { success: true }
+}
+
+// ────────────────────────────────────────────
+// Vidéos / Stories & Tutos
+// ────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractVideoFromFormData(formData: FormData): Record<string, any> {
+  return {
+    titre: (formData.get('titre') as string) || null,
+    url: (formData.get('url') as string) || null,
+    vignette: (formData.get('vignette') as string) || null,
+    description: (formData.get('description') as string) || null,
+    theme: (formData.get('theme') as string) || null,
+    rubrique_id: (formData.get('rubrique_id') as string) || null,
+    type: (formData.get('type') as string) || null,
+    ordre: formData.get('ordre') ? parseInt(formData.get('ordre') as string, 10) : null,
+    is_videos_principales: formData.get('is_videos_principales') === 'true',
+    statut: (formData.get('statut') as string) || 'publie',
+  }
+}
+
+export async function toggleVideoStatut(id: string, statut: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('videos').update({ statut }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+}
+
+export async function reorderVideosAndRubriques(
+  videoUpdates: { id: string; ordre: number; rubrique_id: string | null }[],
+  rubriqueUpdates: { id: string; ordre: number }[]
+) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await Promise.all([
+    ...videoUpdates.map(({ id, ordre, rubrique_id }) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from('videos').update({ ordre, rubrique_id }).eq('id', id)
+    ),
+    ...rubriqueUpdates.map(({ id, ordre }) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from('video_rubriques').update({ ordre }).eq('id', id)
+    ),
+  ])
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+}
+
+export async function createVideoRubrique(nom: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: last } = await (supabase as any).from('video_rubriques').select('ordre').order('ordre', { ascending: false }).limit(1).single()
+  const nextOrdre = ((last?.ordre as number) ?? -1) + 1
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('video_rubriques').insert({ id: randomUUID(), nom, ordre: nextOrdre })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+}
+
+export async function deleteVideoRubrique(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // Détacher les vidéos avant de supprimer (évite les erreurs de FK)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('videos').update({ rubrique_id: null }).eq('rubrique_id', id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('video_rubriques').delete().eq('id', id)
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+}
+
+export async function setHomepageVideos(ids: string[]) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const now = new Date().toISOString()
+  const limited = ids.slice(0, 4)
+
+  // Retirer le pin de toutes les vidéos (filtre requis par Supabase JS v2)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('videos').update({ homepage_pinned_at: null, homepage_ordre: null }).not('id', 'is', null)
+
+  if (limited.length > 0) {
+    await Promise.all(
+      limited.map((id, i) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from('videos')
+          .update({ homepage_pinned_at: now, homepage_ordre: i + 1 })
+          .eq('id', id)
+      )
+    )
+  }
+
+  revalidatePath('/admin/videos')
+  revalidatePath('/')
+}
+
+export async function createVideo(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('videos')
+    .insert({ id: randomUUID(), ...extractVideoFromFormData(formData) })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+  redirect('/admin/videos')
+}
+
+export async function updateVideo(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('videos')
+    .update(extractVideoFromFormData(formData))
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+  redirect('/admin/videos')
+}
+
+export async function deleteVideo(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('videos').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/stories-tutos')
+  revalidatePath('/')
+}
+
+// ────────────────────────────────────────────
+// Acronymes
+// ────────────────────────────────────────────
+
+export async function createAcronyme(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('acronymes').insert({
+    id: randomUUID(),
+    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    definition: (formData.get('definition') as string).trim(),
+    description: (formData.get('description') as string)?.trim() || null,
+    lien: (formData.get('lien') as string)?.trim() || null,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+export async function updateAcronyme(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('acronymes').update({
+    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    definition: (formData.get('definition') as string).trim(),
+    description: (formData.get('description') as string)?.trim() || null,
+    lien: (formData.get('lien') as string)?.trim() || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+export async function deleteAcronyme(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('acronymes').delete().eq('id', id)
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+// ────────────────────────────────────────────
+// Suggestions d'acronymes (public)
+// ────────────────────────────────────────────
+
+export async function suggestAcronyme(formData: FormData) {
+  const supabase = createServiceRoleClient()
+  const sigle = (formData.get('sigle') as string)?.trim()
+  const definition = (formData.get('definition') as string)?.trim()
+  const email = (formData.get('email') as string)?.trim() || null
+  if (!sigle || !definition) return { error: 'Sigle et définition requis.' }
+  const { error } = await supabase.from('suggestions_acronymes').insert({ sigle, definition, email })
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+export async function approveSuggestion(id: string, payload: {
+  sigle: string
+  definition: string
+  description: string | null
+}) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase.from('acronymes').insert({
+    id: randomUUID(),
+    sigle: payload.sigle.trim(),
+    definition: payload.definition.trim(),
+    description: payload.description || null,
+    lien: null,
+  })
+  if (error) return { error: error.message }
+  await supabase.from('suggestions_acronymes').delete().eq('id', id)
+  revalidatePath('/admin/acronymes')
+  revalidatePath('/glossaire')
+}
+
+export async function rejectSuggestion(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('suggestions_acronymes').delete().eq('id', id)
+  revalidatePath('/admin/acronymes')
 }

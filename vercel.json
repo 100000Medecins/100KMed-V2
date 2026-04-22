@@ -1,0 +1,32 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/relance-evaluations",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/relance-incomplets",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/relance-psc",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/generer-newsletter-draft",
+      "schedule": "0 9 22 * *"
+    },
+    {
+      "path": "/api/cron/rappel-newsletter",
+      "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/envoyer-newsletter-programmee",
+      "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/rappel-accueil-videos",
+      "schedule": "0 8 * * 1"
+    }
+  ]
+}

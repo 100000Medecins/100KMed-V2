@@ -40,7 +40,7 @@ export default async function AdminEditPagePage({ params }: PageProps) {
         Modifier : {page.titre}
       </h1>
       <div className="bg-white rounded-card shadow-card p-6 md:p-8">
-        <BlogForm page={page} action={boundAction} />
+        <BlogForm page={page as any} action={boundAction} />
       </div>
     </div>
   )

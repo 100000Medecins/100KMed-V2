@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import type { SolutionWithRelations, SolutionWithResultat } from '@/types/models'
 
 /**
@@ -20,6 +20,7 @@ export async function getSolutions(options?: {
   let query = supabase
     .from('solutions')
     .select(`*, editeur:editeurs(*), ${categorieJoin}`)
+    .eq('actif', true)
     .order('nom', { ascending: true })
 
   if (options?.categorieId) {
@@ -68,7 +69,7 @@ export async function getSolutionById(id: string) {
 
   let tags: Array<{ tag: Record<string, unknown> }> = []
   if (tagRows && tagRows.length > 0) {
-    const tagIds = tagRows.map((r: { id_tag: string }) => r.id_tag)
+    const tagIds = tagRows.map((r) => r.id_tag).filter((id): id is string => id !== null)
     const { data: tagsData } = await supabase
       .from('tags')
       .select('*')
@@ -100,17 +101,22 @@ export async function getSolutionBySlug(slug: string) {
 
   const { data: tagRows } = await supabase
     .from('solutions_tags')
-    .select('id_tag')
+    .select('id_tag, is_tag_principal')
     .eq('id_solution', data.id)
 
   let tags: Array<{ tag: Record<string, unknown> }> = []
   if (tagRows && tagRows.length > 0) {
-    const tagIds = tagRows.map((r: { id_tag: string }) => r.id_tag)
+    const principalMap = new Map(tagRows.map((r) => [r.id_tag, r.is_tag_principal ?? false]))
+    const tagIds = tagRows.map((r) => r.id_tag).filter((id): id is string => id !== null)
     const { data: tagsData } = await supabase
       .from('tags')
       .select('*')
       .in('id', tagIds)
-    tags = (tagsData || []).map((t: Record<string, unknown>) => ({ tag: t }))
+    tags = (tagsData || [])
+      .sort((a, b) => ((a.ordre as number) ?? 999) - ((b.ordre as number) ?? 999))
+      .map((t: Record<string, unknown>) => ({
+        tag: { ...t, is_tag_principal: principalMap.get(t.id as string) ?? false },
+      }))
   }
 
   return { ...data, tags } as unknown as SolutionWithRelations
@@ -123,15 +129,24 @@ export async function getSolutionBySlug(slug: string) {
 export async function getSolutionsByTags(categorieId: string, tagIds: string[]) {
   const supabase = await createServerClient()
 
-  // Trouver les solution_ids qui ont les tags demandés
+  // Comportement ET : garder uniquement les solutions qui ont TOUS les tags sélectionnés
   const { data: solutionTagRows, error: tagError } = await supabase
     .from('solutions_tags')
-    .select('id_solution')
+    .select('id_solution, id_tag')
     .in('id_tag', tagIds)
 
   if (tagError) throw tagError
 
-  const solutionIds = Array.from(new Set(solutionTagRows.map((row) => row.id_solution)))
+  // Compter combien de tags sélectionnés chaque solution possède
+  const countPerSolution = new Map<string, number>()
+  for (const row of solutionTagRows) {
+    if (!row.id_solution) continue
+    countPerSolution.set(row.id_solution, (countPerSolution.get(row.id_solution) ?? 0) + 1)
+  }
+  // Garder uniquement celles qui ont les N tags (ET)
+  const solutionIds = Array.from(countPerSolution.entries())
+    .filter(([, count]) => count >= tagIds.length)
+    .map(([id]) => id)
 
   if (solutionIds.length === 0) return []
 
@@ -139,6 +154,7 @@ export async function getSolutionsByTags(categorieId: string, tagIds: string[]) 
     .from('solutions')
     .select(`*, editeur:editeurs(*), categorie:categories!inner(*)`)
     .eq('categorie.id', categorieId)
+    .eq('actif', true)
     .in('id', solutionIds)
     .order('nom', { ascending: true })
 
@@ -242,9 +258,146 @@ export async function getNotesRedac(solutionId: string) {
 export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]
 
 /**
+ * Récupère la note moyenne rédaction pour une liste de solutions.
+ * Retourne un map solutionId -> moyenne des note_redac_base5.
+ */
+export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+  const supabase = await createServerClient()
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, note_redac_base5')
+    .in('solution_id', solutionIds)
+    .not('note_redac_base5', 'is', null)
+  if (error || !data) return {}
+  const sums: Record<string, { total: number; count: number }> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const note = row.note_redac_base5 as number
+    if (!sums[id]) sums[id] = { total: 0, count: 0 }
+    sums[id].total += note
+    sums[id].count += 1
+  }
+  const map: Record<string, number> = {}
+  for (const [id, { total, count }] of Object.entries(sums)) {
+    map[id] = Math.round((total / count) * 10) / 10
+  }
+  return map
+}
+
+/**
+ * Récupère la note moyenne utilisateurs pour une liste de solutions.
+ * Retourne un map solutionId -> moyenne_utilisateurs_base5.
+ */
+export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, moyenne_utilisateurs_base5')
+    .in('solution_id', solutionIds)
+    .not('moyenne_utilisateurs_base5', 'is', null)
+
+  if (error || !data) return {}
+
+  // Moyenne de toutes les notes utilisateurs par solution
+  const sums: Record<string, { total: number; count: number }> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const note = row.moyenne_utilisateurs_base5 as number
+    if (!sums[id]) sums[id] = { total: 0, count: 0 }
+    sums[id].total += note
+    sums[id].count += 1
+  }
+
+  const map: Record<string, number> = {}
+  for (const [id, { total, count }] of Object.entries(sums)) {
+    map[id] = total / count
+  }
+  return map
+}
+
+/**
+ * Récupère la note d'un critère spécifique (rédaction) pour une liste de solutions.
+ * Retourne un map solutionId -> note_redac_base5.
+ */
+export async function getNotesCritere(
+  solutionIds: string[],
+  critereId: string,
+  source: 'redac' | 'utilisateurs' = 'redac'
+): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, note_redac_base5, moyenne_utilisateurs_base5')
+    .in('solution_id', solutionIds)
+    .eq('critere_id', critereId)
+
+  if (error || !data) return {}
+
+  const map: Record<string, number> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const note = source === 'utilisateurs'
+      ? (row.moyenne_utilisateurs_base5 ?? row.note_redac_base5) as number | null
+      : (row.note_redac_base5 ?? row.moyenne_utilisateurs_base5) as number | null
+    if (note != null) map[id] = note
+  }
+  return map
+}
+
+/**
+ * Récupère le nombre max de notes utilisateurs par solution.
+ * Retourne un map solutionId -> nb_notes.
+ */
+export async function getNbNotesUtilisateurs(solutionIds: string[]): Promise<Record<string, number>> {
+  if (solutionIds.length === 0) return {}
+
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, nb_notes')
+    .in('solution_id', solutionIds)
+    .not('nb_notes', 'is', null)
+
+  if (error || !data) return {}
+
+  const map: Record<string, number> = {}
+  for (const row of data) {
+    const id = row.solution_id as string
+    const n = row.nb_notes as number
+    if (!(id in map) || n > map[id]) map[id] = n
+  }
+  return map
+}
+
+/**
  * Récupère la note globale de la rédaction pour une liste de solutions.
  * Retourne un map solutionId -> note en base 5.
  */
+/**
+ * Stats globales du site : nb solutions actives, nb évaluations utilisateurs.
+ */
+export async function getSiteStats(): Promise<{ nbSolutions: number; nbEvaluations: number; nbInscrits: number }> {
+  const supabase = createServiceRoleClient()
+  const [{ count: nbSolutions }, { count: nbEvaluations }, { count: nbInscrits }] = await Promise.all([
+    supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('actif', true),
+    supabase.from('evaluations').select('*', { count: 'exact', head: true }).not('last_date_note', 'is', null),
+    supabase.from('users').select('*', { count: 'exact', head: true }),
+  ])
+  return {
+    nbSolutions: nbSolutions ?? 0,
+    nbEvaluations: nbEvaluations ?? 0,
+    nbInscrits: nbInscrits ?? 0,
+  }
+}
+
 export async function getNotesGlobalesRedac(solutionIds: string[]): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 

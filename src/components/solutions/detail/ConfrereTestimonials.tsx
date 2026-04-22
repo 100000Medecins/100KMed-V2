@@ -4,15 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
 import { resolveSpecialite } from '@/lib/constants/profil'
-
-// Map identifiant_tech → nom d'affichage
-const CRITERE_LABELS: Record<string, string> = {
-  interface: 'Interface utilisateur',
-  fonctionnalites: 'Fonctionnalités',
-  fiabilite: 'Fiabilité',
-  editeur: 'Éditeur',
-  qualite_prix: 'Rapport qualité/prix',
-}
+import { getCritereLabels } from '@/lib/constants/criteres'
 
 const CRITERE_ORDER = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix']
 
@@ -34,6 +26,7 @@ interface ConfrereTestimonialsProps {
   initialAvis: Avis[]
   initialTotal: number
   initialTotalPages: number
+  categorieSlug?: string
 }
 
 function formatDuree(mois: number | null): string | null {
@@ -60,7 +53,9 @@ export default function ConfrereTestimonials({
   initialAvis,
   initialTotal,
   initialTotalPages,
+  categorieSlug,
 }: ConfrereTestimonialsProps) {
+  const CRITERE_LABELS = getCritereLabels(categorieSlug)
   const [avis, setAvis] = useState<Avis[]>(initialAvis)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(initialTotalPages)

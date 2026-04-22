@@ -20,8 +20,9 @@ export async function getAllSolutionsAdmin() {
   return data as unknown as Array<{
     id: string
     nom: string
-    editeur: { id: string; nom: string } | null
-    categorie: { id: string; nom: string } | null
+    actif: boolean | null
+    editeur: { id: string; nom: string | null } | null
+    categorie: { id: string; nom: string | null } | null
     [key: string]: unknown
   }>
 }
@@ -38,7 +39,7 @@ export async function getSolutionByIdAdmin(id: string) {
     .select(`
       *,
       categorie:categories(id, nom),
-      galerie:solutions_galerie(id, url, titre, ordre)
+      galerie:solutions_galerie(id, url, titre, ordre, type)
     `)
     .eq('id', id)
     .single()
@@ -46,7 +47,7 @@ export async function getSolutionByIdAdmin(id: string) {
   if (error) throw error
 
   const typedData = data as unknown as {
-    galerie: Array<{ id: string; url: string; titre: string | null; ordre: number | null }>
+    galerie: Array<{ id: string; url: string; titre: string | null; ordre: number | null; type: string | null }>
     categorie: { id: string; nom: string } | null
   }
   const galerie = typedData.galerie ?? []
@@ -107,3 +108,66 @@ export async function getResultatsRedacAdmin(solutionId: string) {
 }
 
 export type ResultatRedacAdmin = Awaited<ReturnType<typeof getResultatsRedacAdmin>>[number]
+
+/**
+ * Récupère tous les tags d'une catégorie avec leur état pour une solution.
+ * enabled = présent dans solutions_tags
+ * is_principale = solutions_tags.is_tag_principal = true
+ */
+export async function getTagsForSolutionAdmin(solutionId: string, categorieId: string | null) {
+  const supabase = createServiceRoleClient()
+
+  const tagsQuery = supabase.from('tags').select('id, libelle, ordre, is_separator')
+  const { data: tags } = categorieId
+    ? await tagsQuery.eq('id_categorie', categorieId).order('ordre', { ascending: true })
+    : await tagsQuery.is('id_categorie', null).order('ordre', { ascending: true })
+
+  const { data: solutionTags } = await supabase
+    .from('solutions_tags')
+    .select('id_tag, is_tag_principal')
+    .eq('id_solution', solutionId)
+
+  // map tagId -> is_tag_principal
+  const stMap = new Map<string, boolean>()
+  for (const st of solutionTags || []) {
+    if (st.id_tag) stMap.set(st.id_tag, st.is_tag_principal ?? false)
+  }
+
+  return (tags || [])
+    .filter((tag) => !((tag as unknown as Record<string, unknown>).is_separator as boolean))
+    .map((tag) => ({
+      id: tag.id as string,
+      libelle: tag.libelle as string | null,
+      ordre: tag.ordre as number | null,
+      parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
+      enabled: stMap.has(tag.id),
+      is_principale: stMap.get(tag.id) === true,
+    }))
+}
+
+export type TagForSolution = Awaited<ReturnType<typeof getTagsForSolutionAdmin>>[number]
+
+/**
+ * Récupère tous les tags d'une catégorie pour l'admin catégorie (CRUD).
+ */
+export async function getTagsForCategorieAdmin(categorieId: string) {
+  const supabase = createServiceRoleClient()
+
+  const { data, error } = await (supabase as any)
+    .from('tags')
+    .select('id, libelle, ordre, is_separator, parent_ids')
+    .eq('id_categorie', categorieId)
+    .order('ordre', { ascending: true })
+
+  if (error) return []
+
+  return (data || []).map((tag: Record<string, unknown>) => ({
+    id: tag.id as string,
+    libelle: tag.libelle as string | null,
+    ordre: tag.ordre as number | null,
+    parent_ids: ((tag as unknown as Record<string, unknown>).parent_ids as string[] | null) ?? [],
+    is_separator: ((tag as unknown as Record<string, unknown>).is_separator as boolean) ?? false,
+  }))
+}
+
+export type TagForCategorie = Awaited<ReturnType<typeof getTagsForCategorieAdmin>>[number]

@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
-import type { Avatar, Video, Actualite, DocumentRow, Tag } from '@/types/models'
+import type { Avatar, Actualite, DocumentRow, Tag, Critere } from '@/types/models'
 
 /**
  * Récupère tous les avatars disponibles.
@@ -20,22 +20,112 @@ export async function getAvatars() {
  * Récupère les vidéos, optionnellement filtrées par "principales".
  * Remplace : fetchVideos
  */
-export async function getVideos(isVideosPrincipales?: boolean) {
-  const supabase = await createServerClient()
+export type VideoRubrique = {
+  id: string
+  nom: string
+  ordre: number
+}
 
-  let query = supabase
-    .from('videos')
+export type VideoRow = {
+  id: string
+  titre: string | null
+  description: string | null
+  url: string | null
+  vignette: string | null
+  type: string | null
+  theme: string | null
+  statut: string | null
+  ordre: number | null
+  is_videos_principales: boolean | null
+  rubrique_id: string | null
+  rubrique?: VideoRubrique | null
+  homepage_pinned_at: string | null
+  homepage_ordre: number | null
+  created_at: string | null
+}
+
+export async function getVideoRubriques(): Promise<VideoRubrique[]> {
+  const supabase = await createServerClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('video_rubriques')
     .select('*')
     .order('ordre', { ascending: true })
+  if (error) {
+    console.error('[getVideoRubriques] Supabase error:', error.message)
+    return []
+  }
+  return data ?? []
+}
 
-  if (isVideosPrincipales !== undefined) {
-    query = query.eq('is_videos_principales', isVideosPrincipales)
+/**
+ * Page d'accueil : retourne les 6 vidéos à afficher.
+ * Mode forcé : si des vidéos ont homepage_pinned_at < 30 jours → on les utilise (triées par homepage_ordre).
+ * Mode auto : les 6 dernières publiées (par created_at desc).
+ */
+export async function getHomepageVideos(): Promise<VideoRow[]> {
+  const supabase = await createServerClient()
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: pinned } = await (supabase as any)
+    .from('videos')
+    .select('*, rubrique:video_rubriques(*)')
+    .eq('statut', 'publie')
+    .not('homepage_pinned_at', 'is', null)
+    .gt('homepage_pinned_at', thirtyDaysAgo)
+    .order('homepage_ordre', { ascending: true })
+    .limit(4)
+
+  if (pinned && pinned.length > 0) return pinned as VideoRow[]
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: latest, error } = await (supabase as any)
+    .from('videos')
+    .select('*, rubrique:video_rubriques(*)')
+    .eq('statut', 'publie')
+    .order('ordre', { ascending: true })
+    .limit(4)
+
+  if (error) {
+    console.error('[getHomepageVideos] Supabase error:', error.message)
+    return []
+  }
+  return (latest ?? []) as VideoRow[]
+}
+
+export async function getVideos(options?: {
+  isVideosPrincipales?: boolean
+  onlyPublished?: boolean
+  limit?: number
+}) {
+  const supabase = await createServerClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
+    .from('videos')
+    .select('*, rubrique:video_rubriques(*)')
+    .order('ordre', { ascending: true })
+
+  if (options?.isVideosPrincipales !== undefined) {
+    query = query.eq('is_videos_principales', options.isVideosPrincipales)
+  }
+
+  if (options?.onlyPublished !== false) {
+    query = query.eq('statut', 'publie')
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit)
   }
 
   const { data, error } = await query
 
-  if (error) throw error
-  return data as Video[]
+  if (error) {
+    console.error('[getVideos] Supabase error:', error.message)
+    return []
+  }
+  return (data ?? []) as VideoRow[]
 }
 
 /**
@@ -45,7 +135,8 @@ export async function getVideos(isVideosPrincipales?: boolean) {
 export async function getActualites(limit?: number) {
   const supabase = await createServerClient()
 
-  let query = supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
     .from('actualites')
     .select('*')
     .order('created_at', { ascending: false })
@@ -61,43 +152,20 @@ export async function getActualites(limit?: number) {
 }
 
 /**
- * Récupère les tags d'une catégorie.
+ * Récupère les tags d'une catégorie (directement depuis id_categorie).
  * Remplace : fetchTags
  */
 export async function getTags(categorieId: string) {
   const supabase = await createServerClient()
 
-  // 1. Récupérer les solutions de cette catégorie
-  const { data: solutions, error: solError } = await supabase
-    .from('solutions')
-    .select('id')
-    .eq('id_categorie', categorieId)
-
-  if (solError) throw solError
-  if (!solutions || solutions.length === 0) return []
-
-  const solutionIds = solutions.map((s) => s.id)
-
-  // 2. Récupérer les tag IDs liés à ces solutions
-  const { data: links, error: linksError } = await supabase
-    .from('solutions_tags')
-    .select('id_tag')
-    .in('id_solution', solutionIds)
-
-  if (linksError) throw linksError
-
-  const tagIds = Array.from(new Set((links || []).map((l) => l.id_tag)))
-  if (tagIds.length === 0) return []
-
-  // 3. Récupérer les tags
   const { data, error } = await supabase
     .from('tags')
     .select('*')
-    .in('id', tagIds)
+    .eq('id_categorie', categorieId)
     .order('ordre', { ascending: true })
 
   if (error) throw error
-  return data as Tag[]
+  return (data ?? []) as Tag[]
 }
 
 /**
@@ -122,12 +190,50 @@ export async function getTagsPrincipauxForSolution(solutionId: string) {
 }
 
 /**
+ * Récupère les 5 critères majeurs (INTERFACE, FONCTIONNALITÉS, etc.)
+ * via les resultats des solutions de la catégorie.
+ */
+export async function getCriteresMajeurs(categorieId: string): Promise<Critere[]> {
+  const supabase = await createServerClient()
+
+  // Solutions de la catégorie
+  const { data: sols } = await supabase
+    .from('solutions')
+    .select('id, categorie:categories!inner(id)')
+    .eq('categorie.id', categorieId)
+    .limit(5)
+
+  if (!sols || sols.length === 0) return []
+
+  // Critère IDs dans les résultats de ces solutions
+  const { data: ress } = await supabase
+    .from('resultats')
+    .select('critere_id')
+    .in('solution_id', sols.map((s) => s.id))
+    .not('critere_id', 'is', null)
+
+  if (!ress || ress.length === 0) return []
+
+  const ids = Array.from(new Set(ress.map((r) => r.critere_id as string)))
+
+  // Critères avec nom_capital parmi ces IDs (sans .order() — colonne inexistante)
+  const { data } = await supabase
+    .from('criteres')
+    .select('*')
+    .in('id', ids)
+    .not('nom_capital', 'is', null)
+
+  return (data ?? []) as Critere[]
+}
+
+/**
  * Récupère les documents.
  */
 export async function getDocuments() {
   const supabase = await createServerClient()
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('documents')
     .select('*')
     .order('ordre', { ascending: true })

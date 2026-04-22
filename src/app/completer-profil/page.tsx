@@ -5,38 +5,82 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
+import PasswordInput from '@/components/ui/PasswordInput'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile } from '@/lib/actions/user'
-import { SPECIALITES, MODES_EXERCICE, AVATARS, resolveSpecialite } from '@/lib/constants/profil'
-import { Check } from 'lucide-react'
+import { completeProfile, getCurrentUserProfile } from '@/lib/actions/user'
+import { AVATARS } from '@/lib/constants/profil'
+import { createClient } from '@/lib/supabase/client'
+import { Check, Lock } from 'lucide-react'
 
 export default function CompleterProfilPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
 
+  // Champs PSC — non modifiables
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
+
+  // Champs à compléter
+  const [contactEmail, setContactEmail] = useState('')
+  const [pseudo, setPseudo] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+
+  const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isFromPsc, setIsFromPsc] = useState(false)
+  const [profileLoaded, setProfileLoaded] = useState(false)
 
-  // Pré-remplir depuis les métadonnées PSC (given_name, family_name, specialite)
   useEffect(() => {
-    if (!user?.user_metadata) return
-    const meta = user.user_metadata
-    if (meta.family_name && !nom) setNom(meta.family_name)
-    if (meta.given_name && !prenom) setPrenom(meta.given_name)
-    if (meta.specialite && !specialite) {
-      const resolved = resolveSpecialite(meta.specialite)
-      if (resolved && SPECIALITES.includes(resolved)) {
-        setSpecialite(resolved)
-      }
-    }
-  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!user) return
 
-  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice
+    async function loadProfile() {
+      const profile = await getCurrentUserProfile()
+
+      // Champs PSC grisés si RPPS renseigné (connexion PSC, ancienne ou nouvelle)
+      const hasPsc = !!(profile?.rpps || user?.user_metadata?.provider === 'psc')
+      setIsFromPsc(hasPsc)
+
+      // Priorité : table users > user_metadata PSC
+      setNom(profile?.nom || String(user?.user_metadata?.family_name || ''))
+      setPrenom(profile?.prenom || String(user?.user_metadata?.given_name || ''))
+      setSpecialite(profile?.specialite || String(user?.user_metadata?.specialite || ''))
+      setModeExercice(profile?.mode_exercice || String(user?.user_metadata?.mode_exercice || ''))
+      if (profile?.pseudo) setPseudo(profile.pseudo)
+      if (profile?.portrait) setSelectedAvatar(profile.portrait)
+
+      // Pré-remplir l'email : priorité contact_email déjà sauvé,
+      // sinon email_temp de l'évaluation anonyme (email renseigné par l'utilisateur),
+      // sinon user.email en dernier recours (peut être une adresse technique PSC)
+      if (profile?.contact_email) {
+        setContactEmail(profile.contact_email)
+      } else {
+        // Chercher l'email_temp dans l'évaluation anonyme liée à ce compte
+        const supabase = createClient()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: evalAnon } = await (supabase as any)
+          .from('evaluations')
+          .select('email_temp')
+          .eq('user_id', user!.id)
+          .not('email_temp', 'is', null)
+          .limit(1)
+          .single()
+        if (evalAnon?.email_temp) {
+          setContactEmail(evalAnon.email_temp)
+        } else if (user?.email && !user.email.includes('@psc.sante.fr')) {
+          setContactEmail(user.email)
+        }
+      }
+
+      setProfileLoaded(true)
+    }
+
+    loadProfile()
+  }, [user])
+
+  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() && password.length >= 6
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,14 +89,21 @@ export default function CompleterProfilPage() {
     setError(null)
 
     try {
+      // Définir le mot de passe Supabase avant de compléter le profil
+      const supabase = createClient()
+      const { error: pwError } = await supabase.auth.updateUser({ password })
+      if (pwError) throw new Error(pwError.message)
+
       await completeProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
         specialite,
         mode_exercice: modeExercice,
+        contact_email: contactEmail.trim(),
+        pseudo: pseudo.trim() || undefined,
         portrait: selectedAvatar || undefined,
       })
-      router.push('/mon-compte/mes-evaluations')
+      router.push('/mon-compte/profil')
     } catch (err) {
       console.error('Erreur complétion profil:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
@@ -61,7 +112,7 @@ export default function CompleterProfilPage() {
     }
   }
 
-  if (authLoading) {
+  if (authLoading || !profileLoaded) {
     return (
       <>
         <Navbar />
@@ -83,102 +134,165 @@ export default function CompleterProfilPage() {
       <main className="pt-[72px] min-h-screen bg-surface-light">
         <div className="max-w-2xl mx-auto px-6 py-10">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-navy mb-2">
-              Complétez votre profil
-            </h1>
+            <h1 className="text-2xl font-bold text-navy mb-2">Bienvenue sur 100&nbsp;000 Médecins</h1>
             <p className="text-sm text-gray-500">
-              Ces informations nous permettent de personnaliser votre expérience.
+              Vérifiez vos informations et complétez votre profil pour continuer.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nom & Prénom */}
+
+            {/* Identité — champs PSC non modifiables */}
             <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-navy">Identité</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-navy">Identité professionnelle</h2>
+                {isFromPsc && (
+                  <span className="flex items-center gap-1 text-xs text-gray-400 bg-surface-light px-2 py-0.5 rounded-full">
+                    <Lock className="w-3 h-3" />
+                    Fournie par Pro Santé Connect
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Prénom *
-                  </label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom</label>
                   <input
                     type="text"
                     value={prenom}
-                    onChange={(e) => setPrenom(e.target.value)}
+                    readOnly={isFromPsc}
+                    onChange={(e) => !isFromPsc && setPrenom(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                    placeholder="Jean"
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                      isFromPsc
+                        ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Nom *
-                  </label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
                   <input
                     type="text"
                     value={nom}
-                    onChange={(e) => setNom(e.target.value)}
+                    readOnly={isFromPsc}
+                    onChange={(e) => !isFromPsc && setNom(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                    placeholder="Dupont"
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                      isFromPsc
+                        ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                    }`}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+                  <input
+                    type="text"
+                    value={specialite}
+                    readOnly={isFromPsc}
+                    onChange={(e) => !isFromPsc && setSpecialite(e.target.value)}
+                    required
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                      isFromPsc
+                        ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
+                  <input
+                    type="text"
+                    value={modeExercice}
+                    readOnly={isFromPsc}
+                    onChange={(e) => !isFromPsc && setModeExercice(e.target.value)}
+                    required
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                      isFromPsc
+                        ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                    }`}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Exercice */}
+            {/* Email — obligatoire */}
             <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-navy">Exercice professionnel</h2>
+              <h2 className="text-sm font-semibold text-navy">Coordonnées</h2>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Spécialité *
+                  Email de contact <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={specialite}
-                  onChange={(e) => setSpecialite(e.target.value)}
+                <input
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
                   required
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
-                >
-                  <option value="">Sélectionnez votre spécialité</option>
-                  {SPECIALITES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                  placeholder="votre@email.fr"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Utilisé pour les notifications et la récupération de compte.
+                </p>
               </div>
+
+              {/* Mot de passe — obligatoire */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Mode d&apos;exercice *
+                  Mot de passe <span className="text-red-500">*</span>
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {MODES_EXERCICE.map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setModeExercice(mode)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                        modeExercice === mode
-                          ? 'bg-navy text-white border-navy'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
+                <PasswordInput
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="6 caractères minimum"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Vous permettra de vous reconnecter par email en plus de Pro Santé Connect.
+                </p>
+              </div>
+
+              {/* Pseudo — optionnel */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Pseudo <span className="text-gray-400 font-normal">(optionnel)</span>
+                </label>
+                <input
+                  type="text"
+                  value={pseudo}
+                  onChange={(e) => setPseudo(e.target.value)}
+                  placeholder={prenom ? `${prenom} ${nom.charAt(0)}.` : 'Ex : Dr Martin'}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Affiché à la place de votre nom sur vos avis. Si vide, nous utiliserons &laquo;&nbsp;{prenom || 'Prénom'} {nom.charAt(0) || 'N'}.&nbsp;&raquo;
+                </p>
               </div>
             </div>
 
-            {/* Avatar */}
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
+            )}
+
+            {/* Avatar — optionnel */}
             <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-navy">Choisissez votre avatar</h2>
-              <p className="text-xs text-gray-500">
-                Sélectionnez une image qui vous représentera sur la plateforme.
-              </p>
+              <div>
+                <h2 className="text-sm font-semibold text-navy">Avatar <span className="text-gray-400 font-normal text-xs">(optionnel)</span></h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Image affichée à côté de vos avis.
+                </p>
+              </div>
               <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
                 {AVATARS.map((avatar) => (
                   <button
                     key={avatar.id}
                     type="button"
-                    onClick={() => setSelectedAvatar(avatar.url)}
+                    onClick={() => setSelectedAvatar(selectedAvatar === avatar.url ? null : avatar.url)}
                     className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
                       selectedAvatar === avatar.url
                         ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
@@ -196,16 +310,12 @@ export default function CompleterProfilPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
-            )}
-
             <div className="flex justify-end">
               <Button
                 variant="primary"
                 className={!isValid || submitting ? 'opacity-50 pointer-events-none' : ''}
               >
-                {submitting ? 'Enregistrement...' : 'Valider mon profil'}
+                {submitting ? 'Enregistrement...' : 'Accéder à mon compte'}
               </Button>
             </div>
           </form>

@@ -58,7 +58,7 @@ export default async function EditeurPage({ params }: PageProps) {
               {editeur.logo_url && (
                 <img
                   src={editeur.logo_url}
-                  alt={editeur.logo_titre || editeur.nom}
+                  alt={editeur.logo_titre || editeur.nom || ''}
                   className="w-20 h-20 rounded-2xl object-contain bg-white shadow-card p-2"
                 />
               )}
@@ -67,7 +67,10 @@ export default async function EditeurPage({ params }: PageProps) {
                   {editeur.nom_commercial || editeur.nom}
                 </h1>
                 {editeur.description && (
-                  <p className="text-gray-600 mt-2 max-w-2xl">{editeur.description}</p>
+                  <div
+                    className="prose-custom mt-2 max-w-2xl"
+                    dangerouslySetInnerHTML={{ __html: editeur.description }}
+                  />
                 )}
                 <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
                   {editeur.nb_employes && (
@@ -76,9 +79,9 @@ export default async function EditeurPage({ params }: PageProps) {
                   {editeur.contact_ville && (
                     <span>{editeur.contact_ville}, {editeur.contact_pays}</span>
                   )}
-                  {editeur.website_url && (
+                  {editeur.website && (
                     <a
-                      href={editeur.website_url}
+                      href={editeur.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-accent-blue hover:underline"
@@ -97,7 +100,10 @@ export default async function EditeurPage({ params }: PageProps) {
           <section className="max-w-7xl mx-auto px-6 py-10">
             <h2 className="text-lg font-semibold text-navy mb-4">Mot de l&apos;éditeur</h2>
             <div className="bg-white rounded-card shadow-card p-6">
-              <p className="text-gray-600 leading-relaxed">{editeur.mot_editeur}</p>
+              <div
+                className="prose-custom text-gray-600"
+                dangerouslySetInnerHTML={{ __html: editeur.mot_editeur! }}
+              />
             </div>
           </section>
         )}

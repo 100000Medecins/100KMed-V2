@@ -8,6 +8,14 @@ import type { Database } from '@/types/database'
 export function createClient() {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        // Remplace navigator.locks par un pass-through pour éviter les AbortError
+        // non gérées lancées par la librairie quand deux opérations auth se chevauchent.
+        // Impact : pas de mutex multi-onglets, acceptable pour cette app.
+        lock: (_name: string, _acquireTimeout: number, fn: () => Promise<unknown>) => fn(),
+      },
+    }
   )
 }

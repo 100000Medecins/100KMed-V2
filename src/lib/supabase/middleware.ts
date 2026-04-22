@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Routes protégées : rediriger vers /connexion si non authentifié
-  const protectedPaths = ['/mon-compte', '/solution/noter']
+  const protectedPaths = ['/mon-compte']
   const isProtectedRoute = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   )

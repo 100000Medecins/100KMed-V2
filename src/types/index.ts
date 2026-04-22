@@ -33,4 +33,4 @@ export interface VideoItem {
   youtubeId: string;
 }
 
-export type ButtonVariant = "primary" | "outline" | "ghost" | "white";
+export type ButtonVariant = "primary" | "outline" | "ghost" | "white" | "cta";

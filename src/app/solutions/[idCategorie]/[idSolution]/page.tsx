@@ -1,3 +1,5 @@
+export const revalidate = 300
+
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
@@ -7,8 +9,6 @@ import { getAllResultats } from '@/lib/db/resultats'
 import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNoteUtilisateurs } from '@/lib/db/evaluations'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
-
-export const revalidate = 900 // ISR : 15 minutes
 
 interface PageProps {
   params: { idCategorie: string; idSolution: string }
@@ -26,27 +26,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description: meta?.description || solution.description || undefined,
         images: solution.logo_url ? [{ url: solution.logo_url }] : undefined,
       },
-      alternates: {
-        canonical: meta?.canonical || undefined,
-      },
     }
   } catch {
     return { title: 'Solution' }
   }
 }
 
-// Retourne vide : les pages seront générées on-demand via ISR
-export async function generateStaticParams() {
-  return []
-}
-
 export default async function SolutionPage({ params }: PageProps) {
-  let solution
-  try {
-    solution = await getSolutionBySlug(params.idSolution)
-  } catch {
-    notFound()
-  }
+  const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
+  if (!solution) notFound()
 
   // Fetch résultats, notes rédac, avis paginés et note utilisateurs en parallèle (par UUID)
   let [resultats, notesRedac, avisPagines, noteUtilisateursData] = await Promise.all([

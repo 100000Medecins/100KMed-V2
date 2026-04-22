@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react'
+import AcronymHtml from '@/components/AcronymHtml'
 import type { Editeur } from '@/types/models'
 
 interface PublisherWordProps {
@@ -19,12 +20,12 @@ export default function PublisherWord({ motEditeur, editeur }: PublisherWordProp
               {editeur.logo_url ? (
                 <img
                   src={editeur.logo_url}
-                  alt={editeur.nom_commercial || editeur.nom}
+                  alt={editeur.nom_commercial || editeur.nom || ''}
                   className="w-16 h-16 rounded-xl object-contain bg-surface-light p-2"
                 />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-accent-blue/10 flex items-center justify-center text-accent-blue font-bold text-lg">
-                  {(editeur.nom_commercial || editeur.nom).substring(0, 2).toUpperCase()}
+                  {(editeur.nom_commercial || editeur.nom || '').substring(0, 2).toUpperCase()}
                 </div>
               )}
               <p className="text-sm font-semibold text-navy text-center">
@@ -33,15 +34,14 @@ export default function PublisherWord({ motEditeur, editeur }: PublisherWordProp
             </div>
           )}
           <div className="flex-1">
-            <p
+            <AcronymHtml
+              as="p"
+              html={`\u201C${motEditeur.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}\u201D`}
               className="text-gray-600 leading-relaxed italic whitespace-pre-line"
-              dangerouslySetInnerHTML={{
-                __html: `\u201C${motEditeur.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}\u201D`,
-              }}
             />
-            {editeur?.website_url && (
+            {editeur?.website && (
               <a
-                href={editeur.website_url}
+                href={editeur.website}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 mt-4 text-sm text-accent-blue hover:underline"

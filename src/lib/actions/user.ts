@@ -2,6 +2,74 @@
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import sgMail from '@sendgrid/mail'
+
+/**
+ * Envoie un email de réinitialisation de mot de passe via SendGrid
+ * avec le template éditable en admin.
+ */
+export async function sendPasswordReset(email: string): Promise<{ error: string | null }> {
+  const supabase = createServiceRoleClient()
+
+  // Générer le lien de récupération via le SDK admin
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo: `${siteUrl}/reinitialiser-mot-de-passe` },
+  })
+
+  if (error) return { error: error.message }
+
+  const resetLink = data.properties?.action_link
+  if (!resetLink) return { error: 'Lien de réinitialisation indisponible' }
+
+  // Récupérer le template depuis la DB
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: template } = await (supabase as any)
+    .from('email_templates')
+    .select('sujet, contenu_html')
+    .eq('id', 'reinitialisation_mot_de_passe')
+    .single()
+
+  if (!template?.contenu_html) return { error: 'Template email introuvable' }
+
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+  const html = (template.contenu_html as string)
+    .replace(/\{\{lien_reinitialisation\}\}/g, resetLink)
+  const sujet = template.sujet as string
+
+  try {
+    await sgMail.send({
+      to: email,
+      from: 'contact@100000medecins.org',
+      subject: sujet,
+      html: html,
+    })
+  } catch {
+    return { error: 'Erreur lors de l\'envoi de l\'email.' }
+  }
+
+  return { error: null }
+}
+
+/**
+ * Récupère le profil complet de l'utilisateur connecté depuis la table users.
+ */
+export async function getCurrentUserProfile() {
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return null
+
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('users')
+    .select('nom, prenom, specialite, mode_exercice, pseudo, contact_email, rpps, portrait')
+    .eq('id', user.id)
+    .single()
+
+  return data
+}
 
 /**
  * Crée le profil public.users après l'inscription email.
@@ -27,6 +95,7 @@ export async function createUserProfile(userId: string, email: string) {
       id: userId,
       email,
       pseudo: email.split('@')[0] || 'Utilisateur',
+      ...(email?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
     })
   }
 
@@ -42,6 +111,8 @@ export async function completeProfile(data: {
   prenom: string
   specialite: string
   mode_exercice: string
+  contact_email: string
+  pseudo?: string
   portrait?: string
 }) {
   const authClient = await createServerClient()
@@ -57,16 +128,26 @@ export async function completeProfile(data: {
     .update({
       nom: data.nom,
       prenom: data.prenom,
-      pseudo: `${data.prenom} ${data.nom.charAt(0)}.`,
+      pseudo: data.pseudo?.trim() || `${data.prenom} ${data.nom.charAt(0)}.`,
       role: 'medecin',
       specialite: data.specialite,
       mode_exercice: data.mode_exercice,
+      contact_email: data.contact_email,
       portrait: data.portrait || null,
       is_complete: true,
     })
     .eq('id', user.id)
 
   if (error) throw new Error(error.message)
+
+  // Mettre à jour l'email auth pour que l'utilisateur puisse se connecter
+  // avec son vrai email (et non l'adresse technique PSC psc-ans...@psc.sante.fr)
+  if (user.email !== data.contact_email) {
+    await supabase.auth.admin.updateUserById(user.id, {
+      email: data.contact_email,
+      email_confirm: true,
+    })
+  }
 
   return { status: 'SUCCESS' }
 }
@@ -163,6 +244,25 @@ export async function updateAvatar(avatarId: string) {
   if (error) throw error
 
   revalidatePath('/mon-compte')
+  return { status: 'SUCCESS' }
+}
+
+/**
+ * Annule un changement d'email en attente de confirmation.
+ * Remet l'email actuel confirmé, ce qui efface le token de changement.
+ */
+export async function cancelEmailChange() {
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const admin = createServiceRoleClient()
+  const { error } = await admin.auth.admin.updateUserById(user.id, {
+    email: user.email!,
+    email_confirm: true,
+  })
+
+  if (error) throw new Error(error.message)
   return { status: 'SUCCESS' }
 }
 

@@ -1,82 +1,154 @@
-import { partnerLogos } from "@/lib/data";
-import { Stethoscope, Wrench, Puzzle, Heart, Zap } from "lucide-react";
+import { createServerClient } from '@/lib/supabase/server'
+import HeroIllustration from './HeroIllustration'
 
-export default function HeroSection() {
+async function getPartenaires() {
+  try {
+    const supabase = await createServerClient()
+    const { data } = await supabase
+      .from('partenaires')
+      .select('id, nom, logo_url, lien_url')
+      .eq('actif', true)
+      .order('position', { ascending: true })
+    return data ?? []
+  } catch {
+    return []
+  }
+}
+
+async function getSiteConfig(cles: string[]): Promise<Record<string, string>> {
+  try {
+    const supabase = await createServerClient()
+    const { data } = await (supabase as any)
+      .from('site_config')
+      .select('cle, valeur')
+      .in('cle', cles)
+    const map: Record<string, string> = {}
+    for (const row of data ?? []) map[row.cle] = row.valeur
+    return map
+  } catch {
+    return {}
+  }
+}
+
+interface HeroSectionProps {
+  nbSolutions?: number
+  nbEvaluations?: number
+  nbInscrits?: number
+}
+
+export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, nbInscrits = 0 }: HeroSectionProps) {
+  const [partenaires, config] = await Promise.all([
+    getPartenaires(),
+    getSiteConfig(['hero_titre', 'hero_sous_titre', 'label_partenaires', 'hero_image']),
+  ])
+
+  const heroTitre = config['hero_titre'] ?? '<p>Mieux exercer,<br>avec les bons outils.</p>'
+  const heroSousTitre = config['hero_sous_titre'] ?? 'Grâce aux avis de vos confrères, trouvez les logiciels les plus adaptés à votre pratique au quotidien.'
+  const labelPartenaires = config['label_partenaires'] ?? 'Le premier mouvement intersyndical autour de la e-santé'
+  const heroImage = config['hero_image'] ?? ''
+
+  const nbEvaluationsLabel = nbEvaluations > 0
+    ? `${nbEvaluations.toLocaleString('fr-FR')} avis`
+    : null
+  const nbSolutionsLabel = nbSolutions > 0
+    ? `${nbSolutions}+ logiciels`
+    : null
+  const nbInscritsLabel = nbInscrits > 0
+    ? `${nbInscrits.toLocaleString('fr-FR')} inscrits`
+    : null
+
   return (
-    <section className="bg-hero-gradient pt-[72px]">
-      <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
+    <section className="bg-hero-gradient pt-[72px] relative overflow-hidden">
+      {/* Dot grid overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-6 py-10 md:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left: Text content */}
           <div>
-            <h1 className="text-4xl md:text-5xl lg:text-[3.4rem] font-extrabold text-navy leading-[1.15] tracking-tight">
-              Mieux exercer,
-              <br />
-              avec les bons outils.
-            </h1>
-            <p className="mt-5 text-gray-600 text-base md:text-lg leading-relaxed max-w-lg">
-              Grâce aux avis de vos confrères, trouvez les logiciels
-              les plus adaptés à votre pratique au quotidien.
-            </p>
+            <h1
+              className="text-4xl md:text-5xl lg:text-[3.4rem] font-extrabold text-white leading-[1.15] tracking-tight [&_p]:m-0 [&_br]:block"
+              dangerouslySetInnerHTML={{ __html: heroTitre }}
+            />
+            <div
+              className="mt-5 text-white/70 text-base md:text-lg leading-relaxed max-w-lg [&_p]:m-0"
+              dangerouslySetInnerHTML={{ __html: heroSousTitre }}
+            />
           </div>
 
-          {/* Right: 3D toolbox illustration (placeholder) */}
+          {/* Right: image uploadée ou illustration animée par défaut */}
           <div className="hidden lg:flex items-center justify-center">
-            <div className="relative w-[420px] h-[340px]">
-              {/* Main toolbox body */}
-              <div className="absolute inset-0 bg-gradient-to-br from-accent-blue/20 via-accent-pink/15 to-accent-orange/20 rounded-3xl transform rotate-2" />
-              <div className="absolute inset-2 bg-white/60 backdrop-blur-sm rounded-2xl shadow-card flex items-center justify-center">
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-accent-blue/15 flex items-center justify-center">
-                    <Stethoscope className="w-8 h-8 text-accent-blue" />
+            {heroImage ? (
+              <img
+                src={heroImage}
+                alt="Illustration hero"
+                className="w-[440px] h-[320px] object-contain drop-shadow-2xl"
+              />
+            ) : (
+              <HeroIllustration
+                nbSolutionsLabel={nbSolutionsLabel}
+                nbEvaluationsLabel={nbEvaluationsLabel}
+                nbInscritsLabel={nbInscritsLabel}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile : illustration animée + label partenaires (sans logos) */}
+      <div className="lg:hidden border-t border-white/15" style={{ background: 'rgba(255,255,255,0.10)' }}>
+        <div className="flex flex-col items-center py-6 px-6 gap-4">
+          {!heroImage && (
+            <div className="scale-75 origin-top -mb-20">
+              <HeroIllustration
+                nbSolutionsLabel={nbSolutionsLabel}
+                nbEvaluationsLabel={nbEvaluationsLabel}
+                nbInscritsLabel={nbInscritsLabel}
+              />
+            </div>
+          )}
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 text-center">
+            {labelPartenaires}
+          </p>
+        </div>
+      </div>
+
+      {/* Partners bar — desktop uniquement */}
+      {partenaires.length > 0 && (
+        <div className="hidden md:block border-t border-white/15" style={{ background: 'rgba(255,255,255,0.18)' }}>
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 text-center mb-5">
+              {labelPartenaires}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+              {partenaires.map((p) => {
+                const inner = (
+                  <div className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl border border-white/30 hover:border-white/50 hover:shadow-lg flex items-center justify-center bg-white/40 transition-all duration-200 ease-out hover:scale-110 hover:-translate-y-0.5">
+                    {p.logo_url
+                      ? <img src={p.logo_url} alt={p.nom} className={`object-contain opacity-85 hover:opacity-100 transition-opacity ${['SML', 'Le Bloc'].includes(p.nom) ? 'h-6 max-w-[70px] md:h-6 md:max-w-[85px]' : 'h-4 max-w-[55px] md:h-6 md:max-w-[85px]'}`} />
+                      : <span className="text-[10px] md:text-xs font-semibold text-white/80">{p.nom}</span>
+                    }
                   </div>
-                  <div className="w-16 h-16 rounded-2xl bg-accent-orange/15 flex items-center justify-center">
-                    <Wrench className="w-8 h-8 text-accent-orange" />
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl bg-accent-pink/15 flex items-center justify-center">
-                    <Heart className="w-8 h-8 text-accent-pink" />
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl bg-accent-yellow/15 flex items-center justify-center">
-                    <Zap className="w-8 h-8 text-accent-yellow" />
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl bg-rating-green/15 flex items-center justify-center">
-                    <Puzzle className="w-8 h-8 text-rating-green" />
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl bg-accent-blue/10 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-accent-blue">+</span>
-                  </div>
-                </div>
-              </div>
-              {/* Floating decorations */}
-              <div className="absolute -top-4 -right-4 w-10 h-10 bg-accent-yellow rounded-xl rotate-12 shadow-soft" />
-              <div className="absolute -bottom-3 -left-3 w-8 h-8 bg-accent-pink rounded-lg -rotate-12 shadow-soft" />
-              <div className="absolute top-1/2 -right-6 w-6 h-6 bg-accent-blue rounded-full shadow-soft" />
+                )
+                return p.lien_url ? (
+                  <a key={p.id} href={p.lien_url} target="_blank" rel="noopener noreferrer">{inner}</a>
+                ) : (
+                  <div key={p.id}>{inner}</div>
+                )
+              })}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Partners bar */}
-      <div className="border-t border-white/50 bg-white/40 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400 text-center mb-5">
-            Le premier mouvement intersyndical autour de la e-santé
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-            {partnerLogos.map((partner) => (
-              <div
-                key={partner.name}
-                className="px-3 py-2 bg-white/70 rounded-lg border border-gray-100 hover:border-gray-200 transition-all cursor-default flex items-center justify-center"
-              >
-                <img
-                  src={partner.logo}
-                  alt={partner.name}
-                  className="h-8 max-w-[100px] object-contain opacity-60 hover:opacity-100 transition-opacity"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Fondu de sortie vers le fond du site */}
+      <div className="pointer-events-none h-8" style={{ background: 'linear-gradient(to bottom, transparent 0%, #E8EDF8 100%)' }} />
     </section>
   );
 }

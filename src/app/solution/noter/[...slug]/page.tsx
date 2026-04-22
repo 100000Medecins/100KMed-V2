@@ -1,25 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
-import { submitEvaluation } from '@/lib/actions/evaluation'
-import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward } from 'lucide-react'
+import { submitEvaluation, submitEvaluationAnonyme, saveDraftEvaluation } from '@/lib/actions/evaluation'
+import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Mail, CheckCircle } from 'lucide-react'
+import { getCritereLabel } from '@/lib/constants/criteres'
 
 interface PageProps {
   params: { slug: string[] }
 }
 
 const CRITERES = [
-  { key: 'interface', label: 'Interface utilisateur', question: 'Comment jugez-vous l\'ergonomie et la facilité d\'utilisation du logiciel ?' },
-  { key: 'fonctionnalites', label: 'Fonctionnalités', question: 'Les fonctionnalités répondent-elles à vos besoins au quotidien ?' },
-  { key: 'fiabilite', label: 'Fiabilité', question: 'Le logiciel est-il stable et fiable dans son utilisation quotidienne ?' },
-  { key: 'editeur', label: 'Éditeur / Support', question: 'Comment évaluez-vous la qualité du support et de l\'accompagnement de l\'éditeur ?' },
-  { key: 'qualite_prix', label: 'Rapport qualité/prix', question: 'Le rapport qualité/prix est-il satisfaisant ?' },
+  { key: 'interface', question: 'Comment jugez-vous l\'ergonomie et la facilité d\'utilisation du logiciel ?' },
+  { key: 'fonctionnalites', question: 'Les fonctionnalités répondent-elles à vos besoins au quotidien ?' },
+  { key: 'fiabilite', question: 'Le logiciel est-il stable et fiable dans son utilisation quotidienne ?' },
+  { key: 'editeur', question: 'Comment évaluez-vous la qualité du support et de l\'accompagnement de l\'éditeur ?' },
+  { key: 'qualite_prix', question: 'Le rapport qualité/prix est-il satisfaisant ?' },
 ]
 
 // ─── Étape 2 : Questions détaillées « Usage au quotidien » ───────────────────
@@ -492,17 +493,36 @@ export default function NoterPage({ params }: PageProps) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
+  const [emailAnonyme, setEmailAnonyme] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [submitted, setSubmitted] = useState(false)
+  const [sectionsDB, setSectionsDB] = useState<DetailSection[]>([])
+  const saveDraftRef = useRef<() => void>(() => {})
+
+  // Charger les sections depuis la DB
+  useEffect(() => {
+    fetch(`/api/questionnaire/${categorieSlug}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setSectionsDB(data.map((s: any) => ({
+          titre: s.titre,
+          introduction: s.introduction ?? undefined,
+          questions: s.questions.map((q: any) => ({
+            key: q.key,
+            question: q.question,
+            critereMajeur: q.critere_majeur,
+          })),
+        })))
+      })
+      .catch(() => {})
+  }, [categorieSlug])
 
   useEffect(() => {
     if (authLoading) return
-    if (!user) {
-      router.push(`/connexion?redirect=/solution/noter/${categorieSlug}/${solutionSlug}`)
-      return
-    }
 
     const supabase = createClient()
 
-    // Charger la solution et une éventuelle évaluation existante
+    // Charger la solution (accessible sans auth)
     supabase
       .from('solutions')
       .select('id, nom, slug, logo_url, categorie:categories(id, slug)')
@@ -515,7 +535,12 @@ export default function NoterPage({ params }: PageProps) {
         }
         setSolution(sol)
 
-        // Charger évaluation existante
+        if (!user) {
+          setLoading(false)
+          return
+        }
+
+        // Charger évaluation existante (uniquement si connecté)
         supabase
           .from('evaluations')
           .select('scores')
@@ -536,18 +561,15 @@ export default function NoterPage({ params }: PageProps) {
                 }
               }
 
-              // Restaurer les scores détaillés (toutes les catégories possibles)
-              const allSections = [
-                ...SECTIONS_DETAILLEES,
-                ...Object.values(SECTIONS_PAR_CATEGORIE).flat(),
-              ]
-              for (const section of allSections) {
-                for (const q of section.questions) {
-                  if (existing[q.key] === null) {
-                    restoredDetailScores[q.key] = null // NC
-                  } else if (typeof existing[q.key] === 'number') {
-                    restoredDetailScores[q.key] = existing[q.key]
-                  }
+              // Restaurer les scores détaillés depuis toutes les clés inconnues des CRITERES
+              const critereKeys = new Set(CRITERES.map((c) => c.key))
+              const metaKeys = new Set(['commentaire', 'date_debut', 'date_fin'])
+              for (const [key, value] of Object.entries(existing)) {
+                if (critereKeys.has(key) || metaKeys.has(key)) continue
+                if (value === null) {
+                  restoredDetailScores[key] = null
+                } else if (typeof value === 'number') {
+                  restoredDetailScores[key] = value
                 }
               }
 
@@ -568,17 +590,19 @@ export default function NoterPage({ params }: PageProps) {
             setLoading(false)
           })
       })
-  }, [user, authLoading, categorieSlug, solutionSlug, router])
+  }, [user, authLoading, solutionSlug])
 
   // Un critère est "répondu" s'il a une note (> 0) OU s'il est marqué NC (null)
   const allRated = CRITERES.every((c) => scores[c.key] === null || (typeof scores[c.key] === 'number' && scores[c.key]! > 0))
 
-  const sectionsDetail = getSectionsForCategorie(categorieSlug)
+  const sectionsDetail = sectionsDB.length > 0 ? sectionsDB : getSectionsForCategorie(categorieSlug)
   const substeps = getSubsteps(sectionsDetail)
-  const totalSteps = 1 + substeps.length
+  // Pour les anonymes, une étape email est ajoutée en fin de parcours
+  const totalSteps = 1 + substeps.length + (!user ? 1 : 0)
+  const isEmailStep = !user && currentStep === totalSteps
 
   const substepIndex = Math.max(0, currentStep - 2)
-  const currentSubstepGroup = currentStep >= 2 ? substeps[substepIndex] : null
+  const currentSubstepGroup = currentStep >= 2 && !isEmailStep ? substeps[substepIndex] : null
   const isLastStep = currentStep === totalSteps
 
   const currentSubstepQuestions = currentSubstepGroup?.sections.flatMap(s => s.questions) ?? []
@@ -586,46 +610,179 @@ export default function NoterPage({ params }: PageProps) {
     q => q.key in detailScores && (detailScores[q.key] === null || detailScores[q.key]! > 0)
   ).length
 
+  // Pour chaque critère majeur, si une majorité de ses sous-questions est répondue
+  // (note > 0 ou NC/null comptent comme répondues), on remplace la note initiale
+  // par la moyenne des réponses numériques. Sinon on garde la note de l'étape 1.
+  const buildRefinedCritereScores = (): Record<string, number> => {
+    const allDetailQuestions = sectionsDetail.flatMap((s) => s.questions)
+    const refined: Record<string, number> = {}
+
+    for (const critere of CRITERES) {
+      const questionsForCritere = allDetailQuestions.filter((q) => q.critereMajeur === critere.key)
+      const originalScore = typeof scores[critere.key] === 'number' ? (scores[critere.key] as number) : 0
+
+      if (questionsForCritere.length === 0) {
+        refined[critere.key] = originalScore
+        continue
+      }
+
+      const answered = questionsForCritere.filter((q) => q.key in detailScores)
+      const majorityReached = answered.length > questionsForCritere.length / 2
+
+      if (majorityReached) {
+        const numericAnswers = answered
+          .map((q) => detailScores[q.key])
+          .filter((v): v is number => typeof v === 'number' && v > 0)
+        refined[critere.key] = numericAnswers.length > 0
+          ? numericAnswers.reduce((sum, v) => sum + v, 0) / numericAnswers.length
+          : originalScore
+      } else {
+        refined[critere.key] = originalScore
+      }
+    }
+
+    return refined
+  }
+
+  const buildFinalScores = () => {
+    const refinedScores = buildRefinedCritereScores()
+    const finalScores: Record<string, number | string | null> = { ...scores, ...detailScores, ...refinedScores }
+    if (commentaire.trim()) finalScores.commentaire = commentaire.trim()
+    if (dateDebut) finalScores.date_debut = dateDebut
+    if (plusUtilise && dateFin) finalScores.date_fin = dateFin
+    return finalScores
+  }
+
+  const buildMoyenne = () => {
+    const refinedScores = buildRefinedCritereScores()
+    const numericValues = CRITERES
+      .map((c) => refinedScores[c.key])
+      .filter((v): v is number => typeof v === 'number' && v > 0)
+    return numericValues.length > 0
+      ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
+      : 0
+  }
+
+  // Sauvegarde silencieuse du brouillon
+  // overrideScores / overrideDetailScores permettent de passer le nouvel état
+  // immédiatement après un setState (avant le re-render React)
+  const saveDraft = (
+    overrideScores?: Record<string, number | null>,
+    overrideDetailScores?: Record<string, number | null>
+  ) => {
+    if (!user || !solution) return
+    const s = overrideScores ?? scores
+    const d = overrideDetailScores ?? detailScores
+    const refined: Record<string, number> = {}
+    const allDetailQuestions = sectionsDetail.flatMap((sec) => sec.questions)
+    for (const critere of CRITERES) {
+      const questionsForCritere = allDetailQuestions.filter((q) => q.critereMajeur === critere.key)
+      const originalScore = typeof s[critere.key] === 'number' ? (s[critere.key] as number) : 0
+      if (questionsForCritere.length === 0) { refined[critere.key] = originalScore; continue }
+      const answered = questionsForCritere.filter((q) => q.key in d)
+      const majorityReached = answered.length > questionsForCritere.length / 2
+      if (majorityReached) {
+        const numericAnswers = answered.map((q) => d[q.key]).filter((v): v is number => typeof v === 'number' && v > 0)
+        refined[critere.key] = numericAnswers.length > 0 ? numericAnswers.reduce((sum, v) => sum + v, 0) / numericAnswers.length : originalScore
+      } else {
+        refined[critere.key] = originalScore
+      }
+    }
+    const finalScores: Record<string, number | string | null> = { ...s, ...d, ...refined }
+    if (commentaire.trim()) finalScores.commentaire = commentaire.trim()
+    if (dateDebut) finalScores.date_debut = dateDebut
+    if (plusUtilise && dateFin) finalScores.date_fin = dateFin
+    saveDraftEvaluation(solution.id, finalScores).catch(() => {})
+  }
+
+  // Maintenir la ref à jour pour pouvoir sauvegarder depuis beforeunload
+  saveDraftRef.current = saveDraft
+
+  // Sauvegarder quand l'utilisateur quitte la page (ferme l'onglet, recharge, etc.)
+  useEffect(() => {
+    const handleBeforeUnload = () => { saveDraftRef.current() }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
+
+  // Scroll vers #commentaire après chargement si l'ancre est dans l'URL
+  useEffect(() => {
+    if (!loading && window.location.hash === '#commentaire') {
+      const el = document.getElementById('commentaire')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [loading])
+
+
+  // Sauvegarde + avance à l'étape suivante
+  const handleNext = () => {
+    saveDraft()
+    setCurrentStep(prev => prev + 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Sauvegarde + recule à l'étape précédente
+  const handleBack = () => {
+    saveDraft()
+    setCurrentStep(prev => prev - 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const handleSubmit = async () => {
-    if (!user || !solution || !allRated) return
+    if (!solution || !allRated) return
+
+    // Utilisateur anonyme : aller à l'étape email
+    if (!user) {
+      setCurrentStep(totalSteps)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
     try {
-      // Construire les scores finaux (critères principaux + détaillés + commentaire)
-      // Les valeurs NC (null) sont conservées telles quelles dans le JSONB
-      const finalScores: Record<string, number | string | null> = { ...scores, ...detailScores }
-      if (commentaire.trim()) {
-        finalScores.commentaire = commentaire.trim()
-      }
-      if (dateDebut) {
-        finalScores.date_debut = dateDebut
-      }
-      if (plusUtilise && dateFin) {
-        finalScores.date_fin = dateFin
-      }
-
-      // Calculer la moyenne uniquement sur les critères notés (exclure les NC)
-      const numericValues = CRITERES
-        .map((c) => scores[c.key])
-        .filter((v): v is number => typeof v === 'number' && v > 0)
-      const moyenne = numericValues.length > 0
-        ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
-        : 0
-
-      // Appeler la server action (bypass RLS)
       await submitEvaluation(
         solution.id,
-        finalScores,
-        moyenne,
+        buildFinalScores(),
+        buildMoyenne(),
         dateDebut || null,
         plusUtilise ? (dateFin || null) : null
       )
-
-      router.push(`/solutions/${categorieSlug}/${solutionSlug}`)
+      router.push('/mon-compte/mes-evaluations')
     } catch (err) {
       console.error('Erreur soumission:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleSubmitAnonyme = async () => {
+    if (!solution) return
+    setEmailError(null)
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailAnonyme.trim() || !emailRegex.test(emailAnonyme.trim())) {
+      setEmailError('Veuillez saisir une adresse email valide.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await submitEvaluationAnonyme(
+        solution.id,
+        buildFinalScores(),
+        buildMoyenne(),
+        emailAnonyme.trim(),
+        dateDebut || null,
+        plusUtilise ? (dateFin || null) : null
+      )
+      setSubmitted(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (err) {
+      console.error('Erreur soumission anonyme:', err)
+      setEmailError('Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setSubmitting(false)
     }
@@ -699,23 +856,27 @@ export default function NoterPage({ params }: PageProps) {
                 {/* Depuis quand utilisez-vous ce logiciel ? */}
                 <div className="bg-white rounded-card shadow-card p-5">
                   <h3 className="text-sm font-semibold text-navy mb-1">
-                    Depuis quand utilisez-vous ce logiciel ?
+                    Depuis combien d&apos;années utilisez-vous ce logiciel ?
                   </h3>
                   <p className="text-xs text-gray-500 mb-3">
-                    Indiquez l&apos;année depuis laquelle vous utilisez cette solution.
+                    Indiquez approximativement depuis combien de temps vous utilisez cette solution.
                   </p>
                   <select
-                    value={dateDebut ? dateDebut.substring(0, 4) : ''}
+                    value={dateDebut ? String(new Date().getFullYear() - parseInt(dateDebut.substring(0, 4))) : ''}
                     onChange={(e) => {
                       const val = e.target.value
-                      setDateDebut(val ? `${val}-01-01` : '')
+                      if (val === '') { setDateDebut(''); return }
+                      const year = new Date().getFullYear() - parseInt(val)
+                      setDateDebut(`${year}-01-01`)
                     }}
                     className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                   >
-                    <option value="">Sélectionnez une année</option>
-                    {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                      <option key={year} value={year}>{year}</option>
+                    <option value="">Sélectionnez une durée</option>
+                    <option value="0">Moins d&apos;1 an</option>
+                    {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>{n} an{n > 1 ? 's' : ''}</option>
                     ))}
+                    <option value="21">Plus de 20 ans</option>
                   </select>
 
                   {/* Case à cocher : plus utilisé */}
@@ -776,18 +937,22 @@ export default function NoterPage({ params }: PageProps) {
                 {CRITERES.map((critere) => (
                   <div key={critere.key} className="bg-white rounded-card shadow-card p-5">
                     <h3 className="text-sm font-semibold text-navy mb-1">
-                      {critere.label}
+                      {getCritereLabel(critere.key, categorieSlug)}
                     </h3>
                     <p className="text-xs text-gray-500 mb-3">{critere.question}</p>
                     <StarSelector
                       value={critere.key in scores ? scores[critere.key] : 0}
-                      onChange={(v) => setScores((prev) => ({ ...prev, [critere.key]: v }))}
+                      onChange={(v) => {
+                        const next = { ...scores, [critere.key]: v }
+                        setScores(next)
+                        saveDraft(next, detailScores)
+                      }}
                     />
                   </div>
                 ))}
 
                 {/* Commentaire */}
-                <div className="bg-white rounded-card shadow-card p-5">
+                <div id="commentaire" className="bg-white rounded-card shadow-card p-5">
                   <h3 className="text-sm font-semibold text-navy mb-1">
                     Votre commentaire
                   </h3>
@@ -798,7 +963,7 @@ export default function NoterPage({ params }: PageProps) {
                     value={commentaire}
                     onChange={(e) => setCommentaire(e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-none"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y"
                     placeholder="Décrivez votre expérience..."
                   />
                 </div>
@@ -844,6 +1009,96 @@ export default function NoterPage({ params }: PageProps) {
             </>
           )}
 
+          {/* ─── Écran de confirmation (après soumission anonyme) ─── */}
+          {submitted && (
+            <div className="bg-white rounded-card shadow-card p-8 text-center">
+              <div className="flex justify-center mb-4">
+                <CheckCircle className="w-14 h-14 text-green-500" />
+              </div>
+              <h2 className="text-lg font-bold text-navy mb-2">
+                Votre évaluation a bien été enregistrée !
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Un email de vérification a été envoyé à <strong>{emailAnonyme}</strong>.
+              </p>
+              <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-800 text-left mb-6">
+                <p className="font-semibold mb-1">Prochaine étape :</p>
+                <p>Cliquez sur le lien dans l&apos;email pour vous connecter via <strong>Pro Santé Connect</strong> et confirmer que vous êtes médecin en exercice.</p>
+                <p className="mt-2">Votre avis sera publié automatiquement après validation.</p>
+              </div>
+              <button
+                onClick={() => router.push(`/solutions/${categorieSlug}/${solutionSlug}`)}
+                className="text-sm text-accent-blue hover:underline"
+              >
+                Retour à la fiche solution
+              </button>
+            </div>
+          )}
+
+          {/* ─── Étape email (anonyme uniquement, dernière étape) ─── */}
+          {isEmailStep && !submitted && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-base font-semibold text-navy mb-1">
+                  Dernière étape — Vérification de votre identité
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Pour garantir que les avis publiés proviennent de médecins en exercice, nous devons vérifier votre identité via Pro Santé Connect.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-card shadow-card p-6 space-y-4">
+                <div className="flex items-start gap-3 text-sm text-gray-600">
+                  <Mail className="w-5 h-5 text-accent-blue flex-shrink-0 mt-0.5" />
+                  <p>
+                    Saisissez votre adresse email. Nous vous enverrons un lien pour vous connecter une seule fois via <strong>Pro Santé Connect</strong>. Votre avis sera publié automatiquement après validation.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-navy mb-1.5">
+                    Votre adresse email
+                  </label>
+                  <input
+                    type="email"
+                    value={emailAnonyme}
+                    onChange={(e) => {
+                      setEmailAnonyme(e.target.value)
+                      setEmailError(null)
+                    }}
+                    placeholder="prenom.nom@exemple.fr"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitAnonyme() }}
+                  />
+                  {emailError && (
+                    <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                  )}
+                </div>
+
+                <div className="bg-surface-light rounded-xl p-3 text-xs text-gray-500">
+                  Votre email ne sera pas affiché publiquement. Il est uniquement utilisé pour envoyer le lien de vérification.
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  onClick={handleBack}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Retour
+                </button>
+                <Button
+                  variant="primary"
+                  onClick={handleSubmitAnonyme}
+                  className={submitting ? 'opacity-50 pointer-events-none' : ''}
+                >
+                  {submitting ? 'Envoi en cours...' : 'Recevoir mon lien de vérification'}
+                </Button>
+              </div>
+            </>
+          )}
+
           {/* ─── Étapes 2+ : Sous-étapes détaillées (optionnelles) ── */}
           {currentStep >= 2 && currentSubstepGroup && (
             <>
@@ -882,9 +1137,11 @@ export default function NoterPage({ params }: PageProps) {
                     key={section.titre}
                     section={section}
                     scores={detailScores}
-                    onScoreChange={(key, value) =>
-                      setDetailScores((prev) => ({ ...prev, [key]: value }))
-                    }
+                    onScoreChange={(key, value) => {
+                      const next = { ...detailScores, [key]: value }
+                      setDetailScores(next)
+                      saveDraft(scores, next)
+                    }}
                     defaultOpen={idx === 0}
                   />
                 ))}
@@ -900,10 +1157,7 @@ export default function NoterPage({ params }: PageProps) {
               {/* Navigation */}
               <div className="flex justify-between items-center mt-8">
                 <button
-                  onClick={() => {
-                    setCurrentStep(prev => prev - 1)
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
+                  onClick={handleBack}
                   className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -931,10 +1185,7 @@ export default function NoterPage({ params }: PageProps) {
                   ) : (
                     <Button
                       variant="primary"
-                      onClick={() => {
-                        setCurrentStep(prev => prev + 1)
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
+                      onClick={handleNext}
                     >
                       <span className="flex items-center gap-2">
                         Suivant

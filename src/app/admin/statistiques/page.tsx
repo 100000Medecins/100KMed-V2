@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { resolveSpecialite } from '@/lib/auth/psc-specialites'
 import {
   MessageSquare,
   Users,
@@ -12,6 +13,7 @@ import {
   Clock,
   Stethoscope,
   Briefcase,
+  UserX,
 } from 'lucide-react'
 
 /* ================================================================== */
@@ -90,7 +92,7 @@ async function getStats() {
     .select('id, nom')
 
   const editeurMap = new Map<string, string>()
-  for (const ed of editeurs ?? []) editeurMap.set(ed.id, ed.nom)
+  for (const ed of editeurs ?? []) editeurMap.set(ed.id, ed.nom ?? '')
 
   // ── Note moyenne ──
   const ratings = allEvals
@@ -98,14 +100,33 @@ async function getStats() {
     .filter((v): v is number => v != null && !isNaN(v))
   const avgRating = ratings.length > 0 ? ratings.reduce((s, v) => s + v, 0) / ratings.length : 0
 
-  // ── Activité récente ──
+  // ── Fraîcheur des notes ──
   const now = new Date()
+  const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString()
+  const evalsWithDate = allEvals.filter((e) => e.last_date_note)
+  const evalsRecentes = evalsWithDate.filter((e) => (e.last_date_note as string) >= oneYearAgo).length
+  const evalsAnciennes = evalsWithDate.length - evalsRecentes
+  const pctRecentes = evalsWithDate.length > 0 ? Math.round((evalsRecentes / evalsWithDate.length) * 100) : 0
+
+  // ── Activité récente ──
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const recentCount = allEvals.filter(
     (e) => e.last_date_note && (e.last_date_note as string) >= sevenDaysAgo
   ).length
 
   const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  // ── Suppressions de comptes ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: suppressions } = await (supabase as any)
+    .from('compte_suppressions')
+    .select('deleted_at')
+  const allSuppressions: { deleted_at: string }[] = suppressions ?? []
+  const totalSuppressions = allSuppressions.length
+  const suppressionsCeMois = allSuppressions.filter(
+    (s) => s.deleted_at.startsWith(thisMonthKey)
+  ).length
+
   const thisMonthCount = allEvals.filter(
     (e) => e.last_date_note && (e.last_date_note as string).startsWith(thisMonthKey)
   ).length
@@ -190,9 +211,10 @@ async function getStats() {
     .slice(0, 8)
 
   // ── Utilisateurs par spécialité ──
+  // SM26, SM53, SM54 → tous résolus en 'Médecin généraliste' via SM_SPECIALITES
   const specCount: Record<string, number> = {}
   for (const u of allUsers) {
-    const spec = (u.specialite as string) || 'Non renseignée'
+    const spec = resolveSpecialite(u.specialite as string) || 'Non renseignée'
     specCount[spec] = (specCount[spec] || 0) + 1
   }
   const usersBySpecialite = Object.entries(specCount)
@@ -227,6 +249,11 @@ async function getStats() {
     topRated,
     usersBySpecialite,
     usersByMode,
+    evalsRecentes,
+    evalsAnciennes,
+    pctRecentes,
+    totalSuppressions,
+    suppressionsCeMois,
   }
 }
 
@@ -323,8 +350,8 @@ function BarChartHorizontal({
   return (
     <div className="space-y-2.5">
       {data.map((d, i) => (
-        <div key={d.label} className="flex items-center gap-3">
-          <span className="text-xs text-gray-600 w-28 truncate text-right font-medium">{d.label}</span>
+        <div key={d.label} className="flex items-start gap-3 pt-0.5">
+          <span className="text-xs text-gray-600 w-36 shrink-0 text-right font-medium leading-tight">{d.label}</span>
           <div className="flex-1 h-7 bg-gray-50 rounded-lg overflow-hidden relative">
             <div
               className="h-full rounded-lg"
@@ -550,6 +577,51 @@ export default async function AdminStatistiquesPage() {
           suffix="/5"
         />
       </div>
+
+      {/* Comptes supprimés */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <KpiCard
+          icon={<UserX className="w-5 h-5 text-red-400" />}
+          label="Comptes supprimés"
+          value={String(stats.totalSuppressions)}
+          sub={`+${stats.suppressionsCeMois} ce mois-ci`}
+        />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/*  ROW 1b — FRAÎCHEUR DES AVIS                                 */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Panel icon={<Clock className="w-5 h-5 text-navy" />} title="Fraîcheur des avis">
+        <div className="flex flex-col sm:flex-row items-center gap-8">
+          {/* Barre de progression */}
+          <div className="flex-1 w-full">
+            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+              <span>Moins d&apos;1 an — <span className="font-bold text-green-600">{stats.evalsRecentes}</span></span>
+              <span>Plus d&apos;1 an — <span className="font-bold text-amber-500">{stats.evalsAnciennes}</span></span>
+            </div>
+            <div className="h-5 w-full bg-amber-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 rounded-full transition-all"
+                style={{ width: `${stats.pctRecentes}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5 text-center">
+              <span className="font-bold text-navy text-sm">{stats.pctRecentes}%</span> des avis datent de moins d&apos;un an
+            </p>
+          </div>
+          {/* Chiffres clés */}
+          <div className="flex gap-6 shrink-0">
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-green-600">{stats.evalsRecentes}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Récents (&lt; 1 an)</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-amber-500">{stats.evalsAnciennes}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Anciens (&gt; 1 an)</p>
+            </div>
+          </div>
+        </div>
+      </Panel>
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/*  ROW 2 — EVAL TREND + DISTRIBUTION                           */}
