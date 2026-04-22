@@ -11,6 +11,7 @@
 - **Rôle** : fondateur / responsable produit de la plateforme 100 000 Médecins
 - **Profil technique** : non-développeur, travaille avec Claude Code comme principal outil de développement
 - **Postes** : deux machines Windows 11 synchronisées via Synology CloudStation (répertoire partagé). Toujours faire un `git pull origin dev` en arrivant sur un nouveau poste, même si le répertoire est synchronisé, car Synology et Git sont indépendants.
+- **Faux positifs git Synology** : Synology peut synchroniser les fichiers de travail avant que git soit mis à jour, ce qui fait apparaître des "modifications locales" dans `git status`. Ces modifications sont en réalité déjà commitées sur le remote. Diagnostic : `git diff HEAD` ne montre rien (faux positif CRLF/LF). Fix sans confirmation : `git checkout -- .` puis `git pull origin dev`.
 
 ---
 
