@@ -6,21 +6,20 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### Glossaire — étoffer les acronymes
-- Enrichir la table `acronymes` : ajouter de nouveaux acronymes de l'e-santé (HAS, CNAM, ARS, CPAM, FINESS, etc.)
-- Compléter les définitions et liens officiels existants
+### Audit DNS Gandi — 100000medecins.org
+- Faire le point sur tous les enregistrements DNS existants (A, CNAME, TXT, MX…)
+- Identifier et supprimer les entrées obsolètes (ancien hébergeur, anciens environnements)
+- Nettoyer les entrées `dev` en conflit (A + CNAME vers ancien hébergeur) avant mise en prod
 
-### Glossaire — supprimer les catégories
-- Enlever le champ catégorie sur la page publique `/glossaire`
-- Enlever le champ catégorie dans l'admin `/admin/acronymes`
+### Backups base de données Supabase
+- Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
+- Le code (git) ne sauvegarde pas les données : utilisateurs, avis, articles, études, évaluations sont uniquement dans Supabase
+- Options : script bash automatisé via cron local ou Windows Task Scheduler, export vers le NAS
 
-### Tooltips acronymes — détection automatique sur toutes les pages
-- Quand un acronyme de la table est repéré dans le texte d'une page, afficher sa définition au survol (infobulle)
-- **Approche recommandée** : composant client global `AcronymHighlighter` dans le layout, qui après montage parcourt les nœuds texte (TreeWalker API) et enveloppe les correspondances dans un `<abbr>` avec tooltip
-- Acronymes chargés une fois via `/api/acronymes` et mis en cache (SWR ou fetch avec `cache`)
-- Détection par mot entier uniquement (regex `\b`) pour éviter les faux positifs
-- Zones exclues : `<input>`, `<button>`, `<code>`, `<pre>`, `<a>`, titres `<h1>`
-- **Complexité** : risque de conflit avec l'hydratation React, performance à surveiller si table volumineuse, tester soigneusement avant de déployer
+### Emails auth Supabase → SendGrid SMTP
+- Configurer le SMTP custom dans Supabase dashboard (Authentication → SMTP Settings) avec les credentials SendGrid
+- Zéro changement de code, 5 minutes dans le dashboard
+- Supprime la limite de 3 emails/heure du plan gratuit Supabase
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
@@ -34,9 +33,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Migrer ProSanté Connect de l'environnement BAS vers la production ANS
 - Voir checklist dans `memory/project_psc_prod_deployment.md`
 
-### Emails transactionnels
-- Migrer vers Brevo (emails transactionnels + auth SMTP) pour remplacer SendGrid/Supabase SMTP
-
 ### Avatars
 - Changer les avatars utilisateurs
 
@@ -46,6 +42,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Glossaire — ancres inter-acronymes : sigles cliquables dans définitions/descriptions → navigation directe `#SIGLE` ✅
 - Glossaire — intégration dans la recherche navbar (overlay + API) ✅
 - Glossaire — suppression du système de catégories (formulaire, CRUD, types, affichage) ✅
+- Tooltips acronymes sur zones texte (AcronymText, AcronymHtml) ✅
 - Glossaire e-Santé `/glossaire` : page publique, ancres alphabétiques, recherche, formulaire de suggestion, admin CRUD + onglet propositions ✅
 - Recherche navbar : overlay debounced, 3 sections, page `/recherche?q=...`, pg_trgm ✅
 - Module Études & Thèses complet : dépôt questionnaires (tous utilisateurs), pages mon-compte, admin validation, emails dédiés, centre de notifications ✅
@@ -56,18 +53,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Menu Communauté navbar (Blog, Vidéos, Irritants, Études, Thèses) ✅
 - Session admin étendue à 7 jours avec renouvellement automatique ✅
 - Éditeur Sephira renommé en Orisha ✅
-- SEO : correction prompt génération (catégorie réelle au lieu de "logiciel métier" systématique) + script régénération masse hors LGC ✅
-- SEO manuel : PraxySanté, Desmos Médecin, HyperMed régénérés via admin ✅
+- SEO : correction prompt génération + script régénération masse hors LGC ✅
 - Module vidéos : rubriques séparateurs glissables-déposables, drag-and-drop, toggle statut, miniatures YouTube ✅
 - SEO automatique par IA (Claude Haiku) + génération en masse ✅
 - ISR sur pages solutions + correctif generateStaticParams (erreur 500 prod) ✅
 - Admin solutions : recherche textuelle temps réel ✅
 - Admin utilisateurs : export CSV emails, pagination haut+bas, fix scroll horizontal ✅
 - Filtre comparatifs ET au lieu de OU ✅
-- Navbar : fix flash liens Blog/Irritants avant fetch ✅
 - Descriptions solutions : rendu HTML (dangerouslySetInnerHTML) ✅
-- Formulaire contact : labels obligatoire/optionnel ✅
-- Incrustation logo sur images réseaux sociaux ✅
 - Blog IA + publication Make.com (LinkedIn ✅, Facebook ✅, Instagram ✅)
 - Espace éditeur (rôles, mon-compte/mon-espace-editeur) ✅
 - Admin utilisateurs : pagination >1000, badge PSC, colonnes RPPS ✅
