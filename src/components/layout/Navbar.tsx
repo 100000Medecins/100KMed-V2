@@ -117,12 +117,23 @@ export default function Navbar() {
         {/* Col 1 : Logo + burger mobile */}
         <div className="flex items-center gap-2">
           <a href="/" className="flex items-center shrink-0">
+            {/* Logo 3 lignes sur mobile / tablet (< 1150px) */}
+            <Image
+              src="/logos/logo-principal-couleur-trimmed.png"
+              alt="100 000 Médecins"
+              width={63}
+              height={44}
+              className="h-[44px] w-auto min-[1150px]:hidden"
+              priority
+              unoptimized
+            />
+            {/* Logo horizontal sur desktop (≥ 1150px) */}
             <Image
               src="/logos/logo-secondaire-couleur-trimmed.png"
               alt="100 000 Médecins"
               width={400}
               height={100}
-              className="h-[22px] sm:h-[27px] w-auto"
+              className="h-[27px] w-auto hidden min-[1150px]:block"
               priority
               unoptimized
             />
