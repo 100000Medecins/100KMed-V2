@@ -20,8 +20,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
     AND e.last_relance_sent_at <  '2026-04-24 00:00:00'
   ORDER BY e.last_relance_sent_at;
   ```
-- **Étape 2** : attendre que le nouveau site soit live sur www.100000medecins.org (liens fonctionnels)
-- **Étape 3** : envoyer un email d'excuse avec le bon lien 1-clic régénéré pour chaque utilisateur
+- **Étape 2** : envoyer un email d'excuse avec le bon lien 1-clic régénéré pour chaque utilisateur (Admin → Emails → Encart excuse)
 - Contenu suggéré : message court d'excuse, expliquer qu'un lien technique était cassé, renvoyer le vrai lien personnalisé
 - Penser à réinitialiser `last_relance_sent_at` pour ces évaluations APRÈS le renvoi correct (ou les traiter comme "jamais relancés")
 
@@ -53,7 +52,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Cas : `auth.users` contient le compte PSC mais `public.users` est absent (callback précédent avorté)
 - `createUser` échouait → erreur fatale. Fix : si `createUser` échoue, on appelle `generateLink` pour récupérer l'UUID auth existant et on recrée le profil public manquant.
 
-#### ~~Création de compte — email déjà existant en DB~~ ✅ Corrigé
+#### Création de compte — email déjà existant en DB
+- Vérifier que le formulaire d'inscription affiche bien un message d'erreur (pas de spinner bloquant) quand l'email est déjà enregistré
 
 #### Note globale évaluations — incohérence avec la moyenne des sous-critères
 - Sur les pages solutions, la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis par l'utilisateur
@@ -65,14 +65,21 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### UX / UI
 
+#### Alléger les pages du site (bundle / code inspection)
+- Beaucoup de code visible à l'inspection navigateur — analyser le bundle size
+- Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
+
+#### Améliorer le menu burger en mode mobile
+- Revoir l'ergonomie et le design du menu hamburger sur mobile
+
 #### Fond des pages solutions + DA générale
 - Revoir le fond des pages solutions (couleur, texture, gradient…)
 - Occasion de revoir la direction artistique globale du site
 
 ### Blog
 
-#### Planification de la publication d'un article généré
-- Pouvoir définir une date/heure de publication future pour un article déjà généré par l'IA
+#### Planification de la publication d'un article généré et relu
+- Pouvoir définir une date/heure de publication future pour un article déjà généré par l'IA et relu/validé manuellement
 - L'article reste en statut "brouillon" jusqu'à l'heure planifiée, puis passe automatiquement en "publié"
 
 ### Performance
