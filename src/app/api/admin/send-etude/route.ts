@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const { lien_etude = '', texte_promoteur = '' } = body
 
   const supabase = createServiceRoleClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
 
   // Template
   const { data: template } = await (supabase as any)

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: true, reason: 'crons disabled by admin' })
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
   const now = new Date()
   // On cherche les newsletters dont scheduled_at est dans le passé (ou aujourd'hui) et pas encore envoyées
   const nowIso = now.toISOString()

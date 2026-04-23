@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
   const yearMonth = now.toISOString().slice(0, 7)
   const moisLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
   const today = now.toISOString().slice(0, 10)
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
 
   // Skip si déjà générée ce mois
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

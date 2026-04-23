@@ -2,6 +2,7 @@
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 
 /**
@@ -12,7 +13,10 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
   const supabase = createServiceRoleClient()
 
   // Générer le lien de récupération via le SDK admin
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const headersList = await headers()
+  const host = headersList.get('host') || 'www.100000medecins.org'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const siteUrl = `${proto}://${host}`
   const { data, error } = await supabase.auth.admin.generateLink({
     type: 'recovery',
     email,

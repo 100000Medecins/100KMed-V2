@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createServiceRoleClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
 
   // Récupérer le template
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

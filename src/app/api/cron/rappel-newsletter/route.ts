@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: true, reason: 'crons disabled by admin' })
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
   const now = new Date()
 
   // Brouillons créés il y a plus de 5 jours et pas encore envoyés

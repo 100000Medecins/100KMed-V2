@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createServiceRoleClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
 
   // Récupérer le template
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   for (const r of recipients) {
     try {
       const lien1Clic = r.userId && r.solutionId
-        ? generateRevalidationLink(r.userId, r.solutionId)
+        ? generateRevalidationLink(r.userId, r.solutionId, siteUrl)
         : `${siteUrl}/mon-compte/mes-evaluations`
 
       const nomDisplay = r.nom ? `Dr. ${r.nom}` : 'Docteur'

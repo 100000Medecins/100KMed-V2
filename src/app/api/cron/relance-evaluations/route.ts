@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: true, reason: 'crons disabled by admin' })
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
   const lienReevaluation = `${siteUrl}/mon-compte/mes-evaluations`
 
   const now = new Date()
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
     if (prefs && prefs.relance_emails === false) continue
 
     try {
-      const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
+      const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
       await sendRelanceEmail('relance_1an', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
     if (prefs && prefs.relance_emails === false) continue
 
     try {
-      const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
+      const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
       await sendRelanceEmail('relance_3mois', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)

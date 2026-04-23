@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id manquant' }, { status: 400 })
 
   const supabase = createServiceRoleClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
 
   // Récupérer le brouillon
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
