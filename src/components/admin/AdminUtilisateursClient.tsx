@@ -505,7 +505,7 @@ function UserRow({
         <button
           onClick={() => onDelete(user.id)}
           disabled={isDeleting}
-          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
           title="Supprimer cet utilisateur"
         >
           <Trash2 className="w-4 h-4" />
