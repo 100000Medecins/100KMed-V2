@@ -30,6 +30,11 @@ type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200]
 
+const isRealEmail = (email: string | null) =>
+  !!email &&
+  !email.endsWith('@placeholder.100kmed.local') &&
+  !email.endsWith('@psc.sante.fr')
+
 const ROLE_LABELS: Record<string, string> = {
   medecin: 'Médecin',
   editeur: 'Éditeur',
@@ -109,7 +114,7 @@ export default function AdminUtilisateursClient({
   const goToPage = (n: number) => setPage(Math.max(1, Math.min(totalPages, n)))
 
   const handleExportCsv = () => {
-    const withEmail = users.filter((u) => u.email)
+    const withEmail = users.filter((u) => isRealEmail(u.email))
     const rows = [
       ['Email', 'Prénom', 'Nom', 'Pseudo', 'Rôle', 'Spécialité', 'RPPS', 'Inscription'],
       ...withEmail.map((u) => [
@@ -259,7 +264,7 @@ export default function AdminUtilisateursClient({
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-button text-sm font-semibold bg-white border border-gray-200 text-gray-600 hover:border-accent-blue hover:text-accent-blue shadow-soft transition-all"
         >
           <Download className="w-4 h-4" />
-          Exporter emails ({users.filter(u => u.email).length})
+          Exporter emails ({users.filter(u => isRealEmail(u.email)).length})
         </button>
       </div>
 
