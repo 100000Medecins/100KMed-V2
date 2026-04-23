@@ -189,8 +189,13 @@ export async function GET(request: Request) {
     }
 
     // 6. Vérifier le OTP côté serveur pour créer la session avec cookies
+    // IMPORTANT : on collecte les cookies dans un tableau plutôt que de les écrire
+    // sur le cookieStore de la requête, car NextResponse.redirect() crée une nouvelle
+    // réponse qui n'hérite pas du cookieStore. On les attache manuellement sur la réponse finale.
     const tokenHash = linkData.properties.hashed_token
     const cookieStore = await cookies()
+    const sessionCookies: Array<{ name: string; value: string; options: Parameters<typeof cookieStore.set>[2] }> = []
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -199,7 +204,7 @@ export async function GET(request: Request) {
           getAll() { return cookieStore.getAll() },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              sessionCookies.push({ name, value, options })
             )
           },
         },
@@ -214,6 +219,11 @@ export async function GET(request: Request) {
     if (verifyError) {
       console.error('[PSC] verifyOtp error:', verifyError)
       return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
+    }
+
+    const withSession = (response: ReturnType<typeof NextResponse.redirect>) => {
+      sessionCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+      return response
     }
 
     // 7. Lier les évaluations anonymes en attente
@@ -302,14 +312,14 @@ export async function GET(request: Request) {
       .single()
 
     if (!profile?.is_complete) {
-      return NextResponse.redirect(`${origin}/completer-profil`)
+      return withSession(NextResponse.redirect(`${origin}/completer-profil`))
     }
 
     if (evaluationLiee) {
-      return NextResponse.redirect(`${origin}/mon-compte/profil?evaluation=publiee`)
+      return withSession(NextResponse.redirect(`${origin}/mon-compte/profil?evaluation=publiee`))
     }
 
-    return NextResponse.redirect(`${origin}/mon-compte/profil`)
+    return withSession(NextResponse.redirect(`${origin}/mon-compte/profil`))
 
   } catch (err) {
     console.error('[PSC] callback exception:', err)
