@@ -298,7 +298,7 @@ export default function AdminUtilisateursClient({
                       Inscription <SortIcon field="created_at" />
                     </button>
                   </th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 w-12" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -501,7 +501,7 @@ function UserRow({
       </td>
 
       {/* Supprimer */}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 w-12">
         <button
           onClick={() => onDelete(user.id)}
           disabled={isDeleting}
