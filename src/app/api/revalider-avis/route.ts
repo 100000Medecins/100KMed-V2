@@ -16,16 +16,16 @@ export async function GET(req: NextRequest) {
   const uid = searchParams.get('uid')
   const sid = searchParams.get('sid')
   const token = searchParams.get('token')
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  const siteUrl = new URL(req.url).origin
 
   if (!uid || !sid || !token) {
-    return NextResponse.redirect(`${siteUrl}/mon-compte/mes-evaluations?erreur=lien-invalide`)
+    return NextResponse.redirect(`${siteUrl}/avis-confirme?erreur=lien-invalide`)
   }
 
   // Vérifier le token
   const expected = generateToken(uid, sid)
   if (token !== expected) {
-    return NextResponse.redirect(`${siteUrl}/mon-compte/mes-evaluations?erreur=lien-invalide`)
+    return NextResponse.redirect(`${siteUrl}/avis-confirme?erreur=lien-invalide`)
   }
 
   const supabase = createServiceRoleClient()
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
     .eq('solution_id', sid)
 
   if (error) {
-    return NextResponse.redirect(`${siteUrl}/mon-compte/mes-evaluations?erreur=revalidation-echouee`)
+    return NextResponse.redirect(`${siteUrl}/avis-confirme?erreur=revalidation-echouee`)
   }
 
-  return NextResponse.redirect(`${siteUrl}/mon-compte/mes-evaluations?revalide=1`)
+  return NextResponse.redirect(`${siteUrl}/avis-confirme`)
 }
