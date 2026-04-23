@@ -77,24 +77,31 @@ export async function GET(request: Request) {
 
     // 3. Chercher un utilisateur existant par RPPS
     let userId: string | null = null
+    let currentPublicEmail: string | null = null
 
     if (rpps) {
       const { data: existingProfile } = await supabaseAdmin
         .from('users')
-        .select('id')
+        .select('id, email')
         .eq('rpps', rpps)
         .single()
-      if (existingProfile) userId = existingProfile.id
+      if (existingProfile) {
+        userId = existingProfile.id
+        currentPublicEmail = existingProfile.email ?? null
+      }
     }
 
     // Sinon chercher par email réel
     if (!userId && email) {
       const { data: existingByEmail } = await supabaseAdmin
         .from('users')
-        .select('id')
+        .select('id, email')
         .eq('email', email)
         .single()
-      if (existingByEmail) userId = existingByEmail.id
+      if (existingByEmail) {
+        userId = existingByEmail.id
+        currentPublicEmail = existingByEmail.email ?? null
+      }
     }
 
     // 4. Créer l'utilisateur si inexistant
@@ -133,6 +140,10 @@ export async function GET(request: Request) {
       if (prenom) profileUpdates.prenom = prenom
       if (specialite) profileUpdates.specialite = specialite
       if (modeExercice) profileUpdates.mode_exercice = modeExercice
+      // Corriger l'email fictif généré en bac à sable PSC (@psc.sante.fr ou null)
+      // dès que PSC fournit un vrai email (cas typique en PSC production)
+      const hasFakeEmail = !currentPublicEmail || currentPublicEmail.endsWith('@psc.sante.fr')
+      if (hasFakeEmail && email) profileUpdates.email = email
       if (Object.keys(profileUpdates).length > 0) {
         await supabaseAdmin.from('users').update(profileUpdates).eq('id', userId)
       }
