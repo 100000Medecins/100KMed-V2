@@ -6,6 +6,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
+### Partenariats contenu
+
+#### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
+- **Médiia** — association pour les vidéos/stories
+- **La rhumatologue** (à identifier) — contenu tutos/articles/vidéos
+- **Whydoc** — intégration vidéos/stories
+- Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
+
 ### Déploiement final
 
 #### Kill-switch emails routiniers — à activer au déploiement final
