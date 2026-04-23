@@ -289,7 +289,7 @@ export default function Navbar() {
           {/* Burger mobile — toujours à droite */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className={`min-[1150px]:hidden pl-2 py-2 pr-0 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
+            className={`min-[1150px]:hidden pl-2 py-2 pr-0 -mr-6 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
             aria-label="Menu"
           >
             {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
