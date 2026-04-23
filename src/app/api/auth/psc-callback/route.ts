@@ -1,5 +1,3 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps } from '@/lib/auth/psc'
@@ -177,7 +175,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 5. Générer un magic link
+    // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userEmail,
@@ -188,43 +186,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
     }
 
-    // 6. Vérifier le OTP côté serveur pour créer la session avec cookies
-    // IMPORTANT : on collecte les cookies dans un tableau plutôt que de les écrire
-    // sur le cookieStore de la requête, car NextResponse.redirect() crée une nouvelle
-    // réponse qui n'hérite pas du cookieStore. On les attache manuellement sur la réponse finale.
     const tokenHash = linkData.properties.hashed_token
-    const cookieStore = await cookies()
-    const sessionCookies: Array<{ name: string; value: string; options: Parameters<typeof cookieStore.set>[2] }> = []
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              sessionCookies.push({ name, value, options })
-            )
-          },
-        },
-      }
-    )
-
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: 'magiclink',
-    })
-
-    if (verifyError) {
-      console.error('[PSC] verifyOtp error:', verifyError)
-      return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
-    }
-
-    const withSession = (response: ReturnType<typeof NextResponse.redirect>) => {
-      sessionCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-      return response
-    }
+    // 6. (Supprimé) verifyOtp côté serveur — les cookies de session ne peuvent pas
+    // être attachés à un NextResponse.redirect() dans un Route Handler Next.js.
+    // On délègue au client via /auth/psc-session.
 
     // 7. Lier les évaluations anonymes en attente
     let evalsALier: Array<{ id: string; solution_id: string | null }> = []
@@ -304,22 +270,22 @@ export async function GET(request: Request) {
       }
     }
 
-    // 8. Rediriger selon l'état du profil
+    // 8. Rediriger vers /auth/psc-session pour établir la session côté client
     const { data: profile } = await supabaseAdmin
       .from('users')
       .select('is_complete')
       .eq('id', userId)
       .single()
 
-    if (!profile?.is_complete) {
-      return withSession(NextResponse.redirect(`${origin}/completer-profil`))
-    }
+    const next = !profile?.is_complete
+      ? '/completer-profil'
+      : evaluationLiee
+        ? '/mon-compte/profil?evaluation=publiee'
+        : '/mon-compte/profil'
 
-    if (evaluationLiee) {
-      return withSession(NextResponse.redirect(`${origin}/mon-compte/profil?evaluation=publiee`))
-    }
-
-    return withSession(NextResponse.redirect(`${origin}/mon-compte/profil`))
+    return NextResponse.redirect(
+      `${origin}/auth/psc-session?token=${tokenHash}&next=${encodeURIComponent(next)}`
+    )
 
   } catch (err) {
     console.error('[PSC] callback exception:', err)
