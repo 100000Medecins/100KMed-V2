@@ -129,7 +129,7 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
             <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
               {partenaires.map((p) => {
                 return (
-                  <div key={p.id} className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl border border-white/30 flex items-center justify-center bg-white/40">
+                  <div key={p.id} className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl border border-white/40 flex items-center justify-center bg-white/75">
                     {p.logo_url
                       ? <img src={p.logo_url} alt={p.nom} className={`object-contain opacity-85 ${['SML', 'Le Bloc'].includes(p.nom) ? 'h-6 max-w-[70px] md:h-6 md:max-w-[85px]' : 'h-4 max-w-[55px] md:h-6 md:max-w-[85px]'}`} />
                       : <span className="text-[10px] md:text-xs font-semibold text-white/80">{p.nom}</span>
