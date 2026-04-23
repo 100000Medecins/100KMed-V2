@@ -49,9 +49,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Le breadcrumb n'est pas lisible (contraste texte/fond trop faible)
 - Augmenter le contraste ou changer la couleur du texte
 
-#### Login PSC en dev — lien email cassé pour un nouvel utilisateur
-- Quand un nouvel utilisateur reçoit un email après tentative de connexion PSC, le lien ne fonctionne pas en environnement dev
-- Diagnostiquer le redirect URI / callback URL en dev
+#### ~~Login PSC — utilisateur orphelin (psc_create_error)~~ ✅ Corrigé 2026-04-23
+- Cas : `auth.users` contient le compte PSC mais `public.users` est absent (callback précédent avorté)
+- `createUser` échouait → erreur fatale. Fix : si `createUser` échoue, on appelle `generateLink` pour récupérer l'UUID auth existant et on recrée le profil public manquant.
 
 #### Création de compte — email déjà existant en DB
 - Vérifier si un chargement infini se produit quand on tente de créer un compte avec un email déjà enregistré
@@ -84,6 +84,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - À prioriser selon criticité (perf, bundle size, requêtes redondantes…)
 
 ---
+
+### Migrer le développement en local (des deux côtés)
+- Actuellement le projet tourne sur le Synology (NAS) pour le dev
+- Migrer l'environnement de développement **Frontend** et **Backend** sur les machines locales (portable/fixe)
+- Avantage : meilleure vitesse, pas dépendant du réseau local/VPN, plus simple à déboguer
+- Vérifier les variables d'environnement, les ports, les certificats SSL locaux si nécessaire
 
 ### Backups base de données Supabase
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`

@@ -112,23 +112,51 @@ export async function GET(request: Request) {
         user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
       })
 
-      if (createError || !newUser.user) {
-        console.error('[PSC] createUser error:', createError)
-        return NextResponse.redirect(`${origin}/connexion?error=psc_create_error`)
+      if (createError || !newUser?.user) {
+        // Cas "utilisateur orphelin" : présent dans auth.users mais absent de public.users
+        // (typiquement après un premier callback qui a échoué après createUser).
+        // On utilise generateLink pour récupérer l'UUID auth existant.
+        const { data: recoverLink } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: userEmail,
+        })
+        const recoveredId = recoverLink?.user?.id
+        if (!recoveredId) {
+          console.error('[PSC] createUser error (unrecoverable):', createError)
+          return NextResponse.redirect(`${origin}/connexion?error=psc_create_error`)
+        }
+        userId = recoveredId
+        // Créer le profil public manquant si nécessaire
+        const { data: existingPublicRow } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .single()
+        if (!existingPublicRow) {
+          await supabaseAdmin.from('users').insert({
+            id: userId,
+            email: userEmail,
+            rpps,
+            nom,
+            prenom,
+            specialite,
+            mode_exercice: modeExercice,
+            ...(userEmail?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
+          })
+        }
+      } else {
+        userId = newUser.user.id
+        await supabaseAdmin.from('users').insert({
+          id: userId,
+          email: userEmail,
+          rpps,
+          nom,
+          prenom,
+          specialite,
+          mode_exercice: modeExercice,
+          ...(userEmail?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
+        })
       }
-
-      userId = newUser.user.id
-
-      await supabaseAdmin.from('users').insert({
-        id: userId,
-        email: userEmail,
-        rpps,
-        nom,
-        prenom,
-        specialite,
-        mode_exercice: modeExercice,
-        ...(userEmail?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
-      })
     } else {
       await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub, specialite, mode_exercice: modeExercice },
