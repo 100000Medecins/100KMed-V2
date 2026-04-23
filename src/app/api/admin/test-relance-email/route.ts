@@ -40,18 +40,28 @@ export async function POST(req: NextRequest) {
     .not('last_date_note', 'is', null)
 
   if (targetEmail) {
-    // Trouver l'user par email
+    // Chercher d'abord dans public.users (email renseigné)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: targetUser } = await (supabase as any)
+    let userId: string | null = null
+    const { data: publicUser } = await (supabase as any)
       .from('users')
       .select('id')
       .eq('email', targetEmail)
       .maybeSingle()
 
-    if (!targetUser) {
-      return NextResponse.json({ error: `Aucun utilisateur trouvé pour l'email : ${targetEmail}` }, { status: 404 })
+    if (publicUser) {
+      userId = publicUser.id
+    } else {
+      // Fallback : chercher dans auth.users via l'API admin Supabase
+      const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      const authUser = authList?.users?.find((u) => u.email === targetEmail)
+      if (!authUser) {
+        return NextResponse.json({ error: `Aucun utilisateur trouvé pour l'email : ${targetEmail}` }, { status: 404 })
+      }
+      userId = authUser.id
     }
-    query = query.eq('user_id', targetUser.id)
+
+    query = query.eq('user_id', userId)
   }
 
   const { data: ev } = await query.limit(1).single()
