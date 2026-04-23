@@ -41,7 +41,8 @@ export default function AdminEmailsClient({ sections, newsletters = [], cronsAct
   const [cronsOn, setCronsOn] = useState(cronsActifs)
   const [isPending, startTransition] = useTransition()
   const [testSending, setTestSending] = useState(false)
-  const [testResult, setTestResult] = useState<{ ok?: boolean; sentTo?: string; links?: { lien1Clic: string; lienReevaluation: string }; error?: string } | null>(null)
+  const [testEmail, setTestEmail] = useState('')
+  const [testResult, setTestResult] = useState<{ ok?: boolean; sentTo?: string; forUser?: string; links?: { lien1Clic: string; lienReevaluation: string }; error?: string } | null>(null)
 
   const activeSection = sections.find((s) => s.key === activeTab)
 
@@ -49,7 +50,11 @@ export default function AdminEmailsClient({ sections, newsletters = [], cronsAct
     setTestSending(true)
     setTestResult(null)
     try {
-      const res = await fetch('/api/admin/test-relance-email', { method: 'POST' })
+      const res = await fetch('/api/admin/test-relance-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: testEmail.trim() || undefined }),
+      })
       const json = await res.json()
       setTestResult(json)
     } catch (e) {
@@ -104,24 +109,33 @@ export default function AdminEmailsClient({ sections, newsletters = [], cronsAct
 
       {/* Test email relance */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2">
           <div>
             <p className="text-sm font-semibold text-navy">Tester l&apos;email de relance 1 an</p>
             <p className="text-xs text-gray-500">Envoie un email &quot;[TEST]&quot; à contact@100000medecins.org avec une vraie évaluation et les vrais liens.</p>
           </div>
-          <button
-            onClick={handleTestRelance}
-            disabled={testSending}
-            className="flex-shrink-0 ml-4 px-4 py-2 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy/80 transition-colors disabled:opacity-50"
-          >
-            {testSending ? 'Envoi…' : 'Envoyer test'}
-          </button>
+          <div className="flex items-center gap-2">
+            <input
+              type="email"
+              placeholder="Email du compte à simuler (laisser vide = premier venu)"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/30"
+            />
+            <button
+              onClick={handleTestRelance}
+              disabled={testSending}
+              className="flex-shrink-0 px-4 py-1.5 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy/80 transition-colors disabled:opacity-50"
+            >
+              {testSending ? 'Envoi…' : 'Envoyer test'}
+            </button>
+          </div>
         </div>
         {testResult && (
           <div className={`text-xs rounded-lg p-3 ${testResult.ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
             {testResult.ok ? (
               <>
-                <p>Email envoyé à <strong>{testResult.sentTo}</strong></p>
+                <p>Email envoyé à <strong>{testResult.sentTo}</strong> · simulé pour <strong>{testResult.forUser}</strong></p>
                 {testResult.links && (
                   <p className="mt-1 break-all">
                     Lien 1-clic : <a href={testResult.links.lien1Clic} target="_blank" rel="noreferrer" className="underline">{testResult.links.lien1Clic}</a>

@@ -24,22 +24,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
+  const body = await req.json().catch(() => ({}))
+  const targetEmail: string | null = body.email || null
+
   const supabase = createServiceRoleClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'
 
-  // Chercher une évaluation réelle avec un user ayant un email
+  // Si un email cible est fourni, trouver l'user correspondant d'abord
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: ev } = await (supabase as any)
+  let query = (supabase as any)
     .from('evaluations')
     .select('id, user_id, solution_id, solution:solutions(nom), user:users(email, nom)')
     .not('user_id', 'is', null)
     .not('last_date_note', 'is', null)
-    .limit(1)
-    .single()
+
+  if (targetEmail) {
+    // Trouver l'user par email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: targetUser } = await (supabase as any)
+      .from('users')
+      .select('id')
+      .eq('email', targetEmail)
+      .maybeSingle()
+
+    if (!targetUser) {
+      return NextResponse.json({ error: `Aucun utilisateur trouvé pour l'email : ${targetEmail}` }, { status: 404 })
+    }
+    query = query.eq('user_id', targetUser.id)
+  }
+
+  const { data: ev } = await query.limit(1).single()
 
   if (!ev) {
-    return NextResponse.json({ error: 'Aucune évaluation trouvée en base' }, { status: 404 })
+    return NextResponse.json({ error: targetEmail ? `Aucune évaluation pour ${targetEmail}` : 'Aucune évaluation trouvée en base' }, { status: 404 })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,8 +99,8 @@ export async function POST(req: NextRequest) {
     .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
     .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
 
+  // L'email de test est toujours envoyé à l'admin, pas au destinataire réel
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
-
   try {
     await sgMail.send({
       to: adminEmail,
@@ -97,7 +115,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     sentTo: adminEmail,
-    evalId: ev.id,
+    forUser: user?.email ?? ev.user_id,
     solutionNom: solution.nom,
     links: {
       lien1Clic,
