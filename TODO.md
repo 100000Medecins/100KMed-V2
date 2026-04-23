@@ -6,6 +6,25 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
+### URGENT — À faire avant lancement
+
+#### Renvoyer un email d'excuse aux ~300 utilisateurs ayant reçu la relance cassée (23/04/2026)
+- Les emails envoyés ce matin depuis dev.100000medecins.org avaient des liens pointant vers l'ancien site (404)
+- **Étape 1** : identifier les destinataires via Supabase SQL Editor :
+  ```sql
+  SELECT u.email, u.nom, u.prenom, s.nom AS solution, e.last_relance_sent_at
+  FROM evaluations e
+  JOIN users u ON u.id = e.user_id
+  JOIN solutions s ON s.id = e.solution_id
+  WHERE e.last_relance_sent_at >= '2026-04-23 00:00:00'
+    AND e.last_relance_sent_at <  '2026-04-24 00:00:00'
+  ORDER BY e.last_relance_sent_at;
+  ```
+- **Étape 2** : attendre que le nouveau site soit live sur www.100000medecins.org (liens fonctionnels)
+- **Étape 3** : envoyer un email d'excuse avec le bon lien 1-clic régénéré pour chaque utilisateur
+- Contenu suggéré : message court d'excuse, expliquer qu'un lien technique était cassé, renvoyer le vrai lien personnalisé
+- Penser à réinitialiser `last_relance_sent_at` pour ces évaluations APRÈS le renvoi correct (ou les traiter comme "jamais relancés")
+
 ### Partenariats contenu
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
