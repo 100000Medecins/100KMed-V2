@@ -1,4 +1,5 @@
 import { getEmailTemplate } from '@/lib/actions/emailTemplates'
+import { getSiteConfig } from '@/lib/actions/siteConfig'
 import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import type { Newsletter } from '@/app/admin/newsletters/page'
@@ -46,6 +47,7 @@ export default async function AdminEmailsPage() {
     emailsEtudes, emailsQuestionnaires,
     countEtudes, countQuestionnaires,
     { data: newsletters },
+    cronsActifsRaw,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -64,6 +66,7 @@ export default async function AdminEmailsPage() {
       .from('newsletters')
       .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, scheduled_at, recipient_count, notified_at, reminded_at')
       .order('created_at', { ascending: false }),
+    getSiteConfig('crons_routiniers_actifs'),
   ])
 
   const sections = [
@@ -167,6 +170,8 @@ export default async function AdminEmailsPage() {
     },
   ]
 
+  const cronsActifs = cronsActifsRaw === 'true'
+
   return (
     <div>
       <div className="mb-6">
@@ -175,7 +180,11 @@ export default async function AdminEmailsPage() {
           Templates et envois manuels.
         </p>
       </div>
-      <AdminEmailsClient sections={sections} newsletters={(newsletters as Newsletter[]) ?? []} />
+      <AdminEmailsClient
+        sections={sections}
+        newsletters={(newsletters as Newsletter[]) ?? []}
+        cronsActifs={cronsActifs}
+      />
     </div>
   )
 }

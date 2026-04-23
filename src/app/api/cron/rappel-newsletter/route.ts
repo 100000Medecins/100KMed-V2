@@ -15,8 +15,22 @@ export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') {
+    return NextResponse.json({ skipped: true, env: process.env.VERCEL_ENV })
+  }
 
   const supabase = createServiceRoleClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: configRow } = await (supabase as any)
+    .from('site_config')
+    .select('valeur')
+    .eq('cle', 'crons_routiniers_actifs')
+    .maybeSingle()
+  if (configRow?.valeur !== 'true') {
+    return NextResponse.json({ skipped: true, reason: 'crons disabled by admin' })
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
   const now = new Date()
 
