@@ -28,7 +28,9 @@ export async function POST(req: NextRequest) {
   const targetEmail: string | null = body.email || null
 
   const supabase = createServiceRoleClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+  // Pour le test, on utilise l'origine de la requête (dev ou www selon le déploiement)
+  // afin que le lien 1-clic soit cliquable sur ce même serveur.
+  const siteUrl = new URL(req.url).origin
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'
 
   // Si un email cible est fourni, trouver l'user correspondant d'abord
@@ -93,7 +95,7 @@ export async function POST(req: NextRequest) {
 
   const nomDisplay = user?.nom ? `Dr. ${user.nom}` : 'Docteur'
   const lienReevaluation = `${siteUrl}/mon-compte/mes-evaluations`
-  const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string)
+  const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
   const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
 
   const sujet = `[TEST] ${(template.sujet as string)
