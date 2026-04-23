@@ -35,7 +35,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Déploiement final
 
-#### Kill-switch emails routiniers — à activer au déploiement final
+#### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
 - Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
@@ -53,9 +53,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Cas : `auth.users` contient le compte PSC mais `public.users` est absent (callback précédent avorté)
 - `createUser` échouait → erreur fatale. Fix : si `createUser` échoue, on appelle `generateLink` pour récupérer l'UUID auth existant et on recrée le profil public manquant.
 
-#### Création de compte — email déjà existant en DB
-- Vérifier si un chargement infini se produit quand on tente de créer un compte avec un email déjà enregistré
-- Ajouter un message d'erreur explicite plutôt qu'un spinner bloquant
+#### ~~Création de compte — email déjà existant en DB~~ ✅ Corrigé
 
 #### Note globale évaluations — incohérence avec la moyenne des sous-critères
 - Sur les pages solutions, la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis par l'utilisateur
@@ -119,10 +117,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Ouvrir une modal/overlay avec un petit jeu d'arcade rétro dans le navigateur
 - Dans l'esprit du site : thème médical / pixel art
 
-### PSC prod sur dev.100000medecins.org (test temporaire)
-- Configurer une redirect URI `https://dev.100000medecins.org/api/auth/psc-callback` dans l'application PSC production ANS
-- Permet de tester le flux PSC prod sans basculer le DNS principal
-- À retirer une fois la mise en prod complète effectuée
+### ~~PSC prod sur dev.100000medecins.org (test temporaire)~~ ✅ Fait 2026-04-23
+- Redirect URI `https://dev.100000medecins.org/api/auth/psc-callback` configurée dans l'application PSC production ANS
 
 ### PSC production + DNS mise en prod *(à faire ensemble)*
 - Migrer ProSanté Connect de l'environnement BAS vers la production ANS (checklist dans `memory/project_psc_prod_deployment.md`)
@@ -134,6 +130,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- PSC — fix session cookies (verifyOtp client-side via /auth/psc-session) ✅
+- PSC — fix utilisateur orphelin psc_create_error (generateLink recovery) ✅
+- PSC — fix blocage "Enregistrement..." sur completer-profil (mot de passe via admin API) ✅
+- PSC — fix domaine emails (headers() au lieu de NEXT_PUBLIC_SITE_URL dans server actions) ✅
+- Admin utilisateurs — icône poubelle visible + scroll horizontal tableau ✅
+- Admin emails — encart excuse éditable + prévisualisation, fix domaine affiché, fix destinataire test ✅
+- Emails — liens 1-clic pointent vers le bon domaine (new URL(req.url).origin) ✅
+- Page /avis-confirme publique après validation 1-clic ✅
 - Index mobile — cartes : HTML brut dans descriptions questionnaires (stripHtml) + dépassement étoiles/badge corrigé ✅
 - Index — filtre « par 100KMed » neutralisé via colonne `has_note_redac` en base (plus de slugs hardcodés) ✅
 - Navbar mobile — logo principal (3 lignes) sous 1150px, burger déplacé à droite d'Évaluer ✅
