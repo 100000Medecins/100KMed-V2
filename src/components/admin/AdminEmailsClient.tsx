@@ -34,15 +34,19 @@ interface Props {
   sections: Section[]
   newsletters?: Newsletter[]
   cronsActifs?: boolean
+  excuseCount?: number
 }
 
-export default function AdminEmailsClient({ sections, newsletters = [], cronsActifs = false }: Props) {
+export default function AdminEmailsClient({ sections, newsletters = [], cronsActifs = false, excuseCount = 0 }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
   const [cronsOn, setCronsOn] = useState(cronsActifs)
   const [isPending, startTransition] = useTransition()
   const [testSending, setTestSending] = useState(false)
   const [testEmail, setTestEmail] = useState('')
   const [testResult, setTestResult] = useState<{ ok?: boolean; sentTo?: string; forUser?: string; links?: { lien1Clic: string; lienReevaluation: string }; error?: string } | null>(null)
+  const [excuseSending, setExcuseSending] = useState(false)
+  const [excuseResult, setExcuseResult] = useState<{ ok?: boolean; sent?: number; total?: number; errors?: string[]; error?: string } | null>(null)
+  const [excuseDone, setExcuseDone] = useState(false)
 
   const activeSection = sections.find((s) => s.key === activeTab)
 
@@ -64,6 +68,22 @@ export default function AdminEmailsClient({ sections, newsletters = [], cronsAct
     }
   }
 
+  async function handleSendExcuse() {
+    if (!window.confirm(`Envoyer l'email d'excuse aux ${excuseCount} médecins concernés ? Cette action est irréversible.`)) return
+    setExcuseSending(true)
+    setExcuseResult(null)
+    try {
+      const res = await fetch('/api/admin/send-excuse-relance', { method: 'POST' })
+      const json = await res.json()
+      setExcuseResult(json)
+      if (json.ok) setExcuseDone(true)
+    } catch (e) {
+      setExcuseResult({ error: String(e) })
+    } finally {
+      setExcuseSending(false)
+    }
+  }
+
   function handleCronsToggle() {
     const next = !cronsOn
     setCronsOn(next)
@@ -74,6 +94,52 @@ export default function AdminEmailsClient({ sections, newsletters = [], cronsAct
 
   return (
     <div>
+      {/* Bloc d'urgence — email d'excuse du 23/04 */}
+      {excuseCount > 0 && !excuseDone && (
+        <div className="mb-6 rounded-xl border-2 border-amber-400 bg-amber-50 p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl flex-shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold text-amber-900 text-sm">Email d&apos;excuse à envoyer — 23/04/2026</p>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                <strong>{excuseCount} médecins</strong> ont reçu un email de relance ce matin avec des liens
+                pointant vers l&apos;ancien site (404). Un email d&apos;excuse avec les liens corrigés doit leur être renvoyé.
+              </p>
+              <p className="text-xs text-amber-700 mt-1">
+                Les liens dans cet email pointent vers <strong>{typeof window !== 'undefined' ? window.location.origin : ''}</strong>.
+                À n&apos;envoyer que depuis le bon environnement (www.100000medecins.org une fois en prod).
+              </p>
+              {excuseResult && (
+                <div className={`mt-3 text-xs rounded-lg p-3 ${excuseResult.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                  {excuseResult.ok ? (
+                    <p>✅ {excuseResult.sent} emails envoyés sur {excuseResult.total}.{excuseResult.errors && excuseResult.errors.length > 0 && ` (${excuseResult.errors.length} erreurs)`}</p>
+                  ) : (
+                    <p>Erreur : {excuseResult.error}</p>
+                  )}
+                  {excuseResult.errors && excuseResult.errors.length > 0 && (
+                    <ul className="mt-1 list-disc list-inside opacity-75">
+                      {excuseResult.errors.slice(0, 5).map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleSendExcuse}
+              disabled={excuseSending}
+              className="flex-shrink-0 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              {excuseSending ? 'Envoi en cours…' : `Envoyer l'email d'excuse`}
+            </button>
+          </div>
+        </div>
+      )}
+      {excuseDone && excuseResult?.ok && (
+        <div className="mb-6 rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-800">
+          ✅ Email d&apos;excuse envoyé à <strong>{excuseResult.sent}</strong> médecins le 23/04/2026. Ce bloc peut être retiré du code.
+        </div>
+      )}
+
       {/* Kill-switch crons routiniers */}
       <div className={`mb-6 rounded-xl border-2 p-4 flex items-start gap-4 ${
         cronsOn ? 'border-green-400 bg-green-50' : 'border-red-300 bg-red-50'

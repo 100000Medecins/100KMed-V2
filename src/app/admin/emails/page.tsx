@@ -48,6 +48,7 @@ export default async function AdminEmailsPage() {
     countEtudes, countQuestionnaires,
     { data: newsletters },
     cronsActifsRaw,
+    excuseCount,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -67,6 +68,18 @@ export default async function AdminEmailsPage() {
       .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, scheduled_at, recipient_count, notified_at, reminded_at')
       .order('created_at', { ascending: false }),
     getSiteConfig('crons_routiniers_actifs'),
+    // Nombre de destinataires ayant reçu le mail cassé du 23/04
+    (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { count } = await (supabase as any)
+          .from('evaluations')
+          .select('id', { count: 'exact', head: true })
+          .gte('last_relance_sent_at', '2026-04-23 00:00:00+00')
+          .lt('last_relance_sent_at', '2026-04-24 00:00:00+00')
+        return count ?? 0
+      } catch { return 0 }
+    })(),
   ])
 
   const sections = [
@@ -184,6 +197,7 @@ export default async function AdminEmailsPage() {
         sections={sections}
         newsletters={(newsletters as Newsletter[]) ?? []}
         cronsActifs={cronsActifs}
+        excuseCount={excuseCount as number}
       />
     </div>
   )
