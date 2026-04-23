@@ -80,9 +80,7 @@ export default function CompleterProfilPage() {
     loadProfile()
   }, [user])
 
-  // Pour les utilisateurs PSC, le mot de passe est optionnel (ils se connectent via PSC)
-  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() &&
-    (isFromPsc || password.length >= 6)
+  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() && password.length >= 6
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,13 +89,6 @@ export default function CompleterProfilPage() {
     setError(null)
 
     try {
-      // Définir le mot de passe uniquement si l'utilisateur en a saisi un
-      if (password.length >= 6) {
-        const supabase = createClient()
-        const { error: pwError } = await supabase.auth.updateUser({ password })
-        if (pwError) console.warn('[completer-profil] updateUser password warning:', pwError.message)
-      }
-
       await completeProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
@@ -106,6 +97,7 @@ export default function CompleterProfilPage() {
         contact_email: contactEmail.trim(),
         pseudo: pseudo.trim() || undefined,
         portrait: selectedAvatar || undefined,
+        password,
       })
       router.push('/mon-compte/profil')
     } catch (err) {
@@ -243,28 +235,21 @@ export default function CompleterProfilPage() {
                 </p>
               </div>
 
-              {/* Mot de passe — optionnel pour PSC, obligatoire sinon */}
+              {/* Mot de passe — obligatoire */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Mot de passe{' '}
-                  {isFromPsc
-                    ? <span className="text-gray-400 font-normal">(optionnel)</span>
-                    : <span className="text-red-500">*</span>
-                  }
+                  Mot de passe <span className="text-red-500">*</span>
                 </label>
                 <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required={!isFromPsc}
+                  required
                   minLength={6}
                   placeholder="6 caractères minimum"
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  {isFromPsc
-                    ? 'Optionnel — vous pouvez vous connecter avec Pro Santé Connect sans mot de passe.'
-                    : 'Vous permettra de vous reconnecter par email.'
-                  }
+                  Vous permettra de vous reconnecter par email en plus de Pro Santé Connect.
                 </p>
               </div>
 

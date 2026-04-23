@@ -118,6 +118,7 @@ export async function completeProfile(data: {
   contact_email: string
   pseudo?: string
   portrait?: string
+  password?: string
 }) {
   const authClient = await createServerClient()
   const {
@@ -144,13 +145,18 @@ export async function completeProfile(data: {
 
   if (error) throw new Error(error.message)
 
-  // Mettre à jour l'email auth pour que l'utilisateur puisse se connecter
-  // avec son vrai email (et non l'adresse technique PSC psc-ans...@psc.sante.fr)
+  // Mettre à jour l'email auth + mot de passe via admin (évite les problèmes
+  // de ré-authentification côté client pour les sessions PSC)
+  const authUpdates: Record<string, unknown> = {}
   if (user.email !== data.contact_email) {
-    await supabase.auth.admin.updateUserById(user.id, {
-      email: data.contact_email,
-      email_confirm: true,
-    })
+    authUpdates.email = data.contact_email
+    authUpdates.email_confirm = true
+  }
+  if (data.password && data.password.length >= 6) {
+    authUpdates.password = data.password
+  }
+  if (Object.keys(authUpdates).length > 0) {
+    await supabase.auth.admin.updateUserById(user.id, authUpdates)
   }
 
   return { status: 'SUCCESS' }
