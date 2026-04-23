@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'crypto'
+import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 
 interface CritereScore {
@@ -553,7 +554,10 @@ export async function submitEvaluationAnonyme(
     .eq('id', 'verification_psc')
     .single()
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const headersList = await headers()
+  const host = headersList.get('host') || 'www.100000medecins.org'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const siteUrl = `${proto}://${host}`
   const pscLink = `${siteUrl}/api/auth/psc-initier?token=${tokenVerification}`
 
   const sujet = template?.sujet || 'Validez votre évaluation sur 100 000 Médecins'
