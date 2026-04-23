@@ -279,8 +279,8 @@ export default function AdminUtilisateursClient({
         {paginated.length === 0 ? (
           <div className="p-12 text-center text-gray-400 text-sm">Aucun utilisateur trouvé.</div>
         ) : (
-          <div>
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
               <thead className="bg-surface-light border-b border-gray-100">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">
