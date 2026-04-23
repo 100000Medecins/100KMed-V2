@@ -43,13 +43,11 @@ export default async function Home() {
         .sort((a, b) => (b.noteUtilisateurs || 0) - (a.noteUtilisateurs || 0))
         .slice(0, 6);
 
-      const SLUGS_SANS_NOTES_REDAC = ['intelligence-artificielle-medecine', 'ia-documentaires', 'agenda-medical', 'agendas-medicaux']
-
       return {
         id: cat.id,
         nom: cat.nom,
         slug: cat.slug || "",
-        hasNoteRedac: !SLUGS_SANS_NOTES_REDAC.includes(cat.slug || ""),
+        hasNoteRedac: (cat as any).has_note_redac ?? true,
         solutions: solutionsAvecNotes,
       };
     })

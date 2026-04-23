@@ -293,6 +293,7 @@ function extractCategorieFromFormData(formData: FormData) {
     intro: (formData.get('intro') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
     label_filtres: (formData.get('label_filtres') as string) || null,
+    has_note_redac: formData.get('has_note_redac') !== 'false',
   }
 }
 

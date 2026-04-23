@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 import RichTextEditor from './RichTextEditor'
 import { updateCategorieImageUrl } from '@/lib/actions/admin'
 
-type Categorie = Database['public']['Tables']['categories']['Row']
+type Categorie = Database['public']['Tables']['categories']['Row'] & { has_note_redac?: boolean }
 
 interface CategorieFormProps {
   categorie?: Categorie | null
@@ -22,6 +22,7 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
   const [intro, setIntro] = useState(categorie?.intro ?? '')
   const [imageUrl, setImageUrl] = useState(categorie?.image_url ?? '')
   const [icon, setIcon] = useState(categorie?.icon ?? '')
+  const [hasNoteRedac, setHasNoteRedac] = useState(categorie?.has_note_redac ?? true)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   const [imageUploading, setImageUploading] = useState(false)
@@ -67,6 +68,7 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
     formData.set('intro', intro)
     formData.set('image_url', imageUrl)
     formData.set('icon', icon)
+    formData.set('has_note_redac', String(hasNoteRedac))
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) setError(result.error)
@@ -201,6 +203,20 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
             </div>
           )}
         </div>
+      </div>
+
+      <div className="flex items-center justify-between py-4 border-t border-gray-100">
+        <div>
+          <p className="text-sm font-medium text-navy">Note de la rédaction</p>
+          <p className="text-xs text-gray-400 mt-0.5">Désactiver pour les catégories sans évaluation 100&nbsp;000&nbsp;Médecins (agendas, IA…)</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setHasNoteRedac((v) => !v)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${hasNoteRedac ? 'bg-accent-blue' : 'bg-gray-200'}`}
+        >
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${hasNoteRedac ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
       </div>
 
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
