@@ -1,7 +1,29 @@
 export const EXCUSE_DEFAULT_SUJET =
   "Toutes nos excuses — votre lien de réévaluation ({{solution_nom}})"
 
-export const EXCUSE_DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
+/**
+ * Contenu ÉDITABLE de l'email d'excuse — seule cette partie est modifiée en WYSIWYG.
+ * Les boutons CTA, le header foncé et le footer sont dans buildExcuseEmail().
+ */
+export const EXCUSE_DEFAULT_BODY = `<p style="margin:0 0 20px;font-size:15px;color:#1a1a2e;">Bonjour {{nom}},</p>
+
+<p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.65;">
+  Ce matin, nous vous avons envoyé un email vous invitant à confirmer votre avis sur
+  <strong style="color:#0f1e38;">{{solution_nom}}</strong>.
+  En raison d&apos;un problème technique de notre côté, <strong>le lien contenu dans cet email ne fonctionnait pas</strong>.
+</p>
+
+<p style="margin:0 0 28px;font-size:15px;color:#374151;line-height:1.65;">
+  Nous nous en excusons sincèrement. Voici le lien corrigé :
+</p>`
+
+/**
+ * Construit l'email complet en injectant le corps (body) dans la structure fixe.
+ * body peut être du HTML WYSIWYG (TipTap) ou du HTML inline stylisé.
+ * Appelé aussi bien pour l'aperçu que pour l'envoi réel.
+ */
+export function buildExcuseEmail(body: string): string {
+  return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
@@ -17,17 +39,7 @@ export const EXCUSE_DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
 
       <tr><td style="background:#ffffff;border-radius:0 0 16px 16px;padding:32px;">
 
-        <p style="margin:0 0 20px;font-size:15px;color:#1a1a2e;">Bonjour {{nom}},</p>
-
-        <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.65;">
-          Ce matin, nous vous avons envoy&#233; un email vous invitant &#224; confirmer votre avis sur
-          <strong style="color:#0f1e38;">{{solution_nom}}</strong>.
-          En raison d&apos;un probl&#232;me technique de notre c&#244;t&#233;, <strong>le lien contenu dans cet email ne fonctionnait pas</strong>.
-        </p>
-
-        <p style="margin:0 0 28px;font-size:15px;color:#374151;line-height:1.65;">
-          Nous nous en excusons sinc&#232;rement. Voici le lien corrig&#233; :
-        </p>
+        ${body}
 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
           <tr><td align="center">
@@ -71,3 +83,7 @@ export const EXCUSE_DEFAULT_HTML_TEMPLATE = `<!DOCTYPE html>
 </table>
 </body>
 </html>`
+}
+
+// Rétro-compatibilité (utilisé nulle part mais garde la cohérence)
+export const EXCUSE_DEFAULT_HTML_TEMPLATE = buildExcuseEmail(EXCUSE_DEFAULT_BODY)

@@ -20,9 +20,16 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
     AND e.last_relance_sent_at <  '2026-04-24 00:00:00'
   ORDER BY e.last_relance_sent_at;
   ```
-- **Étape 2** : envoyer un email d'excuse avec le bon lien 1-clic régénéré pour chaque utilisateur (Admin → Emails → Encart excuse)
-- Contenu suggéré : message court d'excuse, expliquer qu'un lien technique était cassé, renvoyer le vrai lien personnalisé
+- **Étape 2** : envoyer un email d'excuse avec le bon lien 1-clic régénéré pour chaque utilisateur (Admin → Emails → Encart excuse → "Envoyer test" d'abord, puis "Envoyer à X médecins")
 - Penser à réinitialiser `last_relance_sent_at` pour ces évaluations APRÈS le renvoi correct (ou les traiter comme "jamais relancés")
+
+#### ⚠️ Supprimer le code email d'excuse APRÈS envoi *(une fois les emails partis)*
+- Supprimer le bloc de l'encart excuse dans `AdminEmailsClient.tsx` (lignes `{excuseCount > 0 && !excuseDone && ...}`)
+- Supprimer les fichiers : `src/app/api/admin/send-excuse-relance/`, `src/app/api/admin/programmer-excuse-relance/`, `src/app/api/cron/envoyer-excuse-programmee/`
+- Nettoyer `excuseTemplate.ts` (garder ou supprimer selon si réutilisé)
+- Retirer l'entrée cron `envoyer-excuse-programmee` de `vercel.json`
+- Retirer les props `excuseCount`, `excuseDefaultSujet`, `excuseDefaultHtml`, `excuseScheduledAt` de `AdminEmailsPage` et `AdminEmailsClient`
+- Nettoyer les clés `excuse_*` dans `site_config` via Supabase
 
 ### Partenariats contenu
 

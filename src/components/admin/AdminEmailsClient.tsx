@@ -5,7 +5,10 @@ import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
 import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
 import type { Newsletter } from '@/app/admin/newsletters/page'
 import { setSiteConfig } from '@/lib/actions/siteConfig'
-import { Eye, Code, ChevronDown, ChevronUp } from 'lucide-react'
+import { buildExcuseEmail } from '@/lib/email/excuseTemplate'
+import { withEmailLogo } from '@/lib/email/logo'
+import RichTextEditor from '@/components/admin/RichTextEditor'
+import { Eye, Code, ChevronDown, ChevronUp, Calendar, X } from 'lucide-react'
 
 interface TemplateConfig {
   id: string
@@ -38,6 +41,7 @@ interface Props {
   excuseCount?: number
   excuseDefaultSujet?: string
   excuseDefaultHtml?: string
+  excuseScheduledAt?: string | null
   adminEmail?: string
 }
 
@@ -48,6 +52,7 @@ export default function AdminEmailsClient({
   excuseCount = 0,
   excuseDefaultSujet = '',
   excuseDefaultHtml = '',
+  excuseScheduledAt = null,
   adminEmail = 'contact@100000medecins.org',
 }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
@@ -64,6 +69,15 @@ export default function AdminEmailsClient({
   const [showExcuseEditor, setShowExcuseEditor] = useState(false)
   const [excusePreviewHtml, setExcusePreviewHtml] = useState<string | null>(null)
   const [excuseRawMode, setExcuseRawMode] = useState(false)
+  const [testExcuseEmail, setTestExcuseEmail] = useState('')
+  const [testExcuseSending, setTestExcuseSending] = useState(false)
+  const [testExcuseResult, setTestExcuseResult] = useState<{ ok?: boolean; error?: string } | null>(null)
+  const [showScheduler, setShowScheduler] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduling, setScheduling] = useState(false)
+  const [scheduleResult, setScheduleResult] = useState<{ ok?: boolean; scheduledAt?: string; error?: string } | null>(null)
+  const [currentSchedule, setCurrentSchedule] = useState<string | null>(excuseScheduledAt ?? null)
+  const [cancelingSchedule, setCancelingSchedule] = useState(false)
 
   const activeSection = sections.find((s) => s.key === activeTab)
 
@@ -94,7 +108,7 @@ export default function AdminEmailsClient({
       lien_desabonnement: '#',
     }
     const rendered = excuseHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sample[key] ?? `{{${key}}}`)
-    setExcusePreviewHtml(rendered)
+    setExcusePreviewHtml(withEmailLogo(buildExcuseEmail(rendered)))
   }
 
   async function handleSendExcuse() {
@@ -114,6 +128,59 @@ export default function AdminEmailsClient({
       setExcuseResult({ error: String(e) })
     } finally {
       setExcuseSending(false)
+    }
+  }
+
+  async function handleTestExcuse() {
+    const email = testExcuseEmail.trim() || adminEmail
+    setTestExcuseSending(true)
+    setTestExcuseResult(null)
+    try {
+      const res = await fetch('/api/admin/send-excuse-relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sujet: excuseSujet, htmlTemplate: excuseHtml, testEmail: email }),
+      })
+      const json = await res.json()
+      setTestExcuseResult(json.ok ? { ok: true } : { error: json.error ?? 'Erreur inconnue' })
+    } catch (e) {
+      setTestExcuseResult({ error: String(e) })
+    } finally {
+      setTestExcuseSending(false)
+    }
+  }
+
+  async function handleScheduleExcuse() {
+    if (!scheduleDate) return
+    setScheduling(true)
+    setScheduleResult(null)
+    try {
+      const res = await fetch('/api/admin/programmer-excuse-relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduledAt: scheduleDate, sujet: excuseSujet, html: excuseHtml }),
+      })
+      const json = await res.json()
+      setScheduleResult(json)
+      if (json.ok) {
+        setCurrentSchedule(scheduleDate)
+        setShowScheduler(false)
+      }
+    } catch (e) {
+      setScheduleResult({ error: String(e) })
+    } finally {
+      setScheduling(false)
+    }
+  }
+
+  async function handleCancelSchedule() {
+    setCancelingSchedule(true)
+    try {
+      await fetch('/api/admin/programmer-excuse-relance', { method: 'DELETE' })
+      setCurrentSchedule(null)
+      setScheduleResult(null)
+    } finally {
+      setCancelingSchedule(false)
     }
   }
 
@@ -198,8 +265,8 @@ export default function AdminEmailsClient({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <div>
-                      <label className="block text-xs font-medium text-navy">Contenu HTML</label>
-                      <p className="text-xs text-gray-400">Variables : <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{nom}}`}</code> <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{solution_nom}}`}</code> <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{lien_1clic}}`}</code> <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{lien_reevaluation}}`}</code> <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{lien_desabonnement}}`}</code></p>
+                      <label className="block text-xs font-medium text-navy">Corps du message</label>
+                      <p className="text-xs text-gray-400">Variables : <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{nom}}`}</code> <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{solution_nom}}`}</code> · Les boutons et le footer sont ajoutés automatiquement.</p>
                     </div>
                     <button
                       type="button"
@@ -210,13 +277,21 @@ export default function AdminEmailsClient({
                       {excuseRawMode ? 'HTML brut (actif)' : 'HTML brut'}
                     </button>
                   </div>
-                  <textarea
-                    value={excuseHtml}
-                    onChange={(e) => setExcuseHtml(e.target.value)}
-                    style={{ minHeight: 280 }}
-                    className="w-full font-mono text-xs text-gray-700 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 resize-y"
-                    spellCheck={false}
-                  />
+                  {excuseRawMode ? (
+                    <textarea
+                      value={excuseHtml}
+                      onChange={(e) => setExcuseHtml(e.target.value)}
+                      style={{ minHeight: 280 }}
+                      className="w-full font-mono text-xs text-gray-700 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 resize-y"
+                      spellCheck={false}
+                    />
+                  ) : (
+                    <RichTextEditor
+                      initialContent={excuseHtml}
+                      onChange={setExcuseHtml}
+                      minHeight={280}
+                    />
+                  )}
                 </div>
 
                 {/* Aperçu */}
@@ -236,6 +311,88 @@ export default function AdminEmailsClient({
                   >
                     Réinitialiser
                   </button>
+                </div>
+
+                {/* Envoi test */}
+                <div className="border-t border-amber-100 pt-3">
+                  <p className="text-xs font-medium text-navy mb-1.5">Envoyer un test</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      type="email"
+                      value={testExcuseEmail}
+                      onChange={(e) => setTestExcuseEmail(e.target.value)}
+                      placeholder={adminEmail}
+                      className="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestExcuse}
+                      disabled={testExcuseSending}
+                      className="px-4 py-1.5 bg-gray-700 text-white text-xs font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {testExcuseSending ? 'Envoi…' : 'Envoyer test'}
+                    </button>
+                  </div>
+                  {testExcuseResult && (
+                    <p className={`text-xs mt-1 ${testExcuseResult.ok ? 'text-green-600' : 'text-red-600'}`}>
+                      {testExcuseResult.ok ? `✅ Email test envoyé à ${testExcuseEmail.trim() || adminEmail}` : `Erreur : ${testExcuseResult.error}`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Planification */}
+                <div className="border-t border-amber-100 pt-3">
+                  {currentSchedule ? (
+                    <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
+                      <div className="flex items-center gap-2 text-sm text-blue-800">
+                        <Calendar className="w-4 h-4 shrink-0" />
+                        <span>Envoi programmé le <strong>{new Date(currentSchedule).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}</strong></span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCancelSchedule}
+                        disabled={cancelingSchedule}
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Annuler
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowScheduler(v => !v)}
+                        className="flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 transition-colors"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        {showScheduler ? 'Masquer la programmation' : 'Programmer l\'envoi pour plus tard'}
+                      </button>
+
+                      {showScheduler && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <input
+                            type="datetime-local"
+                            value={scheduleDate}
+                            onChange={(e) => setScheduleDate(e.target.value)}
+                            min={new Date().toISOString().slice(0, 16)}
+                            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleScheduleExcuse}
+                            disabled={scheduling || !scheduleDate}
+                            className="px-4 py-1.5 bg-navy text-white text-xs font-semibold rounded-lg hover:bg-navy/90 transition-colors disabled:opacity-50"
+                          >
+                            {scheduling ? 'Programmation…' : 'Confirmer'}
+                          </button>
+                          {scheduleResult?.error && (
+                            <span className="text-xs text-red-600">{scheduleResult.error}</span>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             )}

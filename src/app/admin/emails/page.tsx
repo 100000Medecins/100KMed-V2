@@ -3,7 +3,7 @@ import { getSiteConfig } from '@/lib/actions/siteConfig'
 import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import type { Newsletter } from '@/app/admin/newsletters/page'
-import { EXCUSE_DEFAULT_SUJET, EXCUSE_DEFAULT_HTML_TEMPLATE } from '@/lib/email/excuseTemplate'
+import { EXCUSE_DEFAULT_SUJET, EXCUSE_DEFAULT_BODY } from '@/lib/email/excuseTemplate'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +49,7 @@ export default async function AdminEmailsPage() {
     countEtudes, countQuestionnaires,
     { data: newsletters },
     cronsActifsRaw,
+    excuseScheduledAtRaw,
     excuseCount,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
@@ -69,6 +70,7 @@ export default async function AdminEmailsPage() {
       .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, scheduled_at, recipient_count, notified_at, reminded_at')
       .order('created_at', { ascending: false }),
     getSiteConfig('crons_routiniers_actifs'),
+    getSiteConfig('excuse_scheduled_at'),
     // Nombre de destinataires ayant reçu le mail cassé du 23/04
     (async () => {
       try {
@@ -200,7 +202,8 @@ export default async function AdminEmailsPage() {
         cronsActifs={cronsActifs}
         excuseCount={excuseCount as number}
         excuseDefaultSujet={EXCUSE_DEFAULT_SUJET}
-        excuseDefaultHtml={EXCUSE_DEFAULT_HTML_TEMPLATE}
+        excuseDefaultHtml={EXCUSE_DEFAULT_BODY}
+        excuseScheduledAt={excuseScheduledAtRaw}
         adminEmail={process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'}
       />
     </div>

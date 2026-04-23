@@ -97,7 +97,7 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
           />
         ) : (
           <RichTextEditor
-            initialContent={initialHtml}
+            initialContent={contenuHtml}
             onChange={setContenuHtml}
             minHeight={300}
           />

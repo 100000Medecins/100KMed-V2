@@ -4,7 +4,7 @@ import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
 import { withEmailLogo } from '@/lib/email/logo'
-import { EXCUSE_DEFAULT_SUJET, EXCUSE_DEFAULT_HTML_TEMPLATE } from '@/lib/email/excuseTemplate'
+import { EXCUSE_DEFAULT_SUJET, EXCUSE_DEFAULT_BODY, buildExcuseEmail } from '@/lib/email/excuseTemplate'
 import sgMail from '@sendgrid/mail'
 
 function generateAdminToken(): string {
@@ -51,10 +51,29 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}))
   const sujetTemplate: string = body.sujet || EXCUSE_DEFAULT_SUJET
-  const htmlTemplate: string = body.htmlTemplate || EXCUSE_DEFAULT_HTML_TEMPLATE
+  const htmlTemplate: string = body.htmlTemplate || EXCUSE_DEFAULT_BODY
 
   const supabase = createServiceRoleClient()
   const siteUrl = new URL(req.url).origin
+
+  // Mode test : envoie uniquement à l'adresse spécifiée avec des données fictives
+  if (body.testEmail) {
+    const vars = {
+      nom: 'Dr. DUPONT',
+      solution_nom: 'MonLogiciel Pro',
+      lien_1clic: `${siteUrl}/mon-compte/mes-evaluations`,
+      lien_reevaluation: `${siteUrl}/mon-compte/mes-evaluations`,
+      lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+    }
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+    await sgMail.send({
+      to: body.testEmail,
+      from: 'contact@100000medecins.org',
+      subject: `[TEST] ${renderTemplate(sujetTemplate, vars)}`,
+      html: withEmailLogo(buildExcuseEmail(renderTemplate(htmlTemplate, vars))),
+    })
+    return NextResponse.json({ ok: true, sent: 1, total: 1, test: true })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: evals } = await (supabase as any)
@@ -94,7 +113,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sujet = renderTemplate(sujetTemplate, vars)
-    const html = withEmailLogo(renderTemplate(htmlTemplate, vars))
+    const html = withEmailLogo(buildExcuseEmail(renderTemplate(htmlTemplate, vars)))
 
     try {
       await sgMail.send({
