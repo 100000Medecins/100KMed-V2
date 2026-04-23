@@ -114,8 +114,8 @@ export default function Navbar() {
       }}
     >
       <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
-        {/* Col 1 : Logo + burger mobile */}
-        <div className="flex items-center gap-2">
+        {/* Col 1 : Logo */}
+        <div className="flex items-center">
           <a href="/" className="flex items-center shrink-0">
             {/* Logo 3 lignes sur mobile / tablet (< 1150px) */}
             <Image
@@ -138,13 +138,6 @@ export default function Navbar() {
               unoptimized
             />
           </a>
-          <button
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className={`min-[1150px]:hidden p-2 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
-            aria-label="Menu"
-          >
-            {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
         </div>
 
         {/* Desktop Nav */}
@@ -293,6 +286,14 @@ export default function Navbar() {
               Évaluer
             </Button>
           </div>
+          {/* Burger mobile — toujours à droite */}
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className={`min-[1150px]:hidden p-2 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
+            aria-label="Menu"
+          >
+            {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
 
           {/* CTAs desktop */}
           <div className="hidden min-[1150px]:flex items-center gap-3">
