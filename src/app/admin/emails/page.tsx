@@ -3,6 +3,7 @@ import { getSiteConfig } from '@/lib/actions/siteConfig'
 import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import type { Newsletter } from '@/app/admin/newsletters/page'
+import { EXCUSE_DEFAULT_SUJET, EXCUSE_DEFAULT_HTML_TEMPLATE } from '@/lib/email/excuseTemplate'
 
 export const dynamic = 'force-dynamic'
 
@@ -198,6 +199,9 @@ export default async function AdminEmailsPage() {
         newsletters={(newsletters as Newsletter[]) ?? []}
         cronsActifs={cronsActifs}
         excuseCount={excuseCount as number}
+        excuseDefaultSujet={EXCUSE_DEFAULT_SUJET}
+        excuseDefaultHtml={EXCUSE_DEFAULT_HTML_TEMPLATE}
+        adminEmail={process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'}
       />
     </div>
   )
