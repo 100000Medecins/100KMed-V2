@@ -5,6 +5,46 @@
 
 ---
 
+## [2026-04-23] — Sécurité crons, sync email PSC, outil test relance
+
+### Kill-switch emails routiniers (Admin → Emails)
+- Nouveau toggle ON/OFF en haut de la page Admin > Emails
+- Désactive tous les crons routiniers (relances évaluations, PSC, incomplets, newsletter) sans affecter les emails transactionnels
+- Valeur stockée dans `site_config` (clé `crons_routiniers_actifs`), OFF par défaut jusqu'au déploiement final
+- Nouvelle action serveur `siteConfig.ts` (`getSiteConfig` / `setSiteConfig`)
+
+### Guard VERCEL_ENV sur les 7 crons
+- Tous les crons retournent `{ skipped: true }` si `VERCEL_ENV !== 'production'`
+- Empêche les déploiements de preview/dev de déclencher de vrais envois d'emails
+- Suite à l'incident : 300+ utilisateurs avaient reçu des relances depuis `dev.100000medecins.org`
+
+### Double vérification kill-switch dans chaque cron
+- Après le guard VERCEL_ENV, chaque cron consulte `site_config.crons_routiniers_actifs`
+- Si désactivé par l'admin → skip silencieux (HTTP 200, pas d'erreur Vercel)
+
+### Fix sync email PSC → public.users
+- Le callback PSC mettait à jour nom/prénom/spécialité mais pas l'email lors des reconnexions
+- Si `public.users.email` est fictif (`@psc.sante.fr`) ou null ET que PSC fournit un vrai email → mise à jour automatique au prochain login
+- SQL de migration one-shot pour corriger les comptes existants :
+  ```sql
+  UPDATE public.users u SET email = a.email FROM auth.users a
+  WHERE u.id = a.id
+    AND (u.email IS NULL OR u.email LIKE '%@psc.sante.fr' OR u.email != a.email)
+    AND a.email IS NOT NULL AND a.email NOT LIKE '%@psc.sante.fr';
+  ```
+
+### Outil de test email relance (Admin → Emails)
+- Bouton "Envoyer test" dans l'onglet Emails de l'admin
+- Champ email optionnel pour cibler un compte précis (recherche dans `auth.users` si absent de `public.users`)
+- Le lien 1-clic généré pointe vers l'origine de la requête (dev ou www selon le déploiement)
+- Email de test envoyé à `contact@100000medecins.org` avec préfixe `[TEST]`
+- Route : `POST /api/admin/test-relance-email`
+
+### Logo Jeunes Médecins
+- Nouveau fichier SVG `public/logos/logo-jeunes-medecins.svg`
+
+---
+
 ## [2026-04-22] — PSC relay : test connexion prod sur dev.100000medecins.org
 
 > **Fonctionnalité critique — authentification Pro Santé Connect**
