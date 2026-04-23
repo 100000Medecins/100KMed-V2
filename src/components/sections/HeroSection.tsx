@@ -128,18 +128,13 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
             </p>
             <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
               {partenaires.map((p) => {
-                const inner = (
-                  <div className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl border border-white/30 hover:border-white/50 hover:shadow-lg flex items-center justify-center bg-white/40 transition-all duration-200 ease-out hover:scale-110 hover:-translate-y-0.5">
+                return (
+                  <div key={p.id} className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl border border-white/30 flex items-center justify-center bg-white/40">
                     {p.logo_url
-                      ? <img src={p.logo_url} alt={p.nom} className={`object-contain opacity-85 hover:opacity-100 transition-opacity ${['SML', 'Le Bloc'].includes(p.nom) ? 'h-6 max-w-[70px] md:h-6 md:max-w-[85px]' : 'h-4 max-w-[55px] md:h-6 md:max-w-[85px]'}`} />
+                      ? <img src={p.logo_url} alt={p.nom} className={`object-contain opacity-85 ${['SML', 'Le Bloc'].includes(p.nom) ? 'h-6 max-w-[70px] md:h-6 md:max-w-[85px]' : 'h-4 max-w-[55px] md:h-6 md:max-w-[85px]'}`} />
                       : <span className="text-[10px] md:text-xs font-semibold text-white/80">{p.nom}</span>
                     }
                   </div>
-                )
-                return p.lien_url ? (
-                  <a key={p.id} href={p.lien_url} target="_blank" rel="noopener noreferrer">{inner}</a>
-                ) : (
-                  <div key={p.id}>{inner}</div>
                 )
               })}
             </div>
