@@ -119,7 +119,7 @@ export function buildEmail(opts: BaseEmailOptions): string {
             <!-- Header de la carte -->
             <tr>
               <td style="background:linear-gradient(135deg,${headerColorStart} 0%,${headerColorEnd} 100%);padding:28px 32px 24px;">
-                <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#93c5fd;text-transform:uppercase;letter-spacing:0.08em;">${label}</p>
+                ${label ? `<p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#93c5fd;text-transform:uppercase;letter-spacing:0.08em;">${label}</p>` : ''}
                 <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">${title}</p>
                 ${subtitle ? `<p style="margin:6px 0 0;font-size:14px;color:#bfdbfe;line-height:1.4;">${subtitle}</p>` : ''}
               </td>

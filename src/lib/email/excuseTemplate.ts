@@ -25,7 +25,7 @@ export const EXCUSE_DEFAULT_BODY = `<p style="margin:0 0 20px;font-size:15px;col
  */
 export function buildExcuseEmail(body: string): string {
   return buildEmail({
-    label: '100 000 Médecins',
+    label: '',
     title: 'Toutes nos excuses',
     subtitle: 'Un lien ne fonctionnait pas dans notre email de ce matin',
     body,
