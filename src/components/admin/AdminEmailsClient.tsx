@@ -6,7 +6,6 @@ import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
 import type { Newsletter } from '@/app/admin/newsletters/page'
 import { setSiteConfig } from '@/lib/actions/siteConfig'
 import { buildExcuseEmail } from '@/lib/email/excuseTemplate'
-import { withEmailLogo } from '@/lib/email/logo'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import { Eye, Code, ChevronDown, ChevronUp, Calendar, X } from 'lucide-react'
 
@@ -80,6 +79,7 @@ export default function AdminEmailsClient({
   const [cancelingSchedule, setCancelingSchedule] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
+  const [draftError, setDraftError] = useState<string | null>(null)
 
   const activeSection = sections.find((s) => s.key === activeTab)
 
@@ -110,10 +110,7 @@ export default function AdminEmailsClient({
       lien_desabonnement: '#',
     }
     const rendered = excuseHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sample[key] ?? `{{${key}}}`)
-    // Correction du margin-left négatif du logo pour l'aperçu inline
-    const withLogo = withEmailLogo(buildExcuseEmail(rendered))
-      .replace('margin-left:-52px;', 'margin-left:0;')
-    setExcusePreviewHtml(withLogo)
+    setExcusePreviewHtml(buildExcuseEmail(rendered))
   }
 
   async function handleSendExcuse() {
@@ -139,11 +136,14 @@ export default function AdminEmailsClient({
   async function handleSaveDraft() {
     setSavingDraft(true)
     setDraftSaved(false)
+    setDraftError(null)
     try {
       await setSiteConfig('excuse_draft_html', excuseHtml)
       await setSiteConfig('excuse_draft_sujet', excuseSujet)
       setDraftSaved(true)
       setTimeout(() => setDraftSaved(false), 3000)
+    } catch (e) {
+      setDraftError(String(e))
     } finally {
       setSavingDraft(false)
     }
@@ -305,6 +305,9 @@ export default function AdminEmailsClient({
                       </button>
                     </div>
                   </div>
+                  {draftError && (
+                    <p className="text-xs text-red-600 mb-1">Erreur sauvegarde : {draftError}</p>
+                  )}
                   {excuseRawMode ? (
                     <textarea
                       value={excuseHtml}
