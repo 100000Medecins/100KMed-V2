@@ -9,7 +9,7 @@
 const LOGO_URL =
   'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images/logos/logo-secondaire-couleur-trimmed.png'
 
-const SITE_URL = 'https://www.100000medecins.org'
+const DEFAULT_SITE_URL = 'https://www.100000medecins.org'
 
 const BG = 'background-color:#0f1e38;background-image:radial-gradient(ellipse 70% 60% at 12% 75%,rgba(74,144,217,0.55) 0%,transparent 100%),radial-gradient(ellipse 55% 55% at 82% 12%,rgba(138,92,246,0.45) 0%,transparent 100%),radial-gradient(ellipse 50% 45% at 58% 92%,rgba(16,185,129,0.30) 0%,transparent 100%)'
 
@@ -34,6 +34,8 @@ export interface BaseEmailOptions {
   infoBox?: string
   /** HTML du pied de mail (désabonnement, note légale…) */
   footer?: string
+  /** Domaine d'origine de l'envoi — utilisé pour le lien du logo (défaut : www) */
+  siteUrl?: string
 }
 
 export function buildEmail(opts: BaseEmailOptions): string {
@@ -48,6 +50,7 @@ export function buildEmail(opts: BaseEmailOptions): string {
     ctaSecondary,
     infoBox,
     footer,
+    siteUrl = DEFAULT_SITE_URL,
   } = opts
 
   const ctaPrimaryHtml = ctaPrimary
@@ -99,7 +102,7 @@ export function buildEmail(opts: BaseEmailOptions): string {
       <!-- Logo -->
       <tr>
         <td style="padding:0 0 20px;">
-          <a href="${SITE_URL}" style="text-decoration:none;display:block;">
+          <a href="${siteUrl}" style="text-decoration:none;display:block;">
             <img src="${LOGO_URL}" alt="100 000 Médecins"
                  width="325" style="display:block;width:325px;height:auto;border:0;" />
           </a>

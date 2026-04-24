@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
         to: user.email,
         from: 'contact@100000medecins.org',
         subject: renderTemplate(sujetTemplate, vars),
-        html: buildExcuseEmail(renderTemplate(htmlTemplate, vars)),
+        html: renderTemplate(buildExcuseEmail(htmlTemplate, siteUrl), vars),
       })
       sent++
     } catch (e) {

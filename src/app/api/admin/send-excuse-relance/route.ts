@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       to: body.testEmail,
       from: 'contact@100000medecins.org',
       subject: `[TEST] ${renderTemplate(sujetTemplate, vars)}`,
-      html: buildExcuseEmail(renderTemplate(htmlTemplate, vars)),
+      html: renderTemplate(buildExcuseEmail(htmlTemplate, siteUrl), vars),
     })
     return NextResponse.json({ ok: true, sent: 1, total: 1, test: true })
   }
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sujet = renderTemplate(sujetTemplate, vars)
-    const html = buildExcuseEmail(renderTemplate(htmlTemplate, vars))
+    const html = renderTemplate(buildExcuseEmail(htmlTemplate, siteUrl), vars)
 
     try {
       await sgMail.send({

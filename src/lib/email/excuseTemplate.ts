@@ -23,9 +23,10 @@ export const EXCUSE_DEFAULT_BODY = `<p style="margin:0 0 20px;font-size:15px;col
  * Construit l'email complet en injectant le corps (body) dans le template de base du site.
  * Appelé aussi bien pour l'aperçu que pour l'envoi réel.
  */
-export function buildExcuseEmail(body: string): string {
+export function buildExcuseEmail(body: string, siteUrl?: string): string {
   return buildEmail({
     label: '',
+    siteUrl,
     title: 'Toutes nos excuses',
     subtitle: 'Un lien ne fonctionnait pas dans notre email de ce matin',
     body,
