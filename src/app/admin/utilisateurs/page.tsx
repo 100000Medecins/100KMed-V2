@@ -11,7 +11,7 @@ async function getAllUsers(supabase: ReturnType<typeof createServiceRoleClient>)
   while (true) {
     const { data, error } = await supabase
       .from('users')
-      .select('id, email, pseudo, nom, prenom, role, specialite, rpps, created_at')
+      .select('id, email, contact_email, pseudo, nom, prenom, role, specialite, rpps, created_at')
       .order('created_at', { ascending: false })
       .range(from, from + PAGE - 1)
     if (error || !data || data.length === 0) break

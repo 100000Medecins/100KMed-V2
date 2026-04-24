@@ -561,7 +561,9 @@ export async function submitEvaluationAnonyme(
   const pscLink = `${siteUrl}/api/auth/psc-initier?token=${tokenVerification}`
 
   const sujet = template?.sujet || 'Validez votre évaluation sur 100 000 Médecins'
-  const contenuHtml = (template?.contenu_html || '').replace('{{psc_link}}', pscLink)
+  const contenuHtml = (template?.contenu_html || '')
+    .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
+    .replace(/\{\{psc_link\}\}/g, pscLink)
 
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   await sgMail.send({

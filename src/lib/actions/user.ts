@@ -40,6 +40,7 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
 
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   const html = (template.contenu_html as string)
+    .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
     .replace(/\{\{lien_reinitialisation\}\}/g, resetLink)
   const sujet = template.sujet as string
 

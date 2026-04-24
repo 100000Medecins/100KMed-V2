@@ -130,6 +130,7 @@ export async function GET(req: NextRequest) {
       .replace(/\{\{prenom\}\}/g, nomDisplay)
 
     const html = (template.contenu_html as string)
+      .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
       .replace(/\{\{solution_nom\}\}/g, solution.nom)
       .replace(/\{\{nom\}\}/g, nomDisplay)
       .replace(/\{\{prenom\}\}/g, nomDisplay)

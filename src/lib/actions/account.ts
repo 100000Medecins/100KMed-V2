@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 
 interface DeleteAccountOptions {
@@ -35,6 +36,11 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
     })
 
   // 3. Envoyer le mail d'au revoir à l'utilisateur (template depuis la DB)
+  const headersList = await headers()
+  const host = headersList.get('host') || 'www.100000medecins.org'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const siteUrl = `${proto}://${host}`
+
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,6 +56,7 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
         .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{prenom\}\}/g, nomDisplay)
       const html = (template.contenu_html as string)
+        .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
         .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{prenom\}\}/g, nomDisplay)
       const recipientEmail = (profile as { contact_email?: string } | null)?.contact_email || user.email!

@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
 
       const html = (newsletter.contenu_html as string)
+        .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
         .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
         .replace(/\{\{lien_navigateur\}\}/g, `${siteUrl}/nl/${id}`)

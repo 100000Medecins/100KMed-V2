@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
         .replace(/\{\{nom\}\}/g, nomDisplay)
 
       const html = (template.contenu_html as string)
+        .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
         .replace(/\{\{nom\}\}/g, nomDisplay)
         .replace(/\{\{lien_etude\}\}/g, lien_etude)
         .replace(/\{\{texte_promoteur\}\}/g, texte_promoteur)

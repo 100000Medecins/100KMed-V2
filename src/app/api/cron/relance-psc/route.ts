@@ -99,6 +99,7 @@ export async function GET(req: NextRequest) {
       .replace(/\{\{relance_num\}\}/g, String(relanceNum))
 
     const html = (template.contenu_html as string)
+      .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
       .replace(/\{\{solution_nom\}\}/g, solution.nom)
       .replace(/\{\{psc_link\}\}/g, pscLink)
       .replace(/\{\{relance_num\}\}/g, String(relanceNum))

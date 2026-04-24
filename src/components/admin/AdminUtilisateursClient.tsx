@@ -8,6 +8,7 @@ import { resolveSpecialite } from '@/lib/constants/profil'
 type User = {
   id: string
   email: string | null
+  contact_email: string | null
   pseudo: string | null
   nom: string | null
   prenom: string | null
@@ -29,6 +30,9 @@ type SortField = 'created_at' | 'nom'
 type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200]
+
+const displayEmail = (u: { email: string | null; contact_email: string | null }) =>
+  u.contact_email || u.email
 
 const isRealEmail = (email: string | null) =>
   !!email &&
@@ -76,6 +80,7 @@ export default function AdminUtilisateursClient({
     return (
       !q ||
       u.email?.toLowerCase().includes(q) ||
+      u.contact_email?.toLowerCase().includes(q) ||
       u.pseudo?.toLowerCase().includes(q) ||
       u.nom?.toLowerCase().includes(q) ||
       u.prenom?.toLowerCase().includes(q) ||
@@ -114,11 +119,11 @@ export default function AdminUtilisateursClient({
   const goToPage = (n: number) => setPage(Math.max(1, Math.min(totalPages, n)))
 
   const handleExportCsv = () => {
-    const withEmail = users.filter((u) => isRealEmail(u.email))
+    const withEmail = users.filter((u) => isRealEmail(u.contact_email ?? u.email))
     const rows = [
       ['Email', 'Prénom', 'Nom', 'Pseudo', 'Rôle', 'Spécialité', 'RPPS', 'Inscription'],
       ...withEmail.map((u) => [
-        u.email ?? '',
+        displayEmail(u) ?? '',
         u.prenom ?? '',
         u.nom ?? '',
         u.pseudo ?? '',
@@ -156,11 +161,11 @@ export default function AdminUtilisateursClient({
     })
   }
 
-  const handleInlineUpdate = (userId: string, field: 'nom' | 'prenom' | 'email' | 'pseudo', value: string) => {
+  const handleInlineUpdate = (userId: string, field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email', value: string) => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, [field]: value } : u)))
   }
 
-  const handleInlineSave = async (userId: string, field: 'nom' | 'prenom' | 'email' | 'pseudo', value: string) => {
+  const handleInlineSave = async (userId: string, field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email', value: string) => {
     const { updateUserField } = await import('@/lib/actions/admin-users')
     await updateUserField(userId, field, value)
   }
@@ -264,7 +269,7 @@ export default function AdminUtilisateursClient({
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-button text-sm font-semibold bg-white border border-gray-200 text-gray-600 hover:border-accent-blue hover:text-accent-blue shadow-soft transition-all"
         >
           <Download className="w-4 h-4" />
-          Exporter emails ({users.filter(u => isRealEmail(u.email)).length})
+          Exporter emails ({users.filter(u => isRealEmail(u.contact_email ?? u.email)).length})
         </button>
       </div>
 
@@ -350,9 +355,9 @@ function EditableCell({
 }: {
   value: string | null
   userId: string
-  field: 'nom' | 'prenom' | 'email' | 'pseudo'
-  onUpdate: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo', value: string) => void
-  onSave: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo', value: string) => Promise<void>
+  field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email'
+  onUpdate: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email', value: string) => void
+  onSave: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email', value: string) => Promise<void>
   placeholder?: string
 }) {
   const [editing, setEditing] = useState(false)
@@ -411,8 +416,8 @@ function UserRow({
   isDeleting: boolean
   isSuccess: boolean
   onAssign: (userId: string, role: string, editeurId: string | null) => void
-  onInlineUpdate: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo', value: string) => void
-  onInlineSave: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo', value: string) => Promise<void>
+  onInlineUpdate: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email', value: string) => void
+  onInlineSave: (id: string, field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email', value: string) => Promise<void>
   onDelete: (id: string) => void
   roleLabels: Record<string, string>
   roleColors: Record<string, string>
@@ -444,7 +449,14 @@ function UserRow({
 
       {/* Email */}
       <td className="px-4 py-3 hidden md:table-cell">
-        <EditableCell value={user.email} userId={user.id} field="email" onUpdate={onInlineUpdate} onSave={onInlineSave} placeholder="email" />
+        <EditableCell
+          value={user.contact_email ?? user.email}
+          userId={user.id}
+          field="contact_email"
+          onUpdate={onInlineUpdate}
+          onSave={onInlineSave}
+          placeholder="email"
+        />
       </td>
 
       {/* Spécialité — non modifiable */}

@@ -99,6 +99,12 @@ export default function CompleterProfilPage() {
         portrait: selectedAvatar || undefined,
         password,
       })
+      // Re-authentification nécessaire : updateUserById côté admin invalide la session client
+      const supabase = createClient()
+      await supabase.auth.signInWithPassword({
+        email: contactEmail.trim(),
+        password,
+      })
       router.push('/mon-compte/profil')
     } catch (err) {
       console.error('Erreur complétion profil:', err)

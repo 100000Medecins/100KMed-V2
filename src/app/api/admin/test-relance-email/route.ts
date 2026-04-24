@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
     .replace(/\{\{nom\}\}/g, nomDisplay)}`
 
   const html = (template.contenu_html as string)
+    .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
     .replace(/\{\{solution_nom\}\}/g, solution.nom)
     .replace(/\{\{prenom\}\}/g, nomDisplay)
     .replace(/\{\{nom\}\}/g, nomDisplay)

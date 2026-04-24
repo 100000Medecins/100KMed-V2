@@ -36,6 +36,7 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
   }
 
   const handlePreview = () => {
+    const origin = window.location.origin
     const sampleValues: Record<string, string> = {
       nom: 'Dr. DUPONT',
       prenom: 'Dr. DUPONT',
@@ -43,11 +44,15 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
       lien_1clic: '#',
       lien_reevaluation: '#',
       lien_desabonnement: '#',
+      lien_reinitialisation: '#',
+      lien_reprise: '#',
       psc_link: '#',
       lien_desabonnement_etude: '#',
       lien_questionnaire: '#',
     }
-    const rendered = contenuHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sampleValues[key] ?? `{{${key}}}`)
+    const rendered = contenuHtml
+      .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, origin)
+      .replace(/\{\{(\w+)\}\}/g, (_, key) => sampleValues[key] ?? `{{${key}}}`)
     setPreviewHtml(rendered)
   }
 

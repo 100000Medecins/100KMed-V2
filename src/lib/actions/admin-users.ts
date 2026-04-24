@@ -7,7 +7,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
  */
 export async function updateUserField(
   userId: string,
-  field: 'nom' | 'prenom' | 'email' | 'pseudo',
+  field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email',
   value: string
 ) {
   const supabase = createServiceRoleClient()
