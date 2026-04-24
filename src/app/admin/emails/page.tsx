@@ -50,6 +50,8 @@ export default async function AdminEmailsPage() {
     { data: newsletters },
     cronsActifsRaw,
     excuseScheduledAtRaw,
+    excuseDraftHtml,
+    excuseDraftSujet,
     excuseCount,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
@@ -71,6 +73,8 @@ export default async function AdminEmailsPage() {
       .order('created_at', { ascending: false }),
     getSiteConfig('crons_routiniers_actifs'),
     getSiteConfig('excuse_scheduled_at'),
+    getSiteConfig('excuse_draft_html'),
+    getSiteConfig('excuse_draft_sujet'),
     // Nombre de destinataires ayant reçu le mail cassé du 23/04
     (async () => {
       try {
@@ -201,8 +205,8 @@ export default async function AdminEmailsPage() {
         newsletters={(newsletters as Newsletter[]) ?? []}
         cronsActifs={cronsActifs}
         excuseCount={excuseCount as number}
-        excuseDefaultSujet={EXCUSE_DEFAULT_SUJET}
-        excuseDefaultHtml={EXCUSE_DEFAULT_BODY}
+        excuseDefaultSujet={excuseDraftSujet ?? EXCUSE_DEFAULT_SUJET}
+        excuseDefaultHtml={excuseDraftHtml ?? EXCUSE_DEFAULT_BODY}
         excuseScheduledAt={excuseScheduledAtRaw}
         adminEmail={process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'}
       />

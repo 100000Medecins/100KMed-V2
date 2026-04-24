@@ -78,6 +78,8 @@ export default function AdminEmailsClient({
   const [scheduleResult, setScheduleResult] = useState<{ ok?: boolean; scheduledAt?: string; error?: string } | null>(null)
   const [currentSchedule, setCurrentSchedule] = useState<string | null>(excuseScheduledAt ?? null)
   const [cancelingSchedule, setCancelingSchedule] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [draftSaved, setDraftSaved] = useState(false)
 
   const activeSection = sections.find((s) => s.key === activeTab)
 
@@ -108,7 +110,10 @@ export default function AdminEmailsClient({
       lien_desabonnement: '#',
     }
     const rendered = excuseHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sample[key] ?? `{{${key}}}`)
-    setExcusePreviewHtml(withEmailLogo(buildExcuseEmail(rendered)))
+    // Correction du margin-left négatif du logo pour l'aperçu inline
+    const withLogo = withEmailLogo(buildExcuseEmail(rendered))
+      .replace('margin-left:-52px;', 'margin-left:0;')
+    setExcusePreviewHtml(withLogo)
   }
 
   async function handleSendExcuse() {
@@ -128,6 +133,19 @@ export default function AdminEmailsClient({
       setExcuseResult({ error: String(e) })
     } finally {
       setExcuseSending(false)
+    }
+  }
+
+  async function handleSaveDraft() {
+    setSavingDraft(true)
+    setDraftSaved(false)
+    try {
+      await setSiteConfig('excuse_draft_html', excuseHtml)
+      await setSiteConfig('excuse_draft_sujet', excuseSujet)
+      setDraftSaved(true)
+      setTimeout(() => setDraftSaved(false), 3000)
+    } finally {
+      setSavingDraft(false)
     }
   }
 
@@ -268,14 +286,24 @@ export default function AdminEmailsClient({
                       <label className="block text-xs font-medium text-navy">Corps du message</label>
                       <p className="text-xs text-gray-400">Variables : <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{nom}}`}</code> <code className="bg-gray-100 px-1 rounded font-mono text-xs">{`{{solution_nom}}`}</code> · Les boutons et le footer sont ajoutés automatiquement.</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setExcuseRawMode(m => !m)}
-                      className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors ${excuseRawMode ? 'bg-navy text-white border-navy' : 'text-gray-500 border-gray-200 hover:border-gray-400 hover:text-navy'}`}
-                    >
-                      <Code className="w-3 h-3" />
-                      {excuseRawMode ? 'HTML brut (actif)' : 'HTML brut'}
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleSaveDraft}
+                        disabled={savingDraft}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-accent-blue text-white font-semibold hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
+                      >
+                        {savingDraft ? 'Sauvegarde…' : draftSaved ? '✓ Sauvegardé' : 'Sauvegarder'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExcuseRawMode(m => !m)}
+                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors ${excuseRawMode ? 'bg-navy text-white border-navy' : 'text-gray-500 border-gray-200 hover:border-gray-400 hover:text-navy'}`}
+                      >
+                        <Code className="w-3 h-3" />
+                        {excuseRawMode ? 'HTML brut (actif)' : 'HTML brut'}
+                      </button>
+                    </div>
                   </div>
                   {excuseRawMode ? (
                     <textarea
