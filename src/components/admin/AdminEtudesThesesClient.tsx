@@ -9,9 +9,9 @@ import {
 } from 'lucide-react'
 import type { QuestionnaireThese } from '@/lib/actions/questionnaires-these'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
+import EtudeForm from '@/components/etudes/EtudeForm'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
-const EtudeForm = dynamic(() => import('@/components/etudes/EtudeForm'), { ssr: false })
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
