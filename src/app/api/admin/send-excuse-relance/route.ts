@@ -3,7 +3,6 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
-import { withEmailLogo } from '@/lib/email/logo'
 import { EXCUSE_DEFAULT_SUJET, EXCUSE_DEFAULT_BODY, buildExcuseEmail } from '@/lib/email/excuseTemplate'
 import sgMail from '@sendgrid/mail'
 
@@ -70,7 +69,7 @@ export async function POST(req: NextRequest) {
       to: body.testEmail,
       from: 'contact@100000medecins.org',
       subject: `[TEST] ${renderTemplate(sujetTemplate, vars)}`,
-      html: withEmailLogo(buildExcuseEmail(renderTemplate(htmlTemplate, vars))),
+      html: buildExcuseEmail(renderTemplate(htmlTemplate, vars)),
     })
     return NextResponse.json({ ok: true, sent: 1, total: 1, test: true })
   }
@@ -113,7 +112,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sujet = renderTemplate(sujetTemplate, vars)
-    const html = withEmailLogo(buildExcuseEmail(renderTemplate(htmlTemplate, vars)))
+    const html = buildExcuseEmail(renderTemplate(htmlTemplate, vars))
 
     try {
       await sgMail.send({

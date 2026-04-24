@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
-import { withEmailLogo } from '@/lib/email/logo'
 import { buildExcuseEmail } from '@/lib/email/excuseTemplate'
 import sgMail from '@sendgrid/mail'
 
@@ -94,7 +93,7 @@ export async function GET(req: NextRequest) {
         to: user.email,
         from: 'contact@100000medecins.org',
         subject: renderTemplate(sujetTemplate, vars),
-        html: withEmailLogo(buildExcuseEmail(renderTemplate(htmlTemplate, vars))),
+        html: buildExcuseEmail(renderTemplate(htmlTemplate, vars)),
       })
       sent++
     } catch (e) {
