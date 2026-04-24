@@ -417,6 +417,7 @@ function EtudesSection({ etudes: initial }: { etudes: EtudeClinique[] }) {
   const [etudes, setEtudes] = useState(initial)
   const [activeTab, setActiveTab] = useState<EtudeTab>('actives')
   const [editingEtude, setEditingEtude] = useState<EtudeClinique | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [pendingId, setPendingId] = useState<string | null>(null)
   const t = today()
@@ -425,13 +426,23 @@ function EtudesSection({ etudes: initial }: { etudes: EtudeClinique[] }) {
   const archives = etudes.filter((e) => e.date_fin && e.date_fin < t)
   const filtered = activeTab === 'actives' ? actives : archives
 
-  const handleSave = async (formData: FormData) => {
+  const reload = async () => {
+    const { getEtudesCliniquesSuperAdmin } = await import('@/lib/actions/etudes-cliniques')
+    setEtudes(await getEtudesCliniquesSuperAdmin())
+  }
+
+  const handleCreate = async (formData: FormData) => {
+    const { createEtudeCliniqueAdmin } = await import('@/lib/actions/etudes-cliniques')
+    await createEtudeCliniqueAdmin(formData)
+    await reload()
+    setShowCreateForm(false)
+  }
+
+  const handleEdit = async (formData: FormData) => {
     if (!editingEtude) return
     const { updateEtudeCliniqueAdmin } = await import('@/lib/actions/etudes-cliniques')
     await updateEtudeCliniqueAdmin(editingEtude.id, formData)
-    // Reload optimistic
-    const { getEtudesCliniquesSuperAdmin } = await import('@/lib/actions/etudes-cliniques')
-    setEtudes(await getEtudesCliniquesSuperAdmin())
+    await reload()
     setEditingEtude(null)
   }
 
@@ -459,7 +470,19 @@ function EtudesSection({ etudes: initial }: { etudes: EtudeClinique[] }) {
         </div>
       </div>
 
-      {editingEtude && (
+      {showCreateForm && (
+        <div className="bg-white rounded-card shadow-card p-6 mb-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold text-navy">Nouvelle étude clinique</h2>
+            <button onClick={() => setShowCreateForm(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <EtudeForm onSave={handleCreate} onCancel={() => setShowCreateForm(false)} />
+        </div>
+      )}
+
+      {editingEtude && !showCreateForm && (
         <div className="bg-white rounded-card shadow-card p-6 mb-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-sm font-semibold text-navy">Modifier l&apos;étude clinique</h2>
@@ -467,26 +490,34 @@ function EtudesSection({ etudes: initial }: { etudes: EtudeClinique[] }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <EtudeForm etude={editingEtude} onSave={handleSave} onCancel={() => setEditingEtude(null)} />
+          <EtudeForm etude={editingEtude} onSave={handleEdit} onCancel={() => setEditingEtude(null)} />
         </div>
       )}
 
-      <div className="flex gap-1 mb-4 bg-white rounded-xl shadow-card p-1 w-fit">
-        <button onClick={() => setActiveTab('actives')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            activeTab === 'actives' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy hover:bg-surface-light'
-          }`}>
-          <FlaskConical className="w-3 h-3" />
-          En cours
-          {actives.length > 0 && <span className={`text-xs rounded-full px-1.5 font-semibold ${activeTab === 'actives' ? 'bg-white/20' : 'bg-gray-100'}`}>{actives.length}</span>}
-        </button>
-        <button onClick={() => setActiveTab('archives')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            activeTab === 'archives' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy hover:bg-surface-light'
-          }`}>
-          <Archive className="w-3 h-3" />
-          Archives
-          {archives.length > 0 && <span className={`text-xs rounded-full px-1.5 font-semibold ${activeTab === 'archives' ? 'bg-white/20' : 'bg-gray-100'}`}>{archives.length}</span>}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-1 bg-white rounded-xl shadow-card p-1 w-fit">
+          <button onClick={() => setActiveTab('actives')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              activeTab === 'actives' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy hover:bg-surface-light'
+            }`}>
+            <FlaskConical className="w-3 h-3" />
+            En cours
+            {actives.length > 0 && <span className={`text-xs rounded-full px-1.5 font-semibold ${activeTab === 'actives' ? 'bg-white/20' : 'bg-gray-100'}`}>{actives.length}</span>}
+          </button>
+          <button onClick={() => setActiveTab('archives')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              activeTab === 'archives' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy hover:bg-surface-light'
+            }`}>
+            <Archive className="w-3 h-3" />
+            Archives
+            {archives.length > 0 && <span className={`text-xs rounded-full px-1.5 font-semibold ${activeTab === 'archives' ? 'bg-white/20' : 'bg-gray-100'}`}>{archives.length}</span>}
+          </button>
+        </div>
+        <button
+          onClick={() => { setEditingEtude(null); setShowCreateForm(true) }}
+          className="flex items-center gap-2 px-4 py-2 bg-accent-blue text-white text-sm font-medium rounded-xl hover:bg-accent-blue/90 transition-colors">
+          <Plus className="w-4 h-4" />
+          Ajouter
         </button>
       </div>
 
@@ -496,9 +527,6 @@ function EtudesSection({ etudes: initial }: { etudes: EtudeClinique[] }) {
           <p className="text-sm text-gray-500">
             {activeTab === 'actives' ? 'Aucune étude clinique en cours.' : 'Aucune étude clinique archivée.'}
           </p>
-          {activeTab === 'actives' && (
-            <p className="text-xs text-gray-400 mt-1">Les études sont créées depuis l&apos;espace Digital Medical Hub.</p>
-          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -548,7 +576,7 @@ function EtudesSection({ etudes: initial }: { etudes: EtudeClinique[] }) {
                         ) : (
                           <>
                             <button
-                              onClick={() => { setEditingEtude(e); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                              onClick={() => { setShowCreateForm(false); setEditingEtude(e); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                               disabled={isPending}
                               className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-medium rounded-lg transition-colors disabled:opacity-50">
                               <Pencil className="w-3.5 h-3.5" />

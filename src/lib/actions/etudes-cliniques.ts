@@ -135,6 +135,27 @@ export async function getEtudesCliniquesSuperAdmin(): Promise<EtudeClinique[]> {
 }
 
 /**
+ * Crée une étude clinique — admin uniquement.
+ */
+export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ error: string | null }> {
+  const supabase = createServiceRoleClient()
+  const images = JSON.parse((formData.get('images') as string) || '[]')
+  const { error } = await supabase.from('etudes_cliniques').insert({
+    titre:       formData.get('titre') as string,
+    description: formData.get('description') as string || null,
+    lien:        formData.get('lien') as string || null,
+    images,
+    date_debut:  (formData.get('date_debut') as string) || null,
+    date_fin:    (formData.get('date_fin') as string) || null,
+    created_by:  null,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/questionnaires-these')
+  revalidatePath('/mon-compte/etudes-cliniques')
+  return { error: null }
+}
+
+/**
  * Met à jour une étude clinique — admin uniquement.
  */
 export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): Promise<{ error: string | null }> {
