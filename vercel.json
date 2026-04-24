@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/cron/envoyer-excuse-programmee",
-      "schedule": "0 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
