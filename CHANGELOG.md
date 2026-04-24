@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-04-24] — Audit base de données, intégrité PSC, admin études cliniques
+
+### Admin — Création d'études cliniques
+- Nouvelle action serveur `createEtudeCliniqueAdmin()` dans `etudes-cliniques.ts`, sans garde de rôle DMH
+- Bouton "Ajouter" + formulaire de création (`EtudeForm`) dans l'onglet Études cliniques de l'admin
+- Fix : `EtudeForm` importé en statique (plus de `dynamic()`) pour éviter un `ChunkLoadError` sur les imports dynamiques imbriqués
+
+### Intégrité base de données — Audit complet du schéma
+- Audit complet des 30+ tables du schéma public Supabase (colonnes, FK, cohérence)
+- **Backfill `solutions_utilisees`** : les anciennes évaluations (pré-migration) n'avaient pas de ligne dans `solutions_utilisees`, rendant les solutions notées invisibles sur `/mes-evaluations`. SQL exécuté pour rétablir la cohérence.
+- **FK ajoutée** : `evaluations(user_id, solution_id) → solutions_utilisees(user_id, solution_id) ON DELETE CASCADE` — garantit qu'une évaluation ne peut exister sans ligne lifecycle correspondante. Les évaluations anonymes (`user_id = NULL`) ne sont pas impactées (PostgreSQL ignore les FK avec colonnes NULL).
+- **Tables backup identifiées** à supprimer lors d'une prochaine maintenance : `criteres_backup`, `evaluations_backup`, `resultats_backup`
+- **FKs manquantes identifiées** (dette technique) : `solutions_criteres_actifs.id_critere → criteres.id` et `solutions_utilisees.solution_precedente_id → solutions.id`
+
+### Fix PSC — Comptes doublons par normalisation RPPS
+- **Cause** : PSC production renvoie le format `idNat_PS` = `"8"` + RPPS 11 chiffres (12 chiffres total), alors que PSC BAS renvoyait le RPPS brut (11 chiffres). 5 médecins avaient deux comptes distincts.
+- **Fix** : nouvelle fonction `normaliseRpps()` dans `psc.ts` — si l'identifiant fait 12 chiffres et commence par `"8"`, on retire le préfixe pour obtenir le RPPS standard 11 chiffres.
+- **Fusion des doublons** : SQL exécuté pour transférer évaluations et solutions utilisées des nouveaux comptes vers les anciens, puis suppression des 5 comptes en doublon.
+
+### Restriction PSC — Médecins uniquement
+- Nouvelle fonction `extractCodeProfession()` dans `psc.ts` — lit `SubjectRefPro.exercices[0].codeProfession` du token PSC
+- Callback PSC bloque les connexions dont le code profession est explicitement différent de `"10"` (Médecin) avec redirection vers `/connexion?error=psc_non_medecin`
+- Page `/connexion` : messages d'erreur spécifiques pour chaque code d'erreur PSC (`psc_non_medecin`, `psc_auth_error`, `psc_no_identity`, `psc_create_error`, `psc_session_error`)
+
+---
+
 ## [2026-04-23] — Sécurité crons, sync email PSC, outil test relance
 
 ### Kill-switch emails routiniers (Admin → Emails)
