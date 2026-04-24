@@ -128,6 +128,15 @@ export async function getPscUserInfo(accessToken: string) {
 }
 
 /**
+ * Extrait le code profession depuis les infos utilisateur PSC.
+ * "10" = Médecin dans le référentiel CIOSSanté.
+ */
+export function extractCodeProfession(userInfo: Record<string, unknown>): string | null {
+  const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeProfession?: string }> } | undefined
+  return ref?.exercices?.[0]?.codeProfession ?? null
+}
+
+/**
  * Normalise un identifiant PSC en RPPS 11 chiffres.
  * PSC production renvoie parfois le format idNat_PS = "8" + RPPS 11 chiffres (12 chiffres total).
  */

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
-import { exchangePscCode, getPscUserInfo, extractRpps } from '@/lib/auth/psc'
+import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
 import { resolveSpecialite } from '@/lib/constants/profil'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
@@ -64,10 +64,18 @@ export async function GET(request: Request) {
     const specialiteCode = extractSpecialiteCode(userInfo)
     const specialite = resolveSpecialite(specialiteCode)
     const modeExercice = extractModeExercice(userInfo)
+    const codeProfession = extractCodeProfession(userInfo)
 
     if (!rpps && !sub) {
       console.error('[PSC] ni RPPS ni sub dans userInfo', userInfo)
       return NextResponse.redirect(`${origin}/connexion?error=psc_no_identity`)
+    }
+
+    // Restreindre aux médecins uniquement (code profession "10")
+    // Ne bloquer que si PSC fournit explicitement un code différent de "10"
+    if (codeProfession && codeProfession !== '10') {
+      console.warn('[PSC] profession non médecin refusée:', codeProfession)
+      return NextResponse.redirect(`${origin}/connexion?error=psc_non_medecin`)
     }
 
     const supabaseAdmin = createServiceRoleClient()

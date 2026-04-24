@@ -23,7 +23,16 @@ function ConnexionContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const resetSuccess = searchParams.get('reset') === 'success'
-  const [error, setError] = useState<string | null>(errorParam ? 'Une erreur est survenue lors de la connexion.' : null)
+  const PSC_ERROR_MESSAGES: Record<string, string> = {
+    psc_non_medecin: 'Ce compte Pro Santé Connect n\'est pas celui d\'un médecin. 100 000 Médecins est réservé aux médecins.',
+    psc_auth_error: 'La connexion via Pro Santé Connect a échoué. Veuillez réessayer.',
+    psc_no_identity: 'Impossible d\'identifier votre compte PSC. Veuillez réessayer.',
+    psc_create_error: 'Impossible de créer votre compte. Contactez le support.',
+    psc_session_error: 'Erreur lors de l\'établissement de la session. Veuillez réessayer.',
+  }
+  const [error, setError] = useState<string | null>(
+    errorParam ? (PSC_ERROR_MESSAGES[errorParam] ?? 'Une erreur est survenue lors de la connexion.') : null
+  )
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(resetSuccess ? 'Mot de passe mis à jour. Vous pouvez vous connecter.' : null)
 
