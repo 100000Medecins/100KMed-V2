@@ -128,17 +128,27 @@ export async function getPscUserInfo(accessToken: string) {
 }
 
 /**
+ * Normalise un identifiant PSC en RPPS 11 chiffres.
+ * PSC production renvoie parfois le format idNat_PS = "8" + RPPS 11 chiffres (12 chiffres total).
+ */
+function normaliseRpps(value: string): string {
+  const v = value.trim()
+  if (/^\d{12}$/.test(v) && v.startsWith('8')) return v.slice(1)
+  return v
+}
+
+/**
  * Extrait le RPPS depuis les infos utilisateur PSC.
  */
 export function extractRpps(userInfo: Record<string, unknown>): string | null {
-  if (userInfo.preferred_username) return String(userInfo.preferred_username)
-  if (userInfo.SubjectNameID) return String(userInfo.SubjectNameID)
+  if (userInfo.preferred_username) return normaliseRpps(String(userInfo.preferred_username))
+  if (userInfo.SubjectNameID) return normaliseRpps(String(userInfo.SubjectNameID))
 
   if (Array.isArray(userInfo.otherIds)) {
     const entry = userInfo.otherIds.find(
       (e: { origine?: string }) => e.origine === 'RPPS'
     )
-    if (entry && 'identifiant' in entry) return String(entry.identifiant)
+    if (entry && 'identifiant' in entry) return normaliseRpps(String(entry.identifiant))
   }
 
   return null
