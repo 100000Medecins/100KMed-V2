@@ -28,7 +28,7 @@ export function buildExcuseEmail(body: string, siteUrl?: string): string {
     label: '',
     siteUrl,
     title: 'Toutes nos excuses',
-    subtitle: 'Un lien ne fonctionnait pas dans notre email de ce matin',
+    subtitle: "Un lien ne fonctionnait pas dans l'email que vous avez reçu hier matin",
     body,
     ctaPrimary: {
       label: 'Confirmer mon avis en 1 clic &rarr;',
