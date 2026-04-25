@@ -19,6 +19,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
 - Prévoir une session dédiée avec Claude pour passer point par point
 
+#### Activer le 2FA GitHub
+- Priorité haute suite à la migration hors Synology (tokens sans expiration = risque confirmé)
+- Méthode recommandée : app d'authentification (Authy, Google Authenticator ou Microsoft Authenticator) — **pas SMS** (vulnérable au SIM-swapping)
+- Configurer dans GitHub → Settings → Password and authentication → Two-factor authentication
+
 ### Partenariats contenu
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
@@ -33,6 +38,21 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
+
+### Nettoyage — Post-migration Synology
+
+#### Supprimer les anciens dossiers Frontend-V2-main *(dans 1–2 semaines de stabilité confirmée)*
+- Sur le **desktop** : supprimer `Frontend-V2-main` dans la zone Synology (actuellement conservé en filet de sécurité)
+- Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main` de la tâche de synchro Synology "100000Medecins", sans toucher au reste du dossier "100 000 Médecins"
+- Ne pas supprimer avant d'avoir confirmé que le nouveau setup Git/GitHub tourne sans problème
+
+### Hygiène projet
+
+#### Sortir les fichiers Office du repo Git
+- 5 fichiers binaires traînent dans le repo : `2025-12 Critères de notation IA Scribes v1.2 - test.docx`, `2026 Listing agendas médicaux.xlsx`, `2026-02 - Critères de notation #2.xlsx`, `comparatif_ia_documentaires_2026.xlsx`, `comparatif_ia_scribes_2026.xlsx`
+- **Option A** : déplacer vers le NAS Synology (recommandé — c'est fait pour ça)
+- **Option B** : Git LFS si on veut garder l'historique versionné
+- Note : supprimer les fichiers du working tree ne les efface pas de l'historique git — utiliser `git filter-repo` si nettoyage complet souhaité
 
 ### Bugs à corriger
 
@@ -99,6 +119,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### Efficience du code (rapport Ben)
 - Revoir les points remontés dans la capture de Ben
 - À prioriser selon criticité (perf, bundle size, requêtes redondantes…)
+
+### Mises à jour techniques
+
+#### Mettre à jour Next.js
+- Actuellement en version `14.2.35` — versions récentes disponibles
+- **Ne pas faire pendant un coup de stress** : prévoir une session dédiée (peut casser App Router, configs Tailwind, etc.)
+- Tester sur `dev`, valider en preview Vercel avant de merger sur `main`
+
+#### Régler les vulnérabilités npm (`npm audit`)
+- 26 vulnérabilités : 2 low, 13 moderate, 10 high, 1 critical
+- Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
+- ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
 
 ---
 
