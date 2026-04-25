@@ -48,18 +48,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Hygiène projet
 
-#### Sortir les fichiers Office du repo Git
-- 5 fichiers binaires traînent dans le repo : `2025-12 Critères de notation IA Scribes v1.2 - test.docx`, `2026 Listing agendas médicaux.xlsx`, `2026-02 - Critères de notation #2.xlsx`, `comparatif_ia_documentaires_2026.xlsx`, `comparatif_ia_scribes_2026.xlsx`
-- **Option A** : déplacer vers le NAS Synology (recommandé — c'est fait pour ça)
-- **Option B** : Git LFS si on veut garder l'historique versionné
-- Note : supprimer les fichiers du working tree ne les efface pas de l'historique git — utiliser `git filter-repo` si nettoyage complet souhaité
+#### ~~Sortir les fichiers Office du repo Git~~ ✅ Fait 2026-04-25
 
 ### Bugs à corriger
 
-#### Page /difficileDeChanger — images manquantes à réintégrer
-- Les images de l'article original ne sont pas dans la base (`pages_statiques.contenu` ne contient aucune balise `<img>`)
-- **À faire** : ouvrir la page live dans le navigateur → télécharger chaque image (clic droit → Enregistrer) → uploader dans Supabase Storage → demander à Claude d'injecter les `<img>` avec les URLs Storage dans le contenu HTML
-- Le texte mojibake a été corrigé (SQL fourni en session 2026-04-24) — à confirmer que le SQL a bien été exécuté
+#### ~~Page /difficileDeChanger — images manquantes à réintégrer~~ ✅ Fait 2026-04-25
 
 #### Page solution — cadre note de droite hors du cadre titre
 - Remettre le bloc note (droite) à l'intérieur du cadre du titre sur la page solution
@@ -68,9 +61,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Le breadcrumb n'est pas lisible (contraste texte/fond trop faible)
 - Augmenter le contraste ou changer la couleur du texte
 
-#### Création de compte — email déjà existant en DB
-- Bug confirmé : Supabase en mode "confirm email" ne retourne pas d'erreur pour un email existant (il envoie un mail silencieusement) → l'utilisateur voit "Compte créé !" à tort
-- Fix : vérifier `data.user?.identities?.length === 0` après `supabase.auth.signUp()` dans `AuthProvider.tsx` et retourner un message explicite
+#### ~~Création de compte — email déjà existant en DB~~ ✅ Fait 2026-04-25
 
 #### Note globale évaluations — incohérence
 - Dans les **commentaires utilisateurs** : la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis

@@ -23,6 +23,17 @@
 - Rotation automatique : conservation des 8 derniers dumps
 - Planification via Windows Task Scheduler (hebdomadaire, dimanche 3h)
 
+### Fix — Imports excuseTemplate orphelins (build Vercel cassé)
+- Cause : `excuseTemplate.ts` supprimé mais deux imports restants cassaient le build Vercel
+- `AdminEmailsClient.tsx` : suppression import `buildExcuseEmail`, prévisualisation remplacée par contenu brut
+- `admin/emails/page.tsx` : suppression imports `EXCUSE_DEFAULT_SUJET` / `EXCUSE_DEFAULT_BODY`, valeurs inlinées
+- Correction connexe : virgule traînante dans `vercel.json` rendait le JSON invalide
+
+### Nettoyage — Suppression fichiers Office du repo Git
+- 5 fichiers binaires supprimés : `2025-12 Critères de notation IA Scribes v1.2 - test.docx`, `2026 Listing agendas médicaux.xlsx`, `2026-02 - Critères de notation #2.xlsx`, `comparatif_ia_documentaires_2026.xlsx`, `comparatif_ia_scribes_2026.xlsx`
+- Ces fichiers n'ont pas leur place dans un repo Git (binaires non versionnables)
+- À archiver sur le NAS Synology si besoin de conservation
+
 ### TODO — Mises à jour
 - Marqué terminé : email d'excuse envoyé + code supprimé, Easter egg Konami, PSC BAS → prod
 - Ajout : tableau de bord emails (vue calendrier), notifications études par spécialité, accès éditeur pour toutes les solutions, menu burger mobile, bundle selon méthode Ben, migration dev hors Synology
