@@ -122,3 +122,7 @@ et route vers le bon reseau via un Router avec filtre sur `network`.
 L'authentification SSO via carte CPS est configuree pour l'environnement BAC (test).
 Pour la production : mettre a jour `PSC_CLIENT_ID`, `PSC_CLIENT_SECRET` et `PSC_REDIRECT_URI`
 avec les credentials de l'environnement production ANS.
+
+
+
+<!-- Test migration du 25 avril 2026 -->
