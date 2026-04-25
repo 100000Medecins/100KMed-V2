@@ -41,11 +41,11 @@ Format de présentation :
 
 ### Cas particulier — Fichiers de commandes Claude Code
 
-Si la session ne concerne **que** des fichiers `.claude/commands/*.md` (mise en place de commandes slash), c'est un contexte spécial : la session est de l'outillage, pas du dev applicatif. Dans ce cas :
+Si la session ne concerne **que** des fichiers `.claude/commands/*.md` (mise en place ou ajustement de commandes slash), c'est un contexte spécial : la session est de l'outillage, pas du dev applicatif. Dans ce cas :
 
 - **Saute l'étape 3** (pas de mise à jour CHANGELOG.md — ce n'est pas une feature applicative)
 - **Saute l'étape 4** (pas de mise à jour TODO.md applicative)
-- Va directement à l'étape 5 avec un message de commit du type `chore(claude-code): ajout des commandes /start /end /sync`
+- Va directement à l'étape 5 avec un message de commit du type `chore(claude-code): ...`
 
 ## Étape 3 — Mise à jour du CHANGELOG.md
 
@@ -180,9 +180,9 @@ Lance `git push origin <branche>`. Vérifie le succès dans la sortie.
 - **Non-fast-forward** (la branche distante a avancé) — lance `git pull --rebase` puis re-push. Si conflit, arrête et demande à l'utilisateur de gérer manuellement.
 - **Autre erreur** — affiche l'erreur exacte, demande à l'utilisateur ce qu'il veut faire.
 
-## Étape 7 — Confirmation finale + TODO restante
+## Étape 7 — Confirmation finale + TODO restante détaillée
 
-Termine par un bilan en français, en INCLUANT la TODO restante au format compact :
+Termine par un bilan en français, en INCLUANT la TODO restante au **format détaillé** (1 ligne par item) :
 
 > "✅ **Session clôturée :**
 > - 1 commit poussé sur `origin/dev` : `feat(psc): ...`
@@ -192,21 +192,53 @@ Termine par un bilan en français, en INCLUANT la TODO restante au format compac
 > **🔥 Voici ce qu'il reste à faire la prochaine fois :**
 >
 > 🔥 **IMPORTANT**
-> - Traiter les remarques de Ben (rapport efficience)
-> - Partenariats contenu (Médiia, Whydoc, La rhumatologue)
+> - Traiter les remarques de Ben (rapport efficience du code)
+> - Partenariats contenu (Médiia, La rhumatologue, Whydoc)
 >
-> **Autres sections (résumé)** :
-> - 🐛 Bugs à corriger (4 items)
-> - 🎨 UX / UI (3 items)
-> - 📧 Emails (1 item)
-> - 🔔 Notifications (1 item)
+> **Autres sections :**
+>
+> 🚀 **Déploiement final** (1 item) :
+>   - Activer kill-switch emails routiniers à la mise en prod
+>
+> 🐛 **Bugs à corriger** (5 items) :
+>   - Images manquantes /difficileDeChanger
+>   - Cadre note hors du cadre titre (page solution)
+>   - Fil d'Ariane contraste insuffisant
+>   - Email déjà existant (à confirmer résolu)
+>   - Note globale incohérente
+>
+> 🎨 **UX / UI** (3 items) :
+>   - Alléger le bundle (méthode Ben)
+>   - Améliorer menu burger mobile
+>   - Revoir fond pages solutions + DA générale
+>
+> 📧 **Emails** (1 item) :
+>   - Tableau de bord vue calendrier des envois
+>
+> 🔔 **Notifications** (1 item) :
+>   - Notifications études cliniques par spécialité
+>
+> 📝 **Blog** (1 item) :
+>   - Planification publication article
+>
+> ⚡ **Performance** (1 item) :
+>   - Rapport efficience Ben
+>
+> 💡 **Idées long terme** (6 items) :
+>   - Backups automatiques BDD Supabase
+>   - Thèmes alternatifs (Pinky, Dark)
+>   - Nouvelles catégories (Télétransmission, Téléconsultation, Téléexpertise)
+>   - Refonte avatars utilisateurs
+>   - Obsolescence des notes (pondération temporelle)
+>   - DNS — mise en prod (jour J)
 >
 > Tu peux fermer ton ordinateur. Pour reprendre sur l'autre machine, lance `/start` au prochain démarrage."
 
-### Format de la TODO restante
+### Règles pour le format détaillé de la TODO restante
 
-- **Sections "URGENT" et "IMPORTANT"** : afficher en entier (avec items détaillés)
-- **Autres sections** : résumé compact (juste le compte d'items)
+- **Sections "URGENT" et "IMPORTANT"** : afficher en entier, avec items détaillés
+- **Autres sections** : nombre d'items + liste détaillée, **1 ligne courte par item** (titre court extrait du TODO, max 60-80 caractères)
+- **Pour le titre court** : garde l'essentiel, pas les sous-détails. Si l'item a un titre clair dans le TODO, utilise-le tel quel ou raccourcis-le
 - **Pas de tableaux Markdown** — listes à puces uniquement
 
 ## Règles importantes

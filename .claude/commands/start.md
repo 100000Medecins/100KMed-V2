@@ -77,18 +77,39 @@ Lis le fichier `TODO.md` à la racine du projet.
 
 **N'utilise JAMAIS de tableaux Markdown** (avec `|` et `---`) pour afficher la TODO ou ses sections. Utilise uniquement des listes à puces. Les tableaux se rendent mal et collent les colonnes.
 
-**Pour les sections "URGENT" et "IMPORTANT"** : affiche en entier, avec leurs items détaillés.
+**Pour les sections "URGENT" et "IMPORTANT"** : affiche en entier, avec leurs items détaillés (sous-bullets compris).
 
-**Pour les autres sections** : si la TODO totale fait plus de 100 lignes, résume les autres sections sous forme de liste compacte :
+**Pour les autres sections** : utilise un **format compact mais détaillé** — pour chaque section, indique le nombre d'items ET liste chaque item sur une ligne courte (titre court extrait du TODO, sans les sous-détails). Exemple :
 
 > **Autres sections** :
-> - 🐛 Bugs à corriger (5 items)
-> - 🎨 UX / UI (3 items)
-> - 📧 Emails (1 item)
-> - 🔔 Notifications (1 item)
-> - 📝 Blog (1 item)
-> - ⚡ Performance (1 item)
-> - 💡 Idées long terme (5 items)
+>
+> 🤝 **Partenariats contenu** (1 item) :
+>   - Contacter créateurs de contenu (Médiia, La rhumatologue, Whydoc)
+>
+> 🚀 **Déploiement final** (1 item) :
+>   - Activer kill-switch emails routiniers à la mise en prod
+>
+> 🐛 **Bugs à corriger** (5 items) :
+>   - Images manquantes /difficileDeChanger
+>   - Cadre note hors du cadre titre (page solution)
+>   - Fil d'Ariane contraste insuffisant
+>   - Email déjà existant (à confirmer résolu)
+>   - Note globale incohérente
+>
+> 🎨 **UX / UI** (3 items) :
+>   - Alléger le bundle (méthode Ben)
+>   - Améliorer menu burger mobile
+>   - Revoir fond pages solutions + DA générale
+>
+> 📧 **Emails** (1 item) :
+>   - Tableau de bord vue calendrier des envois
+
+**Règles pour le titre court** :
+- Une ligne par item, **maximum 60-80 caractères**
+- Garde l'essentiel : le quoi, pas le pourquoi/comment (qui sont dans le TODO complet)
+- Si l'item original a un titre clair, utilise-le tel quel ou raccourcis-le
+- Pour les bugs : nom du composant/page + nature du problème
+- Pour les features : verbe d'action + objet
 
 **Marquage visuel** :
 - Tâches non terminées : texte normal
@@ -115,5 +136,5 @@ Termine par : "Sur quoi tu veux travailler aujourd'hui ?"
 - **Aucune action destructive sans confirmation explicite** : pas de `git reset --hard`, pas de `git checkout -- .` sans accord, pas de force-push.
 - **Si Git est dans un état bizarre** (rebase, merge, conflit non résolu), arrête-toi et demande à l'utilisateur de gérer.
 - **Toujours en français**, ton conversationnel.
-- **Sortie compacte** : préfère un résumé clair à un dump brut.
+- **Sortie compacte mais informative** : préfère des résumés clairs aux dumps bruts.
 - **Jamais de tableaux Markdown** pour afficher des données structurées : utilise des listes à puces.
