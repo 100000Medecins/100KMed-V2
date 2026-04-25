@@ -27,6 +27,6 @@
     {
       "path": "/api/cron/rappel-accueil-videos",
       "schedule": "0 8 * * 1"
-    },
+    }
   ]
 }
