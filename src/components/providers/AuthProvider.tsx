@@ -127,6 +127,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (error) return { error: error.message }
 
+    // Supabase ne retourne pas d'erreur si l'email existe déjà (il envoie juste un mail silencieux)
+    // mais l'utilisateur retourné a un tableau identities vide dans ce cas
+    if (data.user?.identities?.length === 0) {
+      return { error: 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.' }
+    }
+
     // Créer le profil public.users immédiatement après l'inscription
     if (data.user) {
       try {

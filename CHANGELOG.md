@@ -5,6 +5,30 @@
 
 ---
 
+## [2026-04-25] — Nettoyage code excuse, fix inscription, backup BDD, TODO
+
+### Fix — Inscription avec email déjà existant
+- `AuthProvider.tsx` : ajout d'un contrôle `data.user?.identities?.length === 0` après `supabase.auth.signUp()` — Supabase ne retourne pas d'erreur pour un email existant en mode "confirm email", mais l'utilisateur retourné a un tableau `identities` vide. L'utilisateur voit désormais un message explicite au lieu de "Compte créé !".
+
+### Nettoyage — Code email d'excuse (post-envoi)
+- Suppression des routes API : `send-excuse-relance`, `programmer-excuse-relance`, `envoyer-excuse-programmee`
+- Suppression de `excuseTemplate.ts`
+- Retrait de l'entrée cron `envoyer-excuse-programmee` dans `vercel.json`
+- Le bloc UI était déjà absent de `AdminEmailsClient.tsx`
+
+### Infrastructure — Script backup Supabase automatisé
+- Script PowerShell `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` créé
+- Connexion via Session Pooler (`aws-1-eu-west-1.pooler.supabase.com:5432`)
+- Format : dump custom compressé (`-Fc`), schéma `public` uniquement
+- Rotation automatique : conservation des 8 derniers dumps
+- Planification via Windows Task Scheduler (hebdomadaire, dimanche 3h)
+
+### TODO — Mises à jour
+- Marqué terminé : email d'excuse envoyé + code supprimé, Easter egg Konami, PSC BAS → prod
+- Ajout : tableau de bord emails (vue calendrier), notifications études par spécialité, accès éditeur pour toutes les solutions, menu burger mobile, bundle selon méthode Ben, migration dev hors Synology
+
+---
+
 ## [2026-04-24] — Audit base de données, intégrité PSC, admin études cliniques
 
 ### Admin — Création d'études cliniques

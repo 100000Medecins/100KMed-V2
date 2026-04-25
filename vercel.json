@@ -28,9 +28,5 @@
       "path": "/api/cron/rappel-accueil-videos",
       "schedule": "0 8 * * 1"
     },
-    {
-      "path": "/api/cron/envoyer-excuse-programmee",
-      "schedule": "0 8 * * *"
-    }
   ]
 }

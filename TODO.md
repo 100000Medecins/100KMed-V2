@@ -6,30 +6,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### URGENT — À faire avant lancement
+### ~~URGENT — Relance cassée 23/04/2026~~ ✅ Traité 2026-04-25
+- Email d'excuse envoyé aux ~300 utilisateurs ✅
+- `last_relance_sent_at` réinitialisé ✅
+- Code excuse supprimé (API routes, excuseTemplate, vercel.json, AdminEmailsClient) ✅
+- Clés `excuse_*` dans `site_config` Supabase — **à nettoyer manuellement via Supabase**
 
-#### Renvoyer un email d'excuse aux ~300 utilisateurs ayant reçu la relance cassée (23/04/2026)
-- Les emails envoyés ce matin depuis dev.100000medecins.org avaient des liens pointant vers l'ancien site (404)
-- **Étape 1** : identifier les destinataires via Supabase SQL Editor :
-  ```sql
-  SELECT u.email, u.nom, u.prenom, s.nom AS solution, e.last_relance_sent_at
-  FROM evaluations e
-  JOIN users u ON u.id = e.user_id
-  JOIN solutions s ON s.id = e.solution_id
-  WHERE e.last_relance_sent_at >= '2026-04-23 00:00:00'
-    AND e.last_relance_sent_at <  '2026-04-24 00:00:00'
-  ORDER BY e.last_relance_sent_at;
-  ```
-- **Étape 2** : envoyer un email d'excuse avec le bon lien 1-clic régénéré pour chaque utilisateur (Admin → Emails → Encart excuse → "Envoyer test" d'abord, puis "Envoyer à X médecins")
-- Penser à réinitialiser `last_relance_sent_at` pour ces évaluations APRÈS le renvoi correct (ou les traiter comme "jamais relancés")
+### IMPORTANT
 
-#### ⚠️ Supprimer le code email d'excuse APRÈS envoi *(une fois les emails partis)*
-- Supprimer le bloc de l'encart excuse dans `AdminEmailsClient.tsx` (lignes `{excuseCount > 0 && !excuseDone && ...}`)
-- Supprimer les fichiers : `src/app/api/admin/send-excuse-relance/`, `src/app/api/admin/programmer-excuse-relance/`, `src/app/api/cron/envoyer-excuse-programmee/`
-- Nettoyer `excuseTemplate.ts` (garder ou supprimer selon si réutilisé)
-- Retirer l'entrée cron `envoyer-excuse-programmee` de `vercel.json`
-- Retirer les props `excuseCount`, `excuseDefaultSujet`, `excuseDefaultHtml`, `excuseScheduledAt` de `AdminEmailsPage` et `AdminEmailsClient`
-- Nettoyer les clés `excuse_*` dans `site_config` via Supabase
+#### Traiter les remarques de Ben (rapport efficience du code)
+- Revoir tous les points remontés dans la capture de Ben
+- À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
+- Prévoir une session dédiée avec Claude pour passer point par point
 
 ### Partenariats contenu
 
@@ -48,6 +36,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Bugs à corriger
 
+#### Page /difficileDeChanger — images manquantes à réintégrer
+- Les images de l'article original ne sont pas dans la base (`pages_statiques.contenu` ne contient aucune balise `<img>`)
+- **À faire** : ouvrir la page live dans le navigateur → télécharger chaque image (clic droit → Enregistrer) → uploader dans Supabase Storage → demander à Claude d'injecter les `<img>` avec les URLs Storage dans le contenu HTML
+- Le texte mojibake a été corrigé (SQL fourni en session 2026-04-24) — à confirmer que le SQL a bien été exécuté
+
 #### Page solution — cadre note de droite hors du cadre titre
 - Remettre le bloc note (droite) à l'intérieur du cadre du titre sur la page solution
 
@@ -55,33 +48,45 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Le breadcrumb n'est pas lisible (contraste texte/fond trop faible)
 - Augmenter le contraste ou changer la couleur du texte
 
-#### ~~Login PSC — utilisateur orphelin (psc_create_error)~~ ✅ Corrigé 2026-04-23
-- Cas : `auth.users` contient le compte PSC mais `public.users` est absent (callback précédent avorté)
-- `createUser` échouait → erreur fatale. Fix : si `createUser` échoue, on appelle `generateLink` pour récupérer l'UUID auth existant et on recrée le profil public manquant.
-
 #### Création de compte — email déjà existant en DB
-- Vérifier que le formulaire d'inscription affiche bien un message d'erreur (pas de spinner bloquant) quand l'email est déjà enregistré
+- Bug confirmé : Supabase en mode "confirm email" ne retourne pas d'erreur pour un email existant (il envoie un mail silencieusement) → l'utilisateur voit "Compte créé !" à tort
+- Fix : vérifier `data.user?.identities?.length === 0` après `supabase.auth.signUp()` dans `AuthProvider.tsx` et retourner un message explicite
 
-#### Note globale évaluations — incohérence avec la moyenne des sous-critères
-- Sur les pages solutions, la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis par l'utilisateur
-- Vérifier le calcul côté DB ou côté affichage et corriger la formule
+#### Note globale évaluations — incohérence
+- Dans les **commentaires utilisateurs** : la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis
+- Vérifier aussi la **note globale** sur les pages solutions (calcul côté DB ou affichage)
 
-#### Menu éditeur — page admin utilisateurs incomplète
-- Toutes les solutions ne s'affichent pas dans le menu éditeur sur la page admin utilisateur
-- Pour une solution sans page éditeur existante : créer la page éditeur associée, la rendre visible dans l'admin mais invisible publiquement par défaut
+#### Espace éditeur — accès limité aux éditeurs existants
+- Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
+- C'est normal : le menu ne montre que les éditeurs enregistrés
+- **À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions
 
 ### UX / UI
 
 #### Alléger les pages du site (bundle / code inspection)
-- Beaucoup de code visible à l'inspection navigateur — analyser le bundle size
+- Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
 - Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
 
 #### Améliorer le menu burger en mode mobile
-- Revoir l'ergonomie et le design du menu hamburger sur mobile
+- En mode ouvert : mal visible, trop grand — revoir l'ergonomie et le design
 
 #### Fond des pages solutions + DA générale
 - Revoir le fond des pages solutions (couleur, texture, gradient…)
 - Occasion de revoir la direction artistique globale du site
+
+### Emails — tableau de bord
+
+#### Tableau de bord des envois de mails — vue calendrier
+- Créer une vue plus visuelle dans Admin → Emails : calendrier des envois passés et programmés
+- Afficher : type d'email, nombre de destinataires, statut (envoyé / programmé / échoué), date
+- Vue calendrier mensuelle + liste chronologique en dessous
+
+### Notifications
+
+#### Préférences de notification — études cliniques par spécialité
+- Notifier un utilisateur uniquement quand une nouvelle étude clinique correspond à sa spécialité
+- Si une étude ne correspond pas à sa spécialité : l'afficher en grisé dans la liste, avec un message explicatif ("Cette étude ne concerne pas votre spécialité") — mais rester cliquable
+- À prévoir : champ `specialites_cibles` sur les études (ou tag spécialité) + logique de matching côté notification
 
 ### Blog
 
@@ -97,9 +102,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
-### Migrer le développement en local (des deux côtés)
+### Migrer le développement en local — hors Synology (des deux côtés)
 - Actuellement le projet tourne sur le Synology (NAS) pour le dev
-- Migrer l'environnement de développement **Frontend** et **Backend** sur les machines locales (portable/fixe)
+- Migrer l'environnement de développement **Frontend** et **Backend** sur les machines locales (portable/fixe), hors NAS
 - Avantage : meilleure vitesse, pas dépendant du réseau local/VPN, plus simple à déboguer
 - Vérifier les variables d'environnement, les ports, les certificats SSL locaux si nécessaire
 
@@ -126,16 +131,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
 
-### Easter egg — Konami code + mini-jeu arcade
-- Détecter la séquence Konami (↑↑↓↓←→←→BA) globalement sur le site
-- Ouvrir une modal/overlay avec un petit jeu d'arcade rétro dans le navigateur
-- Dans l'esprit du site : thème médical / pixel art
+### ~~Easter egg — Konami code + mini-jeu arcade~~ ✅ Fait 2026-04-25
 
 ### ~~PSC prod sur dev.100000medecins.org (test temporaire)~~ ✅ Fait 2026-04-23
 - Redirect URI `https://dev.100000medecins.org/api/auth/psc-callback` configurée dans l'application PSC production ANS
 
-### PSC production + DNS mise en prod *(à faire ensemble)*
-- Migrer ProSanté Connect de l'environnement BAS vers la production ANS (checklist dans `memory/project_psc_prod_deployment.md`)
+### ~~PSC BAS → production ANS~~ ✅ Effectif au lancement
+- Le relay `/connexionPsc` est déjà en place — aucune action PSC le jour J
+- Le jour J = juste le changement DNS (voir ci-dessous)
+- Nettoyage optionnel post-lancement : supprimer `NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI`, demander à PSC de changer la redirect URI
+
+### DNS — mise en prod *(jour J uniquement)*
 - `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)
 - `www` : remplacer CNAME `webacc8.sd6.ghst.net` par `cname.vercel-dns.com.`
 - Supprimer les 4 CNAME SSL sectigo/comodoca (certificats ancien hébergeur)
