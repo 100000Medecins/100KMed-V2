@@ -523,12 +523,14 @@ export default function NoterPage({ params }: PageProps) {
     const supabase = createClient()
 
     // Charger la solution (accessible sans auth)
-    supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = supabase as any
+    s
       .from('solutions')
       .select('id, nom, slug, logo_url, categorie:categories(id, slug)')
       .eq('slug', solutionSlug)
       .single()
-      .then(({ data: sol }) => {
+      .then(({ data: sol }: { data: any }) => {
         if (!sol) {
           setLoading(false)
           return
@@ -541,13 +543,13 @@ export default function NoterPage({ params }: PageProps) {
         }
 
         // Charger évaluation existante (uniquement si connecté)
-        supabase
+        s
           .from('evaluations')
           .select('scores')
           .eq('solution_id', sol.id)
           .eq('user_id', user.id)
           .limit(1)
-          .then(({ data: evalData }) => {
+          .then(({ data: evalData }: { data: any }) => {
             const existing = evalData?.[0]?.scores as Record<string, any> | null
             if (existing) {
               const restoredScores: Record<string, number | null> = {}

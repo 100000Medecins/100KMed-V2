@@ -24,14 +24,16 @@ function ComparerContent() {
     }
 
     const supabase = createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = supabase as any
 
     Promise.all([
-      supabase
+      s
         .from('solutions')
         .select('*, editeur:editeurs(*), categorie:categories(*)')
         .in('id', ids),
       ...ids.map((id) =>
-        supabase
+        s
           .from('resultats')
           .select('*, critere:criteres(*)')
           .eq('solution_id', id)

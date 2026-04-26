@@ -5,7 +5,40 @@
 
 ---
 
-## [2026-04-26] — Phase 2 corrections système de notation
+## [2026-04-26] — Phase 2 corrections système de notation + identité RPPS PSC complète
+
+### Fix TypeScript — Correction des erreurs de types (0 erreur npx tsc)
+- 25+ fichiers : casts `(supabase as any)` pour les tables absentes du type auto-généré (`acronymes`, `actualites`, `solutions_favorites`, `etudes_cliniques`…)
+- `startTransition` : wrapping `async () => { await fn() }` pour respecter la signature `void` attendue par React
+- `mes-favoris/page.tsx`, `mes-preferences/page.tsx` : `.then(({ data }: { data: any })` pour éviter le `any` implicite sur les PromiseLike Supabase
+- `profil/page.tsx` : réécriture de l'`useEffect` en `async/await` (`.catch()` inexistant sur `PromiseLike`)
+- `client.ts` : `fn: () => Promise<any>` pour `LockFunc` (générique non assignable sinon)
+- `KonamiGame.tsx` : cast `(gs.phase as Phase)` pour contourner le narrowing TypeScript
+
+### Feature PSC — Règles de connexion et identité RPPS clarifiées
+
+#### Dogme identité
+- Un compte = un RPPS. Le RPPS est l'identifiant médical unique, défini lors de la première connexion PSC réussie.
+- Avant connexion PSC : toutes les évaluations soumises par un compte email/mdp ont `statut = 'en_attente_psc'` → non visibles publiquement.
+- Après connexion PSC : le RPPS est lié au compte, toutes les évals en attente passent à `statut = 'publiee'` → visibles.
+
+#### 4 cas de figure couverts
+1. **Connexion PSC classique** (nouveau compte ou reconnexion) : flow inchangé — lookup par RPPS puis email, création si absent.
+2. **Compte email/mdp sans PSC** : banner bleu dans `/mon-compte/profil` expliquant l'impact sur la visibilité des évaluations, bouton "Connexion via PSC" passant le `userId` dans le state.
+3. **Compte email/mdp + PSC (même RPPS)** : mode association — `psc-callback` reçoit `currentUserId` dans le state, associe le RPPS, publie les évals en attente, rafraîchit la session. Redirige vers `/mon-compte/profil?psc=associe`.
+4. **Compte email/mdp + PSC (RPPS déjà sur un autre compte)** : détection conflit dans `psc-callback`, génération d'un token HMAC signé, redirection vers `/fusionner-compte?token=...`. L'utilisateur choisit l'email à conserver. Toutes les données (évals, favoris, solutions_utilisees) sont migrées vers le compte conservé, l'autre est supprimé.
+
+#### Fichiers créés
+- `src/lib/auth/fusionToken.ts` : `generateFusionToken` / `verifyFusionToken` — HMAC-SHA256, expiry 15 min, encodé en base64url pour passer en URL
+- `src/lib/actions/merge.ts` : `getFusionDetails` (charge les 2 comptes pour l'UI) + `mergeAccounts` (migration, suppression compte source, magic link pour compte conservé)
+- `src/app/fusionner-compte/page.tsx` : page de fusion avec sélecteur d'email, confirmation, redirection automatique via `/auth/psc-session`
+
+#### Fichiers modifiés
+- `src/lib/auth/psc.ts` : `connectWithPsc(options?)` — state 3-part `stateUuid|userId|verificationToken` (compatibilité descendante avec l'ancien format 2-part `stateUuid|token` de `psc-initier`)
+- `src/app/api/auth/psc-callback/route.ts` : parsing state 3-part, branche "mode association" avant la recherche standard, publie les évals `en_attente_psc` du compte courant après association
+- `src/lib/actions/evaluation.ts` : `finalizeEvaluation` et `submitEvaluation` vérifient `users.rpps` → `statut = 'publiee'` si RPPS présent, `'en_attente_psc'` sinon. Le lookup utilise le service role pour bypasser le RLS.
+- `src/app/mon-compte/mes-evaluations/page.tsx` : banner orange + bouton PSC si l'utilisateur a des évals `en_attente_psc` et aucun RPPS (chargé en parallèle dans le `Promise.all`)
+- `src/app/mon-compte/profil/page.tsx` : banner bleu si `!isFromPsc`, messages de succès `?psc=associe` et `?fusion=ok` lus depuis les searchParams
 
 ### Fix — Unification des sources de notes utilisateurs
 - `computeEvalGroupAvg` : suppression de la détection Firebase/Supabase par présence de clés `detail_*` — les 47 évaluations sans sous-critères n'étaient plus divisées par 2 par erreur
@@ -24,6 +57,7 @@
 
 ### TODO — Mises à jour
 - Marqués terminés : items Phase 2 dans "Consolidation BDD"
+- Ajout : "Affichage des notes — vérifier comportement par statut" (tester en prod que `statut = null` = publié, `en_attente_psc` = masqué)
 
 ---
 

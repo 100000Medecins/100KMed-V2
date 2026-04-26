@@ -15,12 +15,13 @@ export default function MesFavorisPage() {
   useEffect(() => {
     if (!user) return
     const supabase = createClient()
-    supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(supabase as any)
       .from('solutions_favorites')
       .select('*, solution:solutions(*, editeur:editeurs(*), categorie:categories(*))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: any }) => {
         setFavoris(data || [])
         setLoading(false)
       })

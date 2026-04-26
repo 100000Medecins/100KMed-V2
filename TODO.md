@@ -89,6 +89,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### ~~Note globale évaluations — incohérence~~ ✅ Fait 2026-04-26
 
+#### Affichage des notes — vérifier le comportement par statut
+- Tester en prod que les notes email/mdp (statut null ou publiee) s'affichent bien sur les pages solution
+- Tester que les notes statut='en_attente_psc' ne s'affichent PAS publiquement
+- Vérifier la cohérence entre ce que l'utilisateur voit dans "Mes évaluations" et ce qui est affiché sur les pages solution
+- Si des anciennes notes ont statut=null et ne devraient pas être affichées, corriger en base
+
 #### Espace éditeur — accès limité aux éditeurs existants
 - Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
 - C'est normal : le menu ne montre que les éditeurs enregistrés

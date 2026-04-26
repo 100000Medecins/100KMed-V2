@@ -17,7 +17,8 @@ export function generateMetadata({ searchParams }: PageProps): Metadata {
 }
 
 async function searchAll(query: string) {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const [solutionsRes, articlesRes, categoriesRes] = await Promise.all([
     supabase.rpc('search_solutions', { query, max_results: 20 }),
     supabase.rpc('search_articles', { query, max_results: 10 }),

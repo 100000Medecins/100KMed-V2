@@ -1174,7 +1174,8 @@ export async function deleteVideo(id: string) {
 
 export async function createAcronyme(formData: FormData) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').insert({
     id: randomUUID(),
     sigle: (formData.get('sigle') as string).trim().toUpperCase(),
@@ -1189,7 +1190,8 @@ export async function createAcronyme(formData: FormData) {
 
 export async function updateAcronyme(id: string, formData: FormData) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').update({
     sigle: (formData.get('sigle') as string).trim().toUpperCase(),
     definition: (formData.get('definition') as string).trim(),
@@ -1203,7 +1205,8 @@ export async function updateAcronyme(id: string, formData: FormData) {
 
 export async function deleteAcronyme(id: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   await supabase.from('acronymes').delete().eq('id', id)
   revalidatePath('/admin/acronymes')
   revalidatePath('/glossaire')
@@ -1214,7 +1217,8 @@ export async function deleteAcronyme(id: string) {
 // ────────────────────────────────────────────
 
 export async function suggestAcronyme(formData: FormData) {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const sigle = (formData.get('sigle') as string)?.trim()
   const definition = (formData.get('definition') as string)?.trim()
   const email = (formData.get('email') as string)?.trim() || null
@@ -1230,7 +1234,8 @@ export async function approveSuggestion(id: string, payload: {
   description: string | null
 }) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').insert({
     id: randomUUID(),
     sigle: payload.sigle.trim(),
@@ -1246,7 +1251,8 @@ export async function approveSuggestion(id: string, payload: {
 
 export async function rejectSuggestion(id: string) {
   await assertAdmin()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   await supabase.from('suggestions_acronymes').delete().eq('id', id)
   revalidatePath('/admin/acronymes')
 }

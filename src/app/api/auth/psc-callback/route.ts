@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
+import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { resolveSpecialite } from '@/lib/constants/profil'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
@@ -29,13 +30,24 @@ export async function GET(request: Request) {
   const error = searchParams.get('error')
   const state = searchParams.get('state')
 
-  // Extraire le token de vérification depuis le state.
-  // Format possible : "stateUuid|token" ou "dev_stateUuid|token" (mode relay)
-  // On strip le préfixe "dev_" avant de parser.
+  // Parser le state.
+  // Nouveau format (3 parties) : "[dev_]stateUuid|userId|verificationToken"  — '_' si absent
+  // Ancien format (2 parties) : "[dev_]stateUuid|verificationToken"
   let verificationToken: string | null = null
+  let currentUserId: string | null = null
   if (state) {
     const stateClean = state.startsWith('dev_') ? state.substring(4) : state
-    if (stateClean.includes('|')) verificationToken = stateClean.split('|')[1] || null
+    const parts = stateClean.split('|')
+    if (parts.length >= 3) {
+      // Nouveau format 3-part
+      const userIdPart = parts[1]
+      const tokenPart = parts[2]
+      if (userIdPart && userIdPart !== '_') currentUserId = userIdPart
+      if (tokenPart && tokenPart !== '_') verificationToken = tokenPart
+    } else if (parts.length === 2) {
+      // Ancien format 2-part : stateUuid|verificationToken
+      verificationToken = parts[1] || null
+    }
   }
 
   if (error || !code) {
@@ -81,7 +93,65 @@ export async function GET(request: Request) {
     const supabaseAdmin = createServiceRoleClient()
     const userEmail = email || `psc-${rpps || sub}@psc.sante.fr`
 
-    // 3. Chercher un utilisateur existant par RPPS
+    // 3a. MODE ASSOCIATION : l'utilisateur était déjà connecté en email/mdp et a cliqué
+    //     sur le bouton PSC depuis son compte. currentUserId est son UUID session actuel.
+    if (currentUserId) {
+      // Vérifier si ce RPPS appartient déjà à un autre compte
+      if (rpps) {
+        const { data: rppsProfile } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('rpps', rpps)
+          .single()
+
+        if (rppsProfile && rppsProfile.id !== currentUserId) {
+          // FUSION : deux comptes distincts pour le même RPPS → rediriger
+          const fusionToken = generateFusionToken(currentUserId, rppsProfile.id)
+          return NextResponse.redirect(
+            `${origin}/fusionner-compte?token=${encodeURIComponent(fusionToken)}`
+          )
+        }
+      }
+
+      // Pas de conflit : associer le RPPS + données PSC au compte existant
+      const profileUpdates: Record<string, unknown> = {}
+      if (rpps) profileUpdates.rpps = rpps
+      if (nom) profileUpdates.nom = nom
+      if (prenom) profileUpdates.prenom = prenom
+      if (specialite) profileUpdates.specialite = specialite
+      if (modeExercice) profileUpdates.mode_exercice = modeExercice
+      if (Object.keys(profileUpdates).length > 0) {
+        await supabaseAdmin.from('users').update(profileUpdates).eq('id', currentUserId)
+      }
+      await supabaseAdmin.auth.admin.updateUserById(currentUserId, {
+        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
+      })
+
+      // Publier les évaluations en attente de PSC pour cet utilisateur
+      await supabaseAdmin
+        .from('evaluations')
+        .update({ statut: 'publiee' })
+        .eq('user_id', currentUserId)
+        .eq('statut', 'en_attente_psc')
+
+      // Générer un magic link pour rafraîchir la session avec le profil mis à jour
+      const { data: keepProfile } = await supabaseAdmin
+        .from('users').select('email').eq('id', currentUserId).single()
+      const keepEmail = keepProfile?.email || userEmail
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: keepEmail,
+      })
+      if (linkError || !linkData) {
+        return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
+      }
+      const assocTokenHash = linkData.properties.hashed_token
+      return NextResponse.redirect(
+        `${origin}/auth/psc-session?token=${assocTokenHash}&next=${encodeURIComponent('/mon-compte/profil?psc=associe')}`
+      )
+    }
+
+    // 3b. MODE STANDARD : connexion PSC classique (nouveau compte ou reconnexion)
     let userId: string | null = null
     let currentPublicEmail: string | null = null
 

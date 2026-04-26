@@ -5,7 +5,8 @@ export const revalidate = 3600
 
 export async function GET() {
   const supabase = createServiceRoleClient()
-  const { data } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
     .from('acronymes')
     .select('sigle, definition, lien')
     .order('sigle')

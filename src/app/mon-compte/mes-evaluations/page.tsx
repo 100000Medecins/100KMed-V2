@@ -8,7 +8,8 @@ import { reconfirmerEvaluation } from '@/lib/actions/evaluation'
 import Button from '@/components/ui/Button'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Plus, Pencil, Trash2, CheckCircle, RefreshCw, MessageSquare } from 'lucide-react'
+import { Plus, Pencil, Trash2, CheckCircle, RefreshCw, MessageSquare, AlertTriangle } from 'lucide-react'
+import { connectWithPsc } from '@/lib/auth/psc'
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000
 
@@ -29,6 +30,7 @@ export default function MesEvaluationsPage() {
   const [completionMap, setCompletionMap] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [confirmedId, setConfirmedId] = useState<string | null>(null)
+  const [showPscBanner, setShowPscBanner] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -36,18 +38,21 @@ export default function MesEvaluationsPage() {
     if (!user) { setLoading(false); return }
     const supabase = createClient()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = supabase as any
     Promise.all([
-      supabase
+      s
         .from('solutions_utilisees')
         .select('*, solution:solutions(*, editeur:editeurs(*), categorie:categories(*))')
         .eq('user_id', user.id)
         .neq('statut_evaluation', 'ancienne'),
-      supabase
+      s
         .from('evaluations')
-        .select('solution_id, last_date_note')
+        .select('solution_id, last_date_note, statut')
         .eq('user_id', user.id),
       getEvaluationCompletionMap(user.id),
-    ]).then(([{ data: sus }, { data: evals }, complMap]) => {
+      s.from('users').select('rpps').eq('id', user.id).single(),
+    ]).then(([{ data: sus }, { data: evals }, complMap, { data: profil }]: [any, any, any, any]) => {
       setSolutions(sus || [])
 
       const dateMap: Record<string, string | null> = {}
@@ -57,9 +62,14 @@ export default function MesEvaluationsPage() {
 
       setLastDates(dateMap)
       setCompletionMap(complMap)
+
+      const hasRpps = !!(profil?.rpps)
+      const hasPending = (evals || []).some((ev: any) => ev.statut === 'en_attente_psc')
+      setShowPscBanner(!hasRpps && hasPending)
+
       setLoading(false)
     }).catch(() => setLoading(false))
-  }, [user, authLoading])
+  }, [user?.id, authLoading])
 
   function handleReconfirmer(su: any) {
     startTransition(async () => {
@@ -86,6 +96,25 @@ export default function MesEvaluationsPage() {
       {lienErreur && (
         <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-sm">
           Lien invalide ou expiré. Connectez-vous pour revalider votre avis manuellement.
+        </div>
+      )}
+
+      {showPscBanner && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-4 mb-4">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-900 text-sm">Vos évaluations sont en attente de validation</p>
+            <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+              Une ou plusieurs de vos notes ne sont pas encore publiées car votre identité médicale n&apos;a pas été vérifiée. Connectez-vous via Pro Santé Connect pour les valider et les rendre visibles sur la plateforme.
+            </p>
+            <button
+              type="button"
+              onClick={() => connectWithPsc({ userId: user?.id })}
+              className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded-xl transition-colors"
+            >
+              Valider via Pro Santé Connect
+            </button>
+          </div>
         </div>
       )}
 

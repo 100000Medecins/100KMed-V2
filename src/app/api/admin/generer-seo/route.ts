@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       .select('nom_court, nom_capital')
       .in('id', tagIds)
     tagNames = (tagsData || [])
-      .map((t) => t.nom_capital || t.nom_court)
+      .map((t: any) => t.nom_capital || t.nom_court)
       .filter(Boolean) as string[]
   }
 

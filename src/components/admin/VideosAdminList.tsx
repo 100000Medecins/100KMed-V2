@@ -83,7 +83,7 @@ function ToggleStatut({ id, statut }: { id: string; statut: string | null }) {
   return (
     <button
       disabled={isPending}
-      onClick={() => startTransition(() => toggleVideoStatut(id, published ? 'brouillon' : 'publie'))}
+      onClick={() => startTransition(async () => { await toggleVideoStatut(id, published ? 'brouillon' : 'publie') })}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${published ? 'bg-green-400' : 'bg-gray-200'}`}
     >
       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${published ? 'translate-x-4' : 'translate-x-1'}`} />
@@ -333,7 +333,7 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
     setNewRubrique('')
     const tempId = 'tmp-' + Date.now()
     setItems(prev => [...prev, { kind: 'rubrique', id: tempId, nom, ordre: prev.filter(i => i.kind === 'rubrique').length }])
-    startTransition(() => createVideoRubrique(nom))
+    startTransition(async () => { await createVideoRubrique(nom) })
   }
 
   function handleDeleteRubrique(id: string) {

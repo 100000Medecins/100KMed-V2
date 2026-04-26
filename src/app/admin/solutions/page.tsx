@@ -57,7 +57,7 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Table + recherche */}
-      <AdminSolutionsTable solutions={filtered} />
+      <AdminSolutionsTable solutions={filtered as any} />
     </div>
   )
 }

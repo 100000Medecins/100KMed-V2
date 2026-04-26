@@ -40,7 +40,8 @@ async function assertDmhRole() {
  */
 export async function getEtudesAdmin(): Promise<EtudeClinique[]> {
   await assertDmhRole()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const { data } = await supabase
     .from('etudes_cliniques')
     .select('*')
@@ -52,7 +53,8 @@ export async function getEtudesAdmin(): Promise<EtudeClinique[]> {
  * Études actives (filtrées par date) — pour les utilisateurs opt-in.
  */
 export async function getEtudesActives(): Promise<EtudeClinique[]> {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const today = new Date().toISOString().slice(0, 10)
   const { data } = await supabase
     .from('etudes_cliniques')
@@ -74,7 +76,8 @@ function normalise(row: any): EtudeClinique {
 
 export async function createEtudeClinique(formData: FormData) {
   const user = await assertDmhRole()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
 
   const images = JSON.parse((formData.get('images') as string) || '[]')
 
@@ -94,7 +97,8 @@ export async function createEtudeClinique(formData: FormData) {
 
 export async function updateEtudeClinique(id: string, formData: FormData) {
   await assertDmhRole()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
 
   const images = JSON.parse((formData.get('images') as string) || '[]')
 
@@ -114,7 +118,8 @@ export async function updateEtudeClinique(id: string, formData: FormData) {
 
 export async function deleteEtudeClinique(id: string) {
   await assertDmhRole()
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   await supabase.from('etudes_cliniques').delete().eq('id', id)
   revalidatePath('/mon-compte/etudes-cliniques')
   revalidatePath('/mon-compte/etudes-cliniques')
@@ -126,7 +131,8 @@ export async function deleteEtudeClinique(id: string) {
  * Toutes les études cliniques — pour la page admin /admin/questionnaires-these.
  */
 export async function getEtudesCliniquesSuperAdmin(): Promise<EtudeClinique[]> {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const { data } = await supabase
     .from('etudes_cliniques')
     .select('*')
@@ -138,7 +144,8 @@ export async function getEtudesCliniquesSuperAdmin(): Promise<EtudeClinique[]> {
  * Crée une étude clinique — admin uniquement.
  */
 export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ error: string | null }> {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const images = JSON.parse((formData.get('images') as string) || '[]')
   const { error } = await supabase.from('etudes_cliniques').insert({
     titre:       formData.get('titre') as string,
@@ -159,7 +166,8 @@ export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ er
  * Met à jour une étude clinique — admin uniquement.
  */
 export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): Promise<{ error: string | null }> {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const images = JSON.parse((formData.get('images') as string) || '[]')
   const { error } = await supabase.from('etudes_cliniques').update({
     titre:       formData.get('titre') as string,
@@ -181,7 +189,8 @@ export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): 
  * Supprime une étude clinique — admin uniquement.
  */
 export async function deleteEtudeCliniqueAdmin(id: string): Promise<{ error: string | null }> {
-  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('etudes_cliniques').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/questionnaires-these')

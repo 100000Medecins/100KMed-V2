@@ -274,7 +274,7 @@ export default function KonamiGame() {
         }
         return b.y < CH
       })
-      if (hitPlayer && gs.phase !== 'dead') { gs.ebs = []; gs.pb = null }
+      if (hitPlayer && (gs.phase as Phase) !== 'dead') { gs.ebs = []; gs.pb = null }
 
       gs.boom = gs.boom.filter(f => { f.t--; return f.t > 0 })
     }

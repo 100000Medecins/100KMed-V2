@@ -7,11 +7,13 @@ export async function GET(request: NextRequest) {
 
   const supabase = createServiceRoleClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any
   const [solutionsRes, articlesRes, categoriesRes, acronymesRes] = await Promise.all([
-    supabase.rpc('search_solutions', { query: q, max_results: 6 }),
-    supabase.rpc('search_articles', { query: q, max_results: 4 }),
-    supabase.rpc('search_categories', { query: q, max_results: 3 }),
-    supabase
+    s.rpc('search_solutions', { query: q, max_results: 6 }),
+    s.rpc('search_articles', { query: q, max_results: 4 }),
+    s.rpc('search_categories', { query: q, max_results: 3 }),
+    s
       .from('acronymes')
       .select('sigle, definition')
       .or(`sigle.ilike.%${q}%,definition.ilike.%${q}%`)

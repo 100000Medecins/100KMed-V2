@@ -37,12 +37,13 @@ export default function ChoisirSolutionPage() {
     if (authLoading) return
 
     const supabase = createClient()
-    supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(supabase as any)
       .from('solutions')
       .select('id, nom, slug, logo_url, categorie:categories(slug, nom, icon, image_url)')
       .eq('actif', true)
       .order('nom', { ascending: true })
-      .then(({ data }) => {
+      .then(({ data }: { data: any }) => {
         setSolutions((data as unknown as SolutionItem[]) || [])
         setLoading(false)
       })
