@@ -14,6 +14,37 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### IMPORTANT
 
+#### Consolidation base de données — héritage Firebase
+
+> ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
+
+##### Étape 2 — Simplifier `computeEvalGroupAvg` *(code uniquement)*
+- Supprimer la détection de format Firebase/Supabase (devenue inutile — tous les avis sont désormais 0-5)
+- Lire directement les 5 clés principales (`interface`, `fonctionnalites`, `fiabilite`, `editeur`, `qualite_prix`)
+- Fichier : `src/lib/db/evaluations.ts`
+
+##### Étape 3 — Unifier la source de note partout *(code uniquement)*
+- **Le bug** : homepage = 4.0, listing = 3.7, détail = 3.9 pour la même solution → 3 sources différentes
+- Cible : `resultats.moyenne_utilisateurs_base5` comme source unique (listing, homepage, détail)
+- Supprimer `getAverageNoteUtilisateurs()` (recalcule inutilement depuis `scores`)
+- Fichiers : `src/lib/db/evaluations.ts`, `src/lib/db/solutions.ts`
+
+##### Étape 4 — Corriger `solutions.evaluation_redac_note` *(code uniquement)*
+- Supprimer `evaluation_redac_note` de `extractSolutionFromFormData` (ligne morte — le trigger DB recalcule ce champ)
+- Fichier : `src/lib/actions/admin.ts`
+
+##### Étape 5 — Admin solutions : supprimer la section "Dates et publication" *(code uniquement)*
+- Retirer la section du `SolutionForm.tsx` (lignes 766-793)
+- Retirer les champs de `extractSolutionFromFormData` (date_publication, date_lancement, date_debut, date_fin, date_maj)
+
+##### Étape 6 — Listing catégorie : tri et affichage cohérents *(code uniquement)*
+- Tri par défaut : `note_utilisateurs` (au lieu de `nom`) — `src/app/solutions/[idCategorie]/page.tsx` ligne 44
+- Mode alphabétique : ne pas afficher de note — `src/components/solutions/SolutionList.tsx` lignes 83-105
+
+##### Étape 7 — Ajouter le trigger aux migrations SQL
+- Le trigger `trigger_update_evaluation_redac_note` existe dans le Dashboard Supabase mais pas dans les fichiers de migration du repo
+- Récupérer le DDL depuis Dashboard → Database → Triggers et l'ajouter dans une migration SQL
+
 #### Traiter les remarques de Ben (rapport efficience du code)
 - Revoir tous les points remontés dans la capture de Ben
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
@@ -23,6 +54,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Priorité haute suite à la migration hors Synology (tokens sans expiration = risque confirmé)
 - Méthode recommandée : app d'authentification (Authy, Google Authenticator ou Microsoft Authenticator) — **pas SMS** (vulnérable au SIM-swapping)
 - Configurer dans GitHub → Settings → Password and authentication → Two-factor authentication
+
+### Sécurité
+
+#### Sécuriser le mot de passe Supabase dans le script de backup
+- Actuellement en clair dans `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` (dans `$DB_URL`)
+- **Méthode recommandée** : variable d'environnement Windows (niveau "User")
+- Étapes (à faire sur laptop ET desktop) :
+  - Définir la variable : `[Environment]::SetEnvironmentVariable("SUPABASE_DB_PASSWORD", "<password>", "User")`
+  - Modifier `$DB_URL` dans le script pour lire `$env:SUPABASE_DB_PASSWORD` au lieu du mot de passe en dur
+  - Tester `/backup` pour valider
+  - Vérifier que la tâche Task Scheduler voit bien la variable (les variables User sont disponibles dans les tâches planifiées)
 
 ### Partenariats contenu
 
@@ -123,6 +165,22 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
 - ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
 
+### Tarification solutions
+
+#### Simplifier l'indicateur de prix (à peupler plus tard automatiquement)
+- Remplacer le champ JSON `nb_utilisateurs` et la section tarification complexe par :
+  - Un champ `prix_moyen` (numérique, en €/mois)
+  - Un indicateur visuel 1 à 4 euros jaunes, calculé en comparant `prix_moyen` à la médiane de la catégorie
+- Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
+- Les données seront peuplées ultérieurement via recherche automatique
+- Ne pas modifier l'affichage front avant que le toggle soit activé
+
+### Rappels temporels
+
+#### *(2026-06-26)* Supprimer `evaluations_firebase_backup`
+- 2 mois après la migration Firebase (étape 1 ci-dessus)
+- Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
+
 ---
 
 ### Migrer le développement en local — hors Synology (des deux côtés)
@@ -135,6 +193,31 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
 - Le code (git) ne sauvegarde pas les données : utilisateurs, avis, articles, études, évaluations sont uniquement dans Supabase
 - Options : script bash automatisé via cron local ou Windows Task Scheduler, export vers le NAS
+
+#### Export à la demande depuis l'admin (bouton téléchargement)
+- Créer une API route `/api/admin/export-database` qui exporte toutes les tables critiques en JSON téléchargeable
+- Bouton dans l'admin pour déclencher l'export sans avoir à accéder au terminal
+- Complément du pg_dump (qui reste la vraie sauvegarde complète avec schéma)
+
+### Infrastructure
+
+#### Planifier le backup automatique dans Windows Task Scheduler
+- Fréquence : hebdomadaire, dimanche 3h du matin
+- Configurer le réveil de la machine si en veille, et le rattrapage au démarrage si la machine était éteinte
+- ⚠️ **Utiliser PowerShell 7 (`pwsh.exe`)** et non Windows PowerShell 5.1 (`powershell.exe`) — sinon le bug d'encodage UTF-8 recrée un dossier parasite `100 000 MÃ©decins` à chaque exécution
+
+#### Migrer les scripts PowerShell vers PowerShell 7
+- PowerShell 5.1 a un bug d'encodage UTF-8 sans BOM qui génère du mojibake sur les accents (ex. `Médecins` → `MÃ©decins`)
+- Priorité basse, mais à faire avant de planifier des tâches Task Scheduler touchant des chemins avec accents
+- Vérifier tous les scripts dans `C:\Users\david\scripts\` et sous-dossiers
+
+#### Synchroniser le script de backup sur le desktop
+- Le script existe uniquement sur le laptop pour l'instant
+- Sur le desktop :
+  - Créer `C:\Users\david\scripts\backup-supabase\`
+  - Y copier `backup-supabase.ps1` (via NAS Synology ou copie manuelle)
+  - Vérifier que pg_dump est installé (`C:\Program Files\PostgreSQL\18\bin\pg_dump.exe`)
+  - Configurer la variable `SUPABASE_DB_PASSWORD` (après sécurisation du point précédent)
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
