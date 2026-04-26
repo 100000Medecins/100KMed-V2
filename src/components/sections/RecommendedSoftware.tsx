@@ -27,64 +27,33 @@ interface RecommendedSoftwareProps {
   categories: CategorieData[]
 }
 
-type SortMode = 'collegues' | 'redac'
-
 export default function RecommendedSoftware({ categories }: RecommendedSoftwareProps) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const [sortMode, setSortMode] = useState<SortMode>('collegues')
 
   if (categories.length === 0) return null
 
   const active = categories[activeIndex]
 
-  // Si la catégorie active n'a pas de note rédac, forcer le mode collègues
-  const effectiveSortMode = active.hasNoteRedac ? sortMode : 'collegues'
-
   const sortedSolutions = useMemo(() => {
     return [...active.solutions]
-      .filter((s) => effectiveSortMode === 'collegues' ? s.noteUtilisateurs !== null : s.noteRedac !== null)
+      .filter((s) => s.noteUtilisateurs !== null || s.noteRedac !== null)
       .sort((a, b) => {
-        if (effectiveSortMode === 'collegues') return (b.noteUtilisateurs || 0) - (a.noteUtilisateurs || 0)
-        return (b.noteRedac || 0) - (a.noteRedac || 0)
+        const noteA = a.noteUtilisateurs ?? a.noteRedac ?? 0
+        const noteB = b.noteUtilisateurs ?? b.noteRedac ?? 0
+        return noteB - noteA
       })
       .slice(0, 6)
-  }, [active.solutions, effectiveSortMode])
+  }, [active.solutions])
 
   return (
-    <section className="bg-surface-light py-20 md:py-28" id="tools">
+    <section className="bg-surface-muted bg-dots py-20 md:py-28" id="tools">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left sidebar */}
           <div className="lg:w-56 shrink-0">
-            <h2 className="text-xl font-bold text-navy leading-snug mb-3">
+            <h2 className="text-xl font-bold text-navy leading-snug mb-5">
               Les logiciels les mieux notés
             </h2>
-
-            {/* Toggle par collègues / par rédaction */}
-            <div className="flex flex-col gap-1 mb-5">
-              <button
-                onClick={() => setSortMode('collegues')}
-                className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
-                  effectiveSortMode === 'collegues'
-                    ? 'text-accent-blue bg-accent-blue/10'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {effectiveSortMode === 'collegues' ? '▸ ' : ''}par vos collègues
-              </button>
-              {active.hasNoteRedac && (
-                <button
-                  onClick={() => setSortMode('redac')}
-                  className={`text-left text-sm font-medium px-3 py-1.5 rounded-lg transition-all ${
-                    effectiveSortMode === 'redac'
-                      ? 'text-accent-blue bg-accent-blue/10'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  {effectiveSortMode === 'redac' ? '▸ ' : ''}par 100&nbsp;000 Médecins
-                </button>
-              )}
-            </div>
 
             <div className="grid grid-cols-2 lg:flex lg:flex-col gap-2">
               {categories.map((cat, i) => (
@@ -108,9 +77,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
             {sortedSolutions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 rounded-2xl border-2 border-dashed border-gray-200 gap-3">
                 <p className="text-gray-400 text-sm text-center max-w-xs">
-                  {effectiveSortMode === 'redac'
-                    ? "Pas encore d'évaluation de la rédaction dans cette catégorie."
-                    : "Pas encore assez d'évaluations pour établir un classement — revenez bientôt ! 😊"}
+                  Pas encore assez d&apos;évaluations pour établir un classement — revenez bientôt&nbsp;!
                 </p>
                 <p className="text-gray-500 text-sm">Ou évaluez le vôtre dès maintenant&nbsp;:</p>
                 <Link
@@ -125,7 +92,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                   {sortedSolutions.map((sol) => (
-                    <SolutionCardItem key={sol.id} solution={sol} sortMode={effectiveSortMode} />
+                    <SolutionCardItem key={sol.id} solution={sol} />
                   ))}
                 </div>
                 <div className="mt-8 text-center">
@@ -146,28 +113,15 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
   )
 }
 
-function SolutionCardItem({ solution, sortMode }: { solution: SolutionCard; sortMode: SortMode }) {
-  const note = sortMode === 'collegues' ? solution.noteUtilisateurs : solution.noteRedac
-
+function SolutionCardItem({ solution }: { solution: SolutionCard }) {
   return (
     <Link
       href={`/solutions/${solution.categorieSlug}/${solution.slug}`}
-      className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-6 flex flex-col items-center text-center group"
+      className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-5 flex flex-col items-center text-center group"
     >
-      <span className="text-xs sm:text-sm font-semibold text-navy mb-2 sm:mb-3 line-clamp-2">{solution.nom}</span>
+      <span className="text-xs sm:text-sm font-semibold text-navy mb-3 line-clamp-2">{solution.nom}</span>
 
-      {note ? (
-        <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 mb-3 sm:mb-4">
-          <RatingBadge rating={note} size="sm" />
-          <StarRating rating={note} size="sm" />
-        </div>
-      ) : (
-        <div className="mb-3 sm:mb-4">
-          <span className="text-xs text-gray-400">Pas encore noté</span>
-        </div>
-      )}
-
-      <div className="w-full h-16 sm:h-20 rounded-xl bg-surface-light flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+      <div className="w-full h-16 sm:h-20 rounded-xl bg-surface-light flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden mb-3">
         {solution.logo_url ? (
           <img
             src={solution.logo_url}
@@ -178,6 +132,30 @@ function SolutionCardItem({ solution, sortMode }: { solution: SolutionCard; sort
           <span className="text-2xl font-bold text-accent-blue">
             {solution.nom.substring(0, 2).toUpperCase()}
           </span>
+        )}
+      </div>
+
+      <div className="w-full flex flex-col gap-1.5 mt-auto">
+        {solution.noteUtilisateurs != null && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Utilisateurs</span>
+            <div className="flex items-center gap-1">
+              <StarRating rating={solution.noteUtilisateurs} size={11} />
+              <RatingBadge rating={solution.noteUtilisateurs} size="sm" />
+            </div>
+          </div>
+        )}
+        {solution.noteRedac != null && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Rédaction</span>
+            <div className="flex items-center gap-1">
+              <StarRating rating={solution.noteRedac} size={11} />
+              <RatingBadge rating={solution.noteRedac} size="sm" />
+            </div>
+          </div>
+        )}
+        {solution.noteUtilisateurs == null && solution.noteRedac == null && (
+          <span className="text-xs text-gray-400">Pas encore noté</span>
         )}
       </div>
     </Link>

@@ -81,9 +81,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### Page solution — cadre note de droite hors du cadre titre
 - Remettre le bloc note (droite) à l'intérieur du cadre du titre sur la page solution
 
-#### Fil d'Ariane — contraste insuffisant
-- Le breadcrumb n'est pas lisible (contraste texte/fond trop faible)
-- Augmenter le contraste ou changer la couleur du texte
+#### ~~Fil d'Ariane — contraste insuffisant~~ ✅ Fait 2026-04-27
+- ~~Déplacé dans une fine bande horizontale blanche translucide sous la navbar, variante dark~~
 
 #### ~~Création de compte — email déjà existant en DB~~ ✅ Fait 2026-04-25
 
@@ -101,6 +100,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions
 
 ### UX / UI
+
+#### Créer un design system pour le site
+- Définir les tokens de design (couleurs, typographie, espacement, ombres, border-radius) dans un fichier de référence
+- Documenter les composants UI existants (Button, Card, Badge, StarRating, Breadcrumb…) avec leurs variantes
+- Identifier les incohérences visuelles entre pages et les normaliser
+- Objectif : base solide pour toute nouvelle feature et pour les éventuels contributeurs
 
 #### Alléger les pages du site (bundle / code inspection)
 - Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben

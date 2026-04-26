@@ -319,22 +319,50 @@ export async function getAverageNoteUtilisateurs(
   if (!UUID_RE.test(solutionId)) return { note: null, total: 0, distribution: {} }
 
   const supabase = createServiceRoleClient()
-  const { data, error } = await supabase
-    .from('evaluations')
-    .select('moyenne_utilisateur')
-    .eq('solution_id', solutionId)
-    .not('last_date_note', 'is', null)
-    .or('statut.eq.publiee,statut.is.null')
-    .not('moyenne_utilisateur', 'is', null)
 
-  if (error || !data || data.length === 0) return { note: null, total: 0, distribution: {} }
+  // Étape 1 : IDs des 5 critères de notation — même filtre que getNotesUtilisateursGlobales
+  // nom_capital IS NOT NULL identifie exactement les 5 critères majeurs, en excluant nps/synthese
+  const { data: criteresMajeurs } = await supabase
+    .from('criteres')
+    .select('id')
+    .not('nom_capital', 'is', null)
+  const critereIds = (criteresMajeurs || []).map((c) => c.id)
 
-  const notes = data.map((e) => e.moyenne_utilisateur as number)
-  const total = notes.length
-  const note = Math.round((notes.reduce((s, v) => s + v, 0) / total) * 10) / 10
+  // Étape 2 : deux sources parallèles
+  // - resultats (5 critères majeurs) → note globale (identique au listing/homepage)
+  // - evaluations.moyenne_utilisateur → total + distribution par étoile
+  const [evalsResult, resultatsResult] = await Promise.all([
+    supabase
+      .from('evaluations')
+      .select('moyenne_utilisateur')
+      .eq('solution_id', solutionId)
+      .not('last_date_note', 'is', null)
+      .or('statut.eq.publiee,statut.is.null')
+      .not('moyenne_utilisateur', 'is', null),
+    critereIds.length > 0
+      ? supabase
+          .from('resultats')
+          .select('moyenne_utilisateurs_base5')
+          .eq('solution_id', solutionId)
+          .in('critere_id', critereIds)
+          .not('moyenne_utilisateurs_base5', 'is', null)
+      : Promise.resolve({ data: [] }),
+  ])
 
+  const evalData = evalsResult.data
+  if (!evalData || evalData.length === 0) return { note: null, total: 0, distribution: {} }
+
+  // Note = moyenne des 5 critères majeurs depuis resultats (même calcul que listing/homepage)
+  const critereNotes = (resultatsResult.data || []).map((r) => r.moyenne_utilisateurs_base5 as number)
+  const note = critereNotes.length > 0
+    ? Math.round((critereNotes.reduce((s, v) => s + v, 0) / critereNotes.length) * 10) / 10
+    : null
+
+  // Distribution par étoile calculée depuis les moyennes individuelles
+  const total = evalData.length
   const distribution: Record<string, number> = {}
-  for (const n of notes) {
+  for (const e of evalData) {
+    const n = e.moyenne_utilisateur as number
     const bucket = String(Math.min(5, Math.max(1, Math.round(n))))
     distribution[bucket] = (distribution[bucket] || 0) + 1
   }

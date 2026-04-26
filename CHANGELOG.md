@@ -5,6 +5,43 @@
 
 ---
 
+## [2026-04-27] — Unification des notes + refonte visuelle (fond, hero, cartes)
+
+### Fix — Unification source de notes (listing = page solution = hero)
+- `getNotesUtilisateursGlobales` : filtre critères corrigé — requête 2 étapes via `nom_capital IS NOT NULL` au lieu de `parent_id IS NULL` (qui incluait nps/synthèse)
+- `getAverageNoteUtilisateurs` : aligné sur le même filtre ; note lue depuis `resultats.moyenne_utilisateurs_base5` (cohérente avec listing et homepage)
+- Page comparatif (`comparer/page.tsx`) : même filtre appliqué côté client
+- Suppression du cache `.next/cache` nécessaire pour voir l'effet (ISR stale)
+
+### Docs — Doctrine du système de notes établie
+- `docs/evaluation-scoring.md` : tables "état actuel / état cible", règle fondamentale (note globale = moyenne des 5 critères affichés), statuts des corrections
+- `docs/database-notes.md` : nettoyé, état des données confirmé (migration Firebase 0→5 terminée le 2026-04-12), plan d'action Phase 2
+
+### UX / UI — Refonte visuelle pages solutions et index
+
+#### SolutionHero — cartes de notes dans le cadre principal
+- Les deux cartes (utilisateurs + rédaction) déplacées à l'intérieur du cadre blanc, à droite du logo/titre/description (plus de sidebar extérieure)
+- Breadcrumb déplacé dans une fine bande blanche translucide sous la navbar (variante "default" lisible sur fond clair — bug contraste corrigé)
+- Suppression de la constante `SVG_GRADIENT_BG` inutilisée (SolutionHero + SolutionDetailPage)
+
+#### Index — section "Les logiciels les mieux notés" simplifiée
+- Suppression du toggle "par vos collègues / par 100 000 Médecins"
+- Chaque carte affiche désormais les deux notes (utilisateurs + rédaction)
+- Tri par note utilisateurs par défaut (rédaction en fallback)
+
+#### Fond de page bleuté + trame de points
+- Fond body : `#D8E6F8` + points `rgba(59, 110, 195, 0.07)` à 28px
+- `surface-light` → `#D8E6F8`, `surface-muted` → `#C6D5EE` (Tailwind)
+- Classe utilitaire `bg-dots` créée et appliquée sur `RecommendedSoftware` et `BlogPreview`
+- Gradient SVG opaque de `SolutionDetailPage` supprimé (fond dots visible)
+- Hero : fondu bas corrigé (transparent coloré `rgba(15,30,56,0)` → pas de bande lumineuse grise)
+
+### TODO — Mises à jour
+- Marqué terminé : "Fil d'Ariane — contraste insuffisant", "Cadre note de droite dans le cadre titre"
+- Ajout : "Créer un design system pour le site" (UX / UI)
+
+---
+
 ## [2026-04-26] — Phase 2 corrections système de notation + identité RPPS PSC complète
 
 ### Fix TypeScript — Correction des erreurs de types (0 erreur npx tsc)

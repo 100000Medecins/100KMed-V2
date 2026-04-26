@@ -28,7 +28,7 @@ export default async function BlogPreview() {
   if (articles.length === 0) return null
 
   return (
-    <section className="py-12 md:py-16 bg-surface-light">
+    <section className="py-12 md:py-16 bg-surface-light bg-dots">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-end justify-between mb-10 gap-4">
           <div>

@@ -1,7 +1,7 @@
 # Méthodologie de notation — 100 000 Médecins
 
 > Document de référence sur le fonctionnement complet du système de notation.
-> Mis à jour : 2026-04-26
+> Mis à jour : 2026-04-27
 > À consulter avant toute intervention sur les évaluations, les notes ou les calculs associés.
 
 ---
@@ -120,30 +120,52 @@ solutions
 
 ---
 
-## Sources de notes par page (état cible après corrections Phase 2)
+## Sources de notes par page
+
+### État actuel (avant corrections Phase 2)
+
+| Emplacement | Fonction | Source réelle | Valeur Doctolib ex. |
+|---|---|---|---|
+| Page d'accueil | `getNotesUtilisateursGlobales` | `resultats` — tous critères, sans filtre | 4.0 ❌ |
+| Listing catégorie | `getNotesUtilisateursGlobales` | idem | 4.0 ❌ |
+| Page détail — hero | `getAverageNoteUtilisateurs` | `evaluations.moyenne_utilisateur` | 3.4 |
+| Page détail — carte confrères | `getAverageNoteUtilisateurs` | idem | 3.4 |
+| Page comparatif `/comparer` | requête directe `resultats` | `resultats` — tous critères, sans filtre | (par critère) |
+
+### État cible (après corrections Phase 2)
 
 | Emplacement | Note utilisateur | Note rédaction |
 |---|---|---|
-| Page d'accueil | `resultats.moyenne_utilisateurs_base5` (agrégé) | — |
-| Listing catégorie (tri par note) | `resultats.moyenne_utilisateurs_base5` | `solutions.evaluation_redac_note` |
+| Page d'accueil | `resultats.moyenne_utilisateurs_base5` — 5 critères majeurs uniquement | — |
+| Listing catégorie (tri par note) | `resultats.moyenne_utilisateurs_base5` — 5 critères majeurs uniquement | `solutions.evaluation_redac_note` |
 | Listing catégorie (mode alpha) | **aucune note affichée** | — |
-| Page détail solution | `resultats.moyenne_utilisateurs_base5` | `resultats.note_redac_base5` par critère |
-| Comparatif | `resultats.moyenne_utilisateurs_base5` | `resultats.note_redac_base5` |
+| Page détail — hero | `resultats.moyenne_utilisateurs_base5` — 5 critères majeurs uniquement | — |
+| Page détail — carte confrères (global) | `resultats.moyenne_utilisateurs_base5` — 5 critères majeurs uniquement | — |
+| Page détail — carte confrères (par critère) | `resultats.moyenne_utilisateurs_base5` — par ligne critère majeur | `resultats.note_redac_base5` |
+| Page comparatif `/comparer` | `resultats.moyenne_utilisateurs_base5` — par ligne critère majeur | `resultats.note_redac_base5` |
+
+**Règle fondamentale** : la note globale affichée = exactement la moyenne des 5 notes par critère
+affichées dans la carte "L'avis de vos confrères". Zéro surprise, zéro divergence possible.
+
+La distribution par étoile (1★ → 5★) dans la carte confrères est calculée séparément
+depuis `evaluations.moyenne_utilisateur` — elle ne participe pas au calcul de la note globale.
 
 ---
 
-## Problèmes actuels (à corriger — Phase 2)
+## Problèmes identifiés (Phase 2)
 
-Ces problèmes sont **uniquement dans le code**, pas dans les données :
+Ces problèmes sont **uniquement dans le code**, pas dans les données.
+Les items 🔴 causent la divergence de notes visible sur le site.
 
-| # | Fichier | Problème | Fix |
-|---|---------|---------|-----|
-| 1 | `src/lib/db/evaluations.ts` | `computeEvalGroupAvg` : détection de format Firebase/Supabase devenue inutile | Simplifier : lire les 5 clés principales directement |
-| 2 | `src/lib/db/evaluations.ts` | `getAverageNoteUtilisateurs()` : recalcule depuis `scores` au lieu d'utiliser `moyenne_utilisateur` | Lire `resultats.moyenne_utilisateurs_base5` |
-| 3 | `src/lib/db/solutions.ts` | `getNotesGlobalesRedac()` : affiche la note rédaction en mode alpha (mauvaise source) | Ne pas afficher de note en mode alpha |
-| 4 | `src/lib/actions/admin.ts` | `extractSolutionFromFormData` : écrit `evaluation_redac_note = null` à chaque save | Supprimer cette ligne (le trigger recalcule) |
-| 5 | `src/app/solutions/[idCategorie]/page.tsx` ligne 44 | Tri par défaut = `'nom'` au lieu de `'note_utilisateurs'` | Changer le défaut |
-| 6 | Migrations SQL | Trigger `trigger_update_evaluation_redac_note` absent du repo | Ajouter le DDL dans une migration |
+| # | Fichier | Problème | Priorité | Statut |
+|---|---------|---------|----------|--------|
+| 1 | `src/lib/db/solutions.ts` | `getNotesUtilisateursGlobales()` : lit tous les `resultats` sans filtre `parent_id IS NULL` → inclut les sous-critères → note gonflée (4.0 vs 3.4 pour Doctolib) | 🔴 | Corrigé 2026-04-27 |
+| 2 | `src/lib/db/evaluations.ts` | `getAverageNoteUtilisateurs()` : calcule la note depuis `evaluations.moyenne_utilisateur` alors que la cible est `resultats` (sources différentes → notes divergentes) | 🔴 | Corrigé 2026-04-27 |
+| 3 | `src/app/solutions/comparer/page.tsx` | Requête `resultats` sans filtre → affiche les lignes sous-critères dans le tableau comparatif | 🟡 | Corrigé 2026-04-27 |
+| 4 | `src/lib/db/solutions.ts` | `getNotesGlobalesRedac()` : affiche la note rédaction en mode tri alphabétique (mauvaise source) | 🟡 | À corriger |
+| 5 | `src/lib/actions/admin.ts` | `extractSolutionFromFormData` : écrit `evaluation_redac_note = null` à chaque save admin | 🟡 | À corriger |
+| 6 | `src/app/solutions/[idCategorie]/page.tsx` | Tri par défaut = `'nom'` au lieu de `'note_utilisateurs'` | 🟡 | À corriger |
+| 7 | Migrations SQL | Trigger `trigger_update_evaluation_redac_note` absent des fichiers de migration du repo | 🟡 | À ajouter |
 
 ---
 

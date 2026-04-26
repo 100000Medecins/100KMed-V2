@@ -294,15 +294,26 @@ export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promi
 
   const supabase = await createServerClient()
 
+  // Étape 1 : IDs des 5 critères de notation (nom_capital IS NOT NULL exclut nps/synthese/sous-critères)
+  const { data: criteresMajeurs } = await supabase
+    .from('criteres')
+    .select('id')
+    .not('nom_capital', 'is', null)
+
+  const critereIds = (criteresMajeurs || []).map((c) => c.id)
+  if (critereIds.length === 0) return {}
+
+  // Étape 2 : filtrer resultats sur ces IDs uniquement
   const { data, error } = await supabase
     .from('resultats')
     .select('solution_id, moyenne_utilisateurs_base5')
     .in('solution_id', solutionIds)
+    .in('critere_id', critereIds)
     .not('moyenne_utilisateurs_base5', 'is', null)
 
   if (error || !data) return {}
 
-  // Moyenne de toutes les notes utilisateurs par solution
+  // Moyenne des 5 critères majeurs par solution
   const sums: Record<string, { total: number; count: number }> = {}
   for (const row of data) {
     const id = row.solution_id as string
@@ -314,7 +325,7 @@ export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promi
 
   const map: Record<string, number> = {}
   for (const [id, { total, count }] of Object.entries(sums)) {
-    map[id] = total / count
+    map[id] = Math.round((total / count) * 10) / 10
   }
   return map
 }
