@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -8,7 +8,7 @@ import { getFusionDetails, mergeAccounts } from '@/lib/actions/merge'
 import type { FusionAccount } from '@/lib/actions/merge'
 import { ShieldCheck } from 'lucide-react'
 
-export default function FusionnerComptePage() {
+function FusionnerCompteContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token') || ''
 
@@ -148,5 +148,21 @@ export default function FusionnerComptePage() {
       </main>
       <Footer />
     </>
+  )
+}
+
+export default function FusionnerComptePage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Navbar />
+        <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
+          <div className="animate-pulse text-gray-400">Chargement...</div>
+        </main>
+        <Footer />
+      </>
+    }>
+      <FusionnerCompteContent />
+    </Suspense>
   )
 }
