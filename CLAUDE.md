@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **Note pour Claude :** lire `memory/context.md` au début de chaque session — ce fichier contient le profil utilisateur, les préférences de travail, l'état du projet et les décisions techniques importantes. Il est versionné dans le repo pour rester synchronisé entre les postes.
 
+> **OBLIGATOIRE avant tout chantier technique :** lire `CHANGELOG.md` (les 10-15 dernières entrées minimum) avant de planifier une migration SQL, un refactor, ou une correction de bug non triviale. La mémoire de session est compactée régulièrement — le CHANGELOG est la seule source de vérité fiable sur ce qui a déjà été fait. Ne jamais inférer l'historique depuis l'état courant du code ou de la BDD seul.
+
 ## Commands
 
 ```bash
