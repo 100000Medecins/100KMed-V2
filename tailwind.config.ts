@@ -29,8 +29,8 @@ const config: Config = {
           star: "#F5C518",
         },
         surface: {
-          light: "#E8EDF8",
-          muted: "#DCE4F2",
+          light: "#D8E6F8",
+          muted: "#C6D5EE",
         },
         hero: {
           pink: "#FDE8EF",

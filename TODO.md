@@ -14,10 +14,39 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### IMPORTANT
 
+#### Consolidation base de données — héritage Firebase
+
+> ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
+
+##### ~~Étape 2 — Simplifier `computeEvalGroupAvg`~~ ✅ Fait 2026-04-26
+##### ~~Étape 3 — Unifier la source de note partout~~ ✅ Fait 2026-04-26
+##### ~~Étape 4 — Corriger `solutions.evaluation_redac_note`~~ ✅ Fait 2026-04-26
+
+##### ~~Étape 5 — Admin solutions : supprimer la section "Dates et publication"~~ ✅ Fait 2026-04-26
+
+##### ~~Étape 6 — Listing catégorie : tri et affichage cohérents~~ ✅ Fait 2026-04-26
+##### ~~Étape 7 — Ajouter le trigger aux migrations SQL~~ ✅ Fait 2026-04-26
+
 #### Traiter les remarques de Ben (rapport efficience du code)
 - Revoir tous les points remontés dans la capture de Ben
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
 - Prévoir une session dédiée avec Claude pour passer point par point
+
+#### Activer le 2FA GitHub
+- Priorité haute suite à la migration hors Synology (tokens sans expiration = risque confirmé)
+- Méthode recommandée : app d'authentification (Authy, Google Authenticator ou Microsoft Authenticator) — **pas SMS** (vulnérable au SIM-swapping)
+- Configurer dans GitHub → Settings → Password and authentication → Two-factor authentication
+
+### Sécurité
+
+#### Sécuriser le mot de passe Supabase dans le script de backup
+- Actuellement en clair dans `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` (dans `$DB_URL`)
+- **Méthode recommandée** : variable d'environnement Windows (niveau "User")
+- Étapes (à faire sur laptop ET desktop) :
+  - Définir la variable : `[Environment]::SetEnvironmentVariable("SUPABASE_DB_PASSWORD", "<password>", "User")`
+  - Modifier `$DB_URL` dans le script pour lire `$env:SUPABASE_DB_PASSWORD` au lieu du mot de passe en dur
+  - Tester `/backup` pour valider
+  - Vérifier que la tâche Task Scheduler voit bien la variable (les variables User sont disponibles dans les tâches planifiées)
 
 ### Partenariats contenu
 
@@ -34,27 +63,36 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
 
+### Nettoyage — Post-migration Synology
+
+#### Supprimer les anciens dossiers Frontend-V2-main *(dans 1–2 semaines de stabilité confirmée)*
+- Sur le **desktop** : supprimer `Frontend-V2-main` dans la zone Synology (actuellement conservé en filet de sécurité)
+- Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main` de la tâche de synchro Synology "100000Medecins", sans toucher au reste du dossier "100 000 Médecins"
+- Ne pas supprimer avant d'avoir confirmé que le nouveau setup Git/GitHub tourne sans problème
+
+### Hygiène projet
+
+#### ~~Sortir les fichiers Office du repo Git~~ ✅ Fait 2026-04-25
+
 ### Bugs à corriger
 
-#### Page /difficileDeChanger — images manquantes à réintégrer
-- Les images de l'article original ne sont pas dans la base (`pages_statiques.contenu` ne contient aucune balise `<img>`)
-- **À faire** : ouvrir la page live dans le navigateur → télécharger chaque image (clic droit → Enregistrer) → uploader dans Supabase Storage → demander à Claude d'injecter les `<img>` avec les URLs Storage dans le contenu HTML
-- Le texte mojibake a été corrigé (SQL fourni en session 2026-04-24) — à confirmer que le SQL a bien été exécuté
+#### ~~Page /difficileDeChanger — images manquantes à réintégrer~~ ✅ Fait 2026-04-25
 
 #### Page solution — cadre note de droite hors du cadre titre
 - Remettre le bloc note (droite) à l'intérieur du cadre du titre sur la page solution
 
-#### Fil d'Ariane — contraste insuffisant
-- Le breadcrumb n'est pas lisible (contraste texte/fond trop faible)
-- Augmenter le contraste ou changer la couleur du texte
+#### ~~Fil d'Ariane — contraste insuffisant~~ ✅ Fait 2026-04-27
+- ~~Déplacé dans une fine bande horizontale blanche translucide sous la navbar, variante dark~~
 
-#### Création de compte — email déjà existant en DB
-- Bug confirmé : Supabase en mode "confirm email" ne retourne pas d'erreur pour un email existant (il envoie un mail silencieusement) → l'utilisateur voit "Compte créé !" à tort
-- Fix : vérifier `data.user?.identities?.length === 0` après `supabase.auth.signUp()` dans `AuthProvider.tsx` et retourner un message explicite
+#### ~~Création de compte — email déjà existant en DB~~ ✅ Fait 2026-04-25
 
-#### Note globale évaluations — incohérence
-- Dans les **commentaires utilisateurs** : la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis
-- Vérifier aussi la **note globale** sur les pages solutions (calcul côté DB ou affichage)
+#### ~~Note globale évaluations — incohérence~~ ✅ Fait 2026-04-26
+
+#### Affichage des notes — vérifier le comportement par statut
+- Tester en prod que les notes email/mdp (statut null ou publiee) s'affichent bien sur les pages solution
+- Tester que les notes statut='en_attente_psc' ne s'affichent PAS publiquement
+- Vérifier la cohérence entre ce que l'utilisateur voit dans "Mes évaluations" et ce qui est affiché sur les pages solution
+- Si des anciennes notes ont statut=null et ne devraient pas être affichées, corriger en base
 
 #### Espace éditeur — accès limité aux éditeurs existants
 - Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
@@ -62,6 +100,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions
 
 ### UX / UI
+
+#### Créer un design system pour le site
+- Définir les tokens de design (couleurs, typographie, espacement, ombres, border-radius) dans un fichier de référence
+- Documenter les composants UI existants (Button, Card, Badge, StarRating, Breadcrumb…) avec leurs variantes
+- Identifier les incohérences visuelles entre pages et les normaliser
+- Objectif : base solide pour toute nouvelle feature et pour les éventuels contributeurs
 
 #### Alléger les pages du site (bundle / code inspection)
 - Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
@@ -100,6 +144,34 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Revoir les points remontés dans la capture de Ben
 - À prioriser selon criticité (perf, bundle size, requêtes redondantes…)
 
+### Mises à jour techniques
+
+#### Mettre à jour Next.js
+- Actuellement en version `14.2.35` — versions récentes disponibles
+- **Ne pas faire pendant un coup de stress** : prévoir une session dédiée (peut casser App Router, configs Tailwind, etc.)
+- Tester sur `dev`, valider en preview Vercel avant de merger sur `main`
+
+#### Régler les vulnérabilités npm (`npm audit`)
+- 26 vulnérabilités : 2 low, 13 moderate, 10 high, 1 critical
+- Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
+- ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
+
+### Tarification solutions
+
+#### Simplifier l'indicateur de prix (à peupler plus tard automatiquement)
+- Remplacer le champ JSON `nb_utilisateurs` et la section tarification complexe par :
+  - Un champ `prix_moyen` (numérique, en €/mois)
+  - Un indicateur visuel 1 à 4 euros jaunes, calculé en comparant `prix_moyen` à la médiane de la catégorie
+- Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
+- Les données seront peuplées ultérieurement via recherche automatique
+- Ne pas modifier l'affichage front avant que le toggle soit activé
+
+### Rappels temporels
+
+#### *(2026-06-26)* Supprimer `evaluations_firebase_backup`
+- 2 mois après la migration Firebase (étape 1 ci-dessus)
+- Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
+
 ---
 
 ### Migrer le développement en local — hors Synology (des deux côtés)
@@ -112,6 +184,31 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
 - Le code (git) ne sauvegarde pas les données : utilisateurs, avis, articles, études, évaluations sont uniquement dans Supabase
 - Options : script bash automatisé via cron local ou Windows Task Scheduler, export vers le NAS
+
+#### Export à la demande depuis l'admin (bouton téléchargement)
+- Créer une API route `/api/admin/export-database` qui exporte toutes les tables critiques en JSON téléchargeable
+- Bouton dans l'admin pour déclencher l'export sans avoir à accéder au terminal
+- Complément du pg_dump (qui reste la vraie sauvegarde complète avec schéma)
+
+### Infrastructure
+
+#### Planifier le backup automatique dans Windows Task Scheduler
+- Fréquence : hebdomadaire, dimanche 3h du matin
+- Configurer le réveil de la machine si en veille, et le rattrapage au démarrage si la machine était éteinte
+- ⚠️ **Utiliser PowerShell 7 (`pwsh.exe`)** et non Windows PowerShell 5.1 (`powershell.exe`) — sinon le bug d'encodage UTF-8 recrée un dossier parasite `100 000 MÃ©decins` à chaque exécution
+
+#### Migrer les scripts PowerShell vers PowerShell 7
+- PowerShell 5.1 a un bug d'encodage UTF-8 sans BOM qui génère du mojibake sur les accents (ex. `Médecins` → `MÃ©decins`)
+- Priorité basse, mais à faire avant de planifier des tâches Task Scheduler touchant des chemins avec accents
+- Vérifier tous les scripts dans `C:\Users\david\scripts\` et sous-dossiers
+
+#### Synchroniser le script de backup sur le desktop
+- Le script existe uniquement sur le laptop pour l'instant
+- Sur le desktop :
+  - Créer `C:\Users\david\scripts\backup-supabase\`
+  - Y copier `backup-supabase.ps1` (via NAS Synology ou copie manuelle)
+  - Vérifier que pg_dump est installé (`C:\Program Files\PostgreSQL\18\bin\pg_dump.exe`)
+  - Configurer la variable `SUPABASE_DB_PASSWORD` (après sécurisation du point précédent)
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
@@ -150,6 +247,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Phase 2 système de notation : unification sources de notes (homepage/listing/détail), simplification `computeEvalGroupAvg`, tri listing par défaut → `note_utilisateurs`, note masquée en mode alpha, ligne morte admin supprimée, trigger SQL `005` ajouté aux migrations ✅
 - PSC — fix session cookies (verifyOtp client-side via /auth/psc-session) ✅
 - PSC — fix utilisateur orphelin psc_create_error (generateLink recovery) ✅
 - PSC — fix blocage "Enregistrement..." sur completer-profil (mot de passe via admin API) ✅

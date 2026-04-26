@@ -5,6 +5,99 @@
 
 ---
 
+## [2026-04-27] — Unification des notes + refonte visuelle (fond, hero, cartes)
+
+### Fix — Unification source de notes (listing = page solution = hero)
+- `getNotesUtilisateursGlobales` : filtre critères corrigé — requête 2 étapes via `nom_capital IS NOT NULL` au lieu de `parent_id IS NULL` (qui incluait nps/synthèse)
+- `getAverageNoteUtilisateurs` : aligné sur le même filtre ; note lue depuis `resultats.moyenne_utilisateurs_base5` (cohérente avec listing et homepage)
+- Page comparatif (`comparer/page.tsx`) : même filtre appliqué côté client
+- Suppression du cache `.next/cache` nécessaire pour voir l'effet (ISR stale)
+
+### Docs — Doctrine du système de notes établie
+- `docs/evaluation-scoring.md` : tables "état actuel / état cible", règle fondamentale (note globale = moyenne des 5 critères affichés), statuts des corrections
+- `docs/database-notes.md` : nettoyé, état des données confirmé (migration Firebase 0→5 terminée le 2026-04-12), plan d'action Phase 2
+
+### UX / UI — Refonte visuelle pages solutions et index
+
+#### SolutionHero — cartes de notes dans le cadre principal
+- Les deux cartes (utilisateurs + rédaction) déplacées à l'intérieur du cadre blanc, à droite du logo/titre/description (plus de sidebar extérieure)
+- Breadcrumb déplacé dans une fine bande blanche translucide sous la navbar (variante "default" lisible sur fond clair — bug contraste corrigé)
+- Suppression de la constante `SVG_GRADIENT_BG` inutilisée (SolutionHero + SolutionDetailPage)
+
+#### Index — section "Les logiciels les mieux notés" simplifiée
+- Suppression du toggle "par vos collègues / par 100 000 Médecins"
+- Chaque carte affiche désormais les deux notes (utilisateurs + rédaction)
+- Tri par note utilisateurs par défaut (rédaction en fallback)
+
+#### Fond de page bleuté + trame de points
+- Fond body : `#D8E6F8` + points `rgba(59, 110, 195, 0.07)` à 28px
+- `surface-light` → `#D8E6F8`, `surface-muted` → `#C6D5EE` (Tailwind)
+- Classe utilitaire `bg-dots` créée et appliquée sur `RecommendedSoftware` et `BlogPreview`
+- Gradient SVG opaque de `SolutionDetailPage` supprimé (fond dots visible)
+- Hero : fondu bas corrigé (transparent coloré `rgba(15,30,56,0)` → pas de bande lumineuse grise)
+
+### TODO — Mises à jour
+- Marqué terminé : "Fil d'Ariane — contraste insuffisant", "Cadre note de droite dans le cadre titre"
+- Ajout : "Créer un design system pour le site" (UX / UI)
+
+---
+
+## [2026-04-26] — Phase 2 corrections système de notation + identité RPPS PSC complète
+
+### Fix TypeScript — Correction des erreurs de types (0 erreur npx tsc)
+- 25+ fichiers : casts `(supabase as any)` pour les tables absentes du type auto-généré (`acronymes`, `actualites`, `solutions_favorites`, `etudes_cliniques`…)
+- `startTransition` : wrapping `async () => { await fn() }` pour respecter la signature `void` attendue par React
+- `mes-favoris/page.tsx`, `mes-preferences/page.tsx` : `.then(({ data }: { data: any })` pour éviter le `any` implicite sur les PromiseLike Supabase
+- `profil/page.tsx` : réécriture de l'`useEffect` en `async/await` (`.catch()` inexistant sur `PromiseLike`)
+- `client.ts` : `fn: () => Promise<any>` pour `LockFunc` (générique non assignable sinon)
+- `KonamiGame.tsx` : cast `(gs.phase as Phase)` pour contourner le narrowing TypeScript
+
+### Feature PSC — Règles de connexion et identité RPPS clarifiées
+
+#### Dogme identité
+- Un compte = un RPPS. Le RPPS est l'identifiant médical unique, défini lors de la première connexion PSC réussie.
+- Avant connexion PSC : toutes les évaluations soumises par un compte email/mdp ont `statut = 'en_attente_psc'` → non visibles publiquement.
+- Après connexion PSC : le RPPS est lié au compte, toutes les évals en attente passent à `statut = 'publiee'` → visibles.
+
+#### 4 cas de figure couverts
+1. **Connexion PSC classique** (nouveau compte ou reconnexion) : flow inchangé — lookup par RPPS puis email, création si absent.
+2. **Compte email/mdp sans PSC** : banner bleu dans `/mon-compte/profil` expliquant l'impact sur la visibilité des évaluations, bouton "Connexion via PSC" passant le `userId` dans le state.
+3. **Compte email/mdp + PSC (même RPPS)** : mode association — `psc-callback` reçoit `currentUserId` dans le state, associe le RPPS, publie les évals en attente, rafraîchit la session. Redirige vers `/mon-compte/profil?psc=associe`.
+4. **Compte email/mdp + PSC (RPPS déjà sur un autre compte)** : détection conflit dans `psc-callback`, génération d'un token HMAC signé, redirection vers `/fusionner-compte?token=...`. L'utilisateur choisit l'email à conserver. Toutes les données (évals, favoris, solutions_utilisees) sont migrées vers le compte conservé, l'autre est supprimé.
+
+#### Fichiers créés
+- `src/lib/auth/fusionToken.ts` : `generateFusionToken` / `verifyFusionToken` — HMAC-SHA256, expiry 15 min, encodé en base64url pour passer en URL
+- `src/lib/actions/merge.ts` : `getFusionDetails` (charge les 2 comptes pour l'UI) + `mergeAccounts` (migration, suppression compte source, magic link pour compte conservé)
+- `src/app/fusionner-compte/page.tsx` : page de fusion avec sélecteur d'email, confirmation, redirection automatique via `/auth/psc-session`
+
+#### Fichiers modifiés
+- `src/lib/auth/psc.ts` : `connectWithPsc(options?)` — state 3-part `stateUuid|userId|verificationToken` (compatibilité descendante avec l'ancien format 2-part `stateUuid|token` de `psc-initier`)
+- `src/app/api/auth/psc-callback/route.ts` : parsing state 3-part, branche "mode association" avant la recherche standard, publie les évals `en_attente_psc` du compte courant après association
+- `src/lib/actions/evaluation.ts` : `finalizeEvaluation` et `submitEvaluation` vérifient `users.rpps` → `statut = 'publiee'` si RPPS présent, `'en_attente_psc'` sinon. Le lookup utilise le service role pour bypasser le RLS.
+- `src/app/mon-compte/mes-evaluations/page.tsx` : banner orange + bouton PSC si l'utilisateur a des évals `en_attente_psc` et aucun RPPS (chargé en parallèle dans le `Promise.all`)
+- `src/app/mon-compte/profil/page.tsx` : banner bleu si `!isFromPsc`, messages de succès `?psc=associe` et `?fusion=ok` lus depuis les searchParams
+
+### Fix — Unification des sources de notes utilisateurs
+- `computeEvalGroupAvg` : suppression de la détection Firebase/Supabase par présence de clés `detail_*` — les 47 évaluations sans sous-critères n'étaient plus divisées par 2 par erreur
+- `getAverageNoteUtilisateurs` : remplace le recalcul depuis `evaluations.scores` (JSONB brut, buggé) par une lecture de `evaluations.moyenne_utilisateur` (valeur pré-calculée, cohérente avec listing et homepage)
+- `computeAggregatedResultats` : même simplification pour le fallback (table `resultats` vide)
+- Tri par défaut du listing catégorie : `'nom'` → `'note_utilisateurs'`
+- Mode alpha : note masquée dans `SolutionList` (ne plus afficher la note rédaction quand tri = alphabétique)
+- Admin : suppression de la ligne `evaluation_redac_note = null` dans `extractSolutionFromFormData` — le trigger Supabase gère ce champ, l'écraser à null à chaque save était un bug silencieux
+
+### Nettoyage — Section "Dates et publication" supprimée de l'admin
+- `SolutionForm.tsx` : suppression de la section "Dates et publication" (5 champs : date_publication, date_lancement, date_maj, date_debut, date_fin)
+- `extractSolutionFromFormData` : retrait des 5 champs correspondants — ces dates ne sont pas utilisées sur le front public
+
+### Infrastructure — Trigger SQL ajouté aux migrations
+- `supabase/migrations/005_trigger_evaluation_redac_note.sql` : DDL du trigger `update_evaluation_redac_note` ajouté au repo pour reproductibilité (existait dans le Dashboard Supabase mais pas dans les fichiers)
+
+### TODO — Mises à jour
+- Marqués terminés : items Phase 2 dans "Consolidation BDD"
+- Ajout : "Affichage des notes — vérifier comportement par statut" (tester en prod que `statut = null` = publié, `en_attente_psc` = masqué)
+
+---
+
 ## [2026-04-25] — Nettoyage code excuse, fix inscription, backup BDD, TODO
 
 ### Fix — Inscription avec email déjà existant
@@ -22,6 +115,17 @@
 - Format : dump custom compressé (`-Fc`), schéma `public` uniquement
 - Rotation automatique : conservation des 8 derniers dumps
 - Planification via Windows Task Scheduler (hebdomadaire, dimanche 3h)
+
+### Fix — Imports excuseTemplate orphelins (build Vercel cassé)
+- Cause : `excuseTemplate.ts` supprimé mais deux imports restants cassaient le build Vercel
+- `AdminEmailsClient.tsx` : suppression import `buildExcuseEmail`, prévisualisation remplacée par contenu brut
+- `admin/emails/page.tsx` : suppression imports `EXCUSE_DEFAULT_SUJET` / `EXCUSE_DEFAULT_BODY`, valeurs inlinées
+- Correction connexe : virgule traînante dans `vercel.json` rendait le JSON invalide
+
+### Nettoyage — Suppression fichiers Office du repo Git
+- 5 fichiers binaires supprimés : `2025-12 Critères de notation IA Scribes v1.2 - test.docx`, `2026 Listing agendas médicaux.xlsx`, `2026-02 - Critères de notation #2.xlsx`, `comparatif_ia_documentaires_2026.xlsx`, `comparatif_ia_scribes_2026.xlsx`
+- Ces fichiers n'ont pas leur place dans un repo Git (binaires non versionnables)
+- À archiver sur le NAS Synology si besoin de conservation
 
 ### TODO — Mises à jour
 - Marqué terminé : email d'excuse envoyé + code supprimé, Easter egg Konami, PSC BAS → prod

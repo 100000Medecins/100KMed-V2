@@ -215,7 +215,6 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     fonctionnalites: false,
     fonctionnalitesAssociees: false,
     galerie: false,
-    dates: false,
     seo: false,
   })
 
@@ -760,66 +759,6 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             <Play className="w-4 h-4" />
             Ajouter une vidéo YouTube / Vimeo
           </button>
-        </div>
-      </Section>
-
-      {/* Section 6 — Dates */}
-      <Section
-        title="Dates et publication"
-        isOpen={openSections.dates}
-        onToggle={() => toggleSection('dates')}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div>
-            <label htmlFor="date_publication" className={labelClass}>Date de publication</label>
-            <input
-              id="date_publication"
-              type="date"
-              name="date_publication"
-              defaultValue={solution?.date_publication ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="date_lancement" className={labelClass}>Date de lancement</label>
-            <input
-              id="date_lancement"
-              type="date"
-              name="date_lancement"
-              defaultValue={solution?.date_lancement ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="date_maj" className={labelClass}>Date de mise à jour</label>
-            <input
-              id="date_maj"
-              type="date"
-              name="date_maj"
-              defaultValue={solution?.date_maj ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="date_debut" className={labelClass}>Date début</label>
-            <input
-              id="date_debut"
-              type="date"
-              name="date_debut"
-              defaultValue={solution?.date_debut ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="date_fin" className={labelClass}>Date fin</label>
-            <input
-              id="date_fin"
-              type="date"
-              name="date_fin"
-              defaultValue={solution?.date_fin ?? ''}
-              className={inputClass}
-            />
-          </div>
         </div>
       </Section>
 

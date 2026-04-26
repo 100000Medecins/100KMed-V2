@@ -8,12 +8,20 @@
   }
   body {
     @apply font-poppins antialiased text-gray-800;
-    background-color: #E8EDF8;
+    background-color: #D8E6F8;
+    background-image: radial-gradient(circle, rgba(59, 110, 195, 0.07) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
     color-scheme: light;
   }
 }
 
 @layer utilities {
+  /* Trame de points subtile applicable sur n'importe quelle section colorée */
+  .bg-dots {
+    background-image: radial-gradient(circle, rgba(59, 110, 195, 0.08) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+  }
+
   .gradient-title {
     background: linear-gradient(90deg, #F5A623 0%, #E8734A 40%, #4A90D9 100%);
     -webkit-background-clip: text;

@@ -15,12 +15,35 @@ export async function updateUserField(
 }
 
 /**
- * Supprime la fiche publique d'un utilisateur (table public.users).
- * Ne supprime pas le compte auth Supabase.
+ * Supprime définitivement un compte utilisateur (public.users + auth.users).
+ * Trace la suppression dans compte_suppressions pour les métriques admin.
  */
 export async function deleteUser(userId: string) {
   const supabase = createServiceRoleClient()
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('nom, prenom, specialite')
+    .eq('id', userId)
+    .single()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('compte_suppressions').insert({
+    prenom: profile?.prenom ?? null,
+    nom: profile?.nom ?? null,
+    specialite: profile?.specialite ?? null,
+    raison: 'Suppression par un administrateur',
+    avec_suppression_avis: true,
+  })
+
+  await supabase.from('evaluations').delete().eq('user_id', userId)
+  await supabase.from('solutions_utilisees').delete().eq('user_id', userId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('users_notification_preferences').delete().eq('user_id', userId)
   await supabase.from('users').delete().eq('id', userId)
+
+  const { error } = await supabase.auth.admin.deleteUser(userId)
+  if (error) throw new Error(error.message)
 }
 
 /**
@@ -163,7 +186,7 @@ export async function updateSolutionByEditeur(
     editeurFields.mot_editeur = fields.mot_editeur
   }
 
-  const updates: Promise<unknown>[] = []
+  const updates: PromiseLike<unknown>[] = []
   if (Object.keys(solutionFields).length > 0) {
     updates.push(supabase.from('solutions').update(solutionFields).eq('id', solutionId))
   }

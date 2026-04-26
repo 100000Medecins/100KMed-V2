@@ -29,8 +29,13 @@ export const PSC_ENDPOINTS = PSC_ENVS[pscEnv]
 /**
  * Construit l'URL de redirection PSC + génère state/nonce.
  * Appelé côté client — stocke state/nonce dans des cookies.
+ *
+ * options.userId          : UUID de l'utilisateur connecté (mode association PSC)
+ * options.verificationToken : token de vérification pour lier une évaluation anonyme
+ *
+ * Format state : "[dev_]stateUuid|userId_or_underscore|verificationToken_or_underscore"
  */
-export function connectWithPsc(): void {
+export function connectWithPsc(options?: { userId?: string; verificationToken?: string }): void {
   const clientId = process.env.NEXT_PUBLIC_PSC_CLIENT_ID
   if (!clientId) {
     console.error('[PSC] NEXT_PUBLIC_PSC_CLIENT_ID manquant')
@@ -45,7 +50,10 @@ export function connectWithPsc(): void {
   const redirectUri = relayRedirectUri ?? `${window.location.origin}/api/auth/psc-callback`
 
   const stateUuid = crypto.randomUUID()
-  const state = relayRedirectUri ? `dev_${stateUuid}` : stateUuid
+  const userIdPart = options?.userId || '_'
+  const tokenPart = options?.verificationToken || '_'
+  const stateData = `${stateUuid}|${userIdPart}|${tokenPart}`
+  const state = relayRedirectUri ? `dev_${stateData}` : stateData
   const nonce = crypto.randomUUID()
 
   // Stocker dans des cookies (survivent aux redirects cross-contexte)

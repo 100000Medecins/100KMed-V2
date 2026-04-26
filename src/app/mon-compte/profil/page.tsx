@@ -8,11 +8,16 @@ import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/cons
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
-import { Check, Lock, Mail, Trash2, KeyRound } from 'lucide-react'
+import { Check, Lock, Mail, Trash2, KeyRound, ShieldCheck } from 'lucide-react'
 import { useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { connectWithPsc } from '@/lib/auth/psc'
 
 export default function ProfilPage() {
   const { user, loading: authLoading, resetPassword } = useAuth()
+  const searchParams = useSearchParams()
+  const pscAssociationOk = searchParams.get('psc') === 'associe'
+  const fusionOk = searchParams.get('fusion') === 'ok'
 
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
@@ -56,16 +61,18 @@ export default function ProfilPage() {
     if (authLoading) return
     if (!user) { setLoading(false); return }
     const supabase = createClient()
-    supabase
-      .from('users')
-      .select('nom, prenom, specialite, mode_exercice, portrait, rpps, contact_email')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
+    const load = async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
+          .from('users')
+          .select('nom, prenom, specialite, mode_exercice, portrait, rpps, contact_email')
+          .eq('id', user.id)
+          .single()
         if (data) {
           setNom(data.nom || '')
           setPrenom(data.prenom || '')
-          setContactEmail((data as { contact_email?: string }).contact_email || null)
+          setContactEmail(data.contact_email || null)
           // Résoudre les codes SM vers libellés si nécessaire
           const sp = data.specialite || ''
           const resolved = SM_SPECIALITES[sp] ?? sp
@@ -82,9 +89,13 @@ export default function ProfilPage() {
             setNeedsPassword(!hasEmailIdentity)
           }
         }
+      } catch {
+        // ignore
+      } finally {
         setLoading(false)
-      })
-      .catch(() => setLoading(false))
+      }
+    }
+    load()
   }, [user, authLoading])
 
   // Charger/vérifier le changement d'email en attente
@@ -140,7 +151,8 @@ export default function ProfilPage() {
       })
       if (selectedAvatar) {
         const supabase = createClient()
-        await supabase.from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
       }
       setSuccess('Profil mis à jour avec succès.')
       document.documentElement.scrollTop = 0
@@ -255,6 +267,44 @@ export default function ProfilPage() {
       )}
       {error && (
         <div className="bg-red-50 text-red-600 text-sm p-4 rounded-xl mb-6">{error}</div>
+      )}
+
+      {pscAssociationOk && (
+        <div className="bg-green-50 text-green-700 text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" />
+          Votre identité médicale a été vérifiée via Pro Santé Connect. Vos évaluations sont maintenant publiées.
+        </div>
+      )}
+      {fusionOk && (
+        <div className="bg-green-50 text-green-700 text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" />
+          Vos deux comptes ont été fusionnés avec succès.
+        </div>
+      )}
+
+      {/* Bannière PSC — vérification identité médicale (utilisateurs email/mdp sans RPPS) */}
+      {!isFromPsc && !loading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-card p-5 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-blue-900 text-sm">Vérifiez votre identité médicale</p>
+              <p className="text-xs text-blue-700 mt-0.5 leading-relaxed">
+                La connexion via Pro Santé Connect valide votre RPPS et publie immédiatement vos évaluations. Sans cette validation, vos notes restent en attente de vérification et ne sont pas visibles sur la plateforme.
+              </p>
+              <button
+                type="button"
+                onClick={() => connectWithPsc({ userId: user?.id })}
+                className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Se connecter via Pro Santé Connect
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {pendingEmail && (

@@ -144,8 +144,9 @@ Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans backticks, sa
     intro: parsed.intro,
     conclusion: parsed.conclusion,
     nouveautes: parsed.nouveautes,
-    etudes: etudes ?? [],
-    questionnaires: questionnaires ?? [],
+    articles: [],
+    etude: etudes ?? [],
+    questionnaire: questionnaires ?? [],
     moisLabel,
   })
 

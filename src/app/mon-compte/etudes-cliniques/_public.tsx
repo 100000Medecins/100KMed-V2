@@ -54,7 +54,7 @@ export default function EtudesCliniquesPublic() {
     startTransition(async () => {
       const { demanderInfoEtude } = await import('@/lib/actions/etudes-cliniques')
       await demanderInfoEtude(etude.id, etude.titre)
-      setSentIds((prev) => new Set([...prev, etude.id]))
+      setSentIds((prev) => new Set([...Array.from(prev), etude.id]))
     })
   }
 
@@ -177,7 +177,7 @@ export default function EtudesCliniquesPublic() {
                 ) : (
                   <ModalEnSavoirPlusButton
                     onEnSavoirPlus={() => handleEnSavoirPlus(modalEtude)}
-                    onSent={() => setSentIds((prev) => new Set([...prev, modalEtude.id]))}
+                    onSent={() => setSentIds((prev) => new Set([...Array.from(prev), modalEtude.id]))}
                     etudeId={modalEtude.id}
                     etudeTitre={modalEtude.titre}
                   />

@@ -77,6 +77,18 @@ export async function getCurrentUserProfile() {
 }
 
 /**
+ * Vérifie si un email est déjà associé à un compte dans public.users.
+ * Utilise le service role pour voir toutes les lignes (pas de filtrage RLS).
+ * Note : expose intentionnellement l'existence d'un email (tradeoff UX accepté).
+ */
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any).rpc('check_auth_email_exists', { p_email: email })
+  return !!data
+}
+
+/**
  * Crée le profil public.users après l'inscription email.
  * Utilise le service role car l'utilisateur n'a pas encore de session active
  * (email non confirmé) et le RLS bloquerait l'insertion.
@@ -184,14 +196,17 @@ export async function updateProfile(userData: {
   contact_ville?: string
   contact_pays?: string
 }) {
-  const supabase = await createServerClient()
+  const authClient = await createServerClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await authClient.auth.getUser()
   if (!user) throw new Error('Non authentifié')
 
-  // Vérifier l'unicité de l'email si modifié
+  // Service role pour bypasser le RLS sur toutes les opérations suivantes
+  const supabase = createServiceRoleClient()
+
+  // Vérifier l'unicité du contact_email (service role — voit toutes les lignes)
   if (userData.contact_email) {
     const { data: existingUser } = await supabase
       .from('users')
@@ -205,24 +220,28 @@ export async function updateProfile(userData: {
     }
   }
 
-  // Vérifier si le profil est complet
   const requiredFields = ['nom', 'prenom', 'specialite', 'mode_exercice']
-  const currentData = { ...userData }
   const isComplete = requiredFields.every(
-    (field) => currentData[field as keyof typeof currentData]
+    (field) => userData[field as keyof typeof userData]
   )
 
-  const { error } = await supabase
-    .from('users')
-    .update({
-      ...userData,
-      is_complete: isComplete,
-    })
-    .eq('id', user.id)
+  // UPSERT : met à jour la ligne si elle existe, la crée si absente
+  // (cas rare : createUserProfile ayant échoué silencieusement à l'inscription)
+  const upsertData = {
+    id: user.id,
+    email: user.email ?? '',
+    ...userData,
+    is_complete: isComplete,
+  }
+  if (!upsertData.pseudo) {
+    upsertData.pseudo = user.email?.split('@')[0] ?? 'Utilisateur'
+  }
 
-  if (error) throw error
+  const { error } = await supabase.from('users').upsert(upsertData, { onConflict: 'id' })
 
-  revalidatePath('/mon-compte')
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/mon-compte/profil')
   return { status: 'SUCCESS' }
 }
 

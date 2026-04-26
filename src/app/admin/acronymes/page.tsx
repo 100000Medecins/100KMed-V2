@@ -24,9 +24,11 @@ type Suggestion = {
 
 async function getData() {
   const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any
   const [{ data: acronymes }, { data: suggestions }] = await Promise.all([
-    supabase.from('acronymes').select('*').order('sigle', { ascending: true }),
-    supabase.from('suggestions_acronymes').select('*').order('created_at', { ascending: false }),
+    s.from('acronymes').select('*').order('sigle', { ascending: true }),
+    s.from('suggestions_acronymes').select('*').order('created_at', { ascending: false }),
   ])
   return {
     acronymes: (acronymes ?? []) as Acronyme[],

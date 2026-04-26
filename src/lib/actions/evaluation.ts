@@ -291,6 +291,16 @@ export async function finalizeEvaluation(solutionId: string) {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Non authentifié')
 
+  // Déterminer le statut selon la présence du RPPS (identité PSC vérifiée)
+  const admin = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (admin as any)
+    .from('users')
+    .select('rpps')
+    .eq('id', user.id)
+    .single()
+  const statut = profile?.rpps ? 'publiee' : 'en_attente_psc'
+
   // Mettre à jour le statut de la solution utilisée
   await supabase
     .from('solutions_utilisees')
@@ -298,15 +308,12 @@ export async function finalizeEvaluation(solutionId: string) {
     .eq('solution_id', solutionId)
     .eq('user_id', user.id)
 
-  // Mettre à jour la date de dernière note
-  await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any)
     .from('evaluations')
-    .update({ last_date_note: new Date().toISOString() })
+    .update({ last_date_note: new Date().toISOString(), statut })
     .eq('solution_id', solutionId)
     .eq('user_id', user.id)
-
-  // TODO: Envoyer un email de notification (remplacer SendGrid)
-  // La logique d'envoi d'email sera ajoutée ultérieurement
 
   revalidatePath(`/solutions`)
   return { status: 'SUCCESS' }
@@ -418,7 +425,7 @@ export async function submitEvaluation(
   // S'assurer que le profil utilisateur existe dans public.users
   const { data: profile } = await supabase
     .from('users')
-    .select('id')
+    .select('id, rpps')
     .eq('id', user.id)
     .single()
 
@@ -429,6 +436,8 @@ export async function submitEvaluation(
       pseudo: user.email?.split('@')[0] || 'Utilisateur',
     })
   }
+
+  const statut = profile?.rpps ? 'publiee' : 'en_attente_psc'
 
   // Vérifier si une évaluation existe déjà
   const { data: existingEvals } = await supabase
@@ -474,6 +483,7 @@ export async function submitEvaluation(
         scores,
         moyenne_utilisateur: Math.round(moyenne * 100) / 100,
         last_date_note: new Date().toISOString(),
+        statut,
       })
       .eq('id', existingEval.id)
     if (error) throw new Error(error.message)
@@ -485,6 +495,7 @@ export async function submitEvaluation(
       scores,
       moyenne_utilisateur: Math.round(moyenne * 100) / 100,
       last_date_note: new Date().toISOString(),
+      statut,
     })
     if (error) throw new Error(error.message)
   }

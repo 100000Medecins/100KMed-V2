@@ -14,7 +14,8 @@ export function createClient() {
         // Remplace navigator.locks par un pass-through pour éviter les AbortError
         // non gérées lancées par la librairie quand deux opérations auth se chevauchent.
         // Impact : pas de mutex multi-onglets, acceptable pour cette app.
-        lock: (_name: string, _acquireTimeout: number, fn: () => Promise<unknown>) => fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        lock: (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
       },
     }
   )

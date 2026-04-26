@@ -38,7 +38,7 @@ async function getData() {
       .not('last_date_note', 'is', null)
       .then(async ({ data }: { data: { user_id: string }[] | null }) => {
         if (!data) return { count: 0 }
-        const userIds = [...new Set(data.map((e: { user_id: string }) => e.user_id))]
+        const userIds = Array.from(new Set(data.map((e: { user_id: string }) => e.user_id)))
         // Parmi ces users, lesquels n'ont pas d'email ?
         const { count } = await (supabase as any)
           .from('users')

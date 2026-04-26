@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useMemo, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { createUserProfile, sendPasswordReset } from '@/lib/actions/user'
 import { connectWithPsc } from '@/lib/auth/psc'
@@ -56,6 +56,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [isEtudiant, setIsEtudiant] = useState(false)
   const [loading, setLoading] = useState(true)
+  const userIdRef = useRef<string | null>(null)
 
   // Ne créer le client Supabase que s'il est configuré
   const supabase = useMemo(
@@ -72,9 +73,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchRole = async (userId: string) => {
       try {
-        const { data } = await supabase.from('users').select('role, mode_exercice').eq('id', userId).single()
-        setUserRole(data?.role ?? null)
-        setIsEtudiant((data as { mode_exercice?: string | null } | null)?.mode_exercice === 'Étudiant')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any).from('users').select('role, mode_exercice').eq('id', userId).single()
+        setUserRole((data as any)?.role ?? null)
+        setIsEtudiant((data as any)?.mode_exercice === 'Étudiant')
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
         setUserRole(null)
@@ -86,9 +88,18 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     // (les deux simultanés causaient une collision sur le lock navigator.locks de Supabase)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) await fetchRole(session.user.id)
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const newUser = session?.user ?? null
+
+      // TOKEN_REFRESHED avec le même utilisateur : évite les re-renders inutiles
+      // qui déclencheraient les useEffect([user]) dans les pages enfants
+      if (event === 'TOKEN_REFRESHED' && newUser?.id === userIdRef.current) {
+        return
+      }
+
+      userIdRef.current = newUser?.id ?? null
+      setUser(newUser)
+      if (newUser) await fetchRole(newUser.id)
       else { setUserRole(null); setIsEtudiant(false) }
       setLoading(false)
     })
@@ -125,7 +136,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     })
-    if (error) return { error: error.message }
+    if (error) {
+      if (error.message === 'User already registered')
+        return { error: 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.' }
+      return { error: error.message }
+    }
 
     // Supabase ne retourne pas d'erreur si l'email existe déjà (il envoie juste un mail silencieux)
     // mais l'utilisateur retourné a un tableau identities vide dans ce cas

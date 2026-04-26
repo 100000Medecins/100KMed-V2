@@ -8,17 +8,18 @@ import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ShieldCheck, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
+import { checkEmailExists } from '@/lib/actions/user'
 
 function ConnexionContent() {
-  const { signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, user, loading } = useAuth()
+  const { signInWithPSC, signInWithEmail, resetPassword, user, loading } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const redirect = searchParams.get('redirect')
   const errorParam = searchParams.get('error')
   const modeParam = searchParams.get('mode')
 
-  const [mode, setMode] = useState<'choice' | 'login' | 'register' | 'forgot'>(
-    modeParam === 'register' ? 'register' : modeParam === 'login' ? 'login' : 'choice'
+  const [mode, setMode] = useState<'choice' | 'login' | 'forgot'>(
+    modeParam === 'login' ? 'login' : 'choice'
   )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,6 +36,11 @@ function ConnexionContent() {
   )
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(resetSuccess ? 'Mot de passe mis à jour. Vous pouvez vous connecter.' : null)
+
+  // ?mode=register → rediriger vers /inscription
+  useEffect(() => {
+    if (modeParam === 'register') router.replace('/inscription')
+  }, [modeParam, router])
 
   // Si déjà connecté, rediriger
   useEffect(() => {
@@ -60,22 +66,20 @@ function ConnexionContent() {
       return
     }
 
-    if (mode === 'login') {
-      const result = await signInWithEmail(email, password)
-      if (result.error) {
-        setError(result.error)
-      } else {
-        router.push(redirect || '/mon-compte/profil')
-      }
-    } else {
-      const result = await signUpWithEmail(email, password)
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')
-      }
+    // mode === 'login' : vérifier si l'email existe avant de tenter la connexion
+    const exists = await checkEmailExists(email)
+    if (!exists) {
+      router.push(`/inscription?email=${encodeURIComponent(email)}&from=login`)
+      setSubmitting(false)
+      return
     }
 
+    const result = await signInWithEmail(email, password)
+    if (result.error) {
+      setError(result.error)
+    } else {
+      router.push(redirect || '/mon-compte/profil')
+    }
     setSubmitting(false)
   }
 
@@ -131,7 +135,7 @@ function ConnexionContent() {
             </button>
 
             <button
-              onClick={() => setMode('register')}
+              onClick={() => router.push('/inscription')}
               className="w-full text-sm text-accent-blue hover:underline mt-2"
             >
               Créer un compte
@@ -173,7 +177,7 @@ function ConnexionContent() {
           </form>
         )}
 
-        {(mode === 'login' || mode === 'register') && (
+        {mode === 'login' && (
           <form onSubmit={handleEmailSubmit} className="space-y-4 text-left">
             <div>
               <label className="block text-sm font-medium text-navy mb-1">Email</label>
@@ -202,7 +206,7 @@ function ConnexionContent() {
               variant="primary"
               className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
             >
-              {mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+              Se connecter
             </Button>
 
             <div className="flex items-center justify-between text-xs pt-2">
@@ -215,24 +219,22 @@ function ConnexionContent() {
               </button>
               <button
                 type="button"
-                onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setSuccess(null) }}
+                onClick={() => router.push(email ? `/inscription?email=${encodeURIComponent(email)}` : '/inscription')}
                 className="text-accent-blue hover:underline"
               >
-                {mode === 'login' ? 'Créer un compte' : 'Déjà inscrit ? Se connecter'}
+                Créer un compte
               </button>
             </div>
 
-            {mode === 'login' && (
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => { setMode('forgot'); setError(null); setSuccess(null) }}
-                  className="text-xs text-gray-400 hover:text-gray-600 hover:underline"
-                >
-                  Mot de passe oublié ?
-                </button>
-              </div>
-            )}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setMode('forgot'); setError(null); setSuccess(null) }}
+                className="text-xs text-gray-400 hover:text-gray-600 hover:underline"
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
           </form>
         )}
 

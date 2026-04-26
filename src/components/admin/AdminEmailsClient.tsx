@@ -5,7 +5,6 @@ import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
 import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
 import type { Newsletter } from '@/app/admin/newsletters/page'
 import { setSiteConfig } from '@/lib/actions/siteConfig'
-import { buildExcuseEmail } from '@/lib/email/excuseTemplate'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import { Eye, Code, ChevronDown, ChevronUp, Calendar, X, Mail } from 'lucide-react'
 
@@ -110,7 +109,7 @@ export default function AdminEmailsClient({
       lien_desabonnement: '#',
     }
     const rendered = excuseHtml.replace(/\{\{(\w+)\}\}/g, (_, key) => sample[key] ?? `{{${key}}}`)
-    setExcusePreviewHtml(buildExcuseEmail(rendered))
+    setExcusePreviewHtml(rendered)
   }
 
   async function handleSendExcuse() {

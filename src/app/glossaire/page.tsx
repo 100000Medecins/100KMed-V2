@@ -23,7 +23,8 @@ type Acronyme = {
 
 async function getAcronymes(): Promise<Acronyme[]> {
   const supabase = await createServerClient()
-  const { data } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
     .from('acronymes')
     .select('id, sigle, definition, description, lien')
     .order('sigle', { ascending: true })

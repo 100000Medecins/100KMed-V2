@@ -24,27 +24,38 @@ function ComparerContent() {
     }
 
     const supabase = createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = supabase as any
 
-    Promise.all([
-      supabase
-        .from('solutions')
-        .select('*, editeur:editeurs(*), categorie:categories(*)')
-        .in('id', ids),
-      ...ids.map((id) =>
-        supabase
-          .from('resultats')
-          .select('*, critere:criteres(*)')
-          .eq('solution_id', id)
-      ),
-    ]).then(([solRes, ...resResults]) => {
-      setSolutions(solRes.data || [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const resMap: Record<string, any[]> = {}
-      ids.forEach((id, i) => {
-        resMap[id] = resResults[i]?.data || []
+    // Étape 1 : IDs des 5 critères de notation (nom_capital IS NOT NULL exclut nps/synthese)
+    s.from('criteres').select('id').not('nom_capital', 'is', null).then(({ data: criteresMajeurs }: { data: { id: string }[] | null }) => {
+      const critereIds = (criteresMajeurs || []).map((c: { id: string }) => c.id)
+
+      Promise.all([
+        s
+          .from('solutions')
+          .select('*, editeur:editeurs(*), categorie:categories(*)')
+          .in('id', ids),
+        // Étape 2 : resultats filtrés aux critères majeurs uniquement
+        ...ids.map((id: string) =>
+          critereIds.length > 0
+            ? s
+                .from('resultats')
+                .select('*, critere:criteres(*)')
+                .eq('solution_id', id)
+                .in('critere_id', critereIds)
+            : Promise.resolve({ data: [] })
+        ),
+      ]).then(([solRes, ...resResults]: [{ data: unknown[] | null }, ...{ data: unknown[] | null }[]]) => {
+        setSolutions((solRes.data as unknown[]) || [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resMap: Record<string, any[]> = {}
+        ids.forEach((id: string, i: number) => {
+          resMap[id] = (resResults[i]?.data as unknown[]) || []
+        })
+        setResultats(resMap)
+        setLoading(false)
       })
-      setResultats(resMap)
-      setLoading(false)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids.join(',')])
@@ -81,6 +92,14 @@ function ComparerContent() {
   })
 
   return (
+    <div>
+      <div className="bg-white/70 border-b border-gray-200/60 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 py-2.5 text-xs text-gray-400 flex items-center gap-1.5">
+          <a href="/" className="hover:text-navy transition-colors">Accueil</a>
+          <span className="text-gray-300">›</span>
+          <span className="font-semibold text-navy">Comparaison</span>
+        </div>
+      </div>
     <div className="max-w-6xl mx-auto px-6 py-10">
       <h1 className="text-2xl font-bold text-navy mb-8">Comparaison</h1>
 
@@ -144,6 +163,7 @@ function ComparerContent() {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   )
 }

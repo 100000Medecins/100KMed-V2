@@ -12,7 +12,7 @@ export default function DeleteVideoButton({ id, titre }: { id: string; titre: st
     return (
       <span className="flex items-center gap-1">
         <button
-          onClick={() => startTransition(() => deleteVideo(id))}
+          onClick={() => startTransition(async () => { await deleteVideo(id) })}
           disabled={isPending}
           className="text-xs px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-50"
         >

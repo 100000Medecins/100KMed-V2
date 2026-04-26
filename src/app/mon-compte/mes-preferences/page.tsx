@@ -15,9 +15,11 @@ export default function MesPreferencesPage() {
     if (!user) return
     const supabase = createClient()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = supabase as any
     Promise.all([
-      supabase.from('preferences').select('*').eq('is_actif', true).order('ordre'),
-      supabase.from('users_preferences').select('preference_id').eq('user_id', user.id),
+      s.from('preferences').select('*').eq('is_actif', true).order('ordre'),
+      s.from('users_preferences').select('preference_id').eq('user_id', user.id),
     ]).then(([prefsResult, userPrefsResult]) => {
       setAllPreferences(prefsResult.data || [])
       setUserPreferenceIds((userPrefsResult.data || []).map((p: any) => p.preference_id))
