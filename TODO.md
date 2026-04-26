@@ -18,32 +18,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 > ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
 
-##### Étape 2 — Simplifier `computeEvalGroupAvg` *(code uniquement)*
-- Supprimer la détection de format Firebase/Supabase (devenue inutile — tous les avis sont désormais 0-5)
-- Lire directement les 5 clés principales (`interface`, `fonctionnalites`, `fiabilite`, `editeur`, `qualite_prix`)
-- Fichier : `src/lib/db/evaluations.ts`
+##### ~~Étape 2 — Simplifier `computeEvalGroupAvg`~~ ✅ Fait 2026-04-26
+##### ~~Étape 3 — Unifier la source de note partout~~ ✅ Fait 2026-04-26
+##### ~~Étape 4 — Corriger `solutions.evaluation_redac_note`~~ ✅ Fait 2026-04-26
 
-##### Étape 3 — Unifier la source de note partout *(code uniquement)*
-- **Le bug** : homepage = 4.0, listing = 3.7, détail = 3.9 pour la même solution → 3 sources différentes
-- Cible : `resultats.moyenne_utilisateurs_base5` comme source unique (listing, homepage, détail)
-- Supprimer `getAverageNoteUtilisateurs()` (recalcule inutilement depuis `scores`)
-- Fichiers : `src/lib/db/evaluations.ts`, `src/lib/db/solutions.ts`
+##### ~~Étape 5 — Admin solutions : supprimer la section "Dates et publication"~~ ✅ Fait 2026-04-26
 
-##### Étape 4 — Corriger `solutions.evaluation_redac_note` *(code uniquement)*
-- Supprimer `evaluation_redac_note` de `extractSolutionFromFormData` (ligne morte — le trigger DB recalcule ce champ)
-- Fichier : `src/lib/actions/admin.ts`
-
-##### Étape 5 — Admin solutions : supprimer la section "Dates et publication" *(code uniquement)*
-- Retirer la section du `SolutionForm.tsx` (lignes 766-793)
-- Retirer les champs de `extractSolutionFromFormData` (date_publication, date_lancement, date_debut, date_fin, date_maj)
-
-##### Étape 6 — Listing catégorie : tri et affichage cohérents *(code uniquement)*
-- Tri par défaut : `note_utilisateurs` (au lieu de `nom`) — `src/app/solutions/[idCategorie]/page.tsx` ligne 44
-- Mode alphabétique : ne pas afficher de note — `src/components/solutions/SolutionList.tsx` lignes 83-105
-
-##### Étape 7 — Ajouter le trigger aux migrations SQL
-- Le trigger `trigger_update_evaluation_redac_note` existe dans le Dashboard Supabase mais pas dans les fichiers de migration du repo
-- Récupérer le DDL depuis Dashboard → Database → Triggers et l'ajouter dans une migration SQL
+##### ~~Étape 6 — Listing catégorie : tri et affichage cohérents~~ ✅ Fait 2026-04-26
+##### ~~Étape 7 — Ajouter le trigger aux migrations SQL~~ ✅ Fait 2026-04-26
 
 #### Traiter les remarques de Ben (rapport efficience du code)
 - Revoir tous les points remontés dans la capture de Ben
@@ -105,9 +87,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### ~~Création de compte — email déjà existant en DB~~ ✅ Fait 2026-04-25
 
-#### Note globale évaluations — incohérence
-- Dans les **commentaires utilisateurs** : la note globale affichée ne correspond pas à la moyenne des notes des sous-critères saisis
-- Vérifier aussi la **note globale** sur les pages solutions (calcul côté DB ou affichage)
+#### ~~Note globale évaluations — incohérence~~ ✅ Fait 2026-04-26
 
 #### Espace éditeur — accès limité aux éditeurs existants
 - Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
@@ -256,6 +236,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Phase 2 système de notation : unification sources de notes (homepage/listing/détail), simplification `computeEvalGroupAvg`, tri listing par défaut → `note_utilisateurs`, note masquée en mode alpha, ligne morte admin supprimée, trigger SQL `005` ajouté aux migrations ✅
 - PSC — fix session cookies (verifyOtp client-side via /auth/psc-session) ✅
 - PSC — fix utilisateur orphelin psc_create_error (generateLink recovery) ✅
 - PSC — fix blocage "Enregistrement..." sur completer-profil (mot de passe via admin API) ✅

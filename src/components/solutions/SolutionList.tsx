@@ -82,7 +82,8 @@ export default function SolutionList({ solutions, categorieSlug, tri }: Solution
             {/* Note */}
             {(() => {
               const isUtilisateurs = tri === 'note_utilisateurs'
-              const displayNote = solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5) ?? solution.noteRedacBase5
+              const displayNote = tri === 'nom' ? null
+                : solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5)
               const nbAvis: number | null = solution.nbNotesUtilisateurs ?? null
               const noteLabel = isUtilisateurs && nbAvis
                 ? `${nbAvis} avis`

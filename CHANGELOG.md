@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-04-26] — Phase 2 corrections système de notation
+
+### Fix — Unification des sources de notes utilisateurs
+- `computeEvalGroupAvg` : suppression de la détection Firebase/Supabase par présence de clés `detail_*` — les 47 évaluations sans sous-critères n'étaient plus divisées par 2 par erreur
+- `getAverageNoteUtilisateurs` : remplace le recalcul depuis `evaluations.scores` (JSONB brut, buggé) par une lecture de `evaluations.moyenne_utilisateur` (valeur pré-calculée, cohérente avec listing et homepage)
+- `computeAggregatedResultats` : même simplification pour le fallback (table `resultats` vide)
+- Tri par défaut du listing catégorie : `'nom'` → `'note_utilisateurs'`
+- Mode alpha : note masquée dans `SolutionList` (ne plus afficher la note rédaction quand tri = alphabétique)
+- Admin : suppression de la ligne `evaluation_redac_note = null` dans `extractSolutionFromFormData` — le trigger Supabase gère ce champ, l'écraser à null à chaque save était un bug silencieux
+
+### Nettoyage — Section "Dates et publication" supprimée de l'admin
+- `SolutionForm.tsx` : suppression de la section "Dates et publication" (5 champs : date_publication, date_lancement, date_maj, date_debut, date_fin)
+- `extractSolutionFromFormData` : retrait des 5 champs correspondants — ces dates ne sont pas utilisées sur le front public
+
+### Infrastructure — Trigger SQL ajouté aux migrations
+- `supabase/migrations/005_trigger_evaluation_redac_note.sql` : DDL du trigger `update_evaluation_redac_note` ajouté au repo pour reproductibilité (existait dans le Dashboard Supabase mais pas dans les fichiers)
+
+### TODO — Mises à jour
+- Marqués terminés : items Phase 2 dans "Consolidation BDD"
+
+---
+
 ## [2026-04-25] — Nettoyage code excuse, fix inscription, backup BDD, TODO
 
 ### Fix — Inscription avec email déjà existant

@@ -41,7 +41,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
   if (!categorie) notFound()
 
   const selectedTagIds = searchParams.tags?.split(',').filter(Boolean) || []
-  const tri = searchParams.tri || 'nom'
+  const tri = searchParams.tri || 'note_utilisateurs'
   const critereId = searchParams.critere || ''
   const dir: 'asc' | 'desc' = (searchParams.dir === 'asc' || searchParams.dir === 'desc')
     ? searchParams.dir

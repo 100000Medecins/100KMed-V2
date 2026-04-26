@@ -304,72 +304,42 @@ const CRITERES_PRINCIPAUX = ['interface', 'fonctionnalites', 'fiabilite', 'edite
 
 /** Calcule la note par groupe de critères pour une évaluation individuelle. Renvoie null si aucune donnée. */
 function computeEvalGroupAvg(scores: Record<string, unknown>): number | null {
-  const isNewFormat = Object.keys(scores).some((k) => k.startsWith('detail_'))
-
-  if (isNewFormat) {
-    // Nouveau format detail_* (échelle 0-5) : moyenne des moyennes par groupe
-    const groupSums: Record<string, number[]> = {}
-    for (const [key, value] of Object.entries(scores)) {
-      if (key === 'commentaire') continue
-      const group = DETAIL_CRITERE_MAP[key]
-      if (!group || typeof value !== 'number' || value <= 0) continue
-      if (!groupSums[group]) groupSums[group] = []
-      groupSums[group].push(value)
-    }
-    const groupAvgs = Object.values(groupSums).map(
-      (vals) => vals.reduce((s, v) => s + v, 0) / vals.length
-    )
-    if (groupAvgs.length === 0) return null
-    return groupAvgs.reduce((s, v) => s + v, 0) / groupAvgs.length
-  } else {
-    // Ancien format (échelle 0-10) : diviser par 2
-    const vals: number[] = []
-    for (const key of CRITERES_PRINCIPAUX) {
-      const raw = scores[key]
-      if (typeof raw === 'number' && raw > 0) vals.push(raw / 2)
-    }
-    if (vals.length === 0) return null
-    return vals.reduce((s, v) => s + v, 0) / vals.length
+  const vals: number[] = []
+  for (const key of CRITERES_PRINCIPAUX) {
+    const raw = scores[key]
+    if (typeof raw === 'number' && raw > 0) vals.push(raw)
   }
+  if (vals.length === 0) return null
+  return vals.reduce((s, v) => s + v, 0) / vals.length
 }
 
-/**
- * Calcule la note moyenne utilisateurs à partir des scores individuels.
- * Gère les deux formats : ancien Firebase (0-10) et nouveau detail_* (0-5).
- * La note globale = moyenne des moyennes par groupe de critères de chaque évaluation.
- */
 export async function getAverageNoteUtilisateurs(
   solutionId: string
 ): Promise<{ note: number | null; total: number; distribution: Record<string, number> }> {
   if (!UUID_RE.test(solutionId)) return { note: null, total: 0, distribution: {} }
 
   const supabase = createServiceRoleClient()
-  const { data: evaluations, error } = await supabase
+  const { data, error } = await supabase
     .from('evaluations')
-    .select('scores')
+    .select('moyenne_utilisateur')
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
     .or('statut.eq.publiee,statut.is.null')
+    .not('moyenne_utilisateur', 'is', null)
 
-  if (error || !evaluations || evaluations.length === 0) return { note: null, total: 0, distribution: {} }
+  if (error || !data || data.length === 0) return { note: null, total: 0, distribution: {} }
 
-  const allNotes: number[] = []
+  const notes = data.map((e) => e.moyenne_utilisateur as number)
+  const total = notes.length
+  const note = Math.round((notes.reduce((s, v) => s + v, 0) / total) * 10) / 10
+
   const distribution: Record<string, number> = {}
-
-  for (const ev of evaluations) {
-    const scores = (ev.scores || {}) as Record<string, unknown>
-    const avg = computeEvalGroupAvg(scores)
-    if (avg == null) continue
-    allNotes.push(avg)
-    const bucket = String(Math.min(5, Math.max(1, Math.round(avg))))
+  for (const n of notes) {
+    const bucket = String(Math.min(5, Math.max(1, Math.round(n))))
     distribution[bucket] = (distribution[bucket] || 0) + 1
   }
 
-  const note = allNotes.length > 0
-    ? Math.round((allNotes.reduce((s, v) => s + v, 0) / allNotes.length) * 10) / 10
-    : null
-
-  return { note, total: allNotes.length, distribution }
+  return { note, total, distribution }
 }
 
 /**
@@ -410,25 +380,9 @@ export async function computeAggregatedResultats(
 
     for (const ev of evaluations) {
       const scores = (ev.scores || {}) as Record<string, unknown>
-      const isNewFormat = Object.keys(scores).some((k) => k.startsWith('detail_'))
-
-      if (isNewFormat) {
-        // Nouveau format : moyenne des detail_* appartenant à ce groupe
-        const detailKeys = Object.entries(DETAIL_CRITERE_MAP)
-          .filter(([, group]) => group === key)
-          .map(([k]) => k)
-        const vals = detailKeys
-          .map((k) => scores[k])
-          .filter((v): v is number => typeof v === 'number' && v > 0)
-        if (vals.length > 0) {
-          groupValues.push(vals.reduce((s, v) => s + v, 0) / vals.length)
-        }
-      } else {
-        // Ancien format : clé directe, divisée par 2
-        const raw = scores[key]
-        if (typeof raw === 'number' && raw > 0) {
-          groupValues.push(raw / 2)
-        }
+      const raw = scores[key]
+      if (typeof raw === 'number' && raw > 0) {
+        groupValues.push(raw)
       }
     }
 

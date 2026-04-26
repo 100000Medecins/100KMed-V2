@@ -87,12 +87,6 @@ function extractSolutionFromFormData(formData: FormData) {
     logo_titre: (formData.get('logo_titre') as string) || null,
     website: (formData.get('website_url') as string) || null,
     version: (formData.get('version') as string) || null,
-    date_publication: (formData.get('date_publication') as string) || null,
-    lancement: (formData.get('date_lancement') as string) || null,
-    date_debut: (formData.get('date_debut') as string) || null,
-    date_fin: (formData.get('date_fin') as string) || null,
-    date_maj: (formData.get('date_maj') as string) || null,
-    evaluation_redac_note: formData.get('note_redac_base5') ? Number(formData.get('note_redac_base5')) : null,
     evaluation_redac_avis: (formData.get('evaluation_redac_avis') as string) || null,
     evaluation_redac_points_forts: (formData.get('evaluation_redac_points_forts') as string)
       ? (formData.get('evaluation_redac_points_forts') as string).split('\n').filter(Boolean)
