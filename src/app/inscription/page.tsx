@@ -131,13 +131,12 @@ function InscriptionContent() {
                   disabled={submitting}
                   onClick={async () => {
                     setSubmitting(true)
-                    setError(null)
                     const result = await signInWithEmail(email, password)
                     if (result.error) {
                       setError(result.error)
                       setSubmitting(false)
                     } else {
-                      router.push('/mon-compte/profil')
+                      window.location.href = '/mon-compte/profil'
                     }
                   }}
                   className="w-full py-3 px-6 bg-navy text-white font-semibold rounded-xl hover:bg-navy/90 transition-colors disabled:opacity-50"
