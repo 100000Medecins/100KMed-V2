@@ -12,5 +12,7 @@ export const config = {
     '/mon-compte/:path*',
     '/solution/noter/:path*',
     '/api/auth/:path*',
+    '/connexion',
+    '/inscription',
   ],
 }

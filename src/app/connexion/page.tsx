@@ -11,7 +11,7 @@ import PasswordInput from '@/components/ui/PasswordInput'
 import { checkEmailExists } from '@/lib/actions/user'
 
 function ConnexionContent() {
-  const { signInWithPSC, signInWithEmail, resetPassword, user, loading } = useAuth()
+  const { signInWithPSC, signInWithEmail, resetPassword } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const redirect = searchParams.get('redirect')
@@ -43,13 +43,6 @@ function ConnexionContent() {
     if (modeParam === 'register') router.replace('/inscription')
   }, [modeParam, router])
 
-  // Si déjà connecté, rediriger
-  useEffect(() => {
-    if (user && !loading) {
-      router.replace(redirect || '/mon-compte/profil')
-    }
-  }, [user, loading, redirect, router])
-
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -70,18 +63,17 @@ function ConnexionContent() {
     // mode === 'login' : vérifier si l'email existe avant de tenter la connexion
     const exists = await checkEmailExists(email)
     if (!exists) {
-      router.push(`/inscription?email=${encodeURIComponent(email)}&from=login`)
-      setSubmitting(false)
+      window.location.href = `/inscription?email=${encodeURIComponent(email)}&from=login`
       return
     }
 
     const result = await signInWithEmail(email, password)
     if (result.error) {
       setError(result.error)
+      setSubmitting(false)
     } else {
-      router.push(redirect || '/mon-compte/profil')
+      window.location.href = redirect || '/mon-compte/profil'
     }
-    setSubmitting(false)
   }
 
   return (

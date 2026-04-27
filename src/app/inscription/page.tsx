@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -10,7 +10,7 @@ import { UserPlus, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
 
 function InscriptionContent() {
-  const { signInWithPSC, signUpWithEmail, signInWithEmail, user, loading } = useAuth()
+  const { signInWithPSC, signUpWithEmail, signInWithEmail } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const emailParam = searchParams.get('email')
@@ -21,13 +21,6 @@ function InscriptionContent() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  // Si déjà connecté, rediriger
-  useEffect(() => {
-    if (user && !loading) {
-      router.replace('/mon-compte/profil')
-    }
-  }, [user, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

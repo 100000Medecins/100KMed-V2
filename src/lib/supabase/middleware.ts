@@ -54,5 +54,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Routes d'auth : rediriger vers /mon-compte/profil si déjà connecté
+  // (remplace les useEffect([user]) côté client qui causaient des doubles navigations)
+  const authOnlyPaths = ['/connexion', '/inscription']
+  const isAuthOnlyRoute = authOnlyPaths.some((path) =>
+    request.nextUrl.pathname === path
+  )
+
+  if (isAuthOnlyRoute && user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/mon-compte/profil'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }
