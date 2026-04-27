@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Suspense } from 'react'
 
 function PscSessionContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const done = useRef(false)
 
@@ -17,34 +16,42 @@ function PscSessionContent() {
     const tokenHash = searchParams.get('token')
     const next = searchParams.get('next') || '/mon-compte/profil'
 
+    const redirectTo = (path: string) => {
+      window.location.replace(path)
+    }
+
     if (!tokenHash) {
-      router.replace('/connexion?error=psc_session_error')
+      redirectTo('/connexion?error=psc_session_error')
       return
     }
+
+    console.log('[PSC session] token reçu, appel verifyOtp…')
 
     const supabase = createClient()
 
     const timeout = setTimeout(() => {
-      router.replace('/connexion?error=psc_session_error')
+      console.warn('[PSC session] timeout 10s — redirection forcée')
+      redirectTo('/connexion?error=psc_session_error')
     }, 10000)
 
     supabase.auth
       .verifyOtp({ token_hash: tokenHash, type: 'magiclink' })
-      .then(({ error }) => {
+      .then(({ data, error }) => {
         clearTimeout(timeout)
         if (error) {
-          console.error('[PSC] client verifyOtp error:', error)
-          router.replace('/connexion?error=psc_session_error')
+          console.error('[PSC session] verifyOtp error:', error.message)
+          redirectTo('/connexion?error=psc_session_error')
         } else {
-          router.replace(next)
+          console.log('[PSC session] OK, user:', data?.user?.id, '— redirect vers:', next)
+          redirectTo(next)
         }
       })
       .catch((err) => {
         clearTimeout(timeout)
-        console.error('[PSC] client verifyOtp exception:', err)
-        router.replace('/connexion?error=psc_session_error')
+        console.error('[PSC session] verifyOtp exception:', err)
+        redirectTo('/connexion?error=psc_session_error')
       })
-  }, [router, searchParams])
+  }, [searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-light">

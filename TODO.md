@@ -75,6 +75,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
 
+#### Checklist technique passage en prod (www)
+- **Vercel** → `NEXT_PUBLIC_SITE_URL` (Production) : changer `https://dev.100000medecins.org` → `https://www.100000medecins.org`
+- **Supabase** → Authentication → URL Configuration → **Site URL** : changer vers `https://www.100000medecins.org`
+- **Supabase** → Redirect URLs : vérifier que `https://www.100000medecins.org/reinitialiser-mot-de-passe` est dans la liste
+- **PSC** : aucune action — le relay `/connexionPsc` gère automatiquement le basculement dev→www (déjà en place)
+
 ### Nettoyage — Post-migration Synology
 
 #### Supprimer les anciens dossiers Frontend-V2-main *(dans 1–2 semaines de stabilité confirmée)*
