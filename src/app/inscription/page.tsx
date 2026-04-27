@@ -125,12 +125,22 @@ function InscriptionContent() {
                 />
               </div>
 
-              <Button
-                variant="primary"
-                className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                Créer mon compte
-              </Button>
+              {error?.startsWith('Un compte existe déjà') ? (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/connexion?email=${encodeURIComponent(email)}`)}
+                  className="w-full py-3 px-6 bg-navy text-white font-semibold rounded-xl hover:bg-navy/90 transition-colors"
+                >
+                  Se connecter
+                </button>
+              ) : (
+                <Button
+                  variant="primary"
+                  className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  Créer mon compte
+                </Button>
+              )}
 
               <div className="text-center pt-1">
                 <button

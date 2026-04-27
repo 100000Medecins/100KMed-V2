@@ -17,11 +17,12 @@ function ConnexionContent() {
   const redirect = searchParams.get('redirect')
   const errorParam = searchParams.get('error')
   const modeParam = searchParams.get('mode')
+  const emailParam = searchParams.get('email')
 
   const [mode, setMode] = useState<'choice' | 'login' | 'forgot'>(
-    modeParam === 'login' ? 'login' : 'choice'
+    modeParam === 'login' || emailParam ? 'login' : 'choice'
   )
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(emailParam ?? '')
   const [password, setPassword] = useState('')
   const resetSuccess = searchParams.get('reset') === 'success'
   const PSC_ERROR_MESSAGES: Record<string, string> = {
