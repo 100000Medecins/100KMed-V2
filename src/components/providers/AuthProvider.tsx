@@ -99,9 +99,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       userIdRef.current = newUser?.id ?? null
       setUser(newUser)
-      if (newUser) await fetchRole(newUser.id)
-      else { setUserRole(null); setIsEtudiant(false) }
       setLoading(false)
+      // fetchRole en fire-and-forget : ne doit jamais bloquer setLoading
+      if (newUser) fetchRole(newUser.id)
+      else { setUserRole(null); setIsEtudiant(false) }
     })
 
     return () => subscription.unsubscribe()
