@@ -309,13 +309,17 @@ export async function deleteAccount() {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Non authentifié')
 
-  // Supprimer le profil utilisateur (cascade)
+  // Supprimer le profil utilisateur (cascade sur évaluations, favoris, préférences…)
   const { error } = await supabase
     .from('users')
     .delete()
     .eq('id', user.id)
 
   if (error) throw error
+
+  // Supprimer l'entrée auth.users via le service role (le client user n'a pas les droits)
+  const supabaseAdmin = createServiceRoleClient()
+  await supabaseAdmin.auth.admin.deleteUser(user.id)
 
   // Déconnecter l'utilisateur
   await supabase.auth.signOut()
