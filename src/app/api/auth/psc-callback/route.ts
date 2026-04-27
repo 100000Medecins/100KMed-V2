@@ -240,6 +240,7 @@ export async function GET(request: Request) {
       // Mettre à jour le profil avec les données PSC fraîches
       // N'écraser nom/prenom que si PSC les fournit (évite d'effacer des valeurs saisies manuellement)
       const profileUpdates: Record<string, unknown> = {}
+      if (rpps) profileUpdates.rpps = rpps
       if (nom) profileUpdates.nom = nom
       if (prenom) profileUpdates.prenom = prenom
       if (specialite) profileUpdates.specialite = specialite
@@ -251,6 +252,14 @@ export async function GET(request: Request) {
       if (Object.keys(profileUpdates).length > 0) {
         await supabaseAdmin.from('users').update(profileUpdates).eq('id', userId)
       }
+
+      // Publier les évaluations en_attente_psc liées à ce user_id
+      // (cas : compte email/mdp existant qui se connecte via PSC pour la première fois)
+      await supabaseAdmin
+        .from('evaluations')
+        .update({ statut: 'publiee' })
+        .eq('user_id', userId)
+        .eq('statut', 'en_attente_psc')
     }
 
     // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)
