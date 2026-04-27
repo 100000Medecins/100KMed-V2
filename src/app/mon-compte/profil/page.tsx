@@ -55,6 +55,7 @@ export default function ProfilPage() {
   const [resetSent, setResetSent] = useState(false)
 
   const supabaseRef = useRef(createClient())
+  const initialValuesRef = useRef({ nom: '', prenom: '', specialite: '', modeExercice: '', selectedAvatar: null as string | null })
 
   // Charger le profil existant
   useEffect(() => {
@@ -70,15 +71,22 @@ export default function ProfilPage() {
           .eq('id', user.id)
           .single()
         if (data) {
-          setNom(data.nom || '')
-          setPrenom(data.prenom || '')
-          setContactEmail(data.contact_email || null)
-          // Résoudre les codes SM vers libellés si nécessaire
+          const loadedNom = data.nom || ''
+          const loadedPrenom = data.prenom || ''
           const sp = data.specialite || ''
           const resolved = SM_SPECIALITES[sp] ?? sp
-          setSpecialite(SPECIALITES.includes(resolved) ? resolved : sp)
-          setModeExercice(data.mode_exercice || '')
-          setSelectedAvatar(data.portrait || null)
+          const loadedSpecialite = SPECIALITES.includes(resolved) ? resolved : sp
+          const loadedModeExercice = data.mode_exercice || ''
+          const loadedAvatar = data.portrait || null
+
+          setNom(loadedNom)
+          setPrenom(loadedPrenom)
+          setContactEmail(data.contact_email || null)
+          setSpecialite(loadedSpecialite)
+          setModeExercice(loadedModeExercice)
+          setSelectedAvatar(loadedAvatar)
+          initialValuesRef.current = { nom: loadedNom, prenom: loadedPrenom, specialite: loadedSpecialite, modeExercice: loadedModeExercice, selectedAvatar: loadedAvatar }
+
           const fromPsc = !!(data.rpps || user?.user_metadata?.provider === 'psc')
           setIsFromPsc(fromPsc)
           // Utilisateur PSC sans mot de passe = aucune identité "email" dans Supabase
@@ -134,10 +142,15 @@ export default function ProfilPage() {
   }
 
   const isValid = nom.trim() && prenom.trim() && specialite && modeExercice
+  const isDirty = nom !== initialValuesRef.current.nom ||
+    prenom !== initialValuesRef.current.prenom ||
+    specialite !== initialValuesRef.current.specialite ||
+    modeExercice !== initialValuesRef.current.modeExercice ||
+    selectedAvatar !== initialValuesRef.current.selectedAvatar
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValid) return
+    if (!isValid || !isDirty) return
     setSubmitting(true)
     setError(null)
     setSuccess(null)
@@ -154,6 +167,7 @@ export default function ProfilPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
       }
+      initialValuesRef.current = { nom: nom.trim(), prenom: prenom.trim(), specialite, modeExercice, selectedAvatar }
       setSuccess('Profil mis à jour avec succès.')
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
@@ -447,7 +461,7 @@ export default function ProfilPage() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom *</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom <span className="text-red-500 font-bold">*</span></label>
                   <input
                     type="text"
                     value={prenom}
@@ -458,7 +472,7 @@ export default function ProfilPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom *</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom <span className="text-red-500 font-bold">*</span></label>
                   <input
                     type="text"
                     value={nom}
@@ -471,7 +485,7 @@ export default function ProfilPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité *</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500 font-bold">*</span></label>
                   <select
                     value={specialite}
                     onChange={(e) => setSpecialite(e.target.value)}
@@ -485,7 +499,7 @@ export default function ProfilPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice *</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice <span className="text-red-500 font-bold">*</span></label>
                   <div className="flex flex-wrap gap-2">
                     {MODES_EXERCICE.map((mode) => (
                       <button
@@ -768,7 +782,7 @@ export default function ProfilPage() {
         <div className="flex justify-end">
           <Button
             variant="primary"
-            className={!isValid || submitting ? 'opacity-50 pointer-events-none' : ''}
+            className={!isValid || !isDirty || submitting ? 'opacity-50 pointer-events-none' : ''}
           >
             {submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </Button>
