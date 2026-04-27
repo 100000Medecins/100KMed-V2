@@ -23,15 +23,26 @@ function PscSessionContent() {
     }
 
     const supabase = createClient()
+
+    const timeout = setTimeout(() => {
+      router.replace('/connexion?error=psc_session_error')
+    }, 10000)
+
     supabase.auth
       .verifyOtp({ token_hash: tokenHash, type: 'magiclink' })
       .then(({ error }) => {
+        clearTimeout(timeout)
         if (error) {
           console.error('[PSC] client verifyOtp error:', error)
           router.replace('/connexion?error=psc_session_error')
         } else {
           router.replace(next)
         }
+      })
+      .catch((err) => {
+        clearTimeout(timeout)
+        console.error('[PSC] client verifyOtp exception:', err)
+        router.replace('/connexion?error=psc_session_error')
       })
   }, [router, searchParams])
 
