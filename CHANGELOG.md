@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-04-28] — Assainissement architecture auth + corrections UX profil/inscription
+
+### Fix — Navigation post-auth : window.location partout (règle architecturale)
+- Cause racine identifiée : `router.push/replace` Next.js 14 App Router échoue silencieusement depuis les callbacks async post-auth — session établie, navigation ratée, page bloquée ou utilisateur redirigé vers `/`
+- Fix systémique : toutes navigations post-auth migrent vers `window.location.href` / `window.location.replace` (navigation native navigateur, rechargement complet garanti)
+- Suppression des `useEffect([user, loading])` dans `/connexion` et `/inscription` qui créaient des doubles navigations (useEffect + handler se déclenchant simultanément)
+- Middleware (`middleware.ts` + `lib/supabase/middleware.ts`) : `/connexion` et `/inscription` ajoutés au matcher ; si déjà connecté → redirect serveur `/mon-compte/profil` (remplace proprement les useEffects supprimés)
+- `docs/auth-navigation.md` créé : documentation des 7 flux d'auth, règle fondamentale, anti-patterns à ne jamais reproduire
+
+### Fix PSC — /auth/psc-session encore bloquée malgré le timeout
+- `router.replace` → `window.location.replace` dans `psc-session/page.tsx`
+- Ajout de console.logs de diagnostic (token reçu, résultat verifyOtp, destination)
+- Suppression de `useRouter` (plus nécessaire)
+
+### Fix Inscription — Bouton "Se connecter" restait grisé après email existant
+- `router.push` → `window.location.href` après `signInWithEmail` réussi
+- L'erreur "Un compte existe déjà" n'est plus effacée avant l'await (évite le flip d'intitulé visible pendant le chargement)
+
+### Feature Profil — Bouton "Enregistrer" désactivé si aucune modification
+- `initialValuesRef` : snapshot des valeurs chargées depuis la BDD
+- `isDirty` : comparaison en temps réel (nom, prénom, spécialité, mode d'exercice, avatar)
+- Bouton grisé au chargement et immédiatement après chaque sauvegarde réussie
+- Étoiles rouges `*` sur les 4 champs obligatoires (prénom, nom, spécialité, mode d'exercice)
+
+---
+
 ## [2026-04-27] — Unification des notes + refonte visuelle (fond, hero, cartes)
 
 ### Fix — Unification source de notes (listing = page solution = hero)

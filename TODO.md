@@ -285,6 +285,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Auth — centralisation navigation post-auth (`window.location` partout, middleware `/connexion` + `/inscription`, `docs/auth-navigation.md`) ✅ (2026-04-28)
+- PSC session bloquée — `router.replace` → `window.location.replace`, console.logs diagnostic ✅ (2026-04-28)
+- Profil — bouton Enregistrer désactivé si aucun changement + étoiles champs obligatoires ✅ (2026-04-28)
+- Inscription — bouton "Se connecter" bloqué (email existant) corrigé ✅ (2026-04-28)
 - Email — Master layout centralisé : `buildEmail()` unique, 8 routes migrées, onglet admin "Template email", aperçu rendu final, envoi test, logo 276px ✅ (2026-04-27)
 - UI mobile — Navbar accordion groupes, SolutionList/Filters/SortBar, bouton "Proposer" questionnaires, `has_note_redac` remplace slugs hardcodés ✅ (2026-04-27)
 - Phase 2 système de notation : unification sources de notes (homepage/listing/détail), simplification `computeEvalGroupAvg`, tri listing par défaut → `note_utilisateurs`, note masquée en mode alpha, ligne morte admin supprimée, trigger SQL `005` ajouté aux migrations ✅
