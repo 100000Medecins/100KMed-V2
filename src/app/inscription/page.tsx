@@ -10,7 +10,7 @@ import { UserPlus, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
 
 function InscriptionContent() {
-  const { signInWithPSC, signUpWithEmail, user, loading } = useAuth()
+  const { signInWithPSC, signUpWithEmail, signInWithEmail, user, loading } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const emailParam = searchParams.get('email')
@@ -128,10 +128,21 @@ function InscriptionContent() {
               {error?.startsWith('Un compte existe déjà') ? (
                 <button
                   type="button"
-                  onClick={() => router.push(`/connexion?email=${encodeURIComponent(email)}`)}
-                  className="w-full py-3 px-6 bg-navy text-white font-semibold rounded-xl hover:bg-navy/90 transition-colors"
+                  disabled={submitting}
+                  onClick={async () => {
+                    setSubmitting(true)
+                    setError(null)
+                    const result = await signInWithEmail(email, password)
+                    if (result.error) {
+                      setError(result.error)
+                      setSubmitting(false)
+                    } else {
+                      router.push('/mon-compte/profil')
+                    }
+                  }}
+                  className="w-full py-3 px-6 bg-navy text-white font-semibold rounded-xl hover:bg-navy/90 transition-colors disabled:opacity-50"
                 >
-                  Se connecter
+                  {submitting ? 'Connexion…' : 'Se connecter'}
                 </button>
               ) : (
                 <Button
