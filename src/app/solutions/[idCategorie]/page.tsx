@@ -27,8 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-// Catégories sans note 100 000 Médecins → pas d'option de tri par note
-const SLUGS_SANS_NOTES_REDAC = ['intelligence-artificielle-medecine', 'ia-documentaires', 'agenda-medical']
+// Le flag has_note_redac sur la catégorie contrôle l'affichage du tri par note rédaction
 
 const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
   nom: 'asc',
@@ -170,7 +169,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
                 currentDir={dir}
                 selectedTagIds={selectedTagIds}
                 count={solutionsAvecNotes.length}
-                hideNoteRedac={SLUGS_SANS_NOTES_REDAC.includes(params.idCategorie)}
+                hideNoteRedac={!(categorie as any).has_note_redac}
               />
               <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} />
             </div>

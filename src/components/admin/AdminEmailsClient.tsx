@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
+import EmailTemplateEditor from '@/components/admin/EmailTemplateEditor'
 import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
 import type { Newsletter } from '@/app/admin/newsletters/page'
 import { setSiteConfig } from '@/lib/actions/siteConfig'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import { Eye, Code, ChevronDown, ChevronUp, Calendar, X, Mail } from 'lucide-react'
+import type { EmailTemplate } from '@/lib/actions/emailTemplates'
 
 interface TemplateConfig {
   id: string
@@ -36,24 +38,25 @@ interface Props {
   sections: Section[]
   newsletters?: Newsletter[]
   cronsActifs?: boolean
-  excuseCount?: number
   excuseDefaultSujet?: string
   excuseDefaultHtml?: string
   excuseScheduledAt?: string | null
   adminEmail?: string
+  masterLayoutTemplate?: EmailTemplate | null
 }
 
 export default function AdminEmailsClient({
   sections,
   newsletters = [],
   cronsActifs = false,
-  excuseCount = 0,
   excuseDefaultSujet = '',
   excuseDefaultHtml = '',
   excuseScheduledAt = null,
   adminEmail = 'contact@100000medecins.org',
+  masterLayoutTemplate = null,
 }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
+  const masterLayoutHtml = masterLayoutTemplate?.contenu_html ?? undefined
   const [cronsOn, setCronsOn] = useState(cronsActifs)
   const [isPending, startTransition] = useTransition()
   const [testSending, setTestSending] = useState(false)
@@ -113,7 +116,7 @@ export default function AdminEmailsClient({
   }
 
   async function handleSendExcuse() {
-    if (!window.confirm(`Envoyer l'email d'excuse aux ${excuseCount} médecins concernés ? Cette action est irréversible.`)) return
+    if (!window.confirm(`Envoyer l'email d'excuse aux médecins concernés ? Cette action est irréversible.`)) return
     setExcuseSending(true)
     setExcuseResult(null)
     try {
@@ -211,47 +214,6 @@ export default function AdminEmailsClient({
 
   return (
     <div>
-      {/* Bannière d'urgence compacte — uniquement quand il y a des destinataires en attente */}
-      {excuseCount > 0 && !excuseDone && (
-        <div className="mb-6 rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl flex-shrink-0">⚠️</span>
-            <div className="flex-1">
-              <p className="font-bold text-amber-900 text-sm">Email d&apos;excuse à envoyer — 23/04/2026</p>
-              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                <strong>{excuseCount} médecins</strong> ont reçu un email de relance avec des liens cassés.
-                Modifiez le template dans &laquo;&nbsp;Notifications système&nbsp;&raquo; ci-dessous puis envoyez.
-              </p>
-            </div>
-            <button
-              onClick={handleSendExcuse}
-              disabled={excuseSending}
-              className="flex-shrink-0 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 whitespace-nowrap"
-            >
-              {excuseSending ? 'Envoi en cours…' : `Envoyer à ${excuseCount} médecins`}
-            </button>
-          </div>
-          {excuseResult && (
-            <div className={`mt-3 text-xs rounded-lg p-3 ${excuseResult.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-              {excuseResult.ok ? (
-                <p>✅ {excuseResult.sent} emails envoyés sur {excuseResult.total}.{excuseResult.errors && excuseResult.errors.length > 0 && ` (${excuseResult.errors.length} erreurs)`}</p>
-              ) : (
-                <p>Erreur : {excuseResult.error}</p>
-              )}
-              {excuseResult.errors && excuseResult.errors.length > 0 && (
-                <ul className="mt-1 list-disc list-inside opacity-75">
-                  {excuseResult.errors.slice(0, 5).map((e, i) => <li key={i}>{e}</li>)}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-      {excuseDone && excuseResult?.ok && (
-        <div className="mb-6 rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-800">
-          ✅ Email d&apos;excuse envoyé à <strong>{excuseResult.sent}</strong> médecins le 23/04/2026.
-        </div>
-      )}
 
       {/* Modal aperçu email d'excuse */}
       {excusePreviewHtml && (
@@ -350,7 +312,7 @@ export default function AdminEmailsClient({
       </div>
 
       {/* Onglets */}
-      <div className="flex gap-1 bg-white rounded-xl shadow-card p-1 w-fit mb-6">
+      <div className="flex gap-1 bg-white rounded-xl shadow-card p-1 w-fit mb-6 flex-wrap">
         {sections.map((section) => (
           <button
             key={section.key}
@@ -364,24 +326,50 @@ export default function AdminEmailsClient({
             {section.label}
           </button>
         ))}
+        <button
+          onClick={() => setActiveTab('template')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'template'
+              ? 'bg-navy text-white shadow-sm'
+              : 'text-gray-500 hover:text-navy hover:bg-surface-light'
+          }`}
+        >
+          Template email
+        </button>
       </div>
 
+      {/* Onglet Template email — master layout */}
+      {activeTab === 'template' && (
+        <div className="bg-white rounded-card shadow-card p-6">
+          <p className="text-sm text-gray-500 mb-6">
+            Layout HTML partagé par tous les emails SendGrid du site. Modifier ce fichier change l&apos;apparence de <strong>tous les emails</strong> (fond, header, footer, typographie).
+            Placer <code className="bg-gray-100 px-1 rounded font-mono text-xs">{'{{contenu}}'}</code> à l&apos;endroit où chaque email injecte son corps.
+          </p>
+          <EmailTemplateEditor
+            templateId="master_layout"
+            initialSujet={masterLayoutTemplate?.sujet ?? 'Layout global'}
+            initialHtml={masterLayoutTemplate?.contenu_html ?? ''}
+            updatedAt={masterLayoutTemplate?.updated_at ?? null}
+          />
+        </div>
+      )}
+
       {/* Contenu de la section active */}
-      {activeSection && (
+      {activeTab !== 'template' && activeSection && (
         activeSection.key === 'newsletter' ? (
           <div className="space-y-8">
             <NewslettersClient newsletters={newsletters} />
             {activeSection.templates.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Envois ponctuels</p>
-                <AdminEmailsAccordion templates={activeSection.templates} />
+                <AdminEmailsAccordion templates={activeSection.templates} masterLayoutHtml={masterLayoutHtml} />
               </div>
             )}
           </div>
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">{activeSection.description}</p>
-            <AdminEmailsAccordion templates={activeSection.templates} />
+            <AdminEmailsAccordion templates={activeSection.templates} masterLayoutHtml={masterLayoutHtml} />
 
             {/* Email d'excuse — toujours visible en bas des notifications système */}
             {activeSection.key === 'systeme' && (

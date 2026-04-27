@@ -119,16 +119,16 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
               <button
                 type="button"
                 onClick={() => toggleGroup(group.id)}
-                className="flex items-center gap-1.5 w-full pt-3 pb-1 sm:cursor-default"
+                className="flex items-start gap-1.5 w-full pt-3 pb-1 sm:cursor-default"
               >
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                <p className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5 flex-wrap leading-tight">
                   {group.label}
                   {hasSelected && (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-blue" />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-blue shrink-0" />
                   )}
                 </p>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 sm:hidden shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 sm:hidden shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`}
                 />
               </button>
             )}

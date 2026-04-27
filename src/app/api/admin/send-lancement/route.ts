@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 function generateToken(): string {
@@ -26,18 +27,6 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
   const siteUrl = new URL(req.url).origin
-
-  // Récupérer le template
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: template } = await (supabase as any)
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', 'lancement')
-    .single()
-
-  if (!template?.contenu_html) {
-    return NextResponse.json({ error: 'Template "lancement" non configuré ou vide.' }, { status: 400 })
-  }
 
   // Récupérer tous les utilisateurs ayant au moins une évaluation finalisée
   const { data: evals } = await supabase
@@ -85,26 +74,19 @@ export async function POST(req: NextRequest) {
         : `${siteUrl}/mon-compte/mes-evaluations`
 
       const nomDisplay = r.nom ? `Dr. ${r.nom}` : 'Docteur'
-      const sujet = (template.sujet as string)
-        .replace(/\{\{prenom\}\}/g, nomDisplay)
-        .replace(/\{\{nom\}\}/g, nomDisplay)
-        .replace(/\{\{solution_nom\}\}/g, r.solutionNom)
+      const result = await buildEmail('lancement', {
+        nom: nomDisplay, prenom: nomDisplay, solution_nom: r.solutionNom,
+        lien_1clic: lien1Clic,
+        lien_reevaluation: `${siteUrl}/mon-compte/mes-evaluations`,
+        lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+      }, siteUrl)
 
-      const html = (template.contenu_html as string)
-        .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-        .replace(/\{\{prenom\}\}/g, nomDisplay)
-        .replace(/\{\{nom\}\}/g, nomDisplay)
-        .replace(/\{\{solution_nom\}\}/g, r.solutionNom)
-        .replace(/\{\{lien_reevaluation\}\}/g, `${siteUrl}/mon-compte/mes-evaluations`)
-        .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
-        .replace(/\{\{lien_desabonnement\}\}/g, `${siteUrl}/mon-compte/mes-notifications`)
+      if (!result) {
+        errors.push(`${r.email}: template "lancement" introuvable`)
+        continue
+      }
 
-      await sgMail.send({
-        to: r.email,
-        from: 'contact@100000medecins.org',
-        subject: sujet,
-        html: html,
-      })
+      await sgMail.send({ to: r.email, from: 'contact@100000medecins.org', subject: result.sujet, html: result.html })
       sent++
     } catch (e) {
       errors.push(`${r.email}: ${e}`)

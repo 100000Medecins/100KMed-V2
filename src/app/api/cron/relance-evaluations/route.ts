@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 export const dynamic = 'force-dynamic'
@@ -22,40 +23,23 @@ async function sendRelanceEmail(
   lienReevaluation: string,
   lien1Clic: string,
   siteUrl: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any
 ) {
-  const { data: template } = await supabase
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', templateId)
-    .single()
-
-  if (!template) return
-
   const nomDisplay = nom ? `Dr. ${nom}` : 'Docteur'
-  const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
+  const result = await buildEmail(templateId, {
+    nom: nomDisplay, prenom: nomDisplay, solution_nom: solutionNom,
+    lien_reevaluation: lienReevaluation,
+    lien_1clic: lien1Clic,
+    lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+  }, siteUrl)
 
-  const sujet = (template.sujet as string)
-    .replace(/\{\{solution_nom\}\}/g, solutionNom)
-    .replace(/\{\{prenom\}\}/g, nomDisplay)
-    .replace(/\{\{nom\}\}/g, nomDisplay)
-
-  const html = (template.contenu_html as string)
-    .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-    .replace(/\{\{solution_nom\}\}/g, solutionNom)
-    .replace(/\{\{prenom\}\}/g, nomDisplay)
-    .replace(/\{\{nom\}\}/g, nomDisplay)
-    .replace(/\{\{lien_reevaluation\}\}/g, lienReevaluation)
-    .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
-    .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
+  if (!result) return
 
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   await sgMail.send({
     to: toEmail,
     from: 'contact@100000medecins.org',
-    subject: sujet,
-    html: html,
+    subject: result.sujet,
+    html: result.html,
   })
 }
 
@@ -119,7 +103,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
-      await sendRelanceEmail('relance_1an', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
+      await sendRelanceEmail('relance_1an', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('evaluations')
@@ -159,7 +143,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
-      await sendRelanceEmail('relance_3mois', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, supabase)
+      await sendRelanceEmail('relance_3mois', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('evaluations')

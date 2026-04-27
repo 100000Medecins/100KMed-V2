@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 function generateToken(): string {
@@ -24,17 +25,6 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
   const siteUrl = new URL(req.url).origin
-
-  // Template
-  const { data: template } = await (supabase as any)
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', 'questionnaire_recherche')
-    .single()
-
-  if (!template?.contenu_html) {
-    return NextResponse.json({ error: 'Template "questionnaire_recherche" non configuré ou vide.' }, { status: 400 })
-  }
 
   // Utilisateurs opt-in
   const { data: prefs } = await (supabase as any)
@@ -64,17 +54,19 @@ export async function POST(req: NextRequest) {
     if (!user.email) continue
     try {
       const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
-      const sujet = (template.sujet as string)
-        .replace(/\{\{nom\}\}/g, nomDisplay)
+      const result = await buildEmail('questionnaire_recherche', {
+        nom: nomDisplay,
+        lien_etude,
+        texte_promoteur,
+        lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+      }, siteUrl)
 
-      const html = (template.contenu_html as string)
-        .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-        .replace(/\{\{nom\}\}/g, nomDisplay)
-        .replace(/\{\{lien_etude\}\}/g, lien_etude)
-        .replace(/\{\{texte_promoteur\}\}/g, texte_promoteur)
-        .replace(/\{\{lien_desabonnement\}\}/g, `${siteUrl}/mon-compte/mes-notifications`)
+      if (!result) {
+        errors.push(`${user.email}: template "questionnaire_recherche" introuvable`)
+        continue
+      }
 
-      await sgMail.send({ to: user.email, from: 'contact@100000medecins.org', subject: sujet, html: html })
+      await sgMail.send({ to: user.email, from: 'contact@100000medecins.org', subject: result.sujet, html: result.html })
       sent++
     } catch (e) {
       errors.push(`${user.email}: ${e}`)

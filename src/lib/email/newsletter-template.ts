@@ -192,7 +192,7 @@ export function buildNewsletterHtml(data: NewsletterContent): string {
   <tr>
     <td style="padding:10px 0 16px;">
       <a href="${S}" style="text-decoration:none;">
-        <img src="${SUPABASE_STORAGE}/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="325" style="display:block;width:325px;height:auto;border:0;" />
+        <img src="${SUPABASE_STORAGE}/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="276" style="display:block;width:276px;height:auto;border:0;" />
       </a>
     </td>
   </tr>

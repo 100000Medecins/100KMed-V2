@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 export const dynamic = 'force-dynamic'
@@ -41,21 +42,6 @@ export async function GET(req: NextRequest) {
   const cutoff = new Date(now)
   cutoff.setDate(cutoff.getDate() - DELAY_DAYS)
 
-  // Récupérer le template email
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: template } = await (supabase as any)
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', TEMPLATE_ID)
-    .single()
-
-  if (!template) {
-    return NextResponse.json(
-      { error: `Template "${TEMPLATE_ID}" introuvable. Créez-le dans Admin → Emails.` },
-      { status: 404 }
-    )
-  }
-
   // ── 1. Premières relances : jamais relancé, email initial envoyé il y a > 7 jours ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: premieres } = await (supabase as any)
@@ -94,23 +80,23 @@ export async function GET(req: NextRequest) {
     const relanceNum = (ev.relance_psc_count ?? 0) + 1
     const pscLink = `${siteUrl}/api/auth/psc-initier?token=${ev.token_verification}`
 
-    const sujet = (template.sujet as string)
-      .replace(/\{\{solution_nom\}\}/g, solution.nom)
-      .replace(/\{\{relance_num\}\}/g, String(relanceNum))
-
-    const html = (template.contenu_html as string)
-      .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-      .replace(/\{\{solution_nom\}\}/g, solution.nom)
-      .replace(/\{\{psc_link\}\}/g, pscLink)
-      .replace(/\{\{relance_num\}\}/g, String(relanceNum))
-      .replace(/\{\{max_relances\}\}/g, String(MAX_RELANCES))
+    const result = await buildEmail(TEMPLATE_ID, {
+      solution_nom: solution.nom,
+      psc_link: pscLink,
+      relance_num: String(relanceNum),
+      max_relances: String(MAX_RELANCES),
+    }, siteUrl)
 
     try {
+      if (!result) {
+        errors.push(`eval ${ev.id}: template "${TEMPLATE_ID}" introuvable`)
+        continue
+      }
       await sgMail.send({
         to: ev.email_temp,
         from: 'contact@100000medecins.org',
-        subject: sujet,
-        html: html,
+        subject: result.sujet,
+        html: result.html,
       })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

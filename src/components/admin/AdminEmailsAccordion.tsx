@@ -30,11 +30,12 @@ interface TemplateConfig {
 
 interface AdminEmailsAccordionProps {
   templates: TemplateConfig[]
+  masterLayoutHtml?: string
 }
 
 type SendState = 'idle' | 'confirming' | 'sending' | 'done' | 'error'
 
-export default function AdminEmailsAccordion({ templates }: AdminEmailsAccordionProps) {
+export default function AdminEmailsAccordion({ templates, masterLayoutHtml }: AdminEmailsAccordionProps) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [sendState, setSendState] = useState<SendState>('idle')
   const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null)
@@ -111,6 +112,7 @@ export default function AdminEmailsAccordion({ templates }: AdminEmailsAccordion
                   initialSujet={tpl.data?.sujet ?? tpl.defaultSujet}
                   initialHtml={tpl.data?.contenu_html ?? ''}
                   updatedAt={tpl.data?.updated_at ?? null}
+                  masterLayoutHtml={masterLayoutHtml}
                 />
 
                 {/* Panneau envoi ciblé (études cliniques / questionnaires) */}

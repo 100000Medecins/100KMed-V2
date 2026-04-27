@@ -41,6 +41,8 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(true);
+  const [isMobileCommunauteOpen, setIsMobileCommunauteOpen] = useState(false);
+  const [openGroupes, setOpenGroupes] = useState<Record<string, boolean>>({});
   const [categories, setCategories] = useState<NavCategorie[]>([]);
   const [navConfig, setNavConfig] = useState<NavResponse['navConfig']>({ irritants_visible: false, blog_visible: false, etudes_visible: false, questionnaires_visible: false, section_communaute_visible: false });
   const [navLoaded, setNavLoaded] = useState(false);
@@ -64,9 +66,14 @@ export default function Navbar() {
     fetch('/api/nav-categories')
       .then((r) => r.json())
       .then((data: NavResponse) => {
-        setCategories(data.categories ?? [])
+        const cats = data.categories ?? []
+        setCategories(cats)
         setNavConfig(data.navConfig ?? { irritants_visible: false, blog_visible: false })
         setNavLoaded(true)
+        const groupesBuilt = buildGroupes(cats)
+        if (groupesBuilt.length > 0) {
+          setOpenGroupes({ [groupesBuilt[0].nom]: true })
+        }
       })
       .catch(() => {})
   }, [])
@@ -95,6 +102,10 @@ export default function Navbar() {
 
   function handleMenuMouseLeave() {
     closeTimer.current = setTimeout(() => setIsMegaMenuOpen(false), 150)
+  }
+
+  function toggleGroupe(nom: string) {
+    setOpenGroupes(prev => ({ ...prev, [nom]: !prev[nom] }))
   }
 
   const groupes = buildGroupes(categories)
@@ -289,7 +300,7 @@ export default function Navbar() {
           {/* Burger mobile — toujours à droite */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className={`min-[1150px]:hidden pl-2 py-2 pr-0 -mr-6 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
+            className={`min-[1150px]:hidden p-2 transition-colors duration-500 focus:outline-none ${darkNav ? 'text-white' : 'text-navy'}`}
             aria-label="Menu"
           >
             {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -365,27 +376,37 @@ export default function Navbar() {
               </button>
 
               {isMobileComparatifOpen && (
-                <div className="pl-4 mt-1 space-y-3 pb-2">
-                  {groupes.map((groupe) => (
-                    <div key={groupe.nom}>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-1">
-                        {groupe.nom}
-                      </p>
-                      <ul className="space-y-1">
-                        {groupe.categories.map((cat) => (
-                          <li key={cat.slug}>
-                            <a
-                              href={`/solutions/${cat.slug}`}
-                              className="block text-sm text-white/75 hover:text-white py-1"
-                              onClick={() => setIsMobileOpen(false)}
-                            >
-                              {cat.nom}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                <div className="pl-4 mt-1 space-y-1 pb-2">
+                  {groupes.map((groupe) => {
+                    const isGroupeOpen = !!openGroupes[groupe.nom]
+                    return (
+                      <div key={groupe.nom}>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroupe(groupe.nom)}
+                          className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-wider text-white/50 hover:text-white/70 py-1.5 pr-2 transition-colors"
+                        >
+                          {groupe.nom}
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isGroupeOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isGroupeOpen && (
+                          <ul className="space-y-0.5 mb-1">
+                            {groupe.categories.map((cat) => (
+                              <li key={cat.slug}>
+                                <a
+                                  href={`/solutions/${cat.slug}`}
+                                  className="block text-sm text-white py-1 pl-2 hover:text-accent-blue transition-colors"
+                                  onClick={() => setIsMobileOpen(false)}
+                                >
+                                  {cat.nom}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })}
                   <a
                     href="/comparatifs"
                     className="block text-xs font-semibold text-accent-blue pt-1"
@@ -397,20 +418,31 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Communauté mobile */}
+            {/* Communauté mobile — accordion collapsed par défaut */}
             <div className="border-t border-white/10 pt-2 mt-1">
-              <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1 px-0">Communauté</p>
-              <a href="/blog" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📝 Blog</a>
-              <a href="/stories-tutos" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>🎬 Vidéos & tutoriels</a>
-              <a href="/glossaire" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📖 Glossaire e-Santé</a>
-              {navLoaded && navConfig.irritants_visible && (
-                <a href="/irritants-esante" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>⚡ Irritants de l'e-santé</a>
-              )}
-              {navLoaded && navConfig.etudes_visible && (
-                <a href="/mon-compte/etudes-cliniques" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>🔬 Études cliniques</a>
-              )}
-              {navLoaded && navConfig.questionnaires_visible && (
-                <a href="/mon-compte/questionnaires-these" className="block text-sm text-white/85 hover:text-white py-1.5" onClick={() => setIsMobileOpen(false)}>📋 Questionnaires de thèse</a>
+              <button
+                type="button"
+                onClick={() => setIsMobileCommunauteOpen((v) => !v)}
+                className="flex items-center justify-between w-full text-sm text-white/85 hover:text-white font-medium py-2"
+              >
+                Communauté
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileCommunauteOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isMobileCommunauteOpen && (
+                <div className="pl-4 mt-1 space-y-0.5 pb-2">
+                  <a href="/blog" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>📝 Blog</a>
+                  <a href="/stories-tutos" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>🎬 Vidéos & tutoriels</a>
+                  <a href="/glossaire" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>📖 Glossaire e-Santé</a>
+                  {navLoaded && navConfig.irritants_visible && (
+                    <a href="/irritants-esante" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>⚡ Irritants de l'e-santé</a>
+                  )}
+                  {navLoaded && navConfig.etudes_visible && (
+                    <a href="/mon-compte/etudes-cliniques" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>🔬 Études cliniques</a>
+                  )}
+                  {navLoaded && navConfig.questionnaires_visible && (
+                    <a href="/mon-compte/questionnaires-these" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>📋 Questionnaires de thèse</a>
+                  )}
+                </div>
               )}
             </div>
 

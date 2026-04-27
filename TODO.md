@@ -27,6 +27,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ##### ~~Étape 6 — Listing catégorie : tri et affichage cohérents~~ ✅ Fait 2026-04-26
 ##### ~~Étape 7 — Ajouter le trigger aux migrations SQL~~ ✅ Fait 2026-04-26
 
+#### Documenter le flux de création utilisateur — dualité auth.users / public.users
+- Tracer le chemin exact des fonctions appelées lors de l'inscription (email + PSC)
+- Expliquer ce qui est stocké dans `auth.users` (géré par Supabase) vs `public.users` (notre table)
+- Vérifier que les deux tables coexistent bien sans désynchronisation possible (ex : utilisateur créé dans auth mais pas dans public, ou l'inverse)
+- Produire un document `docs/user-creation-flow.md` daté, à mettre à jour si le flux change
+
+#### Audit "données dynamiques vs. hardcodées" — vérification BDD
+- Suite à la découverte de `SLUGS_SANS_NOTES_REDAC` (liste de slugs codée en dur) alors que `has_note_redac` existe en BDD
+- Passer en revue le code front pour repérer d'autres constantes hardcodées qui devraient venir de la BDD (slugs de catégories, flags de visibilité, seuils de notation, etc.)
+- Vérifier que les critères majeurs (`nom_capital`) existent bien en BDD pour **toutes** les catégories (agendas, IA, etc.), pas seulement logiciels-métier
+- Vérifier que `resultats` est bien peuplé pour toutes les catégories (sinon le filtre "Note globale" n'apparaît pas)
+
 #### Traiter les remarques de Ben (rapport efficience du code)
 - Revoir tous les points remontés dans la capture de Ben
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
@@ -78,8 +90,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### ~~Page /difficileDeChanger — images manquantes à réintégrer~~ ✅ Fait 2026-04-25
 
-#### Page solution — cadre note de droite hors du cadre titre
-- Remettre le bloc note (droite) à l'intérieur du cadre du titre sur la page solution
+#### ~~Page solution — cadre note de droite hors du cadre titre~~ ✅ Fait 2026-04-27
+- ~~Notes déplacées à l'intérieur du cadre blanc principal~~
 
 #### ~~Fil d'Ariane — contraste insuffisant~~ ✅ Fait 2026-04-27
 - ~~Déplacé dans une fine bande horizontale blanche translucide sous la navbar, variante dark~~
@@ -93,6 +105,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Tester que les notes statut='en_attente_psc' ne s'affichent PAS publiquement
 - Vérifier la cohérence entre ce que l'utilisateur voit dans "Mes évaluations" et ce qui est affiché sur les pages solution
 - Si des anciennes notes ont statut=null et ne devraient pas être affichées, corriger en base
+
+#### Footer des emails — lien de désabonnement cassé
+- Le lien "Se désabonner" dans le footer des emails n'envoie nulle part (URL non configurée ou route manquante)
+- Vérifier le template HTML en base → quelle URL est utilisée
+- Créer ou vérifier la route de désabonnement et l'associer à une mise à jour du profil utilisateur (opt-out mailing)
 
 #### Espace éditeur — accès limité aux éditeurs existants
 - Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
@@ -119,6 +136,21 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Occasion de revoir la direction artistique globale du site
 
 ### Emails — tableau de bord
+
+#### ~~Visualiser les templates email depuis l'admin~~ ✅ Fait 2026-04-27
+- ~~Depuis Admin → Emails (page racine), ajouter un aperçu/visualisation des templates email stockés en base~~
+- ~~Permettre de voir le rendu HTML d'un template sans avoir à passer par Supabase ou le code~~
+- ~~Idéalement : sélecteur de template + prévisualisation + lien d'édition direct~~
+
+#### Uniformité des templates email — à vérifier
+- Vérifier que **tous** les emails transactionnels SendGrid utilisent bien le même layout/template de base
+- En cas de modification du layout global (footer, header, branding), s'assurer que tous les templates sont impactés
+- Rappel : les emails Supabase natifs (confirmation inscription, changement email) ne passent **pas** par ce système — ils utilisent leurs propres templates configurés dans le dashboard Supabase
+
+#### MAJ templates Supabase natifs — cohérence visuelle avec le master layout
+- Une fois le master layout SendGrid finalisé et validé visuellement, mettre à jour manuellement les templates natifs Supabase (confirm signup, change email address) dans **Supabase Dashboard → Authentication → Email Templates**
+- Objectif : aligner leur rendu (logo, couleurs, structure) avec le master layout SendGrid
+- ⚠️ Ces deux templates ne passent **pas** par `buildEmail()` — modification manuelle uniquement dans le dashboard Supabase, pas dans `email_templates` en BDD
 
 #### Tableau de bord des envois de mails — vue calendrier
 - Créer une vue plus visuelle dans Admin → Emails : calendrier des envois passés et programmés
@@ -247,6 +279,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Email — Master layout centralisé : `buildEmail()` unique, 8 routes migrées, onglet admin "Template email", aperçu rendu final, envoi test, logo 276px ✅ (2026-04-27)
+- UI mobile — Navbar accordion groupes, SolutionList/Filters/SortBar, bouton "Proposer" questionnaires, `has_note_redac` remplace slugs hardcodés ✅ (2026-04-27)
 - Phase 2 système de notation : unification sources de notes (homepage/listing/détail), simplification `computeEvalGroupAvg`, tri listing par défaut → `note_utilisateurs`, note masquée en mode alpha, ligne morte admin supprimée, trigger SQL `005` ajouté aux migrations ✅
 - PSC — fix session cookies (verifyOtp client-side via /auth/psc-session) ✅
 - PSC — fix utilisateur orphelin psc_create_error (generateLink recovery) ✅

@@ -36,9 +36,28 @@
 - Gradient SVG opaque de `SolutionDetailPage` supprimé (fond dots visible)
 - Hero : fondu bas corrigé (transparent coloré `rgba(15,30,56,0)` → pas de bande lumineuse grise)
 
+### Email — Master layout centralisé + refonte système d'envoi
+- `buildEmail(templateId, vars, siteUrl)` ajouté dans `emailTemplates.ts` : charge template + master_layout en parallèle, détecte `isFullDocument` pour la rétro-compatibilité, injecte `{{contenu}}`, remplace toutes les variables dans HTML et sujet
+- 8 routes d'envoi migrées : `send-etude`, `send-lancement`, `send-questionnaire`, `test-relance-email`, `relance-evaluations`, `relance-incomplets`, `relance-psc`, `sendPasswordReset` dans `user.ts`
+- Nouvelle route `/api/admin/test-email` : envoie n'importe quel template avec données fictives, destinataire par défaut `david.azerad@100000medecins.org`
+- Admin → Emails : nouvel onglet "Template email" pour éditer/prévisualiser le `master_layout` ; bandeau excuse 23/04 supprimé
+- `EmailTemplateEditor` : aperçu rendu final (layout + contenu composés), guard `isFullDocument` côté client, envoi de test avec destinataire modifiable
+- Logo email réduit à 276px (85%) dans `baseTemplate.ts` et `newsletter-template.ts`
+- `docs/email-architecture.md` mis à jour : table des 10 templates, section master layout, guide migration progressive, checklist ajout email
+
+### UX / UI — Améliorations mobile listing et navbar
+- Navbar mobile : accordion par groupe de catégories (premier groupe ouvert par défaut)
+- `SolutionSortBar` : options mobile dédiées (Note utilisateurs en premier), refs simplifiées
+- `SolutionList` : padding mobile réduit (`p-4 sm:p-6`), badge + étoiles plus petits
+- `SolutionFilters` : alignement titre groupe corrigé (flex-wrap, items-start)
+- Questionnaires thèses : bouton "Proposer" masqué en header mobile, pleine largeur en bas
+- Listing : `SLUGS_SANS_NOTES_REDAC` hardcodé remplacé par le flag `has_note_redac` BDD
+
 ### TODO — Mises à jour
 - Marqué terminé : "Fil d'Ariane — contraste insuffisant", "Cadre note de droite dans le cadre titre"
+- Marqué terminé : "Visualiser les templates email depuis l'admin" (onglet Template email + éditeurs)
 - Ajout : "Créer un design system pour le site" (UX / UI)
+- Ajout : "MAJ templates Supabase natifs — cohérence visuelle avec le master layout"
 
 ---
 

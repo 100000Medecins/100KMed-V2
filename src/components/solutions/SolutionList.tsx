@@ -33,7 +33,7 @@ export default function SolutionList({ solutions, categorieSlug, tri }: Solution
           <Link
             key={solution.id}
             href={href}
-            className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-6 flex flex-col group"
+            className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 flex flex-col group min-w-0"
           >
             {/* Logo */}
             <div className="w-full h-24 rounded-xl bg-surface-light flex items-center justify-center mb-4 overflow-hidden">
@@ -91,12 +91,12 @@ export default function SolutionList({ solutions, categorieSlug, tri }: Solution
                 ? 'Utilisateurs'
                 : ''
               return (
-                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1 pt-3 border-t border-gray-100 overflow-hidden">
                   {displayNote ? (
                     <>
-                      <RatingBadge rating={displayNote} />
-                      <StarRating rating={displayNote} />
-                      {noteLabel && <span className="text-xs text-gray-400">{noteLabel}</span>}
+                      <RatingBadge rating={displayNote} size="sm" />
+                      <StarRating rating={displayNote} size={12} />
+                      {noteLabel && <span className="text-[10px] text-gray-400 whitespace-nowrap">{noteLabel}</span>}
                     </>
                   ) : (
                     <span className="text-xs text-gray-400">Pas encore noté</span>

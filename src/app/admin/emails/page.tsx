@@ -44,6 +44,7 @@ export default async function AdminEmailsPage() {
   const [
     templatePsc, template1an, template3mois, templateLancement,
     templateSuppression, templateReset, templateEtude, templateQuestionnaire,
+    templateMasterLayout,
     emailsEtudes, emailsQuestionnaires,
     countEtudes, countQuestionnaires,
     { data: newsletters },
@@ -51,7 +52,6 @@ export default async function AdminEmailsPage() {
     excuseScheduledAtRaw,
     excuseDraftHtml,
     excuseDraftSujet,
-    excuseCount,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -61,6 +61,7 @@ export default async function AdminEmailsPage() {
     getEmailTemplate('reinitialisation_mot_de_passe'),
     getEmailTemplate('etude_clinique'),
     getEmailTemplate('questionnaire_recherche'),
+    getEmailTemplate('master_layout'),
     getOptedInEmails('etudes_cliniques'),
     getOptedInEmails('questionnaires_these'),
     getOptedInCount('etudes_cliniques'),
@@ -74,18 +75,6 @@ export default async function AdminEmailsPage() {
     getSiteConfig('excuse_scheduled_at'),
     getSiteConfig('excuse_draft_html'),
     getSiteConfig('excuse_draft_sujet'),
-    // Nombre de destinataires ayant reçu le mail cassé du 23/04
-    (async () => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { count } = await (supabase as any)
-          .from('evaluations')
-          .select('id', { count: 'exact', head: true })
-          .gte('last_relance_sent_at', '2026-04-23 00:00:00+00')
-          .lt('last_relance_sent_at', '2026-04-24 00:00:00+00')
-        return count ?? 0
-      } catch { return 0 }
-    })(),
   ])
 
   const sections = [
@@ -203,11 +192,11 @@ export default async function AdminEmailsPage() {
         sections={sections}
         newsletters={(newsletters as Newsletter[]) ?? []}
         cronsActifs={cronsActifs}
-        excuseCount={excuseCount as number}
         excuseDefaultSujet={excuseDraftSujet ?? 'Correction — votre email de relance pour {{solution_nom}}'}
         excuseDefaultHtml={excuseDraftHtml ?? ''}
         excuseScheduledAt={excuseScheduledAtRaw}
         adminEmail={process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'}
+        masterLayoutTemplate={templateMasterLayout}
       />
     </div>
   )

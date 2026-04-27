@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 /**
@@ -13,14 +14,19 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
   const supabase = createServiceRoleClient()
 
   // Générer le lien de récupération via le SDK admin
+  // IMPORTANT : redirectTo doit être une URL fixe correspondant exactement à la liste blanche
+  // Supabase Auth → URL Configuration → Redirect URLs.
+  // Ne pas utiliser les headers HTTP (host peut varier selon preview/www/apex) car Supabase
+  // refuserait le redirect_to et renverrait l'utilisateur vers la racine du site.
   const headersList = await headers()
   const host = headersList.get('host') || 'www.100000medecins.org'
   const proto = headersList.get('x-forwarded-proto') || 'https'
   const siteUrl = `${proto}://${host}`
+  const redirectBase = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || siteUrl
   const { data, error } = await supabase.auth.admin.generateLink({
     type: 'recovery',
     email,
-    options: { redirectTo: `${siteUrl}/reinitialiser-mot-de-passe` },
+    options: { redirectTo: `${redirectBase}/reinitialiser-mot-de-passe` },
   })
 
   if (error) return { error: error.message }
@@ -28,28 +34,20 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
   const resetLink = data.properties?.action_link
   if (!resetLink) return { error: 'Lien de réinitialisation indisponible' }
 
-  // Récupérer le template depuis la DB
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: template } = await (supabase as any)
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', 'reinitialisation_mot_de_passe')
-    .single()
-
-  if (!template?.contenu_html) return { error: 'Template email introuvable' }
+  const emailContent = await buildEmail(
+    'reinitialisation_mot_de_passe',
+    { lien_reinitialisation: resetLink },
+    siteUrl
+  )
+  if (!emailContent) return { error: 'Template email introuvable' }
 
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
-  const html = (template.contenu_html as string)
-    .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-    .replace(/\{\{lien_reinitialisation\}\}/g, resetLink)
-  const sujet = template.sujet as string
-
   try {
     await sgMail.send({
       to: email,
       from: 'contact@100000medecins.org',
-      subject: sujet,
-      html: html,
+      subject: emailContent.sujet,
+      html: emailContent.html,
     })
   } catch {
     return { error: 'Erreur lors de l\'envoi de l\'email.' }

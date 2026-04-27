@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 export const dynamic = 'force-dynamic'
@@ -69,21 +70,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Récupérer le template email
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: template } = await (supabase as any)
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', TEMPLATE_ID)
-    .single()
-
-  if (!template) {
-    return NextResponse.json(
-      { error: `Template "${TEMPLATE_ID}" introuvable. Créez-le dans Admin → Emails.` },
-      { status: 404 }
-    )
-  }
-
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
 
   let sentCount = 0
@@ -121,28 +107,24 @@ export async function GET(req: NextRequest) {
 
     // Construire le lien de reprise direct sur l'évaluation incomplète
     const lienReprise = `${siteUrl}/solution/noter/${categorie.slug}/${solution.slug}`
-    const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
     const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
 
-    const sujet = (template.sujet as string)
-      .replace(/\{\{solution_nom\}\}/g, solution.nom)
-      .replace(/\{\{nom\}\}/g, nomDisplay)
-      .replace(/\{\{prenom\}\}/g, nomDisplay)
-
-    const html = (template.contenu_html as string)
-      .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-      .replace(/\{\{solution_nom\}\}/g, solution.nom)
-      .replace(/\{\{nom\}\}/g, nomDisplay)
-      .replace(/\{\{prenom\}\}/g, nomDisplay)
-      .replace(/\{\{lien_reprise\}\}/g, lienReprise)
-      .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
+    const result = await buildEmail(TEMPLATE_ID, {
+      nom: nomDisplay, prenom: nomDisplay, solution_nom: solution.nom,
+      lien_reprise: lienReprise,
+      lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+    }, siteUrl)
 
     try {
+      if (!result) {
+        errors.push(`eval ${ev.id}: template "${TEMPLATE_ID}" introuvable`)
+        continue
+      }
       await sgMail.send({
         to: user.email,
         from: 'contact@100000medecins.org',
-        subject: sujet,
-        html: html,
+        subject: result.sujet,
+        html: result.html,
       })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

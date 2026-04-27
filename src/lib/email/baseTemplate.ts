@@ -104,7 +104,7 @@ export function buildEmail(opts: BaseEmailOptions): string {
         <td style="padding:0 0 20px;">
           <a href="${siteUrl}" style="text-decoration:none;display:block;">
             <img src="${LOGO_URL}" alt="100 000 Médecins"
-                 width="325" style="display:block;width:325px;height:auto;border:0;" />
+                 width="276" style="display:block;width:276px;height:auto;border:0;" />
           </a>
         </td>
       </tr>

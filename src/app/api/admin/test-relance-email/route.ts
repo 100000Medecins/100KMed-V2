@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
 function generateAdminToken(): string {
@@ -81,45 +82,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Solution introuvable pour cette évaluation' }, { status: 404 })
   }
 
-  // Récupérer le template relance_1an
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: template } = await (supabase as any)
-    .from('email_templates')
-    .select('sujet, contenu_html')
-    .eq('id', 'relance_1an')
-    .single()
-
-  if (!template) {
-    return NextResponse.json({ error: 'Template relance_1an introuvable' }, { status: 404 })
-  }
-
   const nomDisplay = user?.nom ? `Dr. ${user.nom}` : 'Docteur'
   const lienReevaluation = `${siteUrl}/mon-compte/mes-evaluations`
   const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
-  const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
 
-  const sujet = `[TEST] ${(template.sujet as string)
-    .replace(/\{\{solution_nom\}\}/g, solution.nom)
-    .replace(/\{\{prenom\}\}/g, nomDisplay)
-    .replace(/\{\{nom\}\}/g, nomDisplay)}`
+  const result = await buildEmail('relance_1an', {
+    nom: nomDisplay, prenom: nomDisplay, solution_nom: solution.nom,
+    lien_reevaluation: lienReevaluation,
+    lien_1clic: lien1Clic,
+    lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+  }, siteUrl)
 
-  const html = (template.contenu_html as string)
-    .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-    .replace(/\{\{solution_nom\}\}/g, solution.nom)
-    .replace(/\{\{prenom\}\}/g, nomDisplay)
-    .replace(/\{\{nom\}\}/g, nomDisplay)
-    .replace(/\{\{lien_reevaluation\}\}/g, lienReevaluation)
-    .replace(/\{\{lien_1clic\}\}/g, lien1Clic)
-    .replace(/\{\{lien_desabonnement\}\}/g, lienDesabonnement)
+  if (!result) {
+    return NextResponse.json({ error: 'Template relance_1an introuvable' }, { status: 404 })
+  }
 
-  // L'email de test est toujours envoyé à l'admin, pas au destinataire réel
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   try {
     await sgMail.send({
       to: adminEmail,
       from: 'contact@100000medecins.org',
-      subject: sujet,
-      html,
+      subject: `[TEST] ${result.sujet}`,
+      html: result.html,
     })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

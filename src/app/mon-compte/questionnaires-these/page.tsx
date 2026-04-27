@@ -67,7 +67,7 @@ export default function QuestionnairesThesePage() {
         </div>
         <a
           href="/mon-compte/mes-questionnaires-these"
-          className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-accent-blue/10 text-accent-blue text-sm font-medium rounded-xl hover:bg-accent-blue/20 transition-colors"
+          className="hidden sm:flex shrink-0 items-center gap-2 px-4 py-2.5 bg-accent-blue/10 text-accent-blue text-sm font-medium rounded-xl hover:bg-accent-blue/20 transition-colors"
         >
           <BookOpen className="w-4 h-4" />
           Proposer un questionnaire
@@ -86,6 +86,15 @@ export default function QuestionnairesThesePage() {
           ))}
         </div>
       )}
+
+      {/* Bouton "Proposer" — mobile uniquement, en bas */}
+      <a
+        href="/mon-compte/mes-questionnaires-these"
+        className="sm:hidden mt-5 flex items-center justify-center gap-2 px-4 py-3 bg-accent-blue/10 text-accent-blue text-sm font-medium rounded-xl hover:bg-accent-blue/20 transition-colors"
+      >
+        <BookOpen className="w-4 h-4" />
+        Proposer un questionnaire
+      </a>
 
       {/* Modale détail */}
       {modalQ && (

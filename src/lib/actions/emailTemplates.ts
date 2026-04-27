@@ -31,3 +31,47 @@ export async function saveEmailTemplate(id: string, sujet: string, contenuHtml: 
   revalidatePath('/admin/emails')
   return { status: 'SUCCESS' }
 }
+
+/**
+ * Compose un email final en injectant le contenu du template dans le master layout.
+ * Fallback : si le master_layout n'existe pas encore en BDD, utilise le template tel quel
+ * (rétro-compatible le temps que le layout soit configuré).
+ */
+export async function buildEmail(
+  templateId: string,
+  vars: Record<string, string>,
+  siteUrl: string
+): Promise<{ sujet: string; html: string } | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
+
+  const [{ data: template }, { data: layout }] = await Promise.all([
+    supabase.from('email_templates').select('sujet, contenu_html').eq('id', templateId).maybeSingle(),
+    supabase.from('email_templates').select('contenu_html').eq('id', 'master_layout').maybeSingle(),
+  ])
+
+  if (!template?.contenu_html) return null
+
+  const contentHtml = template.contenu_html as string
+  const layoutHtml: string | undefined = layout?.contenu_html
+
+  // N'injecter dans le layout que si le template ne contient pas déjà un document HTML complet.
+  // Cela permet une migration progressive : les templates encore en full-HTML fonctionnent
+  // tel quel, les templates migrés en contenu seul sont encapsulés dans le master_layout.
+  const isFullDocument = contentHtml.trim().toLowerCase().startsWith('<!doctype')
+  let html: string = (!isFullDocument && layoutHtml?.includes('{{contenu}}'))
+    ? layoutHtml.replace(/\{\{contenu\}\}/g, contentHtml)
+    : contentHtml
+
+  html = html.replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
+  for (const [key, value] of Object.entries(vars)) {
+    html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+  }
+
+  let sujet: string = template.sujet as string
+  for (const [key, value] of Object.entries(vars)) {
+    sujet = sujet.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+  }
+
+  return { sujet, html }
+}
