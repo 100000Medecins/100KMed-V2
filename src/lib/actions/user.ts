@@ -309,19 +309,17 @@ export async function deleteAccount() {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Non authentifié')
 
-  // Supprimer le profil utilisateur (cascade sur évaluations, favoris, préférences…)
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('id', user.id)
-
-  if (error) throw error
-
-  // Supprimer l'entrée auth.users via le service role (le client user n'a pas les droits)
+  // Utiliser le service role pour bypasser le RLS et garantir la suppression effective
   const supabaseAdmin = createServiceRoleClient()
+
+  await supabaseAdmin.from('evaluations').delete().eq('user_id', user.id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any).from('solutions_utilisees').delete().eq('user_id', user.id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any).from('users_notification_preferences').delete().eq('user_id', user.id)
+  await supabaseAdmin.from('users').delete().eq('id', user.id)
   await supabaseAdmin.auth.admin.deleteUser(user.id)
 
-  // Déconnecter l'utilisateur
   await supabase.auth.signOut()
 
   return { status: 'SUCCESS' }
