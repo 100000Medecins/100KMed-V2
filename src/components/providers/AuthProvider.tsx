@@ -13,7 +13,7 @@ interface AuthContextType {
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
-  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null; redirectTo?: string }>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   updatePassword: (password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: false,
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
-  signUpWithEmail: async () => ({ error: null }),
+  signUpWithEmail: async () => ({ error: null, redirectTo: undefined }),
   resetPassword: async () => ({ error: null }),
   updatePassword: async () => ({ error: null }),
   signOut: async () => {},
@@ -156,6 +156,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         console.error('Erreur création profil:', e)
       }
+    }
+
+    // Si Supabase a retourné une session immédiate (confirmation email désactivée),
+    // signaler à la page d'inscription de rediriger plutôt que d'afficher le message
+    if (data.session) {
+      return { error: null, redirectTo: '/mon-compte/profil' }
     }
 
     return { error: null }

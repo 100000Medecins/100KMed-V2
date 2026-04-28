@@ -31,10 +31,15 @@ function InscriptionContent() {
     const result = await signUpWithEmail(email, password)
     if (result.error) {
       setError(result.error)
+      setSubmitting(false)
+    } else if (result.redirectTo) {
+      // Session immédiate (confirmation email désactivée) → redirection directe
+      window.location.href = result.redirectTo
     } else {
+      // Confirmation email requise → afficher le message
       setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   return (
