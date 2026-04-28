@@ -123,6 +123,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       if (error.message === 'Invalid login credentials')
         return { error: 'Email ou mot de passe incorrect.' }
+      if (error.message === 'Email not confirmed')
+        return { error: 'Votre email n\'est pas encore confirmé. Vérifiez votre boîte mail (et vos spams).' }
       return { error: error.message }
     }
     return { error: null }

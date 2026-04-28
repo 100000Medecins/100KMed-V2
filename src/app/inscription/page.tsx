@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { UserPlus, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
+import { createClient } from '@/lib/supabase/client'
 
 function InscriptionContent() {
   const { signInWithPSC, signUpWithEmail, signInWithEmail } = useAuth()
@@ -21,6 +22,8 @@ function InscriptionContent() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [resendSent, setResendSent] = useState(false)
+  const [resending, setResending] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,8 +71,35 @@ function InscriptionContent() {
         )}
 
         {success && (
-          <div className="bg-green-50 text-green-600 text-sm p-3 rounded-xl mb-6">
-            {success}
+          <div className="bg-green-50 text-green-700 text-sm p-4 rounded-xl mb-6 space-y-3">
+            <p>{success}</p>
+            <div className="border-t border-green-200 pt-3">
+              {resendSent ? (
+                <p className="text-xs text-green-600">Email renvoyé. Vérifiez aussi vos spams.</p>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-green-700">Vous n&apos;avez pas reçu l&apos;email ?</p>
+                  <button
+                    type="button"
+                    disabled={resending}
+                    onClick={async () => {
+                      setResending(true)
+                      const supabase = createClient()
+                      await supabase.auth.resend({
+                        type: 'signup',
+                        email,
+                        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+                      })
+                      setResending(false)
+                      setResendSent(true)
+                    }}
+                    className="text-xs font-semibold text-green-700 underline hover:text-green-900 disabled:opacity-50"
+                  >
+                    {resending ? 'Envoi...' : 'Renvoyer'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
