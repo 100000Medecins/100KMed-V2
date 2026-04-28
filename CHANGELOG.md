@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-04-29] — Auth email/mdp : confirmation, completer-profil, correction PSC
+
+### Fix — /completer-profil : comportement PSC vs email/mdp unifié
+- Champ mot de passe masqué pour les utilisateurs email/mdp (déjà défini à l'inscription)
+- Email de contact en lecture seule pour les non-PSC (déjà confirmé via Supabase), texte "Adresse confirmée"
+- `isValid` : password non requis pour `isFromPsc = false`
+- `handleSubmit` : `password: isFromPsc ? password : undefined`, re-auth `signInWithPassword` conditionnelle PSC uniquement (évite un crash pour les email/mdp dont le password est vide à ce stade)
+
+### Fix — /completer-profil : router.push → window.location après signInWithPassword
+- Cause : `router.push` après une op auth échoue silencieusement — middleware voyait encore les vieux cookies PSC invalidés par `updateUserById`, profil PSC apparaissait vide à l'arrivée sur Mon compte
+- Fix : `window.location.href`, suppression de `useRouter` devenu inutile
+
+### Feature — Inscription : gestion email non confirmé
+- `AuthProvider.signInWithEmail` : message explicite "Votre email n'est pas encore confirmé" quand Supabase retourne "Email not confirmed"
+- Page `/inscription` : bouton "Renvoyer" affiché après inscription réussie avec confirmation requise — appelle `supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo } })`
+
+### Supabase Dashboard (hors code)
+- Redirect URLs : ajout de `http://localhost:3000/api/auth/callback` et `https://*.100000medecins.org/api/auth/callback` (nécessaires pour que Supabase accepte l'`emailRedirectTo` du signup)
+- "Confirm email" activé (ON) — confirmation email obligatoire avant accès au site
+- SMTP SendGrid confirmé déjà configuré (`smtp.sendgrid.net`, expéditeur `contact@100000medecins.org / 100 000 Médecins`)
+
+### TODO — Mises à jour
+- Rappel existant : MAJ templates Supabase natifs (confirm signup, change email) — priorité montée maintenant que "Confirm email" est activé
+
+---
+
 ## [2026-04-28] — Assainissement architecture auth + corrections UX profil/inscription
 
 ### Fix — Navigation post-auth : window.location partout (règle architecturale)

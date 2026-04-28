@@ -78,7 +78,7 @@ export default function CompleterProfilPage() {
     loadProfile()
   }, [user])
 
-  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() && password.length >= 6
+  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() && (!isFromPsc || password.length >= 6)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,16 +95,17 @@ export default function CompleterProfilPage() {
         contact_email: contactEmail.trim(),
         pseudo: pseudo.trim() || undefined,
         portrait: selectedAvatar || undefined,
-        password,
+        password: isFromPsc ? password : undefined,
       })
-      // Re-authentification nécessaire : updateUserById côté admin invalide la session client
-      const supabase = createClient()
-      await supabase.auth.signInWithPassword({
-        email: contactEmail.trim(),
-        password,
-      })
-      // window.location obligatoire ici : router.push après une opération auth
-      // échoue silencieusement (middleware voit encore les anciens cookies PSC invalidés)
+      // Re-auth uniquement pour PSC : updateUserById (email + mdp) invalide la session client.
+      // Pour les utilisateurs email/mdp, aucun updateUserById n'est appelé → session conservée.
+      if (isFromPsc) {
+        const supabase = createClient()
+        await supabase.auth.signInWithPassword({
+          email: contactEmail.trim(),
+          password,
+        })
+      }
       window.location.href = '/mon-compte/profil'
     } catch (err) {
       console.error('Erreur complétion profil:', err)
@@ -231,33 +232,42 @@ export default function CompleterProfilPage() {
                 <input
                   type="email"
                   value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
+                  onChange={isFromPsc ? (e) => setContactEmail(e.target.value) : undefined}
+                  readOnly={!isFromPsc}
                   required
                   placeholder="votre@email.fr"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                  className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
+                    isFromPsc
+                      ? 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
+                      : 'border-gray-100 bg-surface-light text-gray-500 cursor-not-allowed'
+                  }`}
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Utilisé pour les notifications et la récupération de compte.
+                  {isFromPsc
+                    ? 'Utilisé pour les notifications et la récupération de compte.'
+                    : 'Adresse confirmée — utilisée pour les notifications et la récupération de compte.'}
                 </p>
               </div>
 
-              {/* Mot de passe — obligatoire */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Mot de passe <span className="text-red-500">*</span>
-                </label>
-                <PasswordInput
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="6 caractères minimum"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Vous permettra de vous reconnecter par email en plus de Pro Santé Connect.
-                </p>
-              </div>
+              {/* Mot de passe — uniquement pour les utilisateurs PSC (pas encore de mot de passe) */}
+              {isFromPsc && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Mot de passe <span className="text-red-500">*</span>
+                  </label>
+                  <PasswordInput
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    placeholder="6 caractères minimum"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Vous permettra de vous reconnecter par email en plus de Pro Santé Connect.
+                  </p>
+                </div>
+              )}
 
               {/* Pseudo — optionnel */}
               <div>
