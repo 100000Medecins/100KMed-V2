@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
@@ -14,7 +13,6 @@ import { Check, Lock } from 'lucide-react'
 
 export default function CompleterProfilPage() {
   const { user, loading: authLoading } = useAuth()
-  const router = useRouter()
 
   // Champs PSC — non modifiables
   const [nom, setNom] = useState('')
@@ -105,7 +103,9 @@ export default function CompleterProfilPage() {
         email: contactEmail.trim(),
         password,
       })
-      router.push('/mon-compte/profil')
+      // window.location obligatoire ici : router.push après une opération auth
+      // échoue silencieusement (middleware voit encore les anciens cookies PSC invalidés)
+      window.location.href = '/mon-compte/profil'
     } catch (err) {
       console.error('Erreur complétion profil:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
@@ -126,7 +126,7 @@ export default function CompleterProfilPage() {
   }
 
   if (!user) {
-    router.push('/connexion')
+    window.location.replace('/connexion')
     return null
   }
 
