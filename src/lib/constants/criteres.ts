@@ -1,7 +1,8 @@
-// Labels des critères majeurs selon la catégorie
-// Par défaut : "Fonctionnalités"
-// Pour les catégories IA : "Utilité"
-
+// Labels des critères majeurs selon la catégorie.
+// Par défaut : "Fonctionnalités". Pour les catégories IA : "Utilité".
+//
+// ⚠️ Si une nouvelle catégorie IA est ajoutée, ajouter son slug ici.
+// (Migration future possible : stocker label_fonctionnalites dans la table categories en BDD)
 const SLUGS_UTILITE = ['intelligence-artificielle-medecine', 'ia-documentaires']
 
 export const CRITERE_LABELS_DEFAULT: Record<string, string> = {

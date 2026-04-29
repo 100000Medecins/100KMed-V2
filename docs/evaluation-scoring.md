@@ -1,7 +1,7 @@
 # Méthodologie de notation — 100 000 Médecins
 
 > Document de référence sur le fonctionnement complet du système de notation.
-> Mis à jour : 2026-04-27
+> Mis à jour : 2026-04-30
 > À consulter avant toute intervention sur les évaluations, les notes ou les calculs associés.
 
 ---
@@ -30,7 +30,71 @@ Ces notes sont stockées dans `evaluations.scores` (JSONB), agrégées dans `res
 
 ### Sous-critères (`criteres` avec `parent_id` renseigné)
 
-54 sous-critères au format `detail_*` (ex. `detail_connexion`, `detail_agenda`, `detail_stabilite`...), regroupés par critère majeur via `DETAIL_CRITERE_MAP` dans `src/lib/db/evaluations.ts`.
+54 sous-critères au format `detail_*` (ex. `detail_connexion`, `detail_agenda`, `detail_stabilite`...) pour la catégorie logiciels-métier. Les autres catégories utilisent d'autres préfixes de clés (voir §Système de questionnaires multi-catégories).
+
+**Important** : `DETAIL_CRITERE_MAP` dans `src/lib/db/evaluations.ts` mappe les clés `detail_*` vers leur critère majeur. Cette map n'est utilisée que dans `src/app/solutions/comparer/page.tsx` (vue détaillée du comparateur), **jamais dans le calcul de score**. Les catégories non-logiciels-métier n'ont pas leurs clés dans cette map → la vue détaillée du comparateur ne s'affiche pas pour elles (comportement attendu).
+
+---
+
+## Système de questionnaires multi-catégories
+
+### Architecture
+
+Le questionnaire de l'étape 2 est **piloté par la base de données** pour toutes les catégories. Les questions sont stockées dans deux tables :
+
+```
+questionnaire_sections
+  id, categorie_slug, titre, introduction, ordre
+
+questionnaire_questions
+  id, section_id, key, question, critere_majeur, ordre
+```
+
+Chaque question a un champ `critere_majeur` (valeurs : `interface`, `fonctionnalites`, `fiabilite`, `editeur`, `qualite_prix`) qui indique à quel critère majeur elle contribue. C'est ce champ qui assure la correspondance sous-critère → critère principal au moment du calcul.
+
+### API
+
+**Route** : `GET /api/questionnaire/[slug]` → `src/app/api/questionnaire/[slug]/route.ts`  
+**Fonction** : `getSectionsForSlug(slug)` dans `src/lib/actions/questionnaires.ts`
+
+- Charge les sections + questions depuis la DB pour le slug de catégorie
+- Si aucune section trouvée → fallback sur le questionnaire `default`
+- Gérable via l'interface admin → `/admin/questionnaires`
+
+### Priorité des sources (dans le formulaire de notation)
+
+```
+src/app/solution/noter/[...slug]/page.tsx (ligne ~600)
+
+const sectionsDetail = sectionsDB.length > 0
+  ? sectionsDB                          // ← DB en priorité (si données présentes)
+  : getSectionsForCategorie(slug)       // ← fallback hardcodé
+```
+
+`getSectionsForCategorie` retourne `SECTIONS_PAR_CATEGORIE[slug] || SECTIONS_DETAILLEES` — le hardcodé ne s'active que si la DB est vide pour ce slug.
+
+### Préfixes de clés par catégorie
+
+| Catégorie | Préfixe des clés | Source actuelle |
+|---|---|---|
+| Logiciels-métier | `detail_*` | Hardcodé (`SECTIONS_DETAILLEES`) + DB si configuré |
+| Agenda médical | `agenda_*` | Hardcodé (`SECTIONS_PAR_CATEGORIE`) + DB si configuré |
+| IA documentaires | `docai_*` | DB (`questionnaire_sections.categorie_slug = 'ia-documentaires'`) |
+| IA scribes | `ias_*` | DB (`questionnaire_sections.categorie_slug = 'intelligence-artificielle-medecine'`) |
+
+Les préfixes reflètent la configuration DB et peuvent évoluer si un admin modifie les clés des questions. La correspondance avec les critères majeurs est portée par le champ `critere_majeur`, pas par le préfixe.
+
+### Libellés par catégorie (SLUGS_UTILITE)
+
+Pour les catégories IA, le critère `fonctionnalites` est affiché avec le libellé **"Utilité"** au lieu de "Fonctionnalités" (plus pertinent pour des outils IA). Ce changement est purement cosmétique — il n'affecte pas les clés en base, le calcul, ni le stockage.
+
+```typescript
+// src/lib/constants/criteres.ts
+const SLUGS_UTILITE = ['intelligence-artificielle-medecine', 'ia-documentaires']
+// getCritereLabel('fonctionnalites', slug) → 'Utilité' pour ces slugs
+```
+
+Si une nouvelle catégorie IA est ajoutée, ajouter son slug dans `SLUGS_UTILITE`.
 
 ---
 
@@ -42,10 +106,13 @@ Utilisateur → /solution/noter/[...slug]
     ├─ Étape 1 : 5 notes principales (0-5)
     │
     └─ Étape 2 : sous-critères optionnels (0-5, par groupe)
+              │    Sections chargées depuis la DB via /api/questionnaire/[slug]
+              │    Chaque question a un champ critereMajeur → correspondance avec les 5 critères
               │
               ▼
     buildRefinedCritereScores()          [src/app/solution/noter/[...slug]/page.tsx]
       Pour chaque critère majeur :
+        Regroupe les sous-questions ayant critereMajeur = ce critère
         Si > 50% des sous-critères répondus
           → note principale = moyenne des sous-critères
         Sinon

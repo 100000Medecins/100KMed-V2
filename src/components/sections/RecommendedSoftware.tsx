@@ -137,20 +137,26 @@ function SolutionCardItem({ solution }: { solution: SolutionCard }) {
 
       <div className="w-full flex flex-col gap-1.5 mt-auto">
         {solution.noteUtilisateurs != null && (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Utilisateurs</span>
-            <div className="flex items-center gap-1">
-              <StarRating rating={solution.noteUtilisateurs} size={11} />
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide shrink-0">
+              <span className="sm:hidden">Util.</span>
+              <span className="hidden sm:inline">Utilisateurs</span>
+            </span>
+            <div className="flex items-center gap-1 min-w-0 overflow-hidden">
               <RatingBadge rating={solution.noteUtilisateurs} size="sm" />
+              <StarRating rating={solution.noteUtilisateurs} size={11} />
             </div>
           </div>
         )}
         {solution.noteRedac != null && (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-gray-400 uppercase tracking-wide">Rédaction</span>
-            <div className="flex items-center gap-1">
-              <StarRating rating={solution.noteRedac} size={11} />
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide shrink-0">
+              <span className="sm:hidden">Réd.</span>
+              <span className="hidden sm:inline">Rédaction</span>
+            </span>
+            <div className="flex items-center gap-1 min-w-0 overflow-hidden">
               <RatingBadge rating={solution.noteRedac} size="sm" />
+              <StarRating rating={solution.noteRedac} size={11} />
             </div>
           </div>
         )}

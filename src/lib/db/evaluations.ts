@@ -267,6 +267,12 @@ export async function getDureeUtilisationSolution(solutionId: string, userId: st
 }
 
 // Maps each detail_* sub-criterion key to its critere_principal group
+// Mapping sous-critères → critère majeur, utilisé UNIQUEMENT dans comparison.ts
+// pour la vue détaillée de la page /comparer (logiciels métier uniquement, clés detail_*).
+// Non utilisé dans le calcul de score (submitScores utilise les IDs de critères depuis la DB).
+// Pour les catégories agenda/IA, leurs clés (agenda_*, docai_*, ias_*) sont absentes
+// de cette map → la vue détaillée ne s'affiche pas pour ces catégories.
+// Migration future : utiliser criteres.parent_id depuis la DB à la place.
 export const DETAIL_CRITERE_MAP: Record<string, string> = {
   // Interface utilisateur
   detail_connexion: 'interface', detail_interface_generale: 'interface', detail_reactif: 'interface',

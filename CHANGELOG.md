@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-04-30] — Documentation scoring + flux auth + fix mobile cartes
+
+### Docs — evaluation-scoring.md : couverture complète multi-catégories
+- Nouvelle section "Système de questionnaires multi-catégories" : tables DB (`questionnaire_sections` + `questionnaire_questions`), champ `critere_majeur` par question, API `/api/questionnaire/[slug]` → `getSectionsForSlug()`
+- Priorité DB > hardcodé documentée : `sectionsDB.length > 0 ? sectionsDB : getSectionsForCategorie()` (noter/page.tsx ~l.600)
+- Table des préfixes de clés par catégorie (`detail_*`, `agenda_*`, `docai_*`, `ias_*`)
+- Clarification `DETAIL_CRITERE_MAP` : utilisé **uniquement** dans `comparer/page.tsx` (vue détaillée comparateur), **jamais** dans le calcul de score
+- Clarification `SLUGS_UTILITE` : cosmétique uniquement ("Fonctionnalités" → "Utilité" pour catégories IA)
+- Commentaires ajoutés dans `criteres.ts` et `evaluations.ts` pour guider les contributeurs
+
+### Docs — user-creation-flow.md : flux auth documenté
+- Tables impliquées (`auth.users` vs `public.users`), responsabilités, lien entre les deux
+- Flux 1 (email/mdp) et Flux 2 (PSC) : étapes, fonctions, fichiers, cas limites
+- Schéma ASCII du parcours complet
+
+### Fix — Mobile : cartes RecommendedSoftware (homepage)
+- Cause : label "UTILISATEURS" (~72px) + étoiles + badge dépassent la largeur des cartes 2-colonnes (~131px utile) — badge débordait à droite
+- Labels abrégés sur mobile (`sm:hidden`) : "Util." / "Réd.", texte complet sur sm+
+- `RatingBadge` placé avant `StarRating` (badge = info critique, toujours visible) + `overflow-hidden min-w-0` sur conteneur droit
+
+### TODO — Mises à jour
+- Marqué terminé : "Documenter le flux de création utilisateur" ✅
+- Marqué terminé : "Documenter le système questionnaire / scoring" (intégré dans `evaluation-scoring.md`) ✅
+
+---
+
 ## [2026-04-29] — Auth email/mdp : confirmation, completer-profil, correction PSC
 
 ### Fix — /completer-profil : comportement PSC vs email/mdp unifié

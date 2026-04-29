@@ -27,17 +27,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ##### ~~Étape 6 — Listing catégorie : tri et affichage cohérents~~ ✅ Fait 2026-04-26
 ##### ~~Étape 7 — Ajouter le trigger aux migrations SQL~~ ✅ Fait 2026-04-26
 
-#### Documenter le flux de création utilisateur — dualité auth.users / public.users
-- Tracer le chemin exact des fonctions appelées lors de l'inscription (email + PSC)
-- Expliquer ce qui est stocké dans `auth.users` (géré par Supabase) vs `public.users` (notre table)
-- Vérifier que les deux tables coexistent bien sans désynchronisation possible (ex : utilisateur créé dans auth mais pas dans public, ou l'inverse)
-- Produire un document `docs/user-creation-flow.md` daté, à mettre à jour si le flux change
+#### ~~Documenter le flux de création utilisateur — dualité auth.users / public.users~~ ✅ Fait 2026-04-30
+- ~~Produit : `docs/user-creation-flow.md`~~ ✅
 
-#### Audit "données dynamiques vs. hardcodées" — vérification BDD
-- Suite à la découverte de `SLUGS_SANS_NOTES_REDAC` (liste de slugs codée en dur) alors que `has_note_redac` existe en BDD
-- Passer en revue le code front pour repérer d'autres constantes hardcodées qui devraient venir de la BDD (slugs de catégories, flags de visibilité, seuils de notation, etc.)
-- Vérifier que les critères majeurs (`nom_capital`) existent bien en BDD pour **toutes** les catégories (agendas, IA, etc.), pas seulement logiciels-métier
+#### Audit "données dynamiques vs. hardcodées" — points résiduels
+> Audit réalisé 2026-04-30. Résultat : questionnaires chargés depuis la BDD ✅, correspondance `critere_majeur` par question en BDD ✅. Points résiduels :
+- Vérifier si le **calcul de score à la soumission** (`DETAIL_CRITERE_MAP` dans `evaluations.ts`) utilise bien `critere_majeur` de la DB ou encore la map hardcodée — si hardcoded, remplacer par lecture DB
+- `SLUGS_UTILITE` dans `criteres.ts` (slugs IA hardcodés pour changer le label "Fonctionnalités" → "Utilité") — à migrer vers un champ `categories.type` en BDD
+- Vérifier que les critères majeurs (`nom_capital`) existent bien en BDD pour **toutes** les catégories (agendas, IA, etc.)
 - Vérifier que `resultats` est bien peuplé pour toutes les catégories (sinon le filtre "Note globale" n'apparaît pas)
+
+#### ~~Documenter le système questionnaire / scoring~~ ✅ Fait 2026-04-30
+- ~~Intégré dans `docs/evaluation-scoring.md` : flux complet DB → API → notation → scores → résultats, rôle de `critere_majeur`, fallback hardcodé, préfixes par catégorie~~
 
 #### Traiter les remarques de Ben (rapport efficience du code)
 - Revoir tous les points remontés dans la capture de Ben
@@ -134,12 +135,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
 - Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
 
-#### Améliorer le menu burger en mode mobile
-- En mode ouvert : mal visible, trop grand — revoir l'ergonomie et le design
+#### ~~Améliorer le menu burger en mode mobile~~ ✅ Fait 2026-04-29
+- ~~En mode ouvert : mal visible, trop grand — revoir l'ergonomie et le design~~
 
-#### Fond des pages solutions + DA générale
-- Revoir le fond des pages solutions (couleur, texture, gradient…)
-- Occasion de revoir la direction artistique globale du site
+#### ~~Fond des pages solutions + DA générale~~ ✅ Fait 2026-04-29
+- ~~Revoir le fond des pages solutions (couleur, texture, gradient…)~~
+- ~~Occasion de revoir la direction artistique globale du site~~
 
 ### Emails — tableau de bord
 
@@ -235,10 +236,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Configurer le réveil de la machine si en veille, et le rattrapage au démarrage si la machine était éteinte
 - ⚠️ **Utiliser PowerShell 7 (`pwsh.exe`)** et non Windows PowerShell 5.1 (`powershell.exe`) — sinon le bug d'encodage UTF-8 recrée un dossier parasite `100 000 MÃ©decins` à chaque exécution
 
-#### Migrer les scripts PowerShell vers PowerShell 7
-- PowerShell 5.1 a un bug d'encodage UTF-8 sans BOM qui génère du mojibake sur les accents (ex. `Médecins` → `MÃ©decins`)
-- Priorité basse, mais à faire avant de planifier des tâches Task Scheduler touchant des chemins avec accents
-- Vérifier tous les scripts dans `C:\Users\david\scripts\` et sous-dossiers
+#### ~~Migrer les scripts PowerShell vers PowerShell 7~~ ✅ Fait 2026-04-29
+- ~~PowerShell 5.1 a un bug d'encodage UTF-8 sans BOM qui génère du mojibake sur les accents (ex. `Médecins` → `MÃ©decins`)~~
+- ~~Vérifier tous les scripts dans `C:\Users\david\scripts\` et sous-dossiers~~
 
 #### Synchroniser le script de backup sur le desktop
 - Le script existe uniquement sur le laptop pour l'instant
@@ -285,6 +285,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- `evaluation-scoring.md` mis à jour — questionnaires multi-catégories, DETAIL_CRITERE_MAP, SLUGS_UTILITE ✅ (2026-04-30)
+- `user-creation-flow.md` créé — flux email/mdp + PSC, cas limites, schéma ASCII ✅ (2026-04-30)
+- Mobile — cartes homepage : labels abrégés "Util."/"Réd." + badge avant étoiles ✅ (2026-04-30)
+- Menu burger mobile — redesign gradient + accordion Comparatifs/Communauté ✅ (2026-04-29)
+- Fond pages solutions + DA générale — fond global `#D8E6F8` + motif dots dans `globals.css` ✅ (2026-04-29)
+- Scripts PowerShell — migrés vers PS7 (Task Scheduler configuré avec `pwsh.exe`) ✅ (2026-04-29)
 - Auth — centralisation navigation post-auth (`window.location` partout, middleware `/connexion` + `/inscription`, `docs/auth-navigation.md`) ✅ (2026-04-28)
 - PSC session bloquée — `router.replace` → `window.location.replace`, console.logs diagnostic ✅ (2026-04-28)
 - Profil — bouton Enregistrer désactivé si aucun changement + étoiles champs obligatoires ✅ (2026-04-28)
