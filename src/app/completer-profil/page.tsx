@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { completeProfile, getCurrentUserProfile } from '@/lib/actions/user'
-import { AVATARS } from '@/lib/constants/profil'
+import { AVATARS, SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
 import { Check, Lock } from 'lucide-react'
 
@@ -188,37 +188,56 @@ export default function CompleterProfilPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+                {isFromPsc ? (
                   <input
                     type="text"
                     value={specialite}
-                    readOnly={isFromPsc}
-                    onChange={(e) => !isFromPsc && setSpecialite(e.target.value)}
-                    required
-                    className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
-                      isFromPsc
-                        ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
-                        : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
-                    }`}
+                    readOnly
+                    className="w-full px-3 py-2.5 border bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed rounded-xl text-sm focus:outline-none"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
+                ) : (
+                  <select
+                    value={specialite}
+                    onChange={(e) => setSpecialite(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                  >
+                    <option value="">Sélectionnez votre spécialité</option>
+                    {SPECIALITES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
+                {isFromPsc ? (
                   <input
                     type="text"
                     value={modeExercice}
-                    readOnly={isFromPsc}
-                    onChange={(e) => !isFromPsc && setModeExercice(e.target.value)}
-                    required
-                    className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none ${
-                      isFromPsc
-                        ? 'bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed'
-                        : 'border-gray-200 focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
-                    }`}
+                    readOnly
+                    className="w-full px-3 py-2.5 border bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed rounded-xl text-sm focus:outline-none"
                   />
-                </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {MODES_EXERCICE.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setModeExercice(mode)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                          modeExercice === mode
+                            ? 'bg-navy text-white border-navy'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
