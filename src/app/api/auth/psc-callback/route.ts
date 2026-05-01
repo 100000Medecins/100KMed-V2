@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { resolveSpecialite } from '@/lib/constants/profil'
+import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
   const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeSavoirFaire?: string; codeTypeSavoirFaire?: string }> } | undefined
@@ -128,11 +129,19 @@ export async function GET(request: Request) {
       })
 
       // Publier les évaluations en attente de PSC pour cet utilisateur
+      const { data: pendingAssoc } = await supabaseAdmin
+        .from('evaluations')
+        .select('solution_id')
+        .eq('user_id', currentUserId)
+        .eq('statut', 'en_attente_psc')
       await supabaseAdmin
         .from('evaluations')
         .update({ statut: 'publiee' })
         .eq('user_id', currentUserId)
         .eq('statut', 'en_attente_psc')
+      for (const ev of pendingAssoc ?? []) {
+        if (ev.solution_id) await recalcResultatsPourSolution(ev.solution_id)
+      }
 
       // Générer un magic link pour rafraîchir la session avec le profil mis à jour
       const { data: keepProfile } = await supabaseAdmin
@@ -255,11 +264,19 @@ export async function GET(request: Request) {
 
       // Publier les évaluations en_attente_psc liées à ce user_id
       // (cas : compte email/mdp existant qui se connecte via PSC pour la première fois)
+      const { data: pendingExisting } = await supabaseAdmin
+        .from('evaluations')
+        .select('solution_id')
+        .eq('user_id', userId)
+        .eq('statut', 'en_attente_psc')
       await supabaseAdmin
         .from('evaluations')
         .update({ statut: 'publiee' })
         .eq('user_id', userId)
         .eq('statut', 'en_attente_psc')
+      for (const ev of pendingExisting ?? []) {
+        if (ev.solution_id) await recalcResultatsPourSolution(ev.solution_id)
+      }
     }
 
     // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)
@@ -354,6 +371,8 @@ export async function GET(request: Request) {
             date_debut: new Date().toISOString().split('T')[0],
           })
         }
+
+        await recalcResultatsPourSolution(ev.solution_id)
       }
     }
 

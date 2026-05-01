@@ -31,11 +31,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~Produit : `docs/user-creation-flow.md`~~ ✅
 
 #### Audit "données dynamiques vs. hardcodées" — points résiduels
-> Audit réalisé 2026-04-30. Résultat : questionnaires chargés depuis la BDD ✅, correspondance `critere_majeur` par question en BDD ✅. Points résiduels :
-- Vérifier si le **calcul de score à la soumission** (`DETAIL_CRITERE_MAP` dans `evaluations.ts`) utilise bien `critere_majeur` de la DB ou encore la map hardcodée — si hardcoded, remplacer par lecture DB
-- `SLUGS_UTILITE` dans `criteres.ts` (slugs IA hardcodés pour changer le label "Fonctionnalités" → "Utilité") — à migrer vers un champ `categories.type` en BDD
-- Vérifier que les critères majeurs (`nom_capital`) existent bien en BDD pour **toutes** les catégories (agendas, IA, etc.)
-- Vérifier que `resultats` est bien peuplé pour toutes les catégories (sinon le filtre "Note globale" n'apparaît pas)
+> Audit approfondi 2026-04-30. Résultats :
+- ~~`DETAIL_CRITERE_MAP` utilisée dans le scoring~~  ✅ Faux : `buildRefinedCritereScores()` utilise `q.critereMajeur` des objets question (DB). `DETAIL_CRITERE_MAP` est uniquement dans `comparison.ts` (comparateur). Pas de problème.
+- ~~`SLUGS_UTILITE` dans `criteres.ts` — hardcodé, cosmétique uniquement.~~ ✅ Fait 2026-05-01 : colonne `label_fonctionnalites` ajoutée à `categories`, `SLUGS_UTILITE` supprimé, 4 call sites mis à jour.
+- ~~Vérifier que les critères majeurs (`nom_capital`) existent bien en BDD pour **toutes** les catégories~~ ✅ Fait 2026-05-01 : vérifié via SQL — `criteres` utilise `nom_capital`/`nom_court` (pas `nom`).
+- ~~Vérifier que `resultats` est bien peuplé pour toutes les catégories~~ ✅ Fait 2026-05-01 : vérifié via SQL (agenda/IA = 0 résultats) + cause racine corrigée (voir bug statut ci-dessous).
 
 #### ~~Documenter le système questionnaire / scoring~~ ✅ Fait 2026-04-30
 - ~~Intégré dans `docs/evaluation-scoring.md` : flux complet DB → API → notation → scores → résultats, rôle de `critere_majeur`, fallback hardcodé, préfixes par catégorie~~
@@ -45,10 +45,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
 - Prévoir une session dédiée avec Claude pour passer point par point
 
-#### Activer le 2FA GitHub
-- Priorité haute suite à la migration hors Synology (tokens sans expiration = risque confirmé)
-- Méthode recommandée : app d'authentification (Authy, Google Authenticator ou Microsoft Authenticator) — **pas SMS** (vulnérable au SIM-swapping)
-- Configurer dans GitHub → Settings → Password and authentication → Two-factor authentication
+#### ~~Activer le 2FA GitHub~~ ✅ Fait 2026-04-30
 
 ### Sécurité
 
@@ -107,11 +104,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### ~~Note globale évaluations — incohérence~~ ✅ Fait 2026-04-26
 
-#### Affichage des notes — vérifier le comportement par statut
-- Tester en prod que les notes email/mdp (statut null ou publiee) s'affichent bien sur les pages solution
-- Tester que les notes statut='en_attente_psc' ne s'affichent PAS publiquement
-- Vérifier la cohérence entre ce que l'utilisateur voit dans "Mes évaluations" et ce qui est affiché sur les pages solution
-- Si des anciennes notes ont statut=null et ne devraient pas être affichées, corriger en base
+#### ~~Bug confirmé — scores `en_attente_psc` inclus dans les moyennes publiques~~ ✅ Fait 2026-05-01
+- ~~`submitEvaluation()` ne peuplait pas `resultats` du tout (cause des 0 résultats agenda/IA)~~
+- ~~`updateResultat()` (flux `submitScores`) ignorait le statut → évaluations `en_attente_psc` gonflaient les moyennes~~
+- Fix : nouvelle fonction `recalcResultatsPourSolution()` — recalcul complet depuis `evaluations WHERE statut='publiee'`, appelée depuis `submitEvaluation()` et aux 3 endroits du PSC callback
 
 #### Footer des emails — lien de désabonnement cassé
 - Le lien "Se désabonner" dans le footer des emails n'envoie nulle part (URL non configurée ou route manquante)
@@ -149,10 +145,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~Permettre de voir le rendu HTML d'un template sans avoir à passer par Supabase ou le code~~
 - ~~Idéalement : sélecteur de template + prévisualisation + lien d'édition direct~~
 
-#### Uniformité des templates email — à vérifier
-- Vérifier que **tous** les emails transactionnels SendGrid utilisent bien le même layout/template de base
-- En cas de modification du layout global (footer, header, branding), s'assurer que tous les templates sont impactés
-- Rappel : les emails Supabase natifs (confirmation inscription, changement email) ne passent **pas** par ce système — ils utilisent leurs propres templates configurés dans le dashboard Supabase
+#### Uniformité des templates email — fichiers encore en HTML brut
+> Audit 2026-04-30. `buildEmail()` utilisé dans 8 fichiers ✅. ~~`account.ts`~~ ✅ migré 2026-05-01. Restants (emails internes admin, non urgent) :
+- `src/app/api/cron/rappel-accueil-videos/route.ts`
+- `src/app/api/cron/rappel-newsletter/route.ts`
+- `src/lib/actions/contact.ts`
+- `src/lib/actions/etudes-cliniques.ts`
+- `src/lib/actions/evaluation.ts`
+- `src/lib/actions/questionnaires-these.ts`
 
 #### MAJ templates Supabase natifs — cohérence visuelle avec le master layout
 - Une fois le master layout SendGrid finalisé et validé visuellement, mettre à jour manuellement les templates natifs Supabase (confirm signup, change email address) dans **Supabase Dashboard → Authentication → Email Templates**
@@ -213,11 +213,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
-### Migrer le développement en local — hors Synology (des deux côtés)
-- Actuellement le projet tourne sur le Synology (NAS) pour le dev
-- Migrer l'environnement de développement **Frontend** et **Backend** sur les machines locales (portable/fixe), hors NAS
-- Avantage : meilleure vitesse, pas dépendant du réseau local/VPN, plus simple à déboguer
-- Vérifier les variables d'environnement, les ports, les certificats SSL locaux si nécessaire
+### ~~Migrer le développement en local — hors Synology~~ ✅ Fait
+- ~~Projet sur `c:\Users\david\Documents\100000Medecins_websiteV2` (chemin local, plus de dépendance NAS)~~
 
 ### Backups base de données Supabase
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
@@ -285,6 +282,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- `recalcResultatsPourSolution()` — recalcul complet résultats depuis `evaluations WHERE statut='publiee'` ; `submitEvaluation()` + PSC callback mis à jour ; bug agenda/IA 0 résultats corrigé ✅ (2026-05-01)
+- `SLUGS_UTILITE` migré → colonne `label_fonctionnalites` en BDD ; `criteres.ts` + 4 call sites mis à jour ✅ (2026-05-01)
+- `account.ts` — email suppression compte migré vers `buildEmail()` ✅ (2026-05-01)
+- Audit TODO : 2FA GitHub ✅, dev local ✅, DETAIL_CRITERE_MAP ✅ (pas de bug scoring), bug statut identifié, templates email inventoriés ✅ (2026-04-30)
 - `evaluation-scoring.md` mis à jour — questionnaires multi-catégories, DETAIL_CRITERE_MAP, SLUGS_UTILITE ✅ (2026-04-30)
 - `user-creation-flow.md` créé — flux email/mdp + PSC, cas limites, schéma ASCII ✅ (2026-04-30)
 - Mobile — cartes homepage : labels abrégés "Util."/"Réd." + badge avant étoiles ✅ (2026-04-30)

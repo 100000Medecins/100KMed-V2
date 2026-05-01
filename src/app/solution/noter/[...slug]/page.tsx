@@ -527,7 +527,7 @@ export default function NoterPage({ params }: PageProps) {
     const s = supabase as any
     s
       .from('solutions')
-      .select('id, nom, slug, logo_url, categorie:categories(id, slug)')
+      .select('id, nom, slug, logo_url, categorie:categories(id, slug, label_fonctionnalites)')
       .eq('slug', solutionSlug)
       .single()
       .then(({ data: sol }: { data: any }) => {
@@ -939,7 +939,7 @@ export default function NoterPage({ params }: PageProps) {
                 {CRITERES.map((critere) => (
                   <div key={critere.key} className="bg-white rounded-card shadow-card p-5">
                     <h3 className="text-sm font-semibold text-navy mb-1">
-                      {getCritereLabel(critere.key, categorieSlug)}
+                      {getCritereLabel(critere.key, solution?.categorie?.label_fonctionnalites)}
                     </h3>
                     <p className="text-xs text-gray-500 mb-3">{critere.question}</p>
                     <StarSelector

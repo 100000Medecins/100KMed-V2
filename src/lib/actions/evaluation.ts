@@ -84,8 +84,74 @@ export async function submitScores(
 }
 
 /**
+ * Recalcule les résultats agrégés d'une solution depuis les évaluations publiées.
+ * Seules les évaluations statut='publiee' sont prises en compte (Option B — full recalc).
+ * Appelé à chaque nouvelle évaluation publiée et à chaque finalisation PSC.
+ */
+export async function recalcResultatsPourSolution(solutionId: string) {
+  const supabase = createServiceRoleClient()
+
+  const { data: criteres } = await supabase
+    .from('criteres')
+    .select('id, identifiant_tech')
+    .is('parent_id', null)
+    .not('identifiant_tech', 'is', null)
+
+  if (!criteres || criteres.length === 0) return
+
+  const { data: evaluations } = await supabase
+    .from('evaluations')
+    .select('scores, user_id')
+    .eq('solution_id', solutionId)
+    .eq('statut', 'publiee')
+
+  if (!evaluations || evaluations.length === 0) return
+
+  for (const critere of criteres) {
+    const key = critere.identifiant_tech as string
+    const notes: Record<string, number> = {}
+
+    for (const evRow of evaluations) {
+      const raw = (evRow.scores as Record<string, unknown> | null)?.[key]
+      const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
+      if (!isNaN(num) && evRow.user_id) notes[evRow.user_id] = num
+    }
+
+    const nbNotes = Object.keys(notes).length
+    if (nbNotes === 0) continue
+
+    const moyenne = Math.round(
+      (Object.values(notes).reduce((s, v) => s + v, 0) / nbNotes) * 100
+    ) / 100
+
+    const payload = {
+      solution_id: solutionId,
+      critere_id: critere.id,
+      notes,
+      nb_notes: nbNotes,
+      moyenne_utilisateurs: moyenne,
+      moyenne_utilisateurs_base5: moyenne,
+    }
+
+    const { data: existing } = await supabase
+      .from('resultats')
+      .select('id')
+      .eq('solution_id', solutionId)
+      .eq('critere_id', critere.id)
+      .maybeSingle()
+
+    if (existing) {
+      await supabase.from('resultats').update(payload).eq('id', existing.id)
+    } else {
+      await supabase.from('resultats').insert(payload)
+    }
+  }
+}
+
+/**
  * Met à jour un résultat agrégé pour un critère.
- * Porte la logique de : Backend-main/.../Mutation/Resultat/updateResultats.ts
+ * @deprecated Remplacé par recalcResultatsPourSolution (full recalc, filtre statut='publiee').
+ * Conservé pour compatibilité avec submitScores().
  */
 async function updateResultat(
   solutionId: string,
@@ -498,6 +564,10 @@ export async function submitEvaluation(
       statut,
     })
     if (error) throw new Error(error.message)
+  }
+
+  if (statut === 'publiee') {
+    await recalcResultatsPourSolution(solutionId)
   }
 
   revalidatePath('/solutions')

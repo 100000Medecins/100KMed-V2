@@ -26,7 +26,7 @@ interface ConfrereTestimonialsProps {
   initialAvis: Avis[]
   initialTotal: number
   initialTotalPages: number
-  categorieSlug?: string
+  labelFonctionnalites?: string | null
 }
 
 function formatDuree(mois: number | null): string | null {
@@ -53,9 +53,9 @@ export default function ConfrereTestimonials({
   initialAvis,
   initialTotal,
   initialTotalPages,
-  categorieSlug,
+  labelFonctionnalites,
 }: ConfrereTestimonialsProps) {
-  const CRITERE_LABELS = getCritereLabels(categorieSlug)
+  const CRITERE_LABELS = getCritereLabels(labelFonctionnalites)
   const [avis, setAvis] = useState<Avis[]>(initialAvis)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(initialTotalPages)

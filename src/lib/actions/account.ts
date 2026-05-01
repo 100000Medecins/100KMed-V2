@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
+import { buildEmail } from '@/lib/actions/emailTemplates'
 
 interface DeleteAccountOptions {
   supprimerAvis: boolean
@@ -43,28 +44,15 @@ export async function deleteAccount({ supprimerAvis, raison }: DeleteAccountOpti
 
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: template } = await (supabase as any)
-      .from('email_templates')
-      .select('sujet, contenu_html')
-      .eq('id', 'suppression_compte')
-      .single()
-
-    if (template?.contenu_html) {
-      const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
-      const sujet = (template.sujet as string)
-        .replace(/\{\{nom\}\}/g, nomDisplay)
-        .replace(/\{\{prenom\}\}/g, nomDisplay)
-      const html = (template.contenu_html as string)
-        .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, siteUrl)
-        .replace(/\{\{nom\}\}/g, nomDisplay)
-        .replace(/\{\{prenom\}\}/g, nomDisplay)
-      const recipientEmail = (profile as { contact_email?: string } | null)?.contact_email || user.email!
+const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
+    const recipientEmail = (profile as { contact_email?: string } | null)?.contact_email || user.email!
+    const result = await buildEmail('suppression_compte', { nom: nomDisplay, prenom: nomDisplay }, siteUrl)
+    if (result) {
       await sgMail.send({
         to: recipientEmail,
         from: 'contact@100000medecins.org',
-        subject: sujet,
-        html: html,
+        subject: result.sujet,
+        html: result.html,
       })
     }
   } catch {

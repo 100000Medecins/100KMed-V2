@@ -5,6 +5,31 @@
 
 ---
 
+## [2026-05-01] — Scoring évaluations, SLUGS_UTILITE → BDD, email account
+
+### Fix — Bug silencieux : résultats agrégés non peuplés pour agenda/IA
+- Cause 1 : `submitEvaluation()` ne peuplait jamais `resultats` — toutes les nouvelles évaluations (agenda, IA) étaient ignorées ; les 1200 lignes logiciels-métier venaient exclusivement de la migration Firebase
+- Cause 2 : `updateResultat()` ignorait `statut` → scores `en_attente_psc` (PSC non confirmé) gonflaient les moyennes publiques
+- Fix : nouvelle fonction `recalcResultatsPourSolution()` dans `src/lib/actions/evaluation.ts` — recalcul complet depuis `evaluations WHERE statut='publiee'` uniquement (Option B)
+- `submitEvaluation()` appelle désormais `recalcResultatsPourSolution()` si `statut='publiee'`
+- PSC callback (`src/app/api/auth/psc-callback/route.ts`) : appel aux 3 endroits de publication `en_attente_psc → publiee` (association PSC, compte email/mdp existant, évaluations anonymes liées par token)
+- `updateResultat()` marqué `@deprecated` (conservé pour `submitScores()` devenu code mort)
+
+### Refactor — SLUGS_UTILITE migré vers colonne BDD `label_fonctionnalites`
+- SQL : `ALTER TABLE categories ADD COLUMN label_fonctionnalites text` + `UPDATE` pour les 2 catégories IA
+- `SLUGS_UTILITE` et `CRITERE_LABELS_IA` supprimés de `src/lib/constants/criteres.ts`
+- Signatures `getCritereLabels/getCritereLabel` : `categorieSlug?: string` → `labelFonctionnalites?: string | null`
+- 4 call sites mis à jour : `ConfrereTestimonials.tsx`, `SolutionDetailPage.tsx`, `noter/[...slug]/page.tsx`
+- `src/types/database.ts` restauré manuellement après corruption par `npx supabase` (CLI non installé localement) → `supabase@2.98.0` ajouté en devDependency pour éviter le problème à l'avenir
+
+### Email — account.ts migré vers buildEmail()
+- `deleteAccount()` : suppression de la substitution manuelle inline, utilise désormais `buildEmail('suppression_compte', { nom, prenom }, siteUrl)`
+
+### TODO — Mises à jour
+- Marqué terminé : bug statut évaluations ✅, SLUGS_UTILITE → BDD ✅, vérif `nom_capital` toutes catégories ✅, vérif `resultats` toutes catégories ✅, `account.ts` templates email ✅
+
+---
+
 ## [2026-04-30] — Documentation scoring + flux auth + fix mobile cartes
 
 ### Docs — evaluation-scoring.md : couverture complète multi-catégories

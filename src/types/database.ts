@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -117,6 +117,7 @@ export type Database = {
           image_url: string | null
           intro: string | null
           label_filtres: string | null
+          label_fonctionnalites: string | null
           nom: string
           position: number | null
           schema_evaluation: Json | null
@@ -132,6 +133,7 @@ export type Database = {
           image_url?: string | null
           intro?: string | null
           label_filtres?: string | null
+          label_fonctionnalites?: string | null
           nom: string
           position?: number | null
           schema_evaluation?: Json | null
@@ -147,6 +149,7 @@ export type Database = {
           image_url?: string | null
           intro?: string | null
           label_filtres?: string | null
+          label_fonctionnalites?: string | null
           nom?: string
           position?: number | null
           schema_evaluation?: Json | null
