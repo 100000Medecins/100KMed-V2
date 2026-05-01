@@ -45,10 +45,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
 - Prévoir une session dédiée avec Claude pour passer point par point
 
-#### Activer le 2FA GitHub
-- Priorité haute suite à la migration hors Synology (tokens sans expiration = risque confirmé)
-- Méthode recommandée : app d'authentification (Authy, Google Authenticator ou Microsoft Authenticator) — **pas SMS** (vulnérable au SIM-swapping)
-- Configurer dans GitHub → Settings → Password and authentication → Two-factor authentication
+#### ~~Activer le 2FA GitHub~~ ✅ Fait 2026-05-01
+- ~~Priorité haute suite à la migration hors Synology (tokens sans expiration = risque confirmé)~~
+- ~~Méthode recommandée : app d'authentification (Authy, Google Authenticator ou Microsoft Authenticator) — **pas SMS** (vulnérable au SIM-swapping)~~
+- ~~Configurer dans GitHub → Settings → Password and authentication → Two-factor authentication~~
 
 ### Sécurité
 
@@ -64,8 +64,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Partenariats contenu
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
-- **Médiia** — association pour les vidéos/stories
-- **La rhumatologue** (à identifier) — contenu tutos/articles/vidéos
+- ~~**Médiia** — association pour les vidéos/stories~~ ✅ Fait 2026-05-01
+- ~~**La rhumatologue** (à identifier) — contenu tutos/articles/vidéos~~ ✅ Fait 2026-05-01
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
@@ -213,11 +213,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
-### Migrer le développement en local — hors Synology (des deux côtés)
-- Actuellement le projet tourne sur le Synology (NAS) pour le dev
-- Migrer l'environnement de développement **Frontend** et **Backend** sur les machines locales (portable/fixe), hors NAS
-- Avantage : meilleure vitesse, pas dépendant du réseau local/VPN, plus simple à déboguer
-- Vérifier les variables d'environnement, les ports, les certificats SSL locaux si nécessaire
+### ~~Migrer le développement en local — hors Synology (des deux côtés)~~ ✅ Fait 2026-05-01
+- ~~Actuellement le projet tourne sur le Synology (NAS) pour le dev~~
+- ~~Migrer l'environnement de développement **Frontend** et **Backend** sur les machines locales (portable/fixe), hors NAS~~
+- ~~Avantage : meilleure vitesse, pas dépendant du réseau local/VPN, plus simple à déboguer~~
+- ~~Vérifier les variables d'environnement, les ports, les certificats SSL locaux si nécessaire~~
 
 ### Backups base de données Supabase
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
