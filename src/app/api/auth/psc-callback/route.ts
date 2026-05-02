@@ -163,6 +163,7 @@ export async function GET(request: Request) {
     // 3b. MODE STANDARD : connexion PSC classique (nouveau compte ou reconnexion)
     let userId: string | null = null
     let currentPublicEmail: string | null = null
+    let isNewUser = false
 
     if (rpps) {
       const { data: existingProfile } = await supabaseAdmin
@@ -191,6 +192,7 @@ export async function GET(request: Request) {
 
     // 4. Créer l'utilisateur si inexistant
     if (!userId) {
+      isNewUser = true
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: userEmail,
         email_confirm: true,
@@ -280,9 +282,17 @@ export async function GET(request: Request) {
     }
 
     // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)
+    // Pour les utilisateurs existants : utiliser l'email auth.users réel (pas celui retourné par PSC)
+    // PSC peut retourner un email différent (ex: email perso) alors que auth.users a l'email synthétique
+    // → generateLink avec le mauvais email crée un utilisateur fantôme et établit une session invalide
+    let emailForLink = userEmail
+    if (!isNewUser && userId) {
+      const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(userId)
+      if (authUserData?.user?.email) emailForLink = authUserData.user.email
+    }
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
-      email: userEmail,
+      email: emailForLink,
     })
 
     if (linkError || !linkData) {
