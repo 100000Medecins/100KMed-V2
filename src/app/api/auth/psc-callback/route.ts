@@ -319,16 +319,18 @@ export async function GET(request: Request) {
       if (data && data.length > 0) evalsALier = data
     }
 
-    // Par email enregistré dans users
+    // Par email ou contact_email enregistrés dans users
+    // (strategies 3+4 fusionnées : nécessaire car les comptes PSC ont un email synthétique
+    // @psc.sante.fr qui ne correspondra jamais à email_temp — contact_email contient le vrai email)
     if (evalsALier.length === 0) {
       const { data: userProfile } = await supabaseAdmin
-        .from('users').select('email').eq('id', userId).single()
-      const registeredEmail = userProfile?.email
-      if (registeredEmail) {
+        .from('users').select('email, contact_email').eq('id', userId).single()
+      for (const lookupEmail of [userProfile?.email, userProfile?.contact_email]) {
+        if (!lookupEmail || evalsALier.length > 0) continue
         const { data } = await supabaseAdmin
           .from('evaluations')
           .select('id, solution_id, email_temp')
-          .eq('email_temp', registeredEmail.toLowerCase())
+          .eq('email_temp', lookupEmail.toLowerCase())
           .eq('statut', 'en_attente_psc')
         if (data && data.length > 0) evalsALier = data
       }

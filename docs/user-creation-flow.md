@@ -1,6 +1,6 @@
 # Flux de création utilisateur — 100 000 Médecins
 
-Daté 2026-04-30. À mettre à jour si le flux change.
+Daté 2026-05-02. À mettre à jour si le flux change.
 
 ---
 
@@ -97,6 +97,50 @@ Pour les utilisateurs email/mdp :
 - Redirect : `window.location.href = '/mon-compte/profil'`
 
 > Note : `window.location.href` est obligatoire ici (pas `router.push`) — le changement de cookies de session n'est pas détecté par le router Next.js côté client.
+
+---
+
+---
+
+## Flux 3 — Évaluation anonyme → Rattachement PSC
+
+Un utilisateur peut évaluer une solution **sans être connecté** (parcours fréquent : il découvre le site, note directement). Il saisit son email → `submitEvaluationAnonyme()` crée l'évaluation avec :
+- `statut = en_attente_psc`
+- `email_temp = email saisi`
+- `token_verification = UUID` (secret lié à cet email)
+- `last_date_note = NOW()`
+- `user_id = null`
+
+Un email lui est envoyé avec un lien PSC : `/api/auth/psc-initier?token=UUID`.
+
+### Rattachement dans psc-callback
+
+Après authentification PSC, le callback recherche les évaluations à lier avec **4 stratégies en cascade** :
+
+| # | Méthode | Condition |
+|---|---------|-----------|
+| 1 | `token_verification = UUID` dans le state PSC | Lien email cliqué (chemin direct) |
+| 2 | `email_temp = email PSC` | Email PSC = email personnel |
+| 3 | `email_temp = users.email` | Compte existant avec email standard |
+| 4 | `email_temp = users.contact_email` | **Comptes PSC avec email synthétique** (`@psc.sante.fr`) — indispensable car les stratégies 2 et 3 échouent dans ce cas |
+
+> ⚠️ Sans la stratégie 4, les médecins PSC dont l'email auth est synthétique (`psc-RPPS@psc.sante.fr`) ne peuvent être rattachés que par le token — si ce token est perdu (autre navigateur, session expirée), leur évaluation reste bloquée `en_attente_psc` indéfiniment.
+
+### Résultat du rattachement
+
+Pour chaque évaluation trouvée :
+```
+evaluations.update({ statut: 'publiee', user_id, email_temp: null, token_verification: null })
+solutions_utilisees.insert({ user_id, solution_id, statut_evaluation: 'finalisee' })  // si absent
+recalcResultatsPourSolution(solution_id)
+users.update({ contact_email: email_temp })  // sauvegardé si contact_email absent
+```
+
+Redirect final : `/mon-compte/profil?evaluation=publiee` si au moins une évaluation liée.
+
+### Évaluations bloquées (rétrocompat)
+
+Les évaluations `en_attente_psc` existantes avec `user_id = null` se resolvent automatiquement à la prochaine connexion PSC de l'utilisateur grâce à la stratégie 4 (si `contact_email` est déjà renseigné sur son compte).
 
 ---
 

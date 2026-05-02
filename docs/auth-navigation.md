@@ -45,12 +45,15 @@ connectWithPsc() → window.location.href vers wallet PSC
   → retour sur /api/auth/psc-callback [Route Handler]
     → échange code → tokens → userInfo
     → create/update Supabase user (admin API)
+    → rattachement évaluations anonymes en_attente_psc (voir user-creation-flow.md §Flux 3)
     → generateLink(magiclink)
     → NextResponse.redirect('/auth/psc-session?token=...&next=...')
   → /auth/psc-session [page client]
     → supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })
       → timeout 10s en fallback
       → succès : window.location.replace(next)
+        → si évaluation liée : next = '/mon-compte/profil?evaluation=publiee'
+        → sinon              : next = '/mon-compte/profil' (ou '/completer-profil')
       → erreur  : window.location.replace('/connexion?error=psc_session_error')
 ```
 
