@@ -24,17 +24,26 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
 
-  await supabase
-    .from('users_notification_preferences')
-    .upsert(
-      {
-        user_id: uid,
-        relance_emails: false,
-        marketing_emails: false,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' }
-    )
+  // Récupérer l'email auth.users pour générer un magic link
+  const { data: authUser } = await supabase.auth.admin.getUserById(uid)
+  if (!authUser?.user?.email) {
+    return NextResponse.redirect(`${siteUrl}/desabonnement-confirme?erreur=lien-invalide`)
+  }
 
-  return NextResponse.redirect(`${siteUrl}/desabonnement-confirme`)
+  // Générer un magic link → l'utilisateur arrivera connecté sur ses préférences de notification
+  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    type: 'magiclink',
+    email: authUser.user.email,
+  })
+
+  if (linkError || !linkData) {
+    return NextResponse.redirect(`${siteUrl}/desabonnement-confirme?erreur=lien-invalide`)
+  }
+
+  const tokenHash = linkData.properties.hashed_token
+  const next = encodeURIComponent('/mon-compte/mes-notifications')
+
+  return NextResponse.redirect(
+    `${siteUrl}/auth/psc-session?token=${tokenHash}&next=${next}`
+  )
 }

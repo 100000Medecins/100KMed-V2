@@ -109,10 +109,15 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~`updateResultat()` (flux `submitScores`) ignorait le statut → évaluations `en_attente_psc` gonflaient les moyennes~~
 - Fix : nouvelle fonction `recalcResultatsPourSolution()` — recalcul complet depuis `evaluations WHERE statut='publiee'`, appelée depuis `submitEvaluation()` et aux 3 endroits du PSC callback
 
-#### Footer des emails — lien de désabonnement cassé
-- Le lien "Se désabonner" dans le footer des emails n'envoie nulle part (URL non configurée ou route manquante)
-- Vérifier le template HTML en base → quelle URL est utilisée
-- Créer ou vérifier la route de désabonnement et l'associer à une mise à jour du profil utilisateur (opt-out mailing)
+#### ~~Footer des emails — lien de désabonnement cassé~~ ✅ Fait 2026-05-02
+- ~~Lien tokenisé HMAC `/api/se-desabonner?uid=&token=` → connecte l'utilisateur directement sur `/mon-compte/mes-notifications`~~
+- ~~Tous les emails sortants (relances, newsletter, lancement, études) utilisent `generateUnsubscribeLink(userId, siteUrl)`~~
+
+#### Architecture email PSC — email synthétique vs réel *(à discuter)*
+- `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`
+- Option possible : mettre à jour `auth.users.email` via admin API quand PSC fournit un vrai email (éviterait le `getUserById` avant `generateLink`)
+- Risque si l'email réel est déjà pris par un autre compte (nécessiterait un flow de fusion dédié)
+- **Décision** : ne rien changer tant que le fix actuel (`getUserById` avant `generateLink`) couvre tous les cas
 
 #### Espace éditeur — accès limité aux éditeurs existants
 - Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
