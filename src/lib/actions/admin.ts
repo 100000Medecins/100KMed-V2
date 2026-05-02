@@ -949,7 +949,11 @@ function extractArticleFromFormData(formData: FormData) {
   const titre = formData.get('titre') as string
   const slug = (formData.get('slug') as string) || slugify(titre)
   const statut = (formData.get('statut') as string) || 'brouillon'
+  const scheduledAtRaw = (formData.get('scheduled_at') as string) || null
   const datePublication = statut === 'publié' ? new Date().toISOString() : null
+  const scheduledAt = (statut === 'brouillon' && scheduledAtRaw)
+    ? new Date(scheduledAtRaw).toISOString()
+    : null
   return {
     titre,
     slug,
@@ -960,6 +964,7 @@ function extractArticleFromFormData(formData: FormData) {
     id_categorie: (formData.get('id_categorie') as string) || null,
     statut,
     date_publication: datePublication,
+    scheduled_at: scheduledAt,
   }
 }
 
@@ -967,7 +972,8 @@ export async function createArticle(formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('articles')
     .insert({ id: randomUUID(), ...data })
   if (error) return { error: error.message }
@@ -980,7 +986,8 @@ export async function updateArticle(id: string, formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('articles')
     .update(data)
     .eq('id', id)

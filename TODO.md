@@ -30,7 +30,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### ~~Documenter le flux de création utilisateur — dualité auth.users / public.users~~ ✅ Fait 2026-04-30
 - ~~Produit : `docs/user-creation-flow.md`~~ ✅
 
-#### Audit "données dynamiques vs. hardcodées" — points résiduels
+#### ~~Audit "données dynamiques vs. hardcodées" — points résiduels~~ ✅ Fait 2026-05-01
 > Audit approfondi 2026-04-30. Résultats :
 - ~~`DETAIL_CRITERE_MAP` utilisée dans le scoring~~  ✅ Faux : `buildRefinedCritereScores()` utilise `q.critereMajeur` des objets question (DB). `DETAIL_CRITERE_MAP` est uniquement dans `comparison.ts` (comparateur). Pas de problème.
 - ~~`SLUGS_UTILITE` dans `criteres.ts` — hardcodé, cosmétique uniquement.~~ ✅ Fait 2026-05-01 : colonne `label_fonctionnalites` ajoutée à `categories`, `SLUGS_UTILITE` supprimé, 4 call sites mis à jour.
@@ -61,8 +61,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Partenariats contenu
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
-- **Médiia** — association pour les vidéos/stories
-- **La rhumatologue** (à identifier) — contenu tutos/articles/vidéos
+- ~~**Médiia** — association pour les vidéos/stories~~ ✅ Fait 2026-05-02
+- ~~**La rhumatologue** — contenu tutos/articles/vidéos~~ ✅ Fait 2026-05-02
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
@@ -150,24 +150,24 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~Permettre de voir le rendu HTML d'un template sans avoir à passer par Supabase ou le code~~
 - ~~Idéalement : sélecteur de template + prévisualisation + lien d'édition direct~~
 
-#### Uniformité des templates email — fichiers encore en HTML brut
-> Audit 2026-04-30. `buildEmail()` utilisé dans 8 fichiers ✅. ~~`account.ts`~~ ✅ migré 2026-05-01. Restants (emails internes admin, non urgent) :
-- `src/app/api/cron/rappel-accueil-videos/route.ts`
-- `src/app/api/cron/rappel-newsletter/route.ts`
-- `src/lib/actions/contact.ts`
-- `src/lib/actions/etudes-cliniques.ts`
-- `src/lib/actions/evaluation.ts`
-- `src/lib/actions/questionnaires-these.ts`
+#### ~~Uniformité des templates email — fichiers encore en HTML brut~~ ✅ Fait 2026-05-02
+> Tous les fichiers migrés vers `buildEmail()` ✅
 
-#### MAJ templates Supabase natifs — cohérence visuelle avec le master layout
-- Une fois le master layout SendGrid finalisé et validé visuellement, mettre à jour manuellement les templates natifs Supabase (confirm signup, change email address) dans **Supabase Dashboard → Authentication → Email Templates**
-- Objectif : aligner leur rendu (logo, couleurs, structure) avec le master layout SendGrid
-- ⚠️ Ces deux templates ne passent **pas** par `buildEmail()` — modification manuelle uniquement dans le dashboard Supabase, pas dans `email_templates` en BDD
+#### ~~MAJ templates Supabase natifs — cohérence visuelle avec le master layout~~ ✅ Fait 2026-05-02
+- ~~Confirm signup, Change email address, Reset password mis à jour dans Supabase Dashboard → Authentication → Email Templates~~
 
-#### Tableau de bord des envois de mails — vue calendrier
-- Créer une vue plus visuelle dans Admin → Emails : calendrier des envois passés et programmés
-- Afficher : type d'email, nombre de destinataires, statut (envoyé / programmé / échoué), date
-- Vue calendrier mensuelle + liste chronologique en dessous
+#### ~~Planning éditorial — vue calendrier (Admin → Planning ou Admin → Emails)~~ ✅ Fait 2026-05-03
+- ~~3 mois côte à côte (grille CSS, sans lib externe), dots colorés par type + liste chronologique en dessous~~
+- ~~Sources de données à afficher :~~
+  - ~~📰 Articles programmés (`articles.scheduled_at`) — bleu~~
+  - ~~📧 Newsletters programmées (`newsletters.scheduled_at`) — orange~~
+  - ~~🔬 Études / questionnaires — vert *(voir point ci-dessous)*~~
+- ~~Clic sur un dot → lien vers la page d'édition de l'item~~
+
+#### Programmer l'envoi des questionnaires de thèse
+- La table `questionnaires_these` n'a que `date_fin` — pas de date d'envoi programmée
+- **À faire** : ajouter une colonne `date_envoi` (ou `scheduled_at`) à `questionnaires_these` + UI dans le formulaire admin + cron qui déclenche l'envoi
+- Prérequis du calendrier ci-dessus pour inclure les questionnaires
 
 ### Notifications
 
@@ -178,9 +178,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Blog
 
-#### Planification de la publication d'un article généré et relu
-- Pouvoir définir une date/heure de publication future pour un article déjà généré par l'IA et relu/validé manuellement
-- L'article reste en statut "brouillon" jusqu'à l'heure planifiée, puis passe automatiquement en "publié"
+#### ~~Planification de la publication d'un article généré et relu~~ ✅ Fait 2026-05-03
+- ~~Pouvoir définir une date/heure de publication future pour un article déjà généré par l'IA et relu/validé manuellement~~
+- ~~L'article reste en statut "brouillon" jusqu'à l'heure planifiée, puis passe automatiquement en "publié"~~
 
 ### Performance
 
@@ -287,6 +287,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## Fait récemment
+- Planning éditorial `/admin/planning` — calendrier 3 mois, dots articles/newsletters, section en retard rouge, `EventRow` ✅ (2026-05-03)
+- Articles blog — colonne `scheduled_at`, picker datetime-local, badge "Programmé", cron horaire Vercel ✅ (2026-05-03)
 - `recalcResultatsPourSolution()` — recalcul complet résultats depuis `evaluations WHERE statut='publiee'` ; `submitEvaluation()` + PSC callback mis à jour ; bug agenda/IA 0 résultats corrigé ✅ (2026-05-01)
 - `SLUGS_UTILITE` migré → colonne `label_fonctionnalites` en BDD ; `criteres.ts` + 4 call sites mis à jour ✅ (2026-05-01)
 - `account.ts` — email suppression compte migré vers `buildEmail()` ✅ (2026-05-01)

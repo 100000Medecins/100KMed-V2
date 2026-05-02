@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      acronymes: {
+        Row: {
+          categorie: string | null
+          created_at: string | null
+          definition: string
+          description: string | null
+          id: string
+          lien: string | null
+          sigle: string
+        }
+        Insert: {
+          categorie?: string | null
+          created_at?: string | null
+          definition: string
+          description?: string | null
+          id?: string
+          lien?: string | null
+          sigle: string
+        }
+        Update: {
+          categorie?: string | null
+          created_at?: string | null
+          definition?: string
+          description?: string | null
+          id?: string
+          lien?: string | null
+          sigle?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           contenu: string | null
@@ -24,6 +54,7 @@ export type Database = {
           id_categorie: string | null
           image_couverture: string | null
           meta_description: string | null
+          scheduled_at: string | null
           slug: string
           statut: string
           titre: string
@@ -38,6 +69,7 @@ export type Database = {
           id_categorie?: string | null
           image_couverture?: string | null
           meta_description?: string | null
+          scheduled_at?: string | null
           slug: string
           statut?: string
           titre: string
@@ -52,6 +84,7 @@ export type Database = {
           id_categorie?: string | null
           image_couverture?: string | null
           meta_description?: string | null
+          scheduled_at?: string | null
           slug?: string
           statut?: string
           titre?: string
@@ -112,6 +145,7 @@ export type Database = {
           categorie_defaut: boolean | null
           criteres_recherche: Json | null
           groupe_id: string | null
+          has_note_redac: boolean
           icon: string | null
           id: string
           image_url: string | null
@@ -128,6 +162,7 @@ export type Database = {
           categorie_defaut?: boolean | null
           criteres_recherche?: Json | null
           groupe_id?: string | null
+          has_note_redac?: boolean
           icon?: string | null
           id: string
           image_url?: string | null
@@ -144,6 +179,7 @@ export type Database = {
           categorie_defaut?: boolean | null
           criteres_recherche?: Json | null
           groupe_id?: string | null
+          has_note_redac?: boolean
           icon?: string | null
           id?: string
           image_url?: string | null
@@ -264,57 +300,6 @@ export type Database = {
           },
         ]
       }
-      criteres_backup: {
-        Row: {
-          id: string | null
-          id_categorie: string | null
-          identifiant_tech: string | null
-          information: string | null
-          is_enfant: boolean | null
-          is_parent: boolean | null
-          nom_capital: string | null
-          nom_court: string | null
-          nom_long: string | null
-          question: string | null
-          reponse_max: number | null
-          reponse_min: number | null
-          reponse_type: string | null
-          type: string | null
-        }
-        Insert: {
-          id?: string | null
-          id_categorie?: string | null
-          identifiant_tech?: string | null
-          information?: string | null
-          is_enfant?: boolean | null
-          is_parent?: boolean | null
-          nom_capital?: string | null
-          nom_court?: string | null
-          nom_long?: string | null
-          question?: string | null
-          reponse_max?: number | null
-          reponse_min?: number | null
-          reponse_type?: string | null
-          type?: string | null
-        }
-        Update: {
-          id?: string | null
-          id_categorie?: string | null
-          identifiant_tech?: string | null
-          information?: string | null
-          is_enfant?: boolean | null
-          is_parent?: boolean | null
-          nom_capital?: string | null
-          nom_court?: string | null
-          nom_long?: string | null
-          question?: string | null
-          reponse_max?: number | null
-          reponse_min?: number | null
-          reponse_type?: string | null
-          type?: string | null
-        }
-        Relationships: []
-      }
       editeurs: {
         Row: {
           contact_adresse: string | null
@@ -405,6 +390,53 @@ export type Database = {
         }
         Relationships: []
       }
+      etudes_cliniques: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date_debut: string | null
+          date_fin: string | null
+          description: string | null
+          id: string
+          images: Json | null
+          lien: string | null
+          titre: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          images?: Json | null
+          lien?: string | null
+          titre: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          images?: Json | null
+          lien?: string | null
+          titre?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "etudes_cliniques_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluations: {
         Row: {
           created_at: string | null
@@ -472,6 +504,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_evaluation_solution_utilisee"
+            columns: ["user_id", "solution_id"]
+            isOneToOne: true
+            referencedRelation: "solutions_utilisees"
+            referencedColumns: ["user_id", "solution_id"]
+          },
+          {
             foreignKeyName: "fk_evaluations_solution"
             columns: ["solution_id"]
             isOneToOne: false
@@ -480,7 +519,7 @@ export type Database = {
           },
         ]
       }
-      evaluations_backup: {
+      evaluations_firebase_backup: {
         Row: {
           created_at: string | null
           email_temp: string | null
@@ -555,6 +594,51 @@ export type Database = {
           id?: string
           nom?: string
           ordre?: number
+        }
+        Relationships: []
+      }
+      newsletters: {
+        Row: {
+          contenu_html: string | null
+          contenu_json: Json | null
+          created_at: string | null
+          id: string
+          mois: string
+          notified_at: string | null
+          recipient_count: number | null
+          reminded_at: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string
+          sujet: string | null
+        }
+        Insert: {
+          contenu_html?: string | null
+          contenu_json?: Json | null
+          created_at?: string | null
+          id?: string
+          mois: string
+          notified_at?: string | null
+          recipient_count?: number | null
+          reminded_at?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          sujet?: string | null
+        }
+        Update: {
+          contenu_html?: string | null
+          contenu_json?: Json | null
+          created_at?: string | null
+          id?: string
+          mois?: string
+          notified_at?: string | null
+          recipient_count?: number | null
+          reminded_at?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          sujet?: string | null
         }
         Relationships: []
       }
@@ -698,6 +782,53 @@ export type Database = {
         }
         Relationships: []
       }
+      questionnaires_these: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date_fin: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          lien: string
+          statut: string
+          titre: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          lien: string
+          statut?: string
+          titre: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          lien?: string
+          statut?: string
+          titre?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaires_these_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resultats: {
         Row: {
           avis_redac: string | null
@@ -760,54 +891,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      resultats_backup: {
-        Row: {
-          avis_redac: string | null
-          critere_id: string | null
-          id: string | null
-          moyenne_utilisateurs: number | null
-          moyenne_utilisateurs_base5: number | null
-          nb_notes: number | null
-          note_redac: number | null
-          note_redac_base5: number | null
-          notes: Json | null
-          notes_critere: Json | null
-          nps: number | null
-          repartition: Json | null
-          solution_id: string | null
-        }
-        Insert: {
-          avis_redac?: string | null
-          critere_id?: string | null
-          id?: string | null
-          moyenne_utilisateurs?: number | null
-          moyenne_utilisateurs_base5?: number | null
-          nb_notes?: number | null
-          note_redac?: number | null
-          note_redac_base5?: number | null
-          notes?: Json | null
-          notes_critere?: Json | null
-          nps?: number | null
-          repartition?: Json | null
-          solution_id?: string | null
-        }
-        Update: {
-          avis_redac?: string | null
-          critere_id?: string | null
-          id?: string | null
-          moyenne_utilisateurs?: number | null
-          moyenne_utilisateurs_base5?: number | null
-          nb_notes?: number | null
-          note_redac?: number | null
-          note_redac_base5?: number | null
-          notes?: Json | null
-          notes_critere?: Json | null
-          nps?: number | null
-          repartition?: Json | null
-          solution_id?: string | null
-        }
-        Relationships: []
       }
       site_config: {
         Row: {
@@ -1130,6 +1213,33 @@ export type Database = {
           },
         ]
       }
+      suggestions_acronymes: {
+        Row: {
+          created_at: string | null
+          definition: string
+          description: string | null
+          email: string | null
+          id: string
+          sigle: string
+        }
+        Insert: {
+          created_at?: string | null
+          definition: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          sigle: string
+        }
+        Update: {
+          created_at?: string | null
+          definition?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          sigle?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           id: string
@@ -1138,7 +1248,7 @@ export type Database = {
           is_tag_principal: boolean | null
           libelle: string | null
           ordre: number | null
-          parent_id: string | null
+          parent_ids: string[]
         }
         Insert: {
           id: string
@@ -1147,7 +1257,7 @@ export type Database = {
           is_tag_principal?: boolean | null
           libelle?: string | null
           ordre?: number | null
-          parent_id?: string | null
+          parent_ids?: string[]
         }
         Update: {
           id?: string
@@ -1156,7 +1266,7 @@ export type Database = {
           is_tag_principal?: boolean | null
           libelle?: string | null
           ordre?: number | null
-          parent_id?: string | null
+          parent_ids?: string[]
         }
         Relationships: [
           {
@@ -1164,13 +1274,6 @@ export type Database = {
             columns: ["id_categorie"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tags_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]
@@ -1194,6 +1297,7 @@ export type Database = {
           id: string
           is_actif: boolean | null
           is_complete: boolean | null
+          is_etudiant: boolean | null
           mode_exercice: string | null
           niveau_outils_numeriques: string | null
           nom: string | null
@@ -1223,6 +1327,7 @@ export type Database = {
           id: string
           is_actif?: boolean | null
           is_complete?: boolean | null
+          is_etudiant?: boolean | null
           mode_exercice?: string | null
           niveau_outils_numeriques?: string | null
           nom?: string | null
@@ -1252,6 +1357,7 @@ export type Database = {
           id?: string
           is_actif?: boolean | null
           is_complete?: boolean | null
+          is_etudiant?: boolean | null
           mode_exercice?: string | null
           niveau_outils_numeriques?: string | null
           nom?: string | null
@@ -1315,6 +1421,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_users_preferences_preference"
+            columns: ["preference_id"]
+            isOneToOne: false
+            referencedRelation: "preferences"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "users_preferences_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1323,45 +1436,124 @@ export type Database = {
           },
         ]
       }
+      video_rubriques: {
+        Row: {
+          id: string
+          nom: string
+          ordre: number
+        }
+        Insert: {
+          id?: string
+          nom: string
+          ordre?: number
+        }
+        Update: {
+          id?: string
+          nom?: string
+          ordre?: number
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
+          created_at: string | null
           description: string | null
+          homepage_ordre: number | null
+          homepage_pinned_at: string | null
           id: string
           is_videos_principales: boolean | null
           ordre: number | null
+          rubrique_id: string | null
+          statut: string
+          theme: string | null
           titre: string | null
           type: string | null
           url: string | null
           vignette: string | null
         }
         Insert: {
+          created_at?: string | null
           description?: string | null
+          homepage_ordre?: number | null
+          homepage_pinned_at?: string | null
           id?: string
           is_videos_principales?: boolean | null
           ordre?: number | null
+          rubrique_id?: string | null
+          statut?: string
+          theme?: string | null
           titre?: string | null
           type?: string | null
           url?: string | null
           vignette?: string | null
         }
         Update: {
+          created_at?: string | null
           description?: string | null
+          homepage_ordre?: number | null
+          homepage_pinned_at?: string | null
           id?: string
           is_videos_principales?: boolean | null
           ordre?: number | null
+          rubrique_id?: string | null
+          statut?: string
+          theme?: string | null
           titre?: string | null
           type?: string | null
           url?: string | null
           vignette?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "videos_rubrique_id_fkey"
+            columns: ["rubrique_id"]
+            isOneToOne: false
+            referencedRelation: "video_rubriques"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_auth_email_exists: { Args: { p_email: string }; Returns: boolean }
+      search_articles: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          extrait: string
+          id: string
+          image_couverture: string
+          similarity_score: number
+          slug: string
+          titre: string
+        }[]
+      }
+      search_categories: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          icon: string
+          id: string
+          nom: string
+          similarity_score: number
+          slug: string
+        }[]
+      }
+      search_solutions: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          categorie_nom: string
+          categorie_slug: string
+          id: string
+          logo_url: string
+          nom: string
+          similarity_score: number
+          slug: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

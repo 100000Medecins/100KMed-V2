@@ -8,11 +8,21 @@ import ArticleCategoriesManager from '@/components/admin/ArticleCategoriesManage
 
 async function getArticlesAdmin() {
   const supabase = createServiceRoleClient()
-  const { data } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
     .from('articles')
-    .select('id, titre, slug, statut, date_publication, id_categorie, articles_categories(nom)')
+    .select('id, titre, slug, statut, date_publication, scheduled_at, id_categorie, articles_categories(nom)')
     .order('created_at', { ascending: false })
-  return data ?? []
+  return (data ?? []) as Array<{
+    id: string
+    titre: string
+    slug: string
+    statut: string
+    date_publication: string | null
+    scheduled_at: string | null
+    id_categorie: string | null
+    articles_categories: { nom: string } | null
+  }>
 }
 
 async function getArticlesCategories() {
@@ -72,8 +82,8 @@ export default async function AdminBlogPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {articles.map((article) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const cat = (article as any).articles_categories
+                  const cat = article.articles_categories
+                  const isScheduled = article.statut === 'brouillon' && !!article.scheduled_at
                   return (
                     <tr key={article.id} className="hover:bg-surface-light transition-colors">
                       <td className="px-6 py-4">
@@ -84,13 +94,19 @@ export default async function AdminBlogPage() {
                         {cat?.nom ?? <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-6 py-4 hidden md:table-cell">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          article.statut === 'publié'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {article.statut === 'publié' ? 'Publié' : 'Brouillon'}
-                        </span>
+                        {article.statut === 'publié' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            Publié
+                          </span>
+                        ) : isScheduled ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                            Programmé · {new Date(article.scheduled_at!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} {new Date(article.scheduled_at!).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                            Brouillon
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-400 hidden lg:table-cell">
                         {article.date_publication

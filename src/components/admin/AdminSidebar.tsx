@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen } from 'lucide-react'
+import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays } from 'lucide-react'
 
 type NavItem = {
   href: string
@@ -37,6 +37,7 @@ const navItems: NavItem[] = [
   { href: '/admin/questionnaires-these', label: 'Études & Thèses', icon: GraduationCap },
   { href: '/admin/videos', label: 'Vidéos & Tutos', icon: Video },
   { href: '/admin/emails', label: 'Emails', icon: Mail },
+  { href: '/admin/planning', label: 'Planning', icon: CalendarDays },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
 

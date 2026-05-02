@@ -18,6 +18,14 @@ type Article = {
   meta_description?: string | null
   id_categorie?: string | null
   statut?: string
+  scheduled_at?: string | null
+}
+
+function toDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 interface ArticleFormProps {
@@ -36,6 +44,9 @@ const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 export default function ArticleForm({ article, categories, action }: ArticleFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const [statut, setStatut] = useState(article?.statut ?? 'brouillon')
+  const [scheduledAt, setScheduledAt] = useState(() => toDatetimeLocal(article?.scheduled_at))
 
   // Champs contrôlés (pour pouvoir les peupler depuis la génération)
   const [titre, setTitre] = useState(article?.titre ?? '')
@@ -283,12 +294,38 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
             <label className={labelClass}>Publication</label>
             <select
               name="statut"
-              defaultValue={article?.statut ?? 'brouillon'}
+              value={statut}
+              onChange={(e) => {
+                setStatut(e.target.value)
+                if (e.target.value === 'publié') setScheduledAt('')
+              }}
               className={inputClass}
             >
               <option value="brouillon">Brouillon</option>
               <option value="publié">Publié</option>
             </select>
+            {statut === 'brouillon' && (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Programmer la publication</label>
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className={inputClass}
+                />
+                {scheduledAt && (
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt('')}
+                    className="mt-1 text-xs text-gray-400 hover:text-red-400 transition-colors"
+                  >
+                    Annuler la programmation
+                  </button>
+                )}
+              </div>
+            )}
+            <input type="hidden" name="scheduled_at" value={scheduledAt} />
           </div>
 
           {/* Catégorie */}

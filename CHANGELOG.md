@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-05-03] — Planning éditorial + planification articles blog
+
+### Feature — Planning éditorial /admin/planning
+- Nouvelle page `/admin/planning` : calendrier 3 mois (grille CSS, lun-dim, français)
+- Dots colorés par type : bleu = article, orange = newsletter
+- Section "⚠ En attente de publication (heure passée)" en rouge pour les brouillons dont la date est dépassée
+- Liste chronologique avec heure et badge type, lien direct vers l'éditeur
+- Lien ajouté dans la sidebar admin (`CalendarDays`)
+
+### Feature — Planification de publication d'article
+- Colonne `scheduled_at timestamptz` ajoutée sur la table `articles` (migration SQL)
+- Picker `datetime-local` dans `ArticleForm` — visible uniquement en mode brouillon, avec bouton Annuler
+- Badge "Programmé · JJ MMM HH:MM" en orange dans la liste `/admin/blog`
+- Cron `/api/cron/publier-articles-programmes` (toutes les heures via Vercel) : publie les articles dont `scheduled_at <= now()`, revalide les slugs et `/blog`
+- Types Supabase régénérés après migration
+
+### TODO — Mises à jour
+- Marqué terminé : Planning éditorial — vue calendrier ✅
+- Marqué terminé : Blog — Planification publication article ✅
+
+---
+
 ## [2026-05-01] — Scoring évaluations, SLUGS_UTILITE → BDD, email account
 
 ### Fix — Bug silencieux : résultats agrégés non peuplés pour agenda/IA
