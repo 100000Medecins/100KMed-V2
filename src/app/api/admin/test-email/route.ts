@@ -69,7 +69,10 @@ export async function POST(req: NextRequest) {
   }
 
   const siteUrl = new URL(req.url).origin
-  const vars = SAMPLE_VARS[templateId] ?? {}
+  const baseVars = SAMPLE_VARS[templateId] ?? {}
+  const vars = 'lien_desabonnement' in baseVars
+    ? { ...baseVars, lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications` }
+    : baseVars
   const result = await buildEmail(templateId, vars, siteUrl)
 
   if (!result) {

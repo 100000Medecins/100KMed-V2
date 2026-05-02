@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
 
 export const dynamic = 'force-dynamic'
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
         const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
         const html = (newsletter.contenu_html as string)
           .replace(/\{\{nom\}\}/g, nomDisplay)
-          .replace(/\{\{lien_desabonnement\}\}/g, `${siteUrl}/mon-compte/mes-notifications`)
+          .replace(/\{\{lien_desabonnement\}\}/g, generateUnsubscribeLink(user.id, siteUrl))
           .replace(/\{\{lien_navigateur\}\}/g, `${siteUrl}/nl/${newsletter.id}`)
         const sujet = (newsletter.sujet as string).replace(/\{\{nom\}\}/g, nomDisplay)
         await sgMail.send({

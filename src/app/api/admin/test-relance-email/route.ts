@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
@@ -55,13 +56,25 @@ export async function POST(req: NextRequest) {
     if (publicUser) {
       userId = publicUser.id
     } else {
-      // Fallback : chercher dans auth.users via l'API admin Supabase
-      const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-      const authUser = authList?.users?.find((u) => u.email === targetEmail)
-      if (!authUser) {
-        return NextResponse.json({ error: `Aucun utilisateur trouvé pour l'email : ${targetEmail}` }, { status: 404 })
+      // Fallback 1 : contact_email (utilisateurs PSC dont l'email de contact diffère de l'email auth)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: contactUser } = await (supabase as any)
+        .from('users')
+        .select('id')
+        .eq('contact_email', targetEmail)
+        .maybeSingle()
+
+      if (contactUser) {
+        userId = contactUser.id
+      } else {
+        // Fallback 2 : chercher dans auth.users via l'API admin Supabase
+        const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+        const authUser = authList?.users?.find((u) => u.email === targetEmail)
+        if (!authUser) {
+          return NextResponse.json({ error: `Aucun utilisateur trouvé pour l'email : ${targetEmail}` }, { status: 404 })
+        }
+        userId = authUser.id
       }
-      userId = authUser.id
     }
 
     query = query.eq('user_id', userId)
@@ -90,7 +103,7 @@ export async function POST(req: NextRequest) {
     nom: nomDisplay, prenom: nomDisplay, solution_nom: solution.nom,
     lien_reevaluation: lienReevaluation,
     lien_1clic: lien1Clic,
-    lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+    lien_desabonnement: generateUnsubscribeLink(ev.user_id as string, siteUrl),
   }, siteUrl)
 
   if (!result) {

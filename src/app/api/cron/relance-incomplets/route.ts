@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
@@ -112,7 +113,7 @@ export async function GET(req: NextRequest) {
     const result = await buildEmail(TEMPLATE_ID, {
       nom: nomDisplay, prenom: nomDisplay, solution_nom: solution.nom,
       lien_reprise: lienReprise,
-      lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+      lien_desabonnement: generateUnsubscribeLink(ev.user_id as string, siteUrl),
     }, siteUrl)
 
     try {

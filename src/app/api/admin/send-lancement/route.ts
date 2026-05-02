@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
         nom: nomDisplay, prenom: nomDisplay, solution_nom: r.solutionNom,
         lien_1clic: lien1Clic,
         lien_reevaluation: `${siteUrl}/mon-compte/mes-evaluations`,
-        lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+        lien_desabonnement: generateUnsubscribeLink(r.userId, siteUrl),
       }, siteUrl)
 
       if (!result) {

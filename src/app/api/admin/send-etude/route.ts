@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
         nom: nomDisplay,
         lien_etude,
         texte_promoteur,
-        lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications`,
+        lien_desabonnement: generateUnsubscribeLink(user.id, siteUrl),
       }, siteUrl)
 
       if (!result) {
