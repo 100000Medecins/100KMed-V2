@@ -21,11 +21,38 @@ type Article = {
   scheduled_at?: string | null
 }
 
-function toDatetimeLocal(iso: string | null | undefined): string {
+// Extrait la date locale Paris (YYYY-MM-DD) depuis un ISO UTC
+function toParisDate(iso: string | null | undefined): string {
   if (!iso) return ''
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(iso))
+}
+
+// Extrait l'heure locale Paris (0-23) depuis un ISO UTC
+function toParisHour(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const h = parseInt(new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Paris', hour: 'numeric', hour12: false,
+  }).format(new Date(iso)))
+  return isNaN(h) ? null : h % 24
+}
+
+// Convertit une date Paris (YYYY-MM-DD) + heure Paris → ISO UTC
+function parisToUTC(dateStr: string, hour: number): string {
+  // Offset Paris sur ce jour : on compare midi UTC avec midi Paris
+  const noonUTC = new Date(`${dateStr}T12:00:00Z`)
+  const parisNoon = parseInt(new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Paris', hour: 'numeric', hour12: false,
+  }).format(noonUTC))
+  const offset = parisNoon - 12 // +1 hiver, +2 été
+
+  let utcHour = hour - offset
+  let d = dateStr
+  if (utcHour < 0)  { utcHour += 24; const t = new Date(`${dateStr}T00:00:00Z`); t.setUTCDate(t.getUTCDate() - 1); d = t.toISOString().slice(0, 10) }
+  if (utcHour >= 24) { utcHour -= 24; const t = new Date(`${dateStr}T00:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); d = t.toISOString().slice(0, 10) }
+  return `${d}T${String(utcHour).padStart(2, '0')}:00:00.000Z`
 }
 
 interface ArticleFormProps {
@@ -46,7 +73,8 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
   const [isPending, startTransition] = useTransition()
 
   const [statut, setStatut] = useState(article?.statut ?? 'brouillon')
-  const [scheduledAt, setScheduledAt] = useState(() => toDatetimeLocal(article?.scheduled_at))
+  const [scheduledDate, setScheduledDate] = useState(() => toParisDate(article?.scheduled_at))
+  const [scheduledHour, setScheduledHour] = useState<number | null>(() => toParisHour(article?.scheduled_at))
 
   // Champs contrôlés (pour pouvoir les peupler depuis la génération)
   const [titre, setTitre] = useState(article?.titre ?? '')
@@ -297,7 +325,7 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
               value={statut}
               onChange={(e) => {
                 setStatut(e.target.value)
-                if (e.target.value === 'publié') setScheduledAt('')
+                if (e.target.value === 'publié') { setScheduledDate(''); setScheduledHour(null) }
               }}
               className={inputClass}
             >
@@ -306,18 +334,32 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
             </select>
             {statut === 'brouillon' && (
               <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Programmer la publication</label>
-                <input
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                  className={inputClass}
-                />
-                {scheduledAt && (
+                <label className="block text-xs text-gray-500 mb-1.5">
+                  Programmer la publication <span className="text-gray-400">(heure de Paris)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                    min={new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date())}
+                    className={`flex-1 ${inputClass}`}
+                  />
+                  <select
+                    value={scheduledHour ?? ''}
+                    onChange={(e) => setScheduledHour(e.target.value !== '' ? parseInt(e.target.value) : null)}
+                    className={`w-28 ${inputClass}`}
+                  >
+                    <option value="">--h--</option>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{String(i).padStart(2, '0')}h00</option>
+                    ))}
+                  </select>
+                </div>
+                {(scheduledDate || scheduledHour !== null) && (
                   <button
                     type="button"
-                    onClick={() => setScheduledAt('')}
+                    onClick={() => { setScheduledDate(''); setScheduledHour(null) }}
                     className="mt-1 text-xs text-gray-400 hover:text-red-400 transition-colors"
                   >
                     Annuler la programmation
@@ -325,7 +367,11 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
                 )}
               </div>
             )}
-            <input type="hidden" name="scheduled_at" value={scheduledAt} />
+            <input
+              type="hidden"
+              name="scheduled_at"
+              value={(scheduledDate && scheduledHour !== null) ? parisToUTC(scheduledDate, scheduledHour) : ''}
+            />
           </div>
 
           {/* Catégorie */}

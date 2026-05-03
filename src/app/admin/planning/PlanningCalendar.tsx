@@ -51,8 +51,8 @@ function sameDay(dateObj: Date, year: number, month: number, day: number) {
 function EventRow({ event, overdue = false }: { event: PlanningEvent & { dateObj: Date }; overdue?: boolean }) {
   const config = TYPE_CONFIG[event.type]
   const Icon = config.Icon
-  const dateStr = event.dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
-  const timeStr = event.dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const dateStr = event.dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Paris' })
+  const timeStr = event.dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
 
   return (
     <Link href={event.href} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-light transition-colors group">
