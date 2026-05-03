@@ -21,9 +21,26 @@
 - Cron `/api/cron/publier-articles-programmes` (toutes les heures via Vercel) : publie les articles dont `scheduled_at <= now()`, revalide les slugs et `/blog`
 - Types Supabase régénérés après migration
 
+### Feature — Espace éditeur (inscription + validation admin)
+- Bouton "Créer un espace éditeur" ajouté dans `EditorCTA` (CTA homepage/solutions)
+- Inscription `/inscription?type=editeur` → `/completer-profil` pré-sélectionné sur "Éditeur"
+- Mode exercice "Éditeur" : masque spécialité, affiche dropdown éditeurs + solutions sans éditeur (ordre alphabétique)
+- Option "Je ne trouve pas dans la liste" → champ texte libre
+- Server action `createEditeurClaim` : crée une demande en attente dans `editeur_claims`
+- Migration SQL : table `editeur_claims` (FK `editeur_id text` + `solution_id uuid`)
+- Onglet "Demandes" dans `/admin/editeurs` avec badge compteur + approbation/rejet
+- Badge "Demande éditeur" dans `/admin/utilisateurs` pour les comptes avec claim en attente
+- Types Supabase régénérés après migration
+
+### Fix — Callback confirmation email
+- Cause : `/api/auth/callback` ne gérait que le param `code` (PKCE/OAuth), pas `token_hash`+`type=signup` (confirmation email)
+- Résultat : clic sur le lien de confirmation → page erreur, malgré le compte bien créé
+- Fix : branche `else if (token_hash && type)` avec `verifyOtp({ token_hash, type })`
+
 ### TODO — Mises à jour
 - Marqué terminé : Planning éditorial — vue calendrier ✅
 - Marqué terminé : Blog — Planification publication article ✅
+- Marqué terminé : Espace éditeur — accès limité aux éditeurs existants ✅
 
 ---
 

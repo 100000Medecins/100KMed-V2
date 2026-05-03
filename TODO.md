@@ -59,9 +59,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Risque si l'email réel est déjà pris par un autre compte (nécessiterait un flow de fusion dédié)
 - **Décision** : ne rien changer tant que le fix actuel (`getUserById` avant `generateLink`) couvre tous les cas
 
-#### Espace éditeur — accès limité aux éditeurs existants
-- Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
-- **À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions
+#### ~~Espace éditeur — accès limité aux éditeurs existants~~ [OK] Fait 2026-05-03
+- ~~Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste~~
+- ~~**À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions~~
 
 ### UX / UI
 
