@@ -6,48 +6,25 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### ~~URGENT — Relance cassée 23/04/2026~~ ✅ Traité 2026-04-25
-- Email d'excuse envoyé aux ~300 utilisateurs ✅
-- `last_relance_sent_at` réinitialisé ✅
-- Code excuse supprimé (API routes, excuseTemplate, vercel.json, AdminEmailsClient) ✅
-- Clés `excuse_*` dans `site_config` : conservées — `excuse_draft_html` et `excuse_draft_sujet` alimentent l'éditeur dans Admin → Emails → Systèmes ✅
-
 ### IMPORTANT
 
 #### Consolidation base de données — héritage Firebase
 
 > ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
 
-##### ~~Étape 2 — Simplifier `computeEvalGroupAvg`~~ ✅ Fait 2026-04-26
-##### ~~Étape 3 — Unifier la source de note partout~~ ✅ Fait 2026-04-26
-##### ~~Étape 4 — Corriger `solutions.evaluation_redac_note`~~ ✅ Fait 2026-04-26
-
-##### ~~Étape 5 — Admin solutions : supprimer la section "Dates et publication"~~ ✅ Fait 2026-04-26
-
-##### ~~Étape 6 — Listing catégorie : tri et affichage cohérents~~ ✅ Fait 2026-04-26
-##### ~~Étape 7 — Ajouter le trigger aux migrations SQL~~ ✅ Fait 2026-04-26
-
-#### ~~Documenter le flux de création utilisateur — dualité auth.users / public.users~~ ✅ Fait 2026-04-30
-- ~~Produit : `docs/user-creation-flow.md`~~ ✅
-
-#### ~~Audit "données dynamiques vs. hardcodées" — points résiduels~~ ✅ Fait 2026-05-01
-> Audit approfondi 2026-04-30. Résultats :
-- ~~`DETAIL_CRITERE_MAP` utilisée dans le scoring~~  ✅ Faux : `buildRefinedCritereScores()` utilise `q.critereMajeur` des objets question (DB). `DETAIL_CRITERE_MAP` est uniquement dans `comparison.ts` (comparateur). Pas de problème.
-- ~~`SLUGS_UTILITE` dans `criteres.ts` — hardcodé, cosmétique uniquement.~~ ✅ Fait 2026-05-01 : colonne `label_fonctionnalites` ajoutée à `categories`, `SLUGS_UTILITE` supprimé, 4 call sites mis à jour.
-- ~~Vérifier que les critères majeurs (`nom_capital`) existent bien en BDD pour **toutes** les catégories~~ ✅ Fait 2026-05-01 : vérifié via SQL — `criteres` utilise `nom_capital`/`nom_court` (pas `nom`).
-- ~~Vérifier que `resultats` est bien peuplé pour toutes les catégories~~ ✅ Fait 2026-05-01 : vérifié via SQL (agenda/IA = 0 résultats) + cause racine corrigée (voir bug statut ci-dessous).
-
-#### ~~Documenter le système questionnaire / scoring~~ ✅ Fait 2026-04-30
-- ~~Intégré dans `docs/evaluation-scoring.md` : flux complet DB → API → notation → scores → résultats, rôle de `critere_majeur`, fallback hardcodé, préfixes par catégorie~~
-
 #### Traiter les remarques de Ben (rapport efficience du code)
 - Revoir tous les points remontés dans la capture de Ben
 - À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
 - Prévoir une session dédiée avec Claude pour passer point par point
 
-#### ~~Activer le 2FA GitHub~~ ✅ Fait 2026-04-30
-
 ### Sécurité
+
+#### Passer DMARC de `none` à `quarantine` puis `reject`
+- Actuellement en `p=none` (surveillance uniquement, aucun email rejeté)
+- Étape 1 : passer à `p=quarantine` — les emails non conformes partent en spam
+- Étape 2 (après quelques semaines de monitoring) : passer à `p=reject` — rejet total
+- Vérifier d'abord les rapports DMARC (agrégats `rua=`) pour s'assurer que tous les envois légitimes (SendGrid, Supabase) passent SPF ou DKIM avant de durcir
+- Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
 #### Sécuriser le mot de passe Supabase dans le script de backup
 - Actuellement en clair dans `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` (dans `$DB_URL`)
@@ -61,8 +38,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Partenariats contenu
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
-- ~~**Médiia** — association pour les vidéos/stories~~ ✅ Fait 2026-05-02
-- ~~**La rhumatologue** — contenu tutos/articles/vidéos~~ ✅ Fait 2026-05-02
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
@@ -86,32 +61,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main` de la tâche de synchro Synology "100000Medecins", sans toucher au reste du dossier "100 000 Médecins"
 - Ne pas supprimer avant d'avoir confirmé que le nouveau setup Git/GitHub tourne sans problème
 
-### Hygiène projet
-
-#### ~~Sortir les fichiers Office du repo Git~~ ✅ Fait 2026-04-25
-
 ### Bugs à corriger
-
-#### ~~Page /difficileDeChanger — images manquantes à réintégrer~~ ✅ Fait 2026-04-25
-
-#### ~~Page solution — cadre note de droite hors du cadre titre~~ ✅ Fait 2026-04-27
-- ~~Notes déplacées à l'intérieur du cadre blanc principal~~
-
-#### ~~Fil d'Ariane — contraste insuffisant~~ ✅ Fait 2026-04-27
-- ~~Déplacé dans une fine bande horizontale blanche translucide sous la navbar, variante dark~~
-
-#### ~~Création de compte — email déjà existant en DB~~ ✅ Fait 2026-04-25
-
-#### ~~Note globale évaluations — incohérence~~ ✅ Fait 2026-04-26
-
-#### ~~Bug confirmé — scores `en_attente_psc` inclus dans les moyennes publiques~~ ✅ Fait 2026-05-01
-- ~~`submitEvaluation()` ne peuplait pas `resultats` du tout (cause des 0 résultats agenda/IA)~~
-- ~~`updateResultat()` (flux `submitScores`) ignorait le statut → évaluations `en_attente_psc` gonflaient les moyennes~~
-- Fix : nouvelle fonction `recalcResultatsPourSolution()` — recalcul complet depuis `evaluations WHERE statut='publiee'`, appelée depuis `submitEvaluation()` et aux 3 endroits du PSC callback
-
-#### ~~Footer des emails — lien de désabonnement cassé~~ ✅ Fait 2026-05-02
-- ~~Lien tokenisé HMAC `/api/se-desabonner?uid=&token=` → connecte l'utilisateur directement sur `/mon-compte/mes-notifications`~~
-- ~~Tous les emails sortants (relances, newsletter, lancement, études) utilisent `generateUnsubscribeLink(userId, siteUrl)`~~
 
 #### Architecture email PSC — email synthétique vs réel *(à discuter)*
 - `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`
@@ -121,7 +71,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### Espace éditeur — accès limité aux éditeurs existants
 - Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste
-- C'est normal : le menu ne montre que les éditeurs enregistrés
 - **À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions
 
 ### UX / UI
@@ -136,33 +85,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
 - Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
 
-#### ~~Améliorer le menu burger en mode mobile~~ ✅ Fait 2026-04-29
-- ~~En mode ouvert : mal visible, trop grand — revoir l'ergonomie et le design~~
-
-#### ~~Fond des pages solutions + DA générale~~ ✅ Fait 2026-04-29
-- ~~Revoir le fond des pages solutions (couleur, texture, gradient…)~~
-- ~~Occasion de revoir la direction artistique globale du site~~
-
 ### Emails — tableau de bord
-
-#### ~~Visualiser les templates email depuis l'admin~~ ✅ Fait 2026-04-27
-- ~~Depuis Admin → Emails (page racine), ajouter un aperçu/visualisation des templates email stockés en base~~
-- ~~Permettre de voir le rendu HTML d'un template sans avoir à passer par Supabase ou le code~~
-- ~~Idéalement : sélecteur de template + prévisualisation + lien d'édition direct~~
-
-#### ~~Uniformité des templates email — fichiers encore en HTML brut~~ ✅ Fait 2026-05-02
-> Tous les fichiers migrés vers `buildEmail()` ✅
-
-#### ~~MAJ templates Supabase natifs — cohérence visuelle avec le master layout~~ ✅ Fait 2026-05-02
-- ~~Confirm signup, Change email address, Reset password mis à jour dans Supabase Dashboard → Authentication → Email Templates~~
-
-#### ~~Planning éditorial — vue calendrier (Admin → Planning ou Admin → Emails)~~ ✅ Fait 2026-05-03
-- ~~3 mois côte à côte (grille CSS, sans lib externe), dots colorés par type + liste chronologique en dessous~~
-- ~~Sources de données à afficher :~~
-  - ~~📰 Articles programmés (`articles.scheduled_at`) — bleu~~
-  - ~~📧 Newsletters programmées (`newsletters.scheduled_at`) — orange~~
-  - ~~🔬 Études / questionnaires — vert *(voir point ci-dessous)*~~
-- ~~Clic sur un dot → lien vers la page d'édition de l'item~~
 
 #### Programmer l'envoi des questionnaires de thèse
 - La table `questionnaires_these` n'a que `date_fin` — pas de date d'envoi programmée
@@ -175,12 +98,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Notifier un utilisateur uniquement quand une nouvelle étude clinique correspond à sa spécialité
 - Si une étude ne correspond pas à sa spécialité : l'afficher en grisé dans la liste, avec un message explicatif ("Cette étude ne concerne pas votre spécialité") — mais rester cliquable
 - À prévoir : champ `specialites_cibles` sur les études (ou tag spécialité) + logique de matching côté notification
-
-### Blog
-
-#### ~~Planification de la publication d'un article généré et relu~~ ✅ Fait 2026-05-03
-- ~~Pouvoir définir une date/heure de publication future pour un article déjà généré par l'IA et relu/validé manuellement~~
-- ~~L'article reste en statut "brouillon" jusqu'à l'heure planifiée, puis passe automatiquement en "publié"~~
 
 ### Performance
 
@@ -218,9 +135,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
-### ~~Migrer le développement en local — hors Synology~~ ✅ Fait
-- ~~Projet sur `c:\Users\david\Documents\100000Medecins_websiteV2` (chemin local, plus de dépendance NAS)~~
-
 ### Backups base de données Supabase
 - Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
 - Le code (git) ne sauvegarde pas les données : utilisateurs, avis, articles, études, évaluations sont uniquement dans Supabase
@@ -237,10 +151,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Fréquence : hebdomadaire, dimanche 3h du matin
 - Configurer le réveil de la machine si en veille, et le rattrapage au démarrage si la machine était éteinte
 - ⚠️ **Utiliser PowerShell 7 (`pwsh.exe`)** et non Windows PowerShell 5.1 (`powershell.exe`) — sinon le bug d'encodage UTF-8 recrée un dossier parasite `100 000 MÃ©decins` à chaque exécution
-
-#### ~~Migrer les scripts PowerShell vers PowerShell 7~~ ✅ Fait 2026-04-29
-- ~~PowerShell 5.1 a un bug d'encodage UTF-8 sans BOM qui génère du mojibake sur les accents (ex. `Médecins` → `MÃ©decins`)~~
-- ~~Vérifier tous les scripts dans `C:\Users\david\scripts\` et sous-dossiers~~
 
 #### Synchroniser le script de backup sur le desktop
 - Le script existe uniquement sur le laptop pour l'instant
@@ -268,79 +178,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
 
-### ~~Easter egg — Konami code + mini-jeu arcade~~ ✅ Fait 2026-04-25
-
-### ~~PSC prod sur dev.100000medecins.org (test temporaire)~~ ✅ Fait 2026-04-23
-- Redirect URI `https://dev.100000medecins.org/api/auth/psc-callback` configurée dans l'application PSC production ANS
-
-### ~~PSC BAS → production ANS~~ ✅ Effectif au lancement
-- Le relay `/connexionPsc` est déjà en place — aucune action PSC le jour J
-- Le jour J = juste le changement DNS (voir ci-dessous)
-- Nettoyage optionnel post-lancement : supprimer `NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI`, demander à PSC de changer la redirect URI
-
 ### DNS — mise en prod *(jour J uniquement)*
 - `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)
 - `www` : remplacer CNAME `webacc8.sd6.ghst.net` par `cname.vercel-dns.com.`
 - Supprimer les 4 CNAME SSL sectigo/comodoca (certificats ancien hébergeur)
 - Vérifier que le wildcard `* CNAME webredir.vip.gandi.net.` n'interfère pas
-
----
-
-## Fait récemment
-- Planning éditorial `/admin/planning` — calendrier 3 mois, dots articles/newsletters, section en retard rouge, `EventRow` ✅ (2026-05-03)
-- Articles blog — colonne `scheduled_at`, picker datetime-local, badge "Programmé", cron horaire Vercel ✅ (2026-05-03)
-- `recalcResultatsPourSolution()` — recalcul complet résultats depuis `evaluations WHERE statut='publiee'` ; `submitEvaluation()` + PSC callback mis à jour ; bug agenda/IA 0 résultats corrigé ✅ (2026-05-01)
-- `SLUGS_UTILITE` migré → colonne `label_fonctionnalites` en BDD ; `criteres.ts` + 4 call sites mis à jour ✅ (2026-05-01)
-- `account.ts` — email suppression compte migré vers `buildEmail()` ✅ (2026-05-01)
-- Audit TODO : 2FA GitHub ✅, dev local ✅, DETAIL_CRITERE_MAP ✅ (pas de bug scoring), bug statut identifié, templates email inventoriés ✅ (2026-04-30)
-- `evaluation-scoring.md` mis à jour — questionnaires multi-catégories, DETAIL_CRITERE_MAP, SLUGS_UTILITE ✅ (2026-04-30)
-- `user-creation-flow.md` créé — flux email/mdp + PSC, cas limites, schéma ASCII ✅ (2026-04-30)
-- Mobile — cartes homepage : labels abrégés "Util."/"Réd." + badge avant étoiles ✅ (2026-04-30)
-- Menu burger mobile — redesign gradient + accordion Comparatifs/Communauté ✅ (2026-04-29)
-- Fond pages solutions + DA générale — fond global `#D8E6F8` + motif dots dans `globals.css` ✅ (2026-04-29)
-- Scripts PowerShell — migrés vers PS7 (Task Scheduler configuré avec `pwsh.exe`) ✅ (2026-04-29)
-- Auth — centralisation navigation post-auth (`window.location` partout, middleware `/connexion` + `/inscription`, `docs/auth-navigation.md`) ✅ (2026-04-28)
-- PSC session bloquée — `router.replace` → `window.location.replace`, console.logs diagnostic ✅ (2026-04-28)
-- Profil — bouton Enregistrer désactivé si aucun changement + étoiles champs obligatoires ✅ (2026-04-28)
-- Inscription — bouton "Se connecter" bloqué (email existant) corrigé ✅ (2026-04-28)
-- Email — Master layout centralisé : `buildEmail()` unique, 8 routes migrées, onglet admin "Template email", aperçu rendu final, envoi test, logo 276px ✅ (2026-04-27)
-- UI mobile — Navbar accordion groupes, SolutionList/Filters/SortBar, bouton "Proposer" questionnaires, `has_note_redac` remplace slugs hardcodés ✅ (2026-04-27)
-- Phase 2 système de notation : unification sources de notes (homepage/listing/détail), simplification `computeEvalGroupAvg`, tri listing par défaut → `note_utilisateurs`, note masquée en mode alpha, ligne morte admin supprimée, trigger SQL `005` ajouté aux migrations ✅
-- PSC — fix session cookies (verifyOtp client-side via /auth/psc-session) ✅
-- PSC — fix utilisateur orphelin psc_create_error (generateLink recovery) ✅
-- PSC — fix blocage "Enregistrement..." sur completer-profil (mot de passe via admin API) ✅
-- PSC — fix domaine emails (headers() au lieu de NEXT_PUBLIC_SITE_URL dans server actions) ✅
-- Admin utilisateurs — icône poubelle visible + scroll horizontal tableau ✅
-- Admin emails — encart excuse éditable + prévisualisation, fix domaine affiché, fix destinataire test ✅
-- Emails — liens 1-clic pointent vers le bon domaine (new URL(req.url).origin) ✅
-- Page /avis-confirme publique après validation 1-clic ✅
-- Index mobile — cartes : HTML brut dans descriptions questionnaires (stripHtml) + dépassement étoiles/badge corrigé ✅
-- Index — filtre « par 100KMed » neutralisé via colonne `has_note_redac` en base (plus de slugs hardcodés) ✅
-- Navbar mobile — logo principal (3 lignes) sous 1150px, burger déplacé à droite d'Évaluer ✅
-- Partenaires hero — logos non cliquables, fond plus clair (bg-white/75) ✅
-- Questionnaires/études expirés — filtrés côté requête Supabase (date_fin >= aujourd'hui) ✅
-- Glossaire — ancres inter-acronymes : sigles cliquables dans définitions/descriptions → navigation directe `#SIGLE` ✅
-- Glossaire — intégration dans la recherche navbar (overlay + API) ✅
-- Glossaire — suppression du système de catégories (formulaire, CRUD, types, affichage) ✅
-- Tooltips acronymes sur zones texte (AcronymText, AcronymHtml) ✅
-- Glossaire e-Santé `/glossaire` : page publique, ancres alphabétiques, recherche, formulaire de suggestion, admin CRUD + onglet propositions ✅
-- Recherche navbar : overlay debounced, 3 sections, page `/recherche?q=...`, pg_trgm ✅
-- Module Études & Thèses complet : dépôt questionnaires (tous utilisateurs), pages mon-compte, admin validation, emails dédiés, centre de notifications ✅
-- Email mensuel (newsletter) : génération auto le 22 du mois, brouillon éditable, envoi depuis admin, historique, page web `/nl/[id]` ✅
-- Admin Emails restructuré (sous-sections études, questionnaires, notifications) ✅
-- Page d'accueil : BlogPreview (3 derniers articles) + CommunautePreview ✅
-- Vidéos accueil admin : sélection 4 vidéos drag & drop, expiration 30 jours, cron rappel ✅
-- Menu Communauté navbar (Blog, Vidéos, Irritants, Études, Thèses) ✅
-- Session admin étendue à 7 jours avec renouvellement automatique ✅
-- Éditeur Sephira renommé en Orisha ✅
-- SEO : correction prompt génération + script régénération masse hors LGC ✅
-- Module vidéos : rubriques séparateurs glissables-déposables, drag-and-drop, toggle statut, miniatures YouTube ✅
-- SEO automatique par IA (Claude Haiku) + génération en masse ✅
-- ISR sur pages solutions + correctif generateStaticParams (erreur 500 prod) ✅
-- Admin solutions : recherche textuelle temps réel ✅
-- Admin utilisateurs : export CSV emails, pagination haut+bas, fix scroll horizontal ✅
-- Filtre comparatifs ET au lieu de OU ✅
-- Descriptions solutions : rendu HTML (dangerouslySetInnerHTML) ✅
-- Blog IA + publication Make.com (LinkedIn ✅, Facebook ✅, Instagram ✅)
-- Espace éditeur (rôles, mon-compte/mon-espace-editeur) ✅
-- Admin utilisateurs : pagination >1000, badge PSC, colonnes RPPS ✅
