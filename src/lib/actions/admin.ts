@@ -687,6 +687,51 @@ export async function deleteEditeur(id: string) {
 }
 
 // ────────────────────────────────────────────
+// Editeur claims — validation des demandes
+// ────────────────────────────────────────────
+
+export async function approuverEditeurClaim(claimId: string, editeurId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: claim, error: claimError } = await (supabase as any)
+    .from('editeur_claims')
+    .select('user_id')
+    .eq('id', claimId)
+    .single()
+
+  if (claimError || !claim) throw new Error('Demande introuvable')
+
+  await supabase
+    .from('users')
+    .update({ editeur_id: editeurId, role: 'editeur' })
+    .eq('id', claim.user_id)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('editeur_claims')
+    .update({ statut: 'approuve' })
+    .eq('id', claimId)
+
+  revalidatePath('/admin/editeurs')
+  revalidatePath('/admin/utilisateurs')
+}
+
+export async function rejeterEditeurClaim(claimId: string, noteAdmin?: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('editeur_claims')
+    .update({ statut: 'rejete', note_admin: noteAdmin || null })
+    .eq('id', claimId)
+
+  revalidatePath('/admin/editeurs')
+}
+
+// ────────────────────────────────────────────
 // Tags — gestion catégorie (CRUD global)
 // ────────────────────────────────────────────
 

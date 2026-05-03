@@ -57,10 +57,12 @@ export default function AdminUtilisateursClient({
   users: initialUsers,
   editeurs: initialEditeurs,
   notice,
+  pendingClaimUserIds = [],
 }: {
   users: User[]
   editeurs: Editeur[]
   notice?: string | null
+  pendingClaimUserIds?: string[]
 }) {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [editeurs, setEditeurs] = useState<Editeur[]>(initialEditeurs)
@@ -326,6 +328,7 @@ export default function AdminUtilisateursClient({
                     onDelete={handleDelete}
                     roleLabels={ROLE_LABELS}
                     roleColors={ROLE_COLORS}
+                    hasPendingClaim={pendingClaimUserIds.includes(u.id)}
                   />
                 ))}
               </tbody>
@@ -409,6 +412,7 @@ function UserRow({
   onDelete,
   roleLabels,
   roleColors,
+  hasPendingClaim = false,
 }: {
   user: User
   editeurs: Editeur[]
@@ -421,6 +425,7 @@ function UserRow({
   onDelete: (id: string) => void
   roleLabels: Record<string, string>
   roleColors: Record<string, string>
+  hasPendingClaim?: boolean
 }) {
   const [role, setRole] = useState(user.role || 'medecin')
   const [editeurId, setEditeurId] = useState(editeurAssigne?.id ?? '')
@@ -438,6 +443,11 @@ function UserRow({
           </div>
           {isPsc && (
             <span className="text-[10px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-full font-semibold w-fit">PSC</span>
+          )}
+          {hasPendingClaim && (
+            <a href="/admin/editeurs?tab=demandes" className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold w-fit hover:bg-amber-200 transition-colors">
+              Demande éditeur
+            </a>
           )}
         </div>
       </td>

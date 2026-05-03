@@ -6,6 +6,11 @@ Les items sont organisés par date (du plus récent au plus ancien).
 ---
 
 **2026-05-03**
+- [OK] 2026-05-03 : Sécuriser le mot de passe Supabase dans le script de backup (Sécurité)
+  - Variable d'environnement `SUPABASE_DB_PASSWORD` définie au niveau "User" sur le desktop
+- [OK] 2026-05-03 : Planifier le backup automatique dans Windows Task Scheduler (Infrastructure)
+  - Tâche hebdomadaire dimanche 3h, pwsh.exe, desktop uniquement (allumé 24/7)
+- [OK] 2026-05-03 : Synchroniser le script de backup sur le desktop (Infrastructure)
 - [OK] 2026-05-03 : Planning éditorial — vue calendrier /admin/planning (Emails)
   - 3 mois côte à côte (grille CSS), dots articles/newsletters, section en retard rouge, EventRow
 - [OK] 2026-05-03 : Articles blog — planification publication, heure de Paris (Blog)

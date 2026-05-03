@@ -19,21 +19,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Sécurité
 
-#### Passer DMARC de `none` à `quarantine` puis `reject`
-- Actuellement en `p=none` (surveillance uniquement, aucun email rejeté)
-- Étape 1 : passer à `p=quarantine` — les emails non conformes partent en spam
-- Étape 2 (après quelques semaines de monitoring) : passer à `p=reject` — rejet total
-- Vérifier d'abord les rapports DMARC (agrégats `rua=`) pour s'assurer que tous les envois légitimes (SendGrid, Supabase) passent SPF ou DKIM avant de durcir
+#### Passer DMARC de `quarantine 10%` à `quarantine 100%` puis `reject`
+- ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
+- **Prochaine étape (2026-05-17 à 2026-05-31)** : passer à `p=quarantine pct=100` — surveiller les rapports DMARC (`rua=`) pour vérifier que SendGrid et Supabase passent bien SPF/DKIM
+- Étape finale (après quelques semaines à 100%) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
-
-#### Sécuriser le mot de passe Supabase dans le script de backup
-- Actuellement en clair dans `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` (dans `$DB_URL`)
-- **Méthode recommandée** : variable d'environnement Windows (niveau "User")
-- Étapes (à faire sur laptop ET desktop) :
-  - Définir la variable : `[Environment]::SetEnvironmentVariable("SUPABASE_DB_PASSWORD", "<password>", "User")`
-  - Modifier `$DB_URL` dans le script pour lire `$env:SUPABASE_DB_PASSWORD` au lieu du mot de passe en dur
-  - Tester `/backup` pour valider
-  - Vérifier que la tâche Task Scheduler voit bien la variable (les variables User sont disponibles dans les tâches planifiées)
 
 ### Partenariats contenu
 
@@ -134,31 +124,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
 ---
-
-### Backups base de données Supabase
-- Mettre en place un export régulier (mensuel minimum) de la base Supabase via `pg_dump`
-- Le code (git) ne sauvegarde pas les données : utilisateurs, avis, articles, études, évaluations sont uniquement dans Supabase
-- Options : script bash automatisé via cron local ou Windows Task Scheduler, export vers le NAS
-
-#### Export à la demande depuis l'admin (bouton téléchargement)
-- Créer une API route `/api/admin/export-database` qui exporte toutes les tables critiques en JSON téléchargeable
-- Bouton dans l'admin pour déclencher l'export sans avoir à accéder au terminal
-- Complément du pg_dump (qui reste la vraie sauvegarde complète avec schéma)
-
-### Infrastructure
-
-#### Planifier le backup automatique dans Windows Task Scheduler
-- Fréquence : hebdomadaire, dimanche 3h du matin
-- Configurer le réveil de la machine si en veille, et le rattrapage au démarrage si la machine était éteinte
-- ⚠️ **Utiliser PowerShell 7 (`pwsh.exe`)** et non Windows PowerShell 5.1 (`powershell.exe`) — sinon le bug d'encodage UTF-8 recrée un dossier parasite `100 000 MÃ©decins` à chaque exécution
-
-#### Synchroniser le script de backup sur le desktop
-- Le script existe uniquement sur le laptop pour l'instant
-- Sur le desktop :
-  - Créer `C:\Users\david\scripts\backup-supabase\`
-  - Y copier `backup-supabase.ps1` (via NAS Synology ou copie manuelle)
-  - Vérifier que pg_dump est installé (`C:\Program Files\PostgreSQL\18\bin\pg_dump.exe`)
-  - Configurer la variable `SUPABASE_DB_PASSWORD` (après sécurisation du point précédent)
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)

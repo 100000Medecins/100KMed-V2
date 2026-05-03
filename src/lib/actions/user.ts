@@ -173,6 +173,74 @@ export async function completeProfile(data: {
   return { status: 'SUCCESS' }
 }
 
+export type EditeurClaimOption = {
+  value: string  // 'editeur:uuid' ou 'solution:uuid'
+  label: string
+}
+
+/**
+ * Retourne la liste des éditeurs + solutions sans éditeur pour le dropdown
+ * de revendication éditeur dans completer-profil.
+ */
+export async function getEditeurClaimOptions(): Promise<EditeurClaimOption[]> {
+  const supabase = createServiceRoleClient()
+
+  const [editeursRes, solutionsRes] = await Promise.all([
+    supabase.from('editeurs').select('id, nom, nom_commercial'),
+    supabase.from('solutions').select('id, nom').is('id_editeur', null).eq('statut', 'publiee'),
+  ])
+
+  const editeurs: EditeurClaimOption[] = (editeursRes.data || []).map((e) => ({
+    value: `editeur:${e.id}`,
+    label: (e.nom_commercial || e.nom || 'Éditeur sans nom') as string,
+  }))
+
+  const solutions: EditeurClaimOption[] = (solutionsRes.data || []).map((s) => ({
+    value: `solution:${s.id}`,
+    label: (s.nom || 'Solution sans nom') as string,
+  }))
+
+  return [...editeurs, ...solutions].sort((a, b) =>
+    a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' })
+  )
+}
+
+/**
+ * Crée une demande de revendication d'espace éditeur pour l'utilisateur connecté.
+ */
+export async function createEditeurClaim(params: {
+  editeur_id?: string
+  solution_id?: string
+  libre_texte?: string
+}): Promise<{ error: string | null }> {
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const supabase = createServiceRoleClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase as any)
+    .from('editeur_claims')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('statut', 'en_attente')
+    .single()
+
+  if (existing) return { error: null }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('editeur_claims').insert({
+    user_id: user.id,
+    editeur_id: params.editeur_id || null,
+    solution_id: params.solution_id || null,
+    libre_texte: params.libre_texte || null,
+  })
+
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
 /**
  * Met à jour le profil utilisateur.
  * Remplace : mutation updateUser

@@ -35,6 +35,7 @@ export const MODES_EXERCICE = [
   'Hospitalier',
   'Remplaçant',
   'Étudiant',
+  'Éditeur',
 ]
 
 /**

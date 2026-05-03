@@ -25,12 +25,17 @@ async function getAllUsers(supabase: ReturnType<typeof createServiceRoleClient>)
 async function getData() {
   const supabase = createServiceRoleClient()
 
-  const [users, { data: editeurs }, { count: nbSansEmailAvecNotes }] = await Promise.all([
+  const [users, { data: editeurs }, { data: pendingClaims }, { count: nbSansEmailAvecNotes }] = await Promise.all([
     getAllUsers(supabase),
     supabase
       .from('editeurs')
       .select('id, nom, nom_commercial, logo_url, user_id')
       .order('nom', { ascending: true }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('editeur_claims')
+      .select('user_id')
+      .eq('statut', 'en_attente'),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('evaluations')
@@ -49,14 +54,15 @@ async function getData() {
       }),
   ])
 
-  return { users, editeurs: editeurs ?? [], nbSansEmailAvecNotes: nbSansEmailAvecNotes ?? 0 }
+  const pendingClaimUserIds = (pendingClaims ?? []).map((c: { user_id: string }) => c.user_id)
+  return { users, editeurs: editeurs ?? [], nbSansEmailAvecNotes: nbSansEmailAvecNotes ?? 0, pendingClaimUserIds }
 }
 
 export default async function AdminUtilisateursPage() {
-  const { users, editeurs, nbSansEmailAvecNotes } = await getData()
+  const { users, editeurs, nbSansEmailAvecNotes, pendingClaimUserIds } = await getData()
   const nbSansEmail = users.filter(u => !u.email).length
   const notice = nbSansEmail > 0
     ? `${nbSansEmail.toLocaleString('fr-FR')} comptes sans email (connexions PSC). ${nbSansEmailAvecNotes > 0 ? `${nbSansEmailAvecNotes} ont posté des évaluations.` : 'Aucun n\'a posté d\'évaluation.'} Email non disponible dans l'annuaire RPPS public.`
     : null
-  return <AdminUtilisateursClient users={users} editeurs={editeurs} notice={notice} />
+  return <AdminUtilisateursClient users={users} editeurs={editeurs} notice={notice} pendingClaimUserIds={pendingClaimUserIds} />
 }

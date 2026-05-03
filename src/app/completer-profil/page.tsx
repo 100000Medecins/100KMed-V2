@@ -6,21 +6,22 @@ import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile, getCurrentUserProfile } from '@/lib/actions/user'
+import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
+import type { EditeurClaimOption } from '@/lib/actions/user'
 import { AVATARS, SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
 import { Check, Lock } from 'lucide-react'
 
+const LIBRE_TEXTE_VALUE = '__libre_texte__'
+
 export default function CompleterProfilPage() {
   const { user, loading: authLoading } = useAuth()
 
-  // Champs PSC — non modifiables
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
 
-  // Champs à compléter
   const [contactEmail, setContactEmail] = useState('')
   const [pseudo, setPseudo] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
@@ -31,31 +32,47 @@ export default function CompleterProfilPage() {
   const [isFromPsc, setIsFromPsc] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
 
+  // Éditeur claim
+  const [claimOptions, setClaimOptions] = useState<EditeurClaimOption[]>([])
+  const [claimValue, setClaimValue] = useState('')
+  const [libreTexte, setLibreTexte] = useState('')
+
+  const isEditeur = modeExercice === 'Éditeur'
+  const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
+
+  useEffect(() => {
+    // Pré-sélectionner le mode éditeur si ?type=editeur dans l'URL
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('type') === 'editeur') {
+      setModeExercice('Éditeur')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isEditeur && claimOptions.length === 0) {
+      getEditeurClaimOptions().then(setClaimOptions)
+    }
+  }, [isEditeur, claimOptions.length])
+
   useEffect(() => {
     if (!user) return
 
     async function loadProfile() {
       const profile = await getCurrentUserProfile()
 
-      // Champs PSC grisés si RPPS renseigné (connexion PSC, ancienne ou nouvelle)
       const hasPsc = !!(profile?.rpps || user?.user_metadata?.provider === 'psc')
       setIsFromPsc(hasPsc)
 
-      // Priorité : table users > user_metadata PSC
       setNom(profile?.nom || String(user?.user_metadata?.family_name || ''))
       setPrenom(profile?.prenom || String(user?.user_metadata?.given_name || ''))
       setSpecialite(profile?.specialite || String(user?.user_metadata?.specialite || ''))
-      setModeExercice(profile?.mode_exercice || String(user?.user_metadata?.mode_exercice || ''))
+      setModeExercice(prev => prev || profile?.mode_exercice || String(user?.user_metadata?.mode_exercice || ''))
       if (profile?.pseudo) setPseudo(profile.pseudo)
       if (profile?.portrait) setSelectedAvatar(profile.portrait)
 
-      // Pré-remplir l'email : priorité contact_email déjà sauvé,
-      // sinon email_temp de l'évaluation anonyme (email renseigné par l'utilisateur),
-      // sinon user.email en dernier recours (peut être une adresse technique PSC)
       if (profile?.contact_email) {
         setContactEmail(profile.contact_email)
       } else {
-        // Chercher l'email_temp dans l'évaluation anonyme liée à ce compte
         const supabase = createClient()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: evalAnon } = await (supabase as any)
@@ -78,7 +95,15 @@ export default function CompleterProfilPage() {
     loadProfile()
   }, [user])
 
-  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice && contactEmail.trim() && (!isFromPsc || password.length >= 6)
+  const claimFilled = showLibreTexte ? libreTexte.trim().length > 0 : claimValue.length > 0
+
+  const isValid =
+    nom.trim() &&
+    prenom.trim() &&
+    modeExercice &&
+    contactEmail.trim() &&
+    (!isFromPsc || password.length >= 6) &&
+    (isEditeur ? claimFilled : !!specialite)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,15 +115,31 @@ export default function CompleterProfilPage() {
       await completeProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
-        specialite,
+        specialite: isEditeur ? '' : specialite,
         mode_exercice: modeExercice,
         contact_email: contactEmail.trim(),
         pseudo: pseudo.trim() || undefined,
         portrait: selectedAvatar || undefined,
         password: isFromPsc ? password : undefined,
       })
-      // Re-auth uniquement pour PSC : updateUserById (email + mdp) invalide la session client.
-      // Pour les utilisateurs email/mdp, aucun updateUserById n'est appelé → session conservée.
+
+      if (isEditeur) {
+        let editeur_id: string | undefined
+        let solution_id: string | undefined
+
+        if (claimValue.startsWith('editeur:')) {
+          editeur_id = claimValue.replace('editeur:', '')
+        } else if (claimValue.startsWith('solution:')) {
+          solution_id = claimValue.replace('solution:', '')
+        }
+
+        await createEditeurClaim({
+          editeur_id,
+          solution_id,
+          libre_texte: showLibreTexte ? libreTexte.trim() : undefined,
+        })
+      }
+
       if (isFromPsc) {
         const supabase = createClient()
         await supabase.auth.signInWithPassword({
@@ -145,7 +186,7 @@ export default function CompleterProfilPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Identité — champs PSC non modifiables */}
+            {/* Identité */}
             <div className="bg-white rounded-card shadow-card p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold text-navy">Identité professionnelle</h2>
@@ -188,29 +229,34 @@ export default function CompleterProfilPage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
-                {isFromPsc ? (
-                  <input
-                    type="text"
-                    value={specialite}
-                    readOnly
-                    className="w-full px-3 py-2.5 border bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed rounded-xl text-sm focus:outline-none"
-                  />
-                ) : (
-                  <select
-                    value={specialite}
-                    onChange={(e) => setSpecialite(e.target.value)}
-                    required
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
-                  >
-                    <option value="">Sélectionnez votre spécialité</option>
-                    {SPECIALITES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+
+              {/* Spécialité — masquée pour les éditeurs */}
+              {!isEditeur && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+                  {isFromPsc ? (
+                    <input
+                      type="text"
+                      value={specialite}
+                      readOnly
+                      className="w-full px-3 py-2.5 border bg-surface-light border-gray-100 text-gray-500 cursor-not-allowed rounded-xl text-sm focus:outline-none"
+                    />
+                  ) : (
+                    <select
+                      value={specialite}
+                      onChange={(e) => setSpecialite(e.target.value)}
+                      required
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                    >
+                      <option value="">Sélectionnez votre spécialité</option>
+                      {SPECIALITES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
                 {isFromPsc ? (
@@ -239,9 +285,50 @@ export default function CompleterProfilPage() {
                   </div>
                 )}
               </div>
+
+              {/* Dropdown revendication éditeur */}
+              {isEditeur && !isFromPsc && (
+                <div className="pt-2 border-t border-gray-100 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Votre solution ou éditeur <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={claimValue}
+                      onChange={(e) => setClaimValue(e.target.value)}
+                      required
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                    >
+                      <option value="">Sélectionnez votre solution ou éditeur</option>
+                      <option value={LIBRE_TEXTE_VALUE}>Je ne trouve pas dans la liste</option>
+                      {claimOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Votre demande sera examinée par notre équipe avant validation.
+                    </p>
+                  </div>
+                  {showLibreTexte && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Nom de votre solution ou éditeur <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={libreTexte}
+                        onChange={(e) => setLibreTexte(e.target.value)}
+                        placeholder="Ex : MonLogiciel, Éditeur XYZ..."
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Email — obligatoire */}
+            {/* Coordonnées */}
             <div className="bg-white rounded-card shadow-card p-6 space-y-4">
               <h2 className="text-sm font-semibold text-navy">Coordonnées</h2>
               <div>
@@ -268,7 +355,6 @@ export default function CompleterProfilPage() {
                 </p>
               </div>
 
-              {/* Mot de passe — uniquement pour les utilisateurs PSC (pas encore de mot de passe) */}
               {isFromPsc && (
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -288,7 +374,6 @@ export default function CompleterProfilPage() {
                 </div>
               )}
 
-              {/* Pseudo — optionnel */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
                   Pseudo <span className="text-gray-400 font-normal">(optionnel)</span>
@@ -310,7 +395,7 @@ export default function CompleterProfilPage() {
               <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
             )}
 
-            {/* Avatar — optionnel */}
+            {/* Avatar */}
             <div className="bg-white rounded-card shadow-card p-6 space-y-4">
               <div>
                 <h2 className="text-sm font-semibold text-navy">Avatar <span className="text-gray-400 font-normal text-xs">(optionnel)</span></h2>

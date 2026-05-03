@@ -12,11 +12,18 @@ export default function EditorCTA() {
           Référencez votre logiciel et faites-le découvrir à des milliers
           de professionnels de santé à la recherche de la meilleure solution.
         </p>
-        <Link href="/contact">
-          <Button variant="primary" showArrow>
-            Nous contacter
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link href="/contact">
+            <Button variant="primary" showArrow>
+              Nous contacter
+            </Button>
+          </Link>
+          <Link href="/inscription?type=editeur">
+            <Button variant="white">
+              Créer un espace éditeur
+            </Button>
+          </Link>
+        </div>
       </div>
     </section>
   );

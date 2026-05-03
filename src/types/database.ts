@@ -300,6 +300,61 @@ export type Database = {
           },
         ]
       }
+      editeur_claims: {
+        Row: {
+          created_at: string | null
+          editeur_id: string | null
+          id: string
+          libre_texte: string | null
+          note_admin: string | null
+          solution_id: string | null
+          statut: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          editeur_id?: string | null
+          id?: string
+          libre_texte?: string | null
+          note_admin?: string | null
+          solution_id?: string | null
+          statut?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          editeur_id?: string | null
+          id?: string
+          libre_texte?: string | null
+          note_admin?: string | null
+          solution_id?: string | null
+          statut?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editeur_claims_editeur_id_fkey"
+            columns: ["editeur_id"]
+            isOneToOne: false
+            referencedRelation: "editeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editeur_claims_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editeur_claims_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       editeurs: {
         Row: {
           contact_adresse: string | null

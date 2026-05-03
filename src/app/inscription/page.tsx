@@ -16,6 +16,7 @@ function InscriptionContent() {
   const router = useRouter()
   const emailParam = searchParams.get('email')
   const fromLogin = searchParams.get('from') === 'login'
+  const typeParam = searchParams.get('type') // 'editeur' → pré-sélection dans completer-profil
 
   const [email, setEmail] = useState(emailParam ?? '')
   const [password, setPassword] = useState('')
@@ -37,7 +38,8 @@ function InscriptionContent() {
       setSubmitting(false)
     } else if (result.redirectTo) {
       // Session immédiate (confirmation email désactivée) → redirection directe
-      window.location.href = result.redirectTo
+      const redirectUrl = typeParam ? `${result.redirectTo}?type=${typeParam}` : result.redirectTo
+      window.location.href = redirectUrl
     } else {
       // Confirmation email requise → afficher le message
       setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')
