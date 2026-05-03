@@ -10,7 +10,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Email d'excuse envoyé aux ~300 utilisateurs ✅
 - `last_relance_sent_at` réinitialisé ✅
 - Code excuse supprimé (API routes, excuseTemplate, vercel.json, AdminEmailsClient) ✅
-- Clés `excuse_*` dans `site_config` Supabase — **à nettoyer manuellement via Supabase**
+- Clés `excuse_*` dans `site_config` : conservées — `excuse_draft_html` et `excuse_draft_sujet` alimentent l'éditeur dans Admin → Emails → Systèmes ✅
 
 ### IMPORTANT
 

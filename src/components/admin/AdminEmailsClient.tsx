@@ -59,9 +59,6 @@ export default function AdminEmailsClient({
   const masterLayoutHtml = masterLayoutTemplate?.contenu_html ?? undefined
   const [cronsOn, setCronsOn] = useState(cronsActifs)
   const [isPending, startTransition] = useTransition()
-  const [testSending, setTestSending] = useState(false)
-  const [testEmail, setTestEmail] = useState('')
-  const [testResult, setTestResult] = useState<{ ok?: boolean; sentTo?: string; forUser?: string; links?: { lien1Clic: string; lienReevaluation: string }; error?: string } | null>(null)
   const [excuseSending, setExcuseSending] = useState(false)
   const [excuseResult, setExcuseResult] = useState<{ ok?: boolean; sent?: number; total?: number; errors?: string[]; error?: string } | null>(null)
   const [excuseDone, setExcuseDone] = useState(false)
@@ -84,24 +81,6 @@ export default function AdminEmailsClient({
   const [draftError, setDraftError] = useState<string | null>(null)
 
   const activeSection = sections.find((s) => s.key === activeTab)
-
-  async function handleTestRelance() {
-    setTestSending(true)
-    setTestResult(null)
-    try {
-      const res = await fetch('/api/admin/test-relance-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: testEmail.trim() || undefined }),
-      })
-      const json = await res.json()
-      setTestResult(json)
-    } catch (e) {
-      setTestResult({ error: String(e) })
-    } finally {
-      setTestSending(false)
-    }
-  }
 
   function handleExcusePreview() {
     const sample: Record<string, string> = {
@@ -267,48 +246,6 @@ export default function AdminEmailsClient({
             cronsOn ? 'translate-x-6' : 'translate-x-0'
           }`} />
         </button>
-      </div>
-
-      {/* Test email relance */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 flex flex-col gap-2">
-        <div className="flex flex-col gap-2">
-          <div>
-            <p className="text-sm font-semibold text-navy">Tester l&apos;email de relance 1 an</p>
-            <p className="text-xs text-gray-500">Envoie un email &quot;[TEST]&quot; à <strong>{adminEmail}</strong> avec une vraie évaluation et les vrais liens.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="email"
-              placeholder="Email du compte à simuler (laisser vide = premier venu)"
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/30"
-            />
-            <button
-              onClick={handleTestRelance}
-              disabled={testSending}
-              className="flex-shrink-0 px-4 py-1.5 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy/80 transition-colors disabled:opacity-50"
-            >
-              {testSending ? 'Envoi…' : 'Envoyer test'}
-            </button>
-          </div>
-        </div>
-        {testResult && (
-          <div className={`text-xs rounded-lg p-3 ${testResult.ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-            {testResult.ok ? (
-              <>
-                <p>Email envoyé à <strong>{testResult.sentTo}</strong> · simulé pour <strong>{testResult.forUser}</strong></p>
-                {testResult.links && (
-                  <p className="mt-1 break-all">
-                    Lien 1-clic : <a href={testResult.links.lien1Clic} target="_blank" rel="noreferrer" className="underline">{testResult.links.lien1Clic}</a>
-                  </p>
-                )}
-              </>
-            ) : (
-              <p>Erreur : {testResult.error}</p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Onglets */}
