@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { FileText, Mail } from 'lucide-react'
+import { FileText, Mail, FlaskConical, GraduationCap } from 'lucide-react'
 
 export type PlanningEvent = {
   id: string
   titre: string
   date: string
-  type: 'article' | 'newsletter'
+  type: 'article' | 'newsletter' | 'email_etude' | 'email_questionnaire'
   href: string
 }
 
@@ -27,6 +27,22 @@ const TYPE_CONFIG = {
     dot: 'bg-accent-orange',
     badge: 'bg-orange-100 text-orange-600',
     Icon: Mail,
+  },
+  email_etude: {
+    label: 'Email — Étude',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-600',
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-50 text-emerald-700',
+    Icon: FlaskConical,
+  },
+  email_questionnaire: {
+    label: 'Email — Thèse',
+    bg: 'bg-purple-50',
+    text: 'text-purple-600',
+    dot: 'bg-purple-500',
+    badge: 'bg-purple-50 text-purple-700',
+    Icon: GraduationCap,
   },
 } as const
 

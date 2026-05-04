@@ -3,6 +3,7 @@ import { getSiteConfig } from '@/lib/actions/siteConfig'
 import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import type { Newsletter } from '@/app/admin/newsletters/page'
+import { getEmailsCampagnes, type EmailCampagne } from '@/lib/actions/emails-campagnes'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,7 @@ export default async function AdminEmailsPage() {
     excuseScheduledAtRaw,
     excuseDraftHtml,
     excuseDraftSujet,
+    campagnes,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -75,6 +77,7 @@ export default async function AdminEmailsPage() {
     getSiteConfig('excuse_scheduled_at'),
     getSiteConfig('excuse_draft_html'),
     getSiteConfig('excuse_draft_sujet'),
+    getEmailsCampagnes(),
   ])
 
   const sections = [
@@ -197,6 +200,8 @@ export default async function AdminEmailsPage() {
         excuseScheduledAt={excuseScheduledAtRaw}
         adminEmail={process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@100000medecins.org'}
         masterLayoutTemplate={templateMasterLayout}
+        campagnesEtudes={campagnes.etudes}
+        campagnesQuestionnaires={campagnes.questionnaires}
       />
     </div>
   )

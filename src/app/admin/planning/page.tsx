@@ -8,7 +8,7 @@ async function getScheduledContent(): Promise<PlanningEvent[]> {
   const now = new Date()
   const limit = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate()).toISOString()
 
-  const [{ data: articles }, { data: newsletters }] = await Promise.all([
+  const [{ data: articles }, { data: newsletters }, { data: campagnes }] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('articles')
@@ -21,6 +21,13 @@ async function getScheduledContent(): Promise<PlanningEvent[]> {
       .from('newsletters')
       .select('id, sujet, scheduled_at')
       .eq('status', 'draft')
+      .not('scheduled_at', 'is', null)
+      .lte('scheduled_at', limit),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('emails_campagnes')
+      .select('id, titre, type, scheduled_at')
+      .eq('statut', 'pending')
       .not('scheduled_at', 'is', null)
       .lte('scheduled_at', limit),
   ])
@@ -41,6 +48,14 @@ async function getScheduledContent(): Promise<PlanningEvent[]> {
       date: n.scheduled_at,
       type: 'newsletter' as const,
       href: '/admin/newsletters',
+    })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...(campagnes ?? []).map((c: any) => ({
+      id: c.id,
+      titre: c.titre ?? '(Email sans titre)',
+      date: c.scheduled_at,
+      type: c.type === 'etude' ? 'email_etude' as const : 'email_questionnaire' as const,
+      href: '/admin/emails',
     })),
   ]
 

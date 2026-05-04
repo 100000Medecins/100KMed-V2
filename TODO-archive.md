@@ -5,6 +5,10 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-05**
+- [OK] 2026-05-05 : Espace éditeur — accès limité aux éditeurs existants (Bugs à corriger)
+  - Toutes les solutions peuvent désormais activer un espace éditeur, pas uniquement celles ayant un compte éditeur existant
+
 **2026-05-03**
 - [OK] 2026-05-03 : Sécuriser le mot de passe Supabase dans le script de backup (Sécurité)
   - Variable d'environnement `SUPABASE_DB_PASSWORD` définie au niveau "User" sur le desktop

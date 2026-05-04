@@ -7,8 +7,9 @@ import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
 import type { Newsletter } from '@/app/admin/newsletters/page'
 import { setSiteConfig } from '@/lib/actions/siteConfig'
 import RichTextEditor from '@/components/admin/RichTextEditor'
-import { Eye, Code, ChevronDown, ChevronUp, Calendar, X, Mail } from 'lucide-react'
+import { Eye, Code, ChevronDown, ChevronUp, Calendar, X, Mail, CheckCircle, Clock, XCircle, GraduationCap, FlaskConical } from 'lucide-react'
 import type { EmailTemplate } from '@/lib/actions/emailTemplates'
+import type { EmailCampagne } from '@/lib/actions/emails-campagnes'
 
 interface TemplateConfig {
   id: string
@@ -43,6 +44,8 @@ interface Props {
   excuseScheduledAt?: string | null
   adminEmail?: string
   masterLayoutTemplate?: EmailTemplate | null
+  campagnesEtudes?: EmailCampagne[]
+  campagnesQuestionnaires?: EmailCampagne[]
 }
 
 export default function AdminEmailsClient({
@@ -54,6 +57,8 @@ export default function AdminEmailsClient({
   excuseScheduledAt = null,
   adminEmail = 'contact@100000medecins.org',
   masterLayoutTemplate = null,
+  campagnesEtudes = [],
+  campagnesQuestionnaires = [],
 }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
   const masterLayoutHtml = masterLayoutTemplate?.contenu_html ?? undefined
@@ -303,6 +308,34 @@ export default function AdminEmailsClient({
               </div>
             )}
           </div>
+        ) : activeSection.key === 'etudes-theses' ? (
+          <div className="space-y-8">
+            {/* Études cliniques */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <FlaskConical className="w-4 h-4 text-emerald-500" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Études cliniques</p>
+              </div>
+              <AdminEmailsAccordion
+                templates={activeSection.templates.filter(t => t.id === 'etude_clinique')}
+                masterLayoutHtml={masterLayoutHtml}
+              />
+              <CampagnesHistory campagnes={campagnesEtudes} type="etude" />
+            </div>
+
+            {/* Questionnaires de thèse */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <GraduationCap className="w-4 h-4 text-accent-blue" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Questionnaires de thèse</p>
+              </div>
+              <AdminEmailsAccordion
+                templates={activeSection.templates.filter(t => t.id === 'questionnaire_recherche')}
+                masterLayoutHtml={masterLayoutHtml}
+              />
+              <CampagnesHistory campagnes={campagnesQuestionnaires} type="questionnaire" />
+            </div>
+          </div>
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">{activeSection.description}</p>
@@ -500,6 +533,94 @@ export default function AdminEmailsClient({
             )}
           </>
         )
+      )}
+    </div>
+  )
+}
+
+// ── Historique des campagnes automatiques ─────────────────────────────────────
+
+function CampagnesHistory({ campagnes, type }: { campagnes: EmailCampagne[]; type: 'etude' | 'questionnaire' }) {
+  const [canceling, setCanceling] = useState<string | null>(null)
+  const [localCampagnes, setLocalCampagnes] = useState(campagnes)
+
+  async function handleCancel(id: string) {
+    if (!confirm('Annuler cet envoi programmé ?')) return
+    setCanceling(id)
+    const { cancelEmailCampagne } = await import('@/lib/actions/emails-campagnes')
+    const result = await cancelEmailCampagne(id)
+    if (!result.error) {
+      setLocalCampagnes(prev => prev.map(c => c.id === id ? { ...c, statut: 'cancelled' } : c))
+    }
+    setCanceling(null)
+  }
+
+  if (localCampagnes.length === 0) return null
+
+  const pending = localCampagnes.filter(c => c.statut === 'pending')
+  const rest = localCampagnes.filter(c => c.statut !== 'pending')
+
+  return (
+    <div className="mt-4 space-y-2">
+      {pending.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" /> Envois programmés
+          </p>
+          <div className="space-y-2">
+            {pending.map(c => (
+              <div key={c.id} className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{c.titre}</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Programmé le {c.scheduled_at ? new Date(c.scheduled_at).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' }) : '—'}
+                    {c.specialites_cibles.length > 0 && ` · ${c.specialites_cibles.length} spécialité${c.specialites_cibles.length > 1 ? 's' : ''} ciblée${c.specialites_cibles.length > 1 ? 's' : ''}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleCancel(c.id)}
+                  disabled={canceling === c.id}
+                  className="flex items-center gap-1 text-xs text-amber-700 hover:text-red-600 transition-colors disabled:opacity-50 shrink-0"
+                >
+                  {canceling === c.id ? (
+                    <span className="text-xs text-gray-400">Annulation…</span>
+                  ) : (
+                    <><X className="w-3.5 h-3.5" /> Annuler</>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {rest.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Historique</p>
+          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+            {rest.slice(0, 10).map(c => (
+              <div key={c.id} className="px-4 py-3 flex items-center gap-3">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                  c.statut === 'sent' ? 'bg-green-50' : 'bg-gray-100'
+                }`}>
+                  {c.statut === 'sent'
+                    ? <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                    : <XCircle className="w-3.5 h-3.5 text-gray-400" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-navy truncate">{c.titre}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {c.statut === 'sent'
+                      ? `Envoyé le ${c.sent_at ? new Date(c.sent_at).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : '—'} · ${c.envoye_a ?? 0}/${c.total ?? 0} destinataires`
+                      : `Annulé · ${new Date(c.created_at).toLocaleDateString('fr-FR')}`
+                    }
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )

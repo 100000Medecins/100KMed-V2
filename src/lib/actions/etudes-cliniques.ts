@@ -16,6 +16,7 @@ export type EtudeClinique = {
   date_debut: string | null
   date_fin: string | null
   created_by: string | null
+  statut: 'en_attente' | 'publie' | 'refuse'
   created_at: string
   updated_at: string
 }
@@ -51,7 +52,7 @@ export async function getEtudesAdmin(): Promise<EtudeClinique[]> {
 }
 
 /**
- * Études actives (filtrées par date) — pour les utilisateurs opt-in.
+ * Études actives publiées (filtrées par date et statut) — pour les utilisateurs opt-in.
  */
 export async function getEtudesActives(): Promise<EtudeClinique[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,6 +61,7 @@ export async function getEtudesActives(): Promise<EtudeClinique[]> {
   const { data } = await supabase
     .from('etudes_cliniques')
     .select('*')
+    .eq('statut', 'publie')
     .or(`date_debut.is.null,date_debut.lte.${today}`)
     .or(`date_fin.is.null,date_fin.gte.${today}`)
     .order('created_at', { ascending: false })
@@ -71,6 +73,7 @@ function normalise(row: any): EtudeClinique {
     ...row,
     images: Array.isArray(row.images) ? row.images : [],
     specialites_cibles: Array.isArray(row.specialites_cibles) ? row.specialites_cibles : [],
+    statut: row.statut ?? 'publie',
   }
 }
 
@@ -82,7 +85,6 @@ export async function createEtudeClinique(formData: FormData) {
   const supabase = createServiceRoleClient() as any
 
   const images = JSON.parse((formData.get('images') as string) || '[]')
-
   const specialites_cibles = JSON.parse((formData.get('specialites_cibles') as string) || '[]')
 
   await supabase.from('etudes_cliniques').insert({
@@ -94,9 +96,11 @@ export async function createEtudeClinique(formData: FormData) {
     date_debut:        (formData.get('date_debut') as string) || null,
     date_fin:          (formData.get('date_fin') as string) || null,
     created_by:        user.id,
+    statut:            'en_attente',
   })
 
   revalidatePath('/mon-compte/etudes-cliniques')
+  revalidatePath('/admin/questionnaires-these')
 }
 
 export async function updateEtudeClinique(id: string, formData: FormData) {
@@ -205,6 +209,25 @@ export async function deleteEtudeCliniqueAdmin(id: string): Promise<{ error: str
   if (error) return { error: error.message }
   revalidatePath('/admin/questionnaires-these')
   revalidatePath('/mon-compte/etudes-cliniques')
+  revalidatePath('/mon-compte/etudes-cliniques')
+  return { error: null }
+}
+
+/**
+ * Change le statut d'une étude clinique — admin uniquement.
+ */
+export async function setStatutEtude(
+  id: string,
+  statut: 'publie' | 'refuse'
+): Promise<{ error: string | null }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
+  const { error } = await supabase
+    .from('etudes_cliniques')
+    .update({ statut, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/questionnaires-these')
   revalidatePath('/mon-compte/etudes-cliniques')
   return { error: null }
 }

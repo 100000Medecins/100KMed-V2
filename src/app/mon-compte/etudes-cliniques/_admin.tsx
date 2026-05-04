@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
-import { Download, FlaskConical, Users, Pencil, Trash2, Plus, ExternalLink, Loader2 } from 'lucide-react'
+import { Download, FlaskConical, Users, Pencil, Trash2, Plus, ExternalLink, Loader2, Clock, CheckCircle, XCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
 import { resolveSpecialite } from '@/lib/constants/profil'
@@ -181,7 +181,24 @@ export default function EtudesCliniquesAdmin() {
                     <div className="bg-white rounded-card shadow-card p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-navy">{etude.titre}</h3>
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="font-semibold text-navy">{etude.titre}</h3>
+                            {etude.statut === 'en_attente' && (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 shrink-0">
+                                <Clock className="w-3 h-3" /> En attente de validation
+                              </span>
+                            )}
+                            {etude.statut === 'publie' && (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700 shrink-0">
+                                <CheckCircle className="w-3 h-3" /> Publié
+                              </span>
+                            )}
+                            {etude.statut === 'refuse' && (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-red-50 text-red-600 shrink-0">
+                                <XCircle className="w-3 h-3" /> Refusé
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                             {etude.date_debut && <span>Du {new Date(etude.date_debut).toLocaleDateString('fr-FR')}</span>}
                             {etude.date_fin && <span>au {new Date(etude.date_fin).toLocaleDateString('fr-FR')}</span>}

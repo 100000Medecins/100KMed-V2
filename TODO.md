@@ -59,10 +59,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Risque si l'email réel est déjà pris par un autre compte (nécessiterait un flow de fusion dédié)
 - **Décision** : ne rien changer tant que le fix actuel (`getUserById` avant `generateLink`) couvre tous les cas
 
-#### ~~Espace éditeur — accès limité aux éditeurs existants~~ [OK] Fait 2026-05-03
-- ~~Actuellement seules les solutions ayant un éditeur associé apparaissent dans la liste~~
-- ~~**À faire** : permettre à n'importe quelle solution d'activer un espace éditeur (pas uniquement celles qui ont déjà un compte éditeur). Transformer la feature "éditeurs" en feature disponible pour toutes les solutions~~
-
 ### UX / UI
 
 #### Créer un design system pour le site
@@ -77,17 +73,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Emails — tableau de bord
 
-#### Programmer l'envoi des questionnaires de thèse
-- La table `questionnaires_these` n'a que `date_fin` — pas de date d'envoi programmée
-- **À faire** : ajouter une colonne `date_envoi` (ou `scheduled_at`) à `questionnaires_these` + UI dans le formulaire admin + cron qui déclenche l'envoi
-- Prérequis du calendrier ci-dessus pour inclure les questionnaires
+#### ~~Programmer l'envoi des questionnaires de thèse~~ [OK] Fait 2026-05-05
+- ~~La table `questionnaires_these` n'a que `date_fin` — pas de date d'envoi programmée~~
+- ~~**À faire** : ajouter une colonne `date_envoi` (ou `scheduled_at`) à `questionnaires_these` + UI dans le formulaire admin + cron qui déclenche l'envoi~~
+- ~~Prérequis du calendrier ci-dessus pour inclure les questionnaires~~
 
 ### Notifications
 
-#### Préférences de notification — études cliniques par spécialité
-- Notifier un utilisateur uniquement quand une nouvelle étude clinique correspond à sa spécialité
-- Si une étude ne correspond pas à sa spécialité : l'afficher en grisé dans la liste, avec un message explicatif ("Cette étude ne concerne pas votre spécialité") — mais rester cliquable
-- À prévoir : champ `specialites_cibles` sur les études (ou tag spécialité) + logique de matching côté notification
+#### ~~Préférences de notification — études cliniques par spécialité~~ [OK] Fait 2026-05-05
+- ~~Notifier un utilisateur uniquement quand une nouvelle étude clinique correspond à sa spécialité~~
+- ~~Si une étude ne correspond pas à sa spécialité : l'afficher en grisé dans la liste, avec un message explicatif ("Cette étude ne concerne pas votre spécialité") — mais rester cliquable~~
+- ~~À prévoir : champ `specialites_cibles` sur les études (ou tag spécialité) + logique de matching côté notification~~
 
 ### Performance
 

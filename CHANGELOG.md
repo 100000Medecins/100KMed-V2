@@ -5,6 +5,30 @@
 
 ---
 
+## [2026-05-05] — Automatisation emails études & thèses + validation admin
+
+### Feature — Campagnes email (études cliniques & questionnaires de thèse)
+- Nouvelle table `emails_campagnes` : type, statut (pending/sent/cancelled), spécialités cibles, lien, texte promoteur, scheduled_at
+- `PublishEmailModal` : modale de publication avec lien, spécialités cibles, texte promoteur (éditeur riche), mode d'envoi "Maintenant" ou "Programmer"
+- Bouton "Générer avec IA" (Anthropic claude-haiku) : génère 2-3 phrases HTML incitant à participer, basé sur le titre et la description
+- `sendCampagneNow` : envoi immédiat → filtre les users ayant la préf active + spécialité ciblée, envoie via SendGrid, logue en `sent`
+- `scheduleCampagne` : insertion en `pending` avec `scheduled_at`
+- Cron `/api/cron/envoyer-campagnes-email` (horaire Vercel) : déclenche les campagnes différées arrivées à échéance, respecte le kill-switch `crons_routiniers_actifs`
+- Section "Études & Thèses" dans `/admin/emails` : deux accordions séparés (études / thèses), historique sent/cancelled, badge amber pour les pending avec bouton Annuler
+
+### Feature — Études cliniques : flux validation admin (ex DMH)
+- Ajout colonne `statut` (`en_attente` | `publie` | `refuse`) sur `etudes_cliniques`
+- Les études créées par DigitalMedicalHub (DMH) passent désormais en `en_attente` (comme les questionnaires de thèse)
+- `AdminEtudesThesesClient` refonte : 4 onglets (en attente / actives / archives / refusées), badges statut, "Publier" ouvre `PublishEmailModal`
+- Page DMH `/mon-compte/etudes-cliniques` : badges statut (amber/vert/rouge)
+- Planning `/admin/planning` : campagnes email `pending` visibles dans le calendrier (types `email_etude` et `email_questionnaire`)
+
+### TODO — Mises à jour
+- Marqué terminé : Programmer l'envoi des questionnaires de thèse ✅
+- Marqué terminé : Préférences de notification — études cliniques par spécialité ✅
+
+---
+
 ## [2026-05-03] — Planning éditorial + planification articles blog
 
 ### Feature — Planning éditorial /admin/planning
