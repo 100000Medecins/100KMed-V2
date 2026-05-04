@@ -199,7 +199,7 @@ export default function CompleterProfilPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Prénom <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={prenom}
@@ -214,7 +214,7 @@ export default function CompleterProfilPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nom <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={nom}
@@ -233,7 +233,7 @@ export default function CompleterProfilPage() {
               {/* Spécialité — masquée pour les éditeurs */}
               {!isEditeur && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500">*</span></label>
                   {isFromPsc ? (
                     <input
                       type="text"
@@ -258,7 +258,7 @@ export default function CompleterProfilPage() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice <span className="text-red-500">*</span></label>
                 {isFromPsc ? (
                   <input
                     type="text"
