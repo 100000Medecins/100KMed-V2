@@ -12,6 +12,7 @@ export type EtudeClinique = {
   description: string | null
   lien: string | null
   images: string[]
+  specialites_cibles: string[]
   date_debut: string | null
   date_fin: string | null
   created_by: string | null
@@ -69,6 +70,7 @@ function normalise(row: any): EtudeClinique {
   return {
     ...row,
     images: Array.isArray(row.images) ? row.images : [],
+    specialites_cibles: Array.isArray(row.specialites_cibles) ? row.specialites_cibles : [],
   }
 }
 
@@ -81,17 +83,19 @@ export async function createEtudeClinique(formData: FormData) {
 
   const images = JSON.parse((formData.get('images') as string) || '[]')
 
+  const specialites_cibles = JSON.parse((formData.get('specialites_cibles') as string) || '[]')
+
   await supabase.from('etudes_cliniques').insert({
-    titre:       formData.get('titre') as string,
-    description: formData.get('description') as string || null,
-    lien:        formData.get('lien') as string || null,
+    titre:             formData.get('titre') as string,
+    description:       formData.get('description') as string || null,
+    lien:              formData.get('lien') as string || null,
     images,
-    date_debut:  (formData.get('date_debut') as string) || null,
-    date_fin:    (formData.get('date_fin') as string) || null,
-    created_by:  user.id,
+    specialites_cibles,
+    date_debut:        (formData.get('date_debut') as string) || null,
+    date_fin:          (formData.get('date_fin') as string) || null,
+    created_by:        user.id,
   })
 
-  revalidatePath('/mon-compte/etudes-cliniques')
   revalidatePath('/mon-compte/etudes-cliniques')
 }
 
@@ -101,18 +105,19 @@ export async function updateEtudeClinique(id: string, formData: FormData) {
   const supabase = createServiceRoleClient() as any
 
   const images = JSON.parse((formData.get('images') as string) || '[]')
+  const specialites_cibles = JSON.parse((formData.get('specialites_cibles') as string) || '[]')
 
   await supabase.from('etudes_cliniques').update({
-    titre:       formData.get('titre') as string,
-    description: formData.get('description') as string || null,
-    lien:        formData.get('lien') as string || null,
+    titre:             formData.get('titre') as string,
+    description:       formData.get('description') as string || null,
+    lien:              formData.get('lien') as string || null,
     images,
-    date_debut:  (formData.get('date_debut') as string) || null,
-    date_fin:    (formData.get('date_fin') as string) || null,
-    updated_at:  new Date().toISOString(),
+    specialites_cibles,
+    date_debut:        (formData.get('date_debut') as string) || null,
+    date_fin:          (formData.get('date_fin') as string) || null,
+    updated_at:        new Date().toISOString(),
   }).eq('id', id)
 
-  revalidatePath('/mon-compte/etudes-cliniques')
   revalidatePath('/mon-compte/etudes-cliniques')
 }
 
@@ -147,14 +152,17 @@ export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ er
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const images = JSON.parse((formData.get('images') as string) || '[]')
+  const specialites_cibles = JSON.parse((formData.get('specialites_cibles') as string) || '[]')
+
   const { error } = await supabase.from('etudes_cliniques').insert({
-    titre:       formData.get('titre') as string,
-    description: formData.get('description') as string || null,
-    lien:        formData.get('lien') as string || null,
+    titre:             formData.get('titre') as string,
+    description:       formData.get('description') as string || null,
+    lien:              formData.get('lien') as string || null,
     images,
-    date_debut:  (formData.get('date_debut') as string) || null,
-    date_fin:    (formData.get('date_fin') as string) || null,
-    created_by:  null,
+    specialites_cibles,
+    date_debut:        (formData.get('date_debut') as string) || null,
+    date_fin:          (formData.get('date_fin') as string) || null,
+    created_by:        null,
   })
   if (error) return { error: error.message }
   revalidatePath('/admin/questionnaires-these')
@@ -169,18 +177,20 @@ export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const images = JSON.parse((formData.get('images') as string) || '[]')
+  const specialites_cibles = JSON.parse((formData.get('specialites_cibles') as string) || '[]')
+
   const { error } = await supabase.from('etudes_cliniques').update({
-    titre:       formData.get('titre') as string,
-    description: formData.get('description') as string || null,
-    lien:        formData.get('lien') as string || null,
+    titre:             formData.get('titre') as string,
+    description:       formData.get('description') as string || null,
+    lien:              formData.get('lien') as string || null,
     images,
-    date_debut:  (formData.get('date_debut') as string) || null,
-    date_fin:    (formData.get('date_fin') as string) || null,
-    updated_at:  new Date().toISOString(),
+    specialites_cibles,
+    date_debut:        (formData.get('date_debut') as string) || null,
+    date_fin:          (formData.get('date_fin') as string) || null,
+    updated_at:        new Date().toISOString(),
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/questionnaires-these')
-  revalidatePath('/mon-compte/etudes-cliniques')
   revalidatePath('/mon-compte/etudes-cliniques')
   return { error: null }
 }

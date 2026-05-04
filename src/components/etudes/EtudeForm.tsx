@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Plus, Trash2, ImageIcon, Loader2, ExternalLink } from 'lucide-react'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
+import SpecialitesSelector from '@/components/admin/SpecialitesSelector'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
@@ -20,6 +21,7 @@ export default function EtudeForm({ etude, onSave, onCancel }: Props) {
   const [dateDebut, setDateDebut] = useState(etude?.date_debut ?? '')
   const [dateFin, setDateFin] = useState(etude?.date_fin ?? '')
   const [images, setImages] = useState<string[]>(etude?.images ?? [])
+  const [specialites_cibles, setSpecialitesCibles] = useState<string[]>(etude?.specialites_cibles ?? [])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -53,6 +55,7 @@ export default function EtudeForm({ etude, onSave, onCancel }: Props) {
       fd.append('description', description)
       fd.append('lien', lien)
       fd.append('images', JSON.stringify(images))
+      fd.append('specialites_cibles', JSON.stringify(specialites_cibles))
       fd.append('date_debut', dateDebut)
       fd.append('date_fin', dateFin)
       await onSave(fd)
@@ -126,6 +129,8 @@ export default function EtudeForm({ etude, onSave, onCancel }: Props) {
           </button>
         </div>
       </div>
+
+      <SpecialitesSelector value={specialites_cibles} onChange={setSpecialitesCibles} />
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">

@@ -10,6 +10,7 @@ import {
 import type { QuestionnaireThese } from '@/lib/actions/questionnaires-these'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
 import EtudeForm from '@/components/etudes/EtudeForm'
+import SpecialitesSelector from '@/components/admin/SpecialitesSelector'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
@@ -47,11 +48,12 @@ type FormValues = {
   lien: string
   image_url: string
   date_fin: string
+  specialites_cibles: string[]
   statut: 'en_attente' | 'publie' | 'refuse'
 }
 
 function emptyForm(): FormValues {
-  return { titre: '', description: '', lien: '', image_url: '', date_fin: '', statut: 'publie' }
+  return { titre: '', description: '', lien: '', image_url: '', date_fin: '', specialites_cibles: [], statut: 'publie' }
 }
 
 function fromQuestionnaire(q: QuestionnaireThese): FormValues {
@@ -61,6 +63,7 @@ function fromQuestionnaire(q: QuestionnaireThese): FormValues {
     lien: q.lien,
     image_url: q.image_url ?? '',
     date_fin: q.date_fin ?? '',
+    specialites_cibles: q.specialites_cibles ?? [],
     statut: q.statut,
   }
 }
@@ -75,7 +78,7 @@ interface QuestionnaireFormProps {
 
 function QuestionnaireForm({ initial, onSave, onCancel, saving, error }: QuestionnaireFormProps) {
   const [values, setValues] = useState<FormValues>(initial ? fromQuestionnaire(initial) : emptyForm())
-  const set = (k: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const set = (k: keyof Omit<FormValues, 'specialites_cibles'>) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }))
 
   return (
@@ -135,6 +138,11 @@ function QuestionnaireForm({ initial, onSave, onCancel, saving, error }: Questio
             minHeight={200}
           />
         </div>
+
+        <SpecialitesSelector
+          value={values.specialites_cibles}
+          onChange={(v) => setValues((prev) => ({ ...prev, specialites_cibles: v }))}
+        />
 
         {error && <p className="text-xs text-red-600">{error}</p>}
 

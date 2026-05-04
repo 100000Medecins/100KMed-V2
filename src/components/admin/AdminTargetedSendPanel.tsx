@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Send, Loader2, CheckCircle, AlertCircle, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import SpecialitesSelector from '@/components/admin/SpecialitesSelector'
 
 interface Props {
   apiRoute: string
@@ -16,6 +17,7 @@ type SendState = 'idle' | 'confirming' | 'sending' | 'done' | 'error'
 export default function AdminTargetedSendPanel({ apiRoute, optedInEmails, labelLien, labelTextePromoteur }: Props) {
   const [lienEtude, setLienEtude] = useState('')
   const [textePromoteur, setTextePromoteur] = useState('')
+  const [specialitesCibles, setSpecialitesCibles] = useState<string[]>([])
   const [sendState, setSendState] = useState<SendState>('idle')
   const [sendResult, setSendResult] = useState<{ sent: number; total: number } | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -29,7 +31,7 @@ export default function AdminTargetedSendPanel({ apiRoute, optedInEmails, labelL
       const res = await fetch(apiRoute, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lien_etude: lienEtude, texte_promoteur: textePromoteur }),
+        body: JSON.stringify({ lien_etude: lienEtude, texte_promoteur: textePromoteur, specialites_cibles: specialitesCibles }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -99,6 +101,12 @@ export default function AdminTargetedSendPanel({ apiRoute, optedInEmails, labelL
           <p className="text-xs text-gray-400 mt-2 italic">Aucun utilisateur inscrit pour le moment.</p>
         )}
       </div>
+
+      {/* Ciblage spécialité */}
+      <SpecialitesSelector
+        value={specialitesCibles}
+        onChange={setSpecialitesCibles}
+      />
 
       {/* Champ lien */}
       <div>

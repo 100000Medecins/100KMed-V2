@@ -15,6 +15,7 @@ export default function EtudesCliniquesPublic() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [etudes, setEtudes] = useState<EtudeClinique[]>([])
+  const [userSpecialite, setUserSpecialite] = useState<string | null>(null)
   const [fetching, setFetching] = useState(true)
   const [sentIds, setSentIds] = useState<Set<string>>(new Set())
   const [modalEtude, setModalEtude] = useState<EtudeClinique | null>(null)
@@ -27,8 +28,19 @@ export default function EtudesCliniquesPublic() {
 
     const load = async () => {
       try {
-        const { getEtudesActives } = await import('@/lib/actions/etudes-cliniques')
-        setEtudes(await getEtudesActives())
+        const [{ getEtudesActives }, { getCurrentUserProfile }] = await Promise.all([
+          import('@/lib/actions/etudes-cliniques'),
+          import('@/lib/actions/user'),
+        ])
+        const [etudesData, profile] = await Promise.all([getEtudesActives(), getCurrentUserProfile()])
+        setUserSpecialite(profile?.specialite ?? null)
+        // Items concernés par la spécialité en premier
+        const sorted = [...etudesData].sort((a, b) => {
+          const aOk = a.specialites_cibles.length === 0 || (profile?.specialite ? a.specialites_cibles.includes(profile.specialite) : true)
+          const bOk = b.specialites_cibles.length === 0 || (profile?.specialite ? b.specialites_cibles.includes(profile.specialite) : true)
+          return aOk === bOk ? 0 : aOk ? -1 : 1
+        })
+        setEtudes(sorted)
       } finally {
         setFetching(false)
       }
@@ -88,15 +100,19 @@ export default function EtudesCliniquesPublic() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {etudes.map((etude) => (
-            <EtudeCard
-              key={etude.id}
-              etude={etude}
-              sent={sentIds.has(etude.id)}
-              onEnSavoirPlus={() => handleEnSavoirPlus(etude)}
-              onExpand={() => setModalEtude(etude)}
-            />
-          ))}
+          {etudes.map((etude) => {
+            const concerne = etude.specialites_cibles.length === 0 || (userSpecialite ? etude.specialites_cibles.includes(userSpecialite) : true)
+            return (
+              <EtudeCard
+                key={etude.id}
+                etude={etude}
+                sent={sentIds.has(etude.id)}
+                concerne={concerne}
+                onEnSavoirPlus={() => handleEnSavoirPlus(etude)}
+                onExpand={() => setModalEtude(etude)}
+              />
+            )
+          })}
         </div>
       )}
 
@@ -265,11 +281,13 @@ const DESCRIPTION_MAX_CHARS = 150
 function EtudeCard({
   etude,
   sent,
+  concerne,
   onEnSavoirPlus,
   onExpand,
 }: {
   etude: EtudeClinique
   sent: boolean
+  concerne: boolean
   onEnSavoirPlus: () => void
   onExpand: () => void
 }) {
@@ -282,11 +300,18 @@ function EtudeCard({
 
   return (
     <div
-      className="bg-white rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-shadow"
+      className={`rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-shadow ${concerne ? 'bg-white' : 'bg-gray-50'}`}
       onClick={onExpand}
     >
       <div className="p-5 flex flex-col flex-1 gap-3">
-        <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
+          {!concerne && (
+            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-500 whitespace-nowrap">
+              Hors spécialité
+            </span>
+          )}
+        </div>
 
         {plainText && (
           <p className="text-sm text-gray-600 leading-relaxed">

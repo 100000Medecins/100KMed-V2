@@ -11,6 +11,7 @@ export type QuestionnaireThese = {
   lien: string
   image_url: string | null
   date_fin: string | null
+  specialites_cibles: string[]
   created_by: string | null
   statut: 'en_attente' | 'publie' | 'refuse'
   created_at: string
@@ -176,6 +177,7 @@ export async function createQuestionnaireAdmin(payload: {
   lien: string
   image_url?: string
   date_fin: string
+  specialites_cibles?: string[]
   statut?: 'en_attente' | 'publie' | 'refuse'
 }): Promise<{ error: string | null }> {
   const supabase = createServiceRoleClient()
@@ -188,6 +190,7 @@ export async function createQuestionnaireAdmin(payload: {
       lien: payload.lien,
       image_url: payload.image_url || null,
       date_fin: payload.date_fin,
+      specialites_cibles: payload.specialites_cibles ?? [],
       statut: payload.statut ?? 'publie',
     })
 
@@ -207,6 +210,7 @@ export async function updateQuestionnaireAdmin(
     lien: string
     image_url?: string
     date_fin: string
+    specialites_cibles?: string[]
     statut: 'en_attente' | 'publie' | 'refuse'
   }
 ): Promise<{ error: string | null }> {
@@ -220,6 +224,7 @@ export async function updateQuestionnaireAdmin(
       lien: payload.lien,
       image_url: payload.image_url || null,
       date_fin: payload.date_fin,
+      specialites_cibles: payload.specialites_cibles ?? [],
       statut: payload.statut,
       updated_at: new Date().toISOString(),
     })

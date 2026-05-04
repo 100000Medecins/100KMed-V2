@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}))
-  const { lien_etude = '', texte_promoteur = '' } = body
+  const { lien_etude = '', texte_promoteur = '', specialites_cibles = [] } = body
 
   const supabase = createServiceRoleClient()
   const siteUrl = new URL(req.url).origin
@@ -38,10 +38,17 @@ export async function POST(req: NextRequest) {
   }
 
   const userIds = prefs.map((p: any) => p.user_id)
-  const { data: users } = await (supabase as any)
+  let query = (supabase as any)
     .from('users')
-    .select('id, email, nom')
+    .select('id, email, nom, specialite')
     .in('id', userIds)
+
+  // Filtrage par spécialité si des spécialités sont ciblées
+  if (Array.isArray(specialites_cibles) && specialites_cibles.length > 0) {
+    query = query.in('specialite', specialites_cibles)
+  }
+
+  const { data: users } = await query
 
   if (!users || users.length === 0) {
     return NextResponse.json({ sent: 0, total: 0 })
