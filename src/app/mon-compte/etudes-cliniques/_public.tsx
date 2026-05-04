@@ -300,14 +300,18 @@ function EtudeCard({
 
   return (
     <div
-      className={`rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-shadow ${concerne ? 'bg-white' : 'bg-gray-50'}`}
+      className={`rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer transition-all duration-200 ${
+        concerne
+          ? 'bg-white hover:shadow-md'
+          : 'bg-white opacity-50 grayscale hover:opacity-90 hover:grayscale-0 hover:shadow-md'
+      }`}
       onClick={onExpand}
     >
       <div className="p-5 flex flex-col flex-1 gap-3">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
           {!concerne && (
-            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-500 whitespace-nowrap">
+            <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-700 text-white whitespace-nowrap">
               Hors spécialité
             </span>
           )}
