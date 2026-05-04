@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { updateProfile, cancelEmailChange } from '@/lib/actions/user'
+import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
+import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
@@ -35,6 +36,15 @@ export default function ProfilPage() {
   const [initPassword, setInitPassword] = useState('')
   const [initPasswordSubmitting, setInitPasswordSubmitting] = useState(false)
   const [initPasswordError, setInitPasswordError] = useState<string | null>(null)
+
+  // Éditeur claim
+  const LIBRE_TEXTE_VALUE = '__libre_texte__'
+  const [claimOptions, setClaimOptions] = useState<EditeurClaimOption[]>([])
+  const [claimValue, setClaimValue] = useState('')
+  const [libreTexte, setLibreTexte] = useState('')
+  const isEditeur = modeExercice === 'Éditeur'
+  const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
+  const claimFilled = showLibreTexte ? libreTexte.trim().length > 0 : claimValue.length > 0
 
   // Email
   const [showEmailForm, setShowEmailForm] = useState(false)
@@ -106,6 +116,12 @@ export default function ProfilPage() {
     load()
   }, [user, authLoading])
 
+  useEffect(() => {
+    if (isEditeur && claimOptions.length === 0) {
+      getEditeurClaimOptions().then(setClaimOptions)
+    }
+  }, [isEditeur, claimOptions.length])
+
   // Charger/vérifier le changement d'email en attente
   useEffect(() => {
     if (!user) return
@@ -141,7 +157,7 @@ export default function ProfilPage() {
     }
   }
 
-  const isValid = nom.trim() && prenom.trim() && specialite && modeExercice
+  const isValid = nom.trim() && prenom.trim() && modeExercice && (isEditeur ? claimFilled : !!specialite)
   const isDirty = nom !== initialValuesRef.current.nom ||
     prenom !== initialValuesRef.current.prenom ||
     specialite !== initialValuesRef.current.specialite ||
@@ -159,9 +175,22 @@ export default function ProfilPage() {
       await updateProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
-        specialite,
+        specialite: isEditeur ? '' : specialite,
         mode_exercice: modeExercice,
       })
+
+      if (isEditeur) {
+        let editeur_id: string | undefined
+        let solution_id: string | undefined
+        if (claimValue.startsWith('editeur:')) editeur_id = claimValue.replace('editeur:', '')
+        else if (claimValue.startsWith('solution:')) solution_id = claimValue.replace('solution:', '')
+        await createEditeurClaim({
+          editeur_id,
+          solution_id,
+          libre_texte: showLibreTexte ? libreTexte.trim() : undefined,
+        })
+      }
+
       if (selectedAvatar) {
         const supabase = createClient()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -484,21 +513,23 @@ export default function ProfilPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500 font-bold">*</span></label>
-                  <select
-                    value={specialite}
-                    onChange={(e) => setSpecialite(e.target.value)}
-                    required
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
-                  >
-                    <option value="">Sélectionnez votre spécialité</option>
-                    {SPECIALITES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
+                {!isEditeur && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500 font-bold">*</span></label>
+                    <select
+                      value={specialite}
+                      onChange={(e) => setSpecialite(e.target.value)}
+                      required
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                    >
+                      <option value="">Sélectionnez votre spécialité</option>
+                      {SPECIALITES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className={isEditeur ? 'sm:col-span-2' : ''}>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice <span className="text-red-500 font-bold">*</span></label>
                   <div className="flex flex-wrap gap-2">
                     {MODES_EXERCICE.map((mode) => (
@@ -518,6 +549,44 @@ export default function ProfilPage() {
                   </div>
                 </div>
               </div>
+
+              {isEditeur && (
+                <div className="pt-2 border-t border-gray-100 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Votre solution ou éditeur <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={claimValue}
+                      onChange={(e) => setClaimValue(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                    >
+                      <option value="">Sélectionnez votre solution ou éditeur</option>
+                      <option value={LIBRE_TEXTE_VALUE}>Je ne trouve pas dans la liste</option>
+                      {claimOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Votre demande sera examinée par notre équipe avant validation.
+                    </p>
+                  </div>
+                  {showLibreTexte && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Nom de votre solution ou éditeur <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={libreTexte}
+                        onChange={(e) => setLibreTexte(e.target.value)}
+                        placeholder="Ex : MonLogiciel, Éditeur XYZ..."
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
             </>
           )}
