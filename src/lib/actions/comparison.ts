@@ -1,7 +1,7 @@
 'use server'
 
 import { getAllResultats } from '@/lib/db/resultats'
-import { computeAggregatedResultats, DETAIL_CRITERE_MAP } from '@/lib/db/evaluations'
+import { computeAggregatedResultats } from '@/lib/db/evaluations'
 
 interface ComparisonDataItem {
   nomCourt: string
@@ -56,19 +56,27 @@ export async function getComparisonData(solutionId: string): Promise<ComparisonD
 export async function getDetailedComparisonData(solutionId: string): Promise<DetailGroupItem[]> {
   const resultats = await getAllResultats(solutionId)
 
-  // Garder uniquement les sous-critères (is_enfant = true) avec un identifiant_tech detail_*
-  const subResultats = resultats.filter(
-    (r) => r.critere?.is_enfant === true && r.critere?.identifiant_tech?.startsWith('detail_')
-  )
+  // Construire un index critere.id → identifiant_tech depuis les critères principaux (toutes catégories)
+  const parentIdentMap = new Map<string, string>()
+  for (const r of resultats) {
+    if (r.critere?.is_enfant !== true && r.critere?.identifiant_tech && r.critere?.id) {
+      parentIdentMap.set(r.critere.id, r.critere.identifiant_tech)
+    }
+  }
+
+  // Garder uniquement les sous-critères (is_enfant = true)
+  const subResultats = resultats.filter((r) => r.critere?.is_enfant === true)
 
   if (subResultats.length === 0) return []
 
-  // Grouper par critère principal via DETAIL_CRITERE_MAP
+  // Grouper par critère principal via parent_id → identifiant_tech (résolu depuis la DB)
   const grouped = new Map<string, DetailGroupItem>()
 
   for (const r of subResultats) {
-    const key = r.critere!.identifiant_tech!
-    const parentKey = DETAIL_CRITERE_MAP[key]
+    const parentId = r.critere?.parent_id
+    if (!parentId) continue
+
+    const parentKey = parentIdentMap.get(parentId)
     if (!parentKey) continue
 
     if (!grouped.has(parentKey)) {
@@ -80,8 +88,8 @@ export async function getDetailedComparisonData(solutionId: string): Promise<Det
     }
 
     grouped.get(parentKey)!.items.push({
-      critereId: r.critere_id ?? key,
-      nomCourt: r.critere?.nom_court || key,
+      critereId: r.critere?.id ?? r.critere?.identifiant_tech ?? '',
+      nomCourt: r.critere?.nom_court || r.critere?.identifiant_tech || '',
       valueUtilisateurs: r.moyenne_utilisateurs_base5 != null ? Number(r.moyenne_utilisateurs_base5) : null,
     })
   }

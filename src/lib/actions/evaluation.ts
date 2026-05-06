@@ -94,7 +94,6 @@ export async function recalcResultatsPourSolution(solutionId: string) {
   const { data: criteres } = await supabase
     .from('criteres')
     .select('id, identifiant_tech')
-    .is('parent_id', null)
     .not('identifiant_tech', 'is', null)
 
   if (!criteres || criteres.length === 0) return

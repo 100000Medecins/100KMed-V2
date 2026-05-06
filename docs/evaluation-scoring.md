@@ -1,7 +1,7 @@
 # Méthodologie de notation — 100 000 Médecins
 
 > Document de référence sur le fonctionnement complet du système de notation.
-> Mis à jour : 2026-04-30
+> Mis à jour : 2026-05-06
 > À consulter avant toute intervention sur les évaluations, les notes ou les calculs associés.
 
 ---
@@ -32,7 +32,13 @@ Ces notes sont stockées dans `evaluations.scores` (JSONB), agrégées dans `res
 
 54 sous-critères au format `detail_*` (ex. `detail_connexion`, `detail_agenda`, `detail_stabilite`...) pour la catégorie logiciels-métier. Les autres catégories utilisent d'autres préfixes de clés (voir §Système de questionnaires multi-catégories).
 
-**Important** : `DETAIL_CRITERE_MAP` dans `src/lib/db/evaluations.ts` mappe les clés `detail_*` vers leur critère majeur. Cette map n'est utilisée que dans `src/app/solutions/comparer/page.tsx` (vue détaillée du comparateur), **jamais dans le calcul de score**. Les catégories non-logiciels-métier n'ont pas leurs clés dans cette map → la vue détaillée du comparateur ne s'affiche pas pour elles (comportement attendu).
+**Important** : `DETAIL_CRITERE_MAP` dans `src/lib/db/evaluations.ts` mappe les clés `detail_*` vers leur critère majeur. Cette map n'est utilisée que dans `src/lib/actions/comparison.ts` (vue détaillée du comparateur), **jamais dans le calcul de score**.
+
+Limitation connue : la vue détaillée du comparateur est inactive pour les agendas et les IA, pour deux raisons cumulées :
+- `DETAIL_CRITERE_MAP` ne contient que les clés `detail_*` (logiciels-métier)
+- `getDetailedComparisonData` filtre explicitement sur `identifiant_tech.startsWith('detail_')`, ce qui exclut mécaniquement `agenda_*`, `docai_*`, `ias_*`
+
+Les scores sous-critères pour ces catégories sont pourtant bien collectés et stockés dans `evaluations.scores` — ils ne sont simplement jamais affichés dans le comparateur. Le code lui-même anticipe un correctif : commentaire `// Migration future : utiliser criteres.parent_id depuis la DB à la place.` dans `evaluations.ts`. À corriger dans le cadre du Plan 1 (voir TODO).
 
 ---
 
@@ -75,26 +81,22 @@ const sectionsDetail = sectionsDB.length > 0
 
 ### Préfixes de clés par catégorie
 
-| Catégorie | Préfixe des clés | Source actuelle |
+| Catégorie | Préfixe des clés | Source (vérifié 2026-05-06) |
 |---|---|---|
-| Logiciels-métier | `detail_*` | Hardcodé (`SECTIONS_DETAILLEES`) + DB si configuré |
-| Agenda médical | `agenda_*` | Hardcodé (`SECTIONS_PAR_CATEGORIE`) + DB si configuré |
-| IA documentaires | `docai_*` | DB (`questionnaire_sections.categorie_slug = 'ia-documentaires'`) |
-| IA scribes | `ias_*` | DB (`questionnaire_sections.categorie_slug = 'intelligence-artificielle-medecine'`) |
+| Logiciels-métier | `detail_*` | DB (`categorie_slug = 'default'`) — 10 sections, 54 questions |
+| Agenda médical | `agenda_*` | DB (`categorie_slug = 'agenda-medical'`) — 7 sections, 25 questions |
+| IA documentaires | `docai_*` | DB (`categorie_slug = 'ia-documentaires'`) |
+| IA scribes | `ias_*` | DB (`categorie_slug = 'intelligence-artificielle-medecine'`) |
 
-Les préfixes reflètent la configuration DB et peuvent évoluer si un admin modifie les clés des questions. La correspondance avec les critères majeurs est portée par le champ `critere_majeur`, pas par le préfixe.
+Toutes les catégories sont désormais pilotées depuis la DB. Les constantes hardcodées `SECTIONS_DETAILLEES` et `SECTIONS_PAR_CATEGORIE` dans `noter/page.tsx` restent en place comme fallback mais ne s'activent plus (DB non vide pour tous les slugs). Les préfixes reflètent la configuration DB et peuvent évoluer si un admin modifie les clés. La correspondance avec les critères majeurs est portée par le champ `critere_majeur`, pas par le préfixe.
 
-### Libellés par catégorie (SLUGS_UTILITE)
+### Libellés par catégorie (`label_fonctionnalites`)
 
 Pour les catégories IA, le critère `fonctionnalites` est affiché avec le libellé **"Utilité"** au lieu de "Fonctionnalités" (plus pertinent pour des outils IA). Ce changement est purement cosmétique — il n'affecte pas les clés en base, le calcul, ni le stockage.
 
-```typescript
-// src/lib/constants/criteres.ts
-const SLUGS_UTILITE = ['intelligence-artificielle-medecine', 'ia-documentaires']
-// getCritereLabel('fonctionnalites', slug) → 'Utilité' pour ces slugs
-```
+Ce libellé est stocké dans la colonne `categories.label_fonctionnalites` (migré depuis une constante JS le 2026-05-01). La fonction `getCritereLabel('fonctionnalites', labelFonctionnalites)` dans `src/lib/constants/criteres.ts` utilise cette valeur si elle est renseignée.
 
-Si une nouvelle catégorie IA est ajoutée, ajouter son slug dans `SLUGS_UTILITE`.
+Si une nouvelle catégorie IA est ajoutée, renseigner `label_fonctionnalites = 'Utilité'` directement dans la table `categories`.
 
 ---
 
@@ -129,9 +131,12 @@ Utilisateur → /solution/noter/[...slug]
       → stocké dans evaluations.scores (JSONB)
               │
               ▼
-    updateResultat()                     [côté serveur, par critère]
-      → met à jour resultats.moyenne_utilisateurs_base5 pour chaque critère majeur
-      → calcul incrémental : (ancienne_moyenne × (n-1) + nouvelle_note) / n
+    recalcResultatsPourSolution()        [src/lib/actions/evaluation.ts]
+      → recalcule resultats depuis TOUTES les évaluations statut='publiee'
+      → ⚠️ traite uniquement les critères avec parent_id IS NULL (les 5 critères principaux)
+      → les scores de sous-critères (detail_*, agenda_*, docai_*…) sont stockés dans
+        evaluations.scores mais NE sont PAS agrégés dans resultats
+      → les lignes sous-critères dans resultats datent de la migration Firebase (valeurs figées)
 ```
 
 ---

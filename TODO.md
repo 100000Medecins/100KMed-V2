@@ -12,10 +12,32 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 > ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
 
-#### Traiter les remarques de Ben (rapport efficience du code)
-- Revoir tous les points remontés dans la capture de Ben
-- À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques
-- Prévoir une session dédiée avec Claude pour passer point par point
+#### ~~Traiter les remarques de Ben (rapport efficience du code)~~ [OK] Fait 2026-05-06
+- ~~Revoir tous les points remontés dans la capture de Ben~~
+- ~~À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques~~
+- ~~Prévoir une session dédiée avec Claude pour passer point par point~~
+
+#### Alléger les pages du site (bundle / code inspection)
+- Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
+- Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
+
+#### ~~Faire le mapping sous-critères → critères principaux (DETAIL_CRITERE_MAP) pour IA et agendas~~ [OK] Fait 2026-05-07
+- ~~`DETAIL_CRITERE_MAP` dans `src/lib/constants/criteres.ts` ne couvre que les logiciels-métier (`detail_*`)~~
+- ~~Les catégories agenda (`agenda_*`) et IA (`docai_*`, `ias_*`) n'ont pas de mapping sous-critère → critère majeur~~
+- ~~Sans ce mapping, la vue détaillée du comparateur est incomplète pour ces catégories~~
+
+#### ~~Réparer — questionnaires de notation entièrement hardcodés côté client~~ [OK] Fait 2026-05-07
+- ~~`SECTIONS_DETAILLEES` (logiciels-métier) et `SECTIONS_PAR_CATEGORIE` (agenda) sont des constantes JS dans `src/app/solution/noter/[...slug]/page.tsx` (lignes 77–264)~~
+- ~~La BDD a pourtant des tables `questionnaire_sections` + `questionnaire_questions` — mais elles ne servent qu'à l'admin~~
+- ~~La page publique de notation les ignore complètement et lit les constantes hardcodées~~
+- ~~À corriger : faire lire la page de notation depuis la BDD (avec fallback hardcodé si BDD vide)~~
+
+### Outillage
+
+#### Configurer le MCP Supabase en lecture seule dans Claude Code
+- Permet à Claude d'interroger directement la DB sans allers-retours CSV
+- Configurer en lecture seule uniquement — les écritures restent via SQL présenté dans le chat
+- Voir doc officielle Supabase MCP
 
 ### Sécurité
 
@@ -25,31 +47,22 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après quelques semaines à 100%) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
-### Partenariats contenu
+### Communication
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
-### Déploiement final
-
-#### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
-- Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
-- Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
-- Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
-
-#### Checklist technique passage en prod (www)
-- **Vercel** → `NEXT_PUBLIC_SITE_URL` (Production) : changer `https://dev.100000medecins.org` → `https://www.100000medecins.org`
-- **Supabase** → Authentication → URL Configuration → **Site URL** : changer vers `https://www.100000medecins.org`
-- **Supabase** → Redirect URLs : vérifier que `https://www.100000medecins.org/reinitialiser-mot-de-passe` est dans la liste
-- **PSC** : aucune action — le relay `/connexionPsc` gère automatiquement le basculement dev→www (déjà en place)
-
-### Nettoyage — Post-migration Synology
+### Nettoyage
 
 #### Supprimer les anciens dossiers Frontend-V2-main *(dans 1–2 semaines de stabilité confirmée)*
 - Sur le **desktop** : supprimer `Frontend-V2-main` dans la zone Synology (actuellement conservé en filet de sécurité)
 - Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main` de la tâche de synchro Synology "100000Medecins", sans toucher au reste du dossier "100 000 Médecins"
 - Ne pas supprimer avant d'avoir confirmé que le nouveau setup Git/GitHub tourne sans problème
+
+#### *(2026-06-26)* Supprimer `evaluations_firebase_backup`
+- 2 mois après la migration Firebase (étape 1 ci-dessus)
+- Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
 ### Bugs à corriger
 
@@ -66,10 +79,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Documenter les composants UI existants (Button, Card, Badge, StarRating, Breadcrumb…) avec leurs variantes
 - Identifier les incohérences visuelles entre pages et les normaliser
 - Objectif : base solide pour toute nouvelle feature et pour les éventuels contributeurs
-
-#### Alléger les pages du site (bundle / code inspection)
-- Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
-- Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
 
 ### Emails — tableau de bord
 
@@ -103,21 +112,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
 - ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
 
-### Tarification solutions
+### Déploiement final
 
-#### Simplifier l'indicateur de prix (à peupler plus tard automatiquement)
-- Remplacer le champ JSON `nb_utilisateurs` et la section tarification complexe par :
-  - Un champ `prix_moyen` (numérique, en €/mois)
-  - Un indicateur visuel 1 à 4 euros jaunes, calculé en comparant `prix_moyen` à la médiane de la catégorie
-- Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
-- Les données seront peuplées ultérieurement via recherche automatique
-- Ne pas modifier l'affichage front avant que le toggle soit activé
+#### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
+- Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
+- Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
+- Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
 
-### Rappels temporels
-
-#### *(2026-06-26)* Supprimer `evaluations_firebase_backup`
-- 2 mois après la migration Firebase (étape 1 ci-dessus)
-- Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
+#### Checklist technique passage en prod (www)
+- **Vercel** → `NEXT_PUBLIC_SITE_URL` (Production) : changer `https://dev.100000medecins.org` → `https://www.100000medecins.org`
+- **Supabase** → Authentication → URL Configuration → **Site URL** : changer vers `https://www.100000medecins.org`
+- **Supabase** → Redirect URLs : vérifier que `https://www.100000medecins.org/reinitialiser-mot-de-passe` est dans la liste
+- **PSC** : aucune action — le relay `/connexionPsc` gère automatiquement le basculement dev→www (déjà en place)
 
 ---
 
@@ -138,6 +144,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Piste 2 — fenêtre glissante : ne compter que les avis des N derniers mois (ex. 24 mois), afficher l'avertissement « basé sur X avis récents »
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
+
+### Simplifier l'indicateur de prix (à peupler plus tard automatiquement)
+- Remplacer le champ JSON `nb_utilisateurs` et la section tarification complexe par :
+  - Un champ `prix_moyen` (numérique, en €/mois)
+  - Un indicateur visuel 1 à 4 euros jaunes, calculé en comparant `prix_moyen` à la médiane de la catégorie
+- Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
+- Les données seront peuplées ultérieurement via recherche automatique
+- Ne pas modifier l'affichage front avant que le toggle soit activé
 
 ### DNS — mise en prod *(jour J uniquement)*
 - `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)

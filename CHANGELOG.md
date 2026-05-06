@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-05-07] — Fix système de notation + comparateur détaillé toutes catégories
+
+### Fix — recalcResultatsPourSolution (bug silencieux depuis la mise en ligne)
+- Cause : `criteres.identifiant_tech` des 5 critères principaux contenait des valeurs numériques héritage Firebase (`'1'`-`'5'`) au lieu de `'interface'`, `'fonctionnalites'`, `'fiabilite'`, `'editeur'`, `'qualite_prix'`
+- Conséquence : `recalcResultatsPourSolution` cherchait `scores['1']`, `scores['2']`... ne trouvait rien, et ne mettait jamais à jour `resultats` lors des nouvelles évaluations
+- Fix BDD : UPDATE des 5 lignes `criteres` pour aligner `identifiant_tech` sur les clés texte de `evaluations.scores`
+- Fix code : suppression du filtre `.is('parent_id', null)` dans `evaluation.ts` — la fonction agrège maintenant tous les critères (principaux + sous-critères)
+- Recalcul SQL ponctuel : `resultats` remis à jour pour les 27 solutions concernées
+- Bonus : 4 évaluations encore sur échelle 0-10 corrigées (division par 2 + recalcul `moyenne_utilisateur`)
+
+### Fix — Comparateur vue détaillée : toutes catégories (agenda, IA)
+- Cause 1 : `getDetailedComparisonData` filtrait `identifiant_tech.startsWith('detail_')` → excluait mécaniquement `agenda_*`, `docai_*`, `scribe_*`
+- Cause 2 : `DETAIL_CRITERE_MAP` (hardcodé) ne couvrait que les sous-critères `detail_*`
+- Fix code (`comparison.ts`) : suppression du filtre prefix + remplacement de `DETAIL_CRITERE_MAP` par un lookup dynamique via `critere.parent_id` depuis la DB
+- Fix BDD : insertion de 65 sous-critères dans `criteres` (25 agenda, 18 IA documentaires, 22 IA scribes) avec `parent_id` pointant vers le critère majeur correct
+
+### TODO — Mises à jour
+- Marqué terminé : Faire le mapping sous-critères → critères principaux pour IA et agendas ✅
+
+---
+
 ## [2026-05-05] — Automatisation emails études & thèses + validation admin
 
 ### Feature — Campagnes email (études cliniques & questionnaires de thèse)
