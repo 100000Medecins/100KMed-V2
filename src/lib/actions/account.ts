@@ -110,5 +110,9 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
   const { error } = await supabase.auth.admin.deleteUser(user.id)
   if (error) throw new Error(error.message)
 
+  // Sign out côté serveur avant de retourner — évite le crash Server Components
+  // qui survient quand Next.js tente de re-render avec une session désormais invalide
+  await authClient.auth.signOut()
+
   return { status: 'SUCCESS' }
 }

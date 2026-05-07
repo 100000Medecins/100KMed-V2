@@ -106,8 +106,10 @@ export async function mergeAccounts(
   await s.from('evaluations').update({ statut: 'publiee' }).eq('user_id', keepId).eq('statut', 'en_attente_psc')
 
   // Générer un magic link pour établir la session sur le compte conservé
-  const { data: freshProfile } = await s.from('users').select('email').eq('id', keepId).single()
-  const keepEmail = freshProfile?.email
+  // Utiliser auth.users.email (pas public.users.email) — évite de créer un utilisateur fantôme
+  // si l'email PSC synthétique diffère de public.users.email
+  const { data: authUserData } = await supabase.auth.admin.getUserById(keepId)
+  const keepEmail = authUserData.user?.email
   if (!keepEmail) return { ok: false, error: 'Impossible de récupérer l\'email du compte conservé.' }
 
   const { data: linkData } = await supabase.auth.admin.generateLink({
