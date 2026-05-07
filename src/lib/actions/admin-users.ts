@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 
 /**
  * Met à jour un champ texte d'un utilisateur (nom, prenom, email).
@@ -36,14 +37,35 @@ export async function deleteUser(userId: string) {
     avec_suppression_avis: true,
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any
+
+  // Récupérer les solutions affectées avant suppression des évaluations
+  const { data: affectedEvals } = await supabase
+    .from('evaluations')
+    .select('solution_id')
+    .eq('user_id', userId)
+    .eq('statut', 'publiee')
+  const solutionIds = [...new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean))]
+
+  // Supprimer les données liées (FK sans CASCADE)
   await supabase.from('evaluations').delete().eq('user_id', userId)
   await supabase.from('solutions_utilisees').delete().eq('user_id', userId)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('users_notification_preferences').delete().eq('user_id', userId)
+  await supabase.from('solutions_favorites').delete().eq('user_id', userId)
+  await s.from('users_notification_preferences').delete().eq('user_id', userId)
+  await s.from('users_preferences').delete().eq('user_id', userId)
+  await s.from('editeur_claims').delete().eq('user_id', userId)
+  await s.from('questionnaires_these').update({ created_by: null }).eq('created_by', userId)
+
   await supabase.from('users').delete().eq('id', userId)
 
   const { error } = await supabase.auth.admin.deleteUser(userId)
   if (error) throw new Error(error.message)
+
+  // Recalculer les résultats des solutions dont les évaluations ont été supprimées
+  for (const solutionId of solutionIds) {
+    await recalcResultatsPourSolution(solutionId as string)
+  }
 }
 
 /**

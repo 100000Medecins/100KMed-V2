@@ -4,6 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 import { buildEmail } from '@/lib/actions/emailTemplates'
+import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 
 interface DeleteAccountOptions {
   supprimerAvis: boolean
@@ -82,26 +83,33 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
     // Ne pas bloquer la suppression si l'email échoue
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any
+
   // 4. Traiter les évaluations
+  let solutionIdsToRecalc: string[] = []
   if (supprimerAvis) {
-    // Supprimer les évaluations de l'utilisateur
+    // Récupérer les solutions affectées avant suppression
+    const { data: affectedEvals } = await supabase
+      .from('evaluations')
+      .select('solution_id')
+      .eq('user_id', user.id)
+      .eq('statut', 'publiee')
+    solutionIdsToRecalc = [...new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean) as string[])]
+
     await supabase.from('evaluations').delete().eq('user_id', user.id)
   } else {
     // Anonymiser : dissocier du compte mais garder la contribution aux scores
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
-      .from('evaluations')
-      .update({ user_id: null })
-      .eq('user_id', user.id)
+    await s.from('evaluations').update({ user_id: null }).eq('user_id', user.id)
   }
 
-  // 5. Supprimer solutions_utilisees et notification prefs
+  // 5. Supprimer les données liées (FK sans CASCADE)
   await supabase.from('solutions_utilisees').delete().eq('user_id', user.id)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
-    .from('users_notification_preferences')
-    .delete()
-    .eq('user_id', user.id)
+  await supabase.from('solutions_favorites').delete().eq('user_id', user.id)
+  await s.from('users_notification_preferences').delete().eq('user_id', user.id)
+  await s.from('users_preferences').delete().eq('user_id', user.id)
+  await s.from('editeur_claims').delete().eq('user_id', user.id)
+  await s.from('questionnaires_these').update({ created_by: null }).eq('created_by', user.id)
 
   // 6. Supprimer le profil public
   await supabase.from('users').delete().eq('id', user.id)
@@ -113,6 +121,11 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
   // Sign out côté serveur avant de retourner — évite le crash Server Components
   // qui survient quand Next.js tente de re-render avec une session désormais invalide
   await authClient.auth.signOut()
+
+  // Recalculer les résultats des solutions dont les évaluations ont été supprimées
+  for (const solutionId of solutionIdsToRecalc) {
+    await recalcResultatsPourSolution(solutionId)
+  }
 
   return { status: 'SUCCESS' }
 }
