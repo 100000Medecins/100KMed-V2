@@ -5,6 +5,27 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-07**
+- [OK] 2026-05-07 : URGENT — Vérifier les occurrences de l'ancien slug `agenda-medical` en BDD (URGENT)
+  - Vérification MCP Supabase : `categories.slug` et `questionnaire_sections.categorie_slug` = `agendas-medicaux` ✅
+- [OK] 2026-05-07 : Faire le mapping sous-critères → critères principaux pour IA et agendas (IMPORTANT)
+  - `DETAIL_CRITERE_MAP` hardcodé remplacé par lookup dynamique via `critere.parent_id`
+  - 65 sous-critères insérés en BDD (25 agenda, 18 IA documentaires, 22 IA scribes)
+- [OK] 2026-05-07 : Réparer — questionnaires de notation entièrement hardcodés côté client (IMPORTANT)
+  - Clé `agenda-medical` → `agendas-medicaux` dans `SECTIONS_PAR_CATEGORIE` + `defaultOpen={true}` toutes sections
+- [OK] 2026-05-07 : Configurer le MCP Supabase en lecture seule dans Claude Code (Outillage)
+  - Connexion MCP Supabase configurée dans `.claude/settings.local.json`
+- [OK] 2026-05-07 : Changement d'email non fonctionnel (page mon-compte/profil) (Bugs à corriger)
+  - Form → div + onClick explicite sur les boutons, fix submit silencieux
+- [OK] 2026-05-07 : Questionnaires de notation repliés par défaut (Bugs à corriger)
+  - `defaultOpen={true}` sur toutes les sections détaillées
+- [OK] 2026-05-07 : Évaluation agenda — mauvais questionnaire affiché (Bugs à corriger)
+  - Clé `agenda-medical` → `agendas-medicaux` dans `SECTIONS_PAR_CATEGORIE`
+
+**2026-05-06**
+- [OK] 2026-05-06 : Traiter les remarques de Ben (rapport efficience du code) (IMPORTANT)
+  - Tous les points remontés dans la capture de Ben revus et traités
+
 **2026-05-05**
 - [OK] 2026-05-05 : Espace éditeur — accès limité aux éditeurs existants (Bugs à corriger)
   - Toutes les solutions peuvent désormais activer un espace éditeur, pas uniquement celles ayant un compte éditeur existant

@@ -12,39 +12,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 > ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
 
-#### ~~Traiter les remarques de Ben (rapport efficience du code)~~ [OK] Fait 2026-05-06
-- ~~Revoir tous les points remontés dans la capture de Ben~~
-- ~~À prioriser selon criticité : perf, bundle size, requêtes redondantes, bonnes pratiques~~
-- ~~Prévoir une session dédiée avec Claude pour passer point par point~~
-
 #### Alléger les pages du site (bundle / code inspection)
 - Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
 - Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
-
-#### ~~Faire le mapping sous-critères → critères principaux (DETAIL_CRITERE_MAP) pour IA et agendas~~ [OK] Fait 2026-05-07
-- ~~`DETAIL_CRITERE_MAP` dans `src/lib/constants/criteres.ts` ne couvre que les logiciels-métier (`detail_*`)~~
-- ~~Les catégories agenda (`agenda_*`) et IA (`docai_*`, `ias_*`) n'ont pas de mapping sous-critère → critère majeur~~
-- ~~Sans ce mapping, la vue détaillée du comparateur est incomplète pour ces catégories~~
-
-#### ~~Réparer — questionnaires de notation entièrement hardcodés côté client~~ [OK] Fait 2026-05-07
-- ~~`SECTIONS_DETAILLEES` (logiciels-métier) et `SECTIONS_PAR_CATEGORIE` (agenda) sont des constantes JS dans `src/app/solution/noter/[...slug]/page.tsx` (lignes 77–264)~~
-- ~~La BDD a pourtant des tables `questionnaire_sections` + `questionnaire_questions` — mais elles ne servent qu'à l'admin~~
-- ~~La page publique de notation les ignore complètement et lit les constantes hardcodées~~
-- ~~À corriger : faire lire la page de notation depuis la BDD (avec fallback hardcodé si BDD vide)~~
-
-### ~~URGENT — À faire dès que le MCP Supabase est réparé~~
-
-#### ~~Vérifier les occurrences de l'ancien slug `agenda-medical` en BDD~~ [OK] Fait 2026-05-07
-- ~~Suite au renommage `agenda-medical` → `agendas-medicaux` (2026-05-07), vérifier qu'aucune table ne contient encore l'ancien slug~~
-- ~~Tables à inspecter : `questionnaire_sections` (déjà migré via SQL), `criteres`, `solutions`, `evaluations`, `resultats`, toute table avec colonne `categorie_slug` ou `slug`~~
-- ~~Vérification MCP : `categories.slug` = `agendas-medicaux`, `questionnaire_sections.categorie_slug` = `agendas-medicaux` ✅~~
-
-### Outillage
-
-#### ~~Configurer le MCP Supabase en lecture seule dans Claude Code~~ [OK] Fait 2026-05-07
-- ~~Permet à Claude d'interroger directement la DB sans allers-retours CSV~~
-- ~~Configurer en lecture seule uniquement — les écritures restent via SQL présenté dans le chat~~
-- ~~Voir doc officielle Supabase MCP~~
 
 ### Sécurité
 
@@ -73,18 +43,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Bugs à corriger
 
-#### ~~Changement d'email non fonctionnel (page mon-compte/profil)~~ [OK] Fait 2026-05-07
-- ~~Sur la page profil, cliquer "Changer email" affiche un champ, mais valider ne fait rien — l'email ne change pas~~
-- ~~Probablement une régression sur l'appel Supabase Auth (updateUser) suite à une modif récente~~
-
-#### ~~Questionnaires de notation repliés par défaut — risque de sections non remplies~~ [OK] Fait 2026-05-07
-- ~~Les sections sont repliées à l'ouverture, l'utilisateur peut cliquer "Suivant" sans répondre à toutes les questions~~
-- ~~Dérouler toutes les sections par défaut, ou bloquer "Suivant" si des questions obligatoires sont sans réponse~~
-
-#### ~~Évaluation agenda — mauvais questionnaire affiché (logiciel métier au lieu d'agenda)~~ [OK] Fait 2026-05-07
-- ~~Sur la page de notation d'un agenda, c'est le questionnaire "logiciel métier" qui s'affiche~~
-- ~~Vérifier le mapping catégorie → questionnaire dans la page de notation~~
-
 #### Architecture email PSC — email synthétique vs réel *(à discuter)*
 - `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`
 - Option possible : mettre à jour `auth.users.email` via admin API quand PSC fournit un vrai email (éviterait le `getUserById` avant `generateLink`)
@@ -98,20 +56,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Documenter les composants UI existants (Button, Card, Badge, StarRating, Breadcrumb…) avec leurs variantes
 - Identifier les incohérences visuelles entre pages et les normaliser
 - Objectif : base solide pour toute nouvelle feature et pour les éventuels contributeurs
-
-### Emails — tableau de bord
-
-#### ~~Programmer l'envoi des questionnaires de thèse~~ [OK] Fait 2026-05-05
-- ~~La table `questionnaires_these` n'a que `date_fin` — pas de date d'envoi programmée~~
-- ~~**À faire** : ajouter une colonne `date_envoi` (ou `scheduled_at`) à `questionnaires_these` + UI dans le formulaire admin + cron qui déclenche l'envoi~~
-- ~~Prérequis du calendrier ci-dessus pour inclure les questionnaires~~
-
-### Notifications
-
-#### ~~Préférences de notification — études cliniques par spécialité~~ [OK] Fait 2026-05-05
-- ~~Notifier un utilisateur uniquement quand une nouvelle étude clinique correspond à sa spécialité~~
-- ~~Si une étude ne correspond pas à sa spécialité : l'afficher en grisé dans la liste, avec un message explicatif ("Cette étude ne concerne pas votre spécialité") — mais rester cliquable~~
-- ~~À prévoir : champ `specialites_cibles` sur les études (ou tag spécialité) + logique de matching côté notification~~
 
 ### Performance
 
