@@ -47,6 +47,10 @@ export async function GET(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
+      if (type === 'email_change' && user.email) {
+        await supabase.from('users').update({ email: user.email }).eq('id', user.id)
+      }
+
       const { data: profile } = await supabase
         .from('users')
         .select('id, is_complete')
