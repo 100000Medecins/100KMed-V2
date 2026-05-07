@@ -8,6 +8,13 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### IMPORTANT
 
+#### Vérifier tous les comportements utilisateurs (tests end-to-end)
+- Connexion email/mot de passe, inscription, reset password
+- Changement d'email et de mot de passe depuis le profil
+- Connexion PSC, fusion PSC (compte existant), banner PSC post-fusion
+- Suppression de compte (avec et sans suppression des avis)
+- Suppression admin d'un utilisateur
+
 #### Consolidation base de données — héritage Firebase
 
 > ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
@@ -43,11 +50,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Bugs à corriger
 
-#### Architecture email PSC — email synthétique vs réel *(à discuter)*
-- `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`
-- Option possible : mettre à jour `auth.users.email` via admin API quand PSC fournit un vrai email (éviterait le `getUserById` avant `generateLink`)
-- Risque si l'email réel est déjà pris par un autre compte (nécessiterait un flow de fusion dédié)
-- **Décision** : ne rien changer tant que le fix actuel (`getUserById` avant `generateLink`) couvre tous les cas
+~~#### Architecture email PSC — email synthétique vs réel *(à discuter)*~~
+~~- `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`~~
+~~- Option possible : mettre à jour `auth.users.email` via admin API quand PSC fournit un vrai email (éviterait le `getUserById` avant `generateLink`)~~
+~~- Risque si l'email réel est déjà pris par un autre compte (nécessiterait un flow de fusion dédié)~~
+~~- **Décision** : ne rien changer tant que le fix actuel (`getUserById` avant `generateLink`) couvre tous les cas~~
+[OK] Fait 2026-05-08
 
 ### UX / UI
 

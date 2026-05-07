@@ -5,6 +5,40 @@
 
 ---
 
+## [2026-05-08] — Fix auth email change + fusion PSC + suppressions de compte
+
+### Fix — Template email "Change email address" (Supabase dashboard)
+- Template utilisait `{{ .ConfirmationURL }}` → routait vers Supabase auth server, pas vers notre callback, session SSR jamais établie
+- Fix : tous les templates (change email, confirm signup, reset password) passés au format `token_hash` : `{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=...`
+
+### Fix — Synchronisation email après changement (api/auth/callback/route.ts)
+- Callback ne mettait pas à jour `public.users.email` ni `contact_email` après confirmation
+- Fix : ajout d'un `update({ email, contact_email })` pour `type === 'email_change'`
+
+### Fix — Banner PSC affiché à tort (mon-compte/profil/page.tsx)
+- `isFromPsc` se basait sur `user_metadata.provider === 'psc'` → vrai même après fusion (la métadonnée du compte supprimé restait)
+- Fix : `isFromPsc = !!data.rpps` uniquement (présence du RPPS = compte PSC)
+
+### Fix — Fusion PSC : mauvais compte conservé (merge.ts)
+- Magic link généré avec `public.users.email` → pouvait créer un utilisateur fantôme si l'email PSC synthétique (`psc-RPPS@psc.sante.fr`) différait de `auth.users.email`
+- Fix : `auth.admin.getUserById(keepId)` pour récupérer le vrai email auth avant `generateLink`
+
+### Fix — Fusion PSC : contraintes FK bloquant la suppression (merge.ts)
+- Suppressions échouaient silencieusement sur plusieurs contraintes FK sans CASCADE : `users_notification_preferences`, `solutions_favorites`, `users_preferences`, `editeur_claims`, `questionnaires_these` (migré vers `keepId` avant suppression)
+- Ajout d'error handling explicite sur la suppression `public.users` + `auth.admin.deleteUser`
+
+### Fix — Suppression de compte (account.ts + admin-users.ts)
+- `deleteAccount` : crash Server Components après suppression → ajout `authClient.auth.signOut()` avant le `return`
+- Même contraintes FK manquantes que la fusion : ajout de `solutions_favorites`, `users_preferences`, `editeur_claims`, `questionnaires_these` (→ `created_by = null`)
+- `deleteAccount` (supprimerAvis=true) et `deleteUser` (admin) : `resultats` non recalculés après suppression des évaluations → ajout de `recalcResultatsPourSolution` pour chaque solution affectée
+
+### TODO — Mises à jour
+- Marqué terminé : Changement d'email non fonctionnel (sync public.users) ✅
+- Marqué terminé : Fusion PSC mauvais compte conservé ✅
+- Marqué terminé : Suppression compte — crash Server Components ✅
+
+---
+
 ## [2026-05-07] — Fix système de notation + comparateur détaillé toutes catégories
 
 ### Fix — recalcResultatsPourSolution (bug silencieux depuis la mise en ligne)
