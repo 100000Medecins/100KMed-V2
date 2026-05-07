@@ -98,9 +98,22 @@ export async function mergeAccounts(
     await s.from('users').update(rppsUpdate).eq('id', keepId)
   }
 
+  // Supprimer les dépendances du compte supprimé (FK sans CASCADE)
+  await s.from('users_notification_preferences').delete().eq('user_id', deleteId)
+  await s.from('solutions_favorites').delete().eq('user_id', deleteId)
+
   // Supprimer le compte source
-  await s.from('users').delete().eq('id', deleteId)
-  await supabase.auth.admin.deleteUser(deleteId)
+  const { error: deletePublicError } = await s.from('users').delete().eq('id', deleteId)
+  if (deletePublicError) {
+    console.error('[mergeAccounts] échec suppression public.users:', deletePublicError)
+    return { ok: false, error: 'Erreur lors de la suppression du compte.' }
+  }
+
+  const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(deleteId)
+  if (deleteAuthError) {
+    console.error('[mergeAccounts] échec deleteUser auth:', deleteAuthError)
+    return { ok: false, error: 'Erreur lors de la suppression du compte auth.' }
+  }
 
   // Publier les évaluations en attente sur le compte conservé (maintenant qu'il a le RPPS)
   await s.from('evaluations').update({ statut: 'publiee' }).eq('user_id', keepId).eq('statut', 'en_attente_psc')
