@@ -100,6 +100,8 @@ export async function mergeAccounts(
 
   // Supprimer les dépendances du compte supprimé (FK sans CASCADE)
   await s.from('users_notification_preferences').delete().eq('user_id', deleteId)
+  await s.from('users_preferences').delete().eq('user_id', deleteId)
+  await s.from('editeur_claims').delete().eq('user_id', deleteId)
   await s.from('solutions_favorites').delete().eq('user_id', deleteId)
 
   // Supprimer le compte source
