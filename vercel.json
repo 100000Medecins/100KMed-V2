@@ -30,11 +30,11 @@
     },
     {
       "path": "/api/cron/publier-articles-programmes",
-      "schedule": "0 * * * *"
+      "schedule": "0 7 * * *"
     },
     {
       "path": "/api/cron/envoyer-campagnes-email",
-      "schedule": "0 * * * *"
+      "schedule": "30 9 * * *"
     }
   ]
 }
