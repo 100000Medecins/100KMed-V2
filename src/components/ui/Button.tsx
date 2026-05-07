@@ -8,6 +8,7 @@ interface ButtonProps {
   href?: string;
   className?: string;
   onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -30,6 +31,7 @@ export default function Button({
   href,
   className = "",
   onClick,
+  type = "submit",
 }: ButtonProps) {
   const baseClasses =
     "inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm transition-all duration-300 cursor-pointer";
@@ -45,7 +47,7 @@ export default function Button({
   }
 
   return (
-    <button onClick={onClick} className={classes}>
+    <button type={type} onClick={onClick} className={classes}>
       {children}
       {showArrow && <ArrowRight className="w-4 h-4" />}
     </button>

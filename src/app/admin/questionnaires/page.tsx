@@ -12,7 +12,7 @@ export default async function QuestionnairesAdminPage({
 
   const slugLabels: Record<string, string> = {
     default: 'Logiciels métier (défaut)',
-    'agenda-medical': 'Agenda médical',
+    'agendas-medicaux': 'Agenda médical',
     'intelligence-artificielle-medecine': 'IA Scribes',
     'ia-documentaires': 'IA Documentaires',
   }

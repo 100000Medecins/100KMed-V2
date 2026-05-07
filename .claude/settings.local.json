@@ -56,7 +56,21 @@
       "Bash(gh auth:*)",
       "Bash(git -C \"c:/Users/david/Documents/100 000 Médecins/Claude IA/Frontend-V2-main\" stash list)",
       "Bash(dir)",
-      "WebSearch"
+      "WebSearch",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.claude\\\\\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:APPDATA\\\\Claude\\\\\" -ErrorAction SilentlyContinue | Select-Object Name)",
+      "PowerShell(npx -y @supabase/mcp-server-supabase --db-url \"postgresql://claude_readonly:Pay3taCotis@db.qnspmlskzgqrqtuvsbuo.supabase.co:5432/postgres?sslmode=require\" --read-only 2>&1)",
+      "PowerShell(npx -y @supabase/mcp-server-supabase --help 2>&1)",
+      "PowerShell(npx -y @modelcontextprotocol/server-postgres --version 2>&1)",
+      "PowerShell(npx -y @modelcontextprotocol/server-postgres \"postgresql://claude_readonly:Pay3taCotis@db.qnspmlskzgqrqtuvsbuo.supabase.co:5432/postgres?sslmode=require\" 2>&1)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\david\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-david-Documents-100000Medecins-websiteV2\\\\faf53541-dc5a-4e32-8457-f0959f18f972\\\\tasks\\\\bz4i0g16s.output\" -Wait -Tail 20 2>&1)",
+      "PowerShell(claude mcp list 2>&1)",
+      "PowerShell(head -5)",
+      "PowerShell(claude config list 2>&1)",
+      "mcp__supabase__query",
+      "PowerShell(claude mcp list --json 2>&1)",
+      "PowerShell(head -50)",
+      "PowerShell(claude mcp get supabase 2>&1)",
+      "PowerShell(claude mcp remove \"supabase\" -s user 2>&1)"
     ]
   }
 }

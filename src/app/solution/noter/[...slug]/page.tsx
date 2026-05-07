@@ -193,7 +193,7 @@ const SECTIONS_DETAILLEES: DetailSection[] = [
 // ─── Questionnaires spécifiques par catégorie ────────────────────────────────
 
 const SECTIONS_PAR_CATEGORIE: Record<string, DetailSection[]> = {
-  'agenda-medical': [
+  'agendas-medicaux': [
     {
       titre: 'Prise de rendez-vous',
       introduction: 'Comment évalueriez-vous les fonctionnalités de prise de rendez-vous :',
@@ -1144,7 +1144,7 @@ export default function NoterPage({ params }: PageProps) {
                       setDetailScores(next)
                       saveDraft(scores, next)
                     }}
-                    defaultOpen={idx === 0}
+                    defaultOpen={true}
                   />
                 ))}
               </div>

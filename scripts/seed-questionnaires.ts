@@ -374,7 +374,7 @@ async function main() {
   console.log(DRY ? '🔍 Mode dry-run\n' : '🚀 Seed en cours...\n')
 
   await seedQuestionnaire('default', SECTIONS_DEFAULT)
-  await seedQuestionnaire('agenda-medical', SECTIONS_AGENDA)
+  await seedQuestionnaire('agendas-medicaux', SECTIONS_AGENDA)
   await seedQuestionnaire('intelligence-artificielle-medecine', SECTIONS_IA_SCRIBES)
   await seedQuestionnaire('ia-documentaires', SECTIONS_IA_DOCUMENTAIRES)
 

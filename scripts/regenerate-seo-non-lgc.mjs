@@ -2,7 +2,7 @@
  * Régénère le SEO (meta title + description) pour toutes les solutions
  * dont la catégorie n'est PAS "logiciel métier" / "LGC".
  * Usage : node scripts/regenerate-seo-non-lgc.mjs
- * Options : --dry-run (affiche sans sauvegarder), --categorie "agenda-medical" (une seule catégorie)
+ * Options : --dry-run (affiche sans sauvegarder), --categorie "agendas-medicaux" (une seule catégorie)
  */
 
 import { createClient } from '@supabase/supabase-js'

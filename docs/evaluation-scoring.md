@@ -84,7 +84,7 @@ const sectionsDetail = sectionsDB.length > 0
 | Catégorie | Préfixe des clés | Source (vérifié 2026-05-06) |
 |---|---|---|
 | Logiciels-métier | `detail_*` | DB (`categorie_slug = 'default'`) — 10 sections, 54 questions |
-| Agenda médical | `agenda_*` | DB (`categorie_slug = 'agenda-medical'`) — 7 sections, 25 questions |
+| Agenda médical | `agenda_*` | DB (`categorie_slug = 'agendas-medicaux'`) — 7 sections, 25 questions |
 | IA documentaires | `docai_*` | DB (`categorie_slug = 'ia-documentaires'`) |
 | IA scribes | `ias_*` | DB (`categorie_slug = 'intelligence-artificielle-medecine'`) |
 

@@ -24,6 +24,33 @@
 ### TODO — Mises à jour
 - Marqué terminé : Faire le mapping sous-critères → critères principaux pour IA et agendas ✅
 
+### Fix — Page profil (mon-compte/profil)
+- Changement email et mot de passe : remplacement des `<form>` par des `<div>` + `onClick` explicite sur les boutons
+- Corrige la régression où "Confirmer" ne déclenchait rien (submit intercepté par un formulaire parent)
+- Ajout prop `type` sur le composant `Button` (défaut `"submit"`) pour contrôle explicite
+
+### Fix — Admin : slug catégorie non modifiable après création
+- Champ slug en `readOnly` sur le formulaire d'édition de catégorie
+- Visuel désactivé + label "non modifiable après création"
+
+### Fix — Notation agenda : mauvais questionnaire + sections repliées
+- Clé `agenda-medical` → `agendas-medicaux` dans `SECTIONS_PAR_CATEGORIE` (page de notation)
+- `defaultOpen={true}` sur toutes les sections détaillées (plus seulement la première)
+
+### Fix — Slug `agenda-medical` → `agendas-medicaux` (propagation complète)
+- `src/lib/data.ts` (nav), scripts email (`bake-logo`, `regenerate-seo`, `save-lancement`, `seed-questionnaires`, `send-test-email`), page admin questionnaires
+- Vérification BDD via MCP Supabase : `categories` et `questionnaire_sections` à jour
+
+### Outillage — MCP Supabase opérationnel
+- Connexion MCP Supabase en lecture seule configurée dans `.claude/settings.local.json`
+
+### TODO — Mises à jour (session 2)
+- Marqué terminé : Configurer le MCP Supabase ✅
+- Marqué terminé : Changement d'email non fonctionnel ✅
+- Marqué terminé : Questionnaires de notation repliés par défaut ✅
+- Marqué terminé : Évaluation agenda — mauvais questionnaire affiché ✅
+- Marqué terminé : URGENT — Vérifier les occurrences de l'ancien slug agenda-medical en BDD ✅
+
 ---
 
 ## [2026-05-05] — Automatisation emails études & thèses + validation admin

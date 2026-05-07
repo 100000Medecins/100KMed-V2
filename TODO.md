@@ -32,12 +32,19 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~La page publique de notation les ignore complètement et lit les constantes hardcodées~~
 - ~~À corriger : faire lire la page de notation depuis la BDD (avec fallback hardcodé si BDD vide)~~
 
+### ~~URGENT — À faire dès que le MCP Supabase est réparé~~
+
+#### ~~Vérifier les occurrences de l'ancien slug `agenda-medical` en BDD~~ [OK] Fait 2026-05-07
+- ~~Suite au renommage `agenda-medical` → `agendas-medicaux` (2026-05-07), vérifier qu'aucune table ne contient encore l'ancien slug~~
+- ~~Tables à inspecter : `questionnaire_sections` (déjà migré via SQL), `criteres`, `solutions`, `evaluations`, `resultats`, toute table avec colonne `categorie_slug` ou `slug`~~
+- ~~Vérification MCP : `categories.slug` = `agendas-medicaux`, `questionnaire_sections.categorie_slug` = `agendas-medicaux` ✅~~
+
 ### Outillage
 
-#### Configurer le MCP Supabase en lecture seule dans Claude Code
-- Permet à Claude d'interroger directement la DB sans allers-retours CSV
-- Configurer en lecture seule uniquement — les écritures restent via SQL présenté dans le chat
-- Voir doc officielle Supabase MCP
+#### ~~Configurer le MCP Supabase en lecture seule dans Claude Code~~ [OK] Fait 2026-05-07
+- ~~Permet à Claude d'interroger directement la DB sans allers-retours CSV~~
+- ~~Configurer en lecture seule uniquement — les écritures restent via SQL présenté dans le chat~~
+- ~~Voir doc officielle Supabase MCP~~
 
 ### Sécurité
 
@@ -65,6 +72,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
 ### Bugs à corriger
+
+#### ~~Changement d'email non fonctionnel (page mon-compte/profil)~~ [OK] Fait 2026-05-07
+- ~~Sur la page profil, cliquer "Changer email" affiche un champ, mais valider ne fait rien — l'email ne change pas~~
+- ~~Probablement une régression sur l'appel Supabase Auth (updateUser) suite à une modif récente~~
+
+#### ~~Questionnaires de notation repliés par défaut — risque de sections non remplies~~ [OK] Fait 2026-05-07
+- ~~Les sections sont repliées à l'ouverture, l'utilisateur peut cliquer "Suivant" sans répondre à toutes les questions~~
+- ~~Dérouler toutes les sections par défaut, ou bloquer "Suivant" si des questions obligatoires sont sans réponse~~
+
+#### ~~Évaluation agenda — mauvais questionnaire affiché (logiciel métier au lieu d'agenda)~~ [OK] Fait 2026-05-07
+- ~~Sur la page de notation d'un agenda, c'est le questionnaire "logiciel métier" qui s'affiche~~
+- ~~Vérifier le mapping catégorie → questionnaire dans la page de notation~~
 
 #### Architecture email PSC — email synthétique vs réel *(à discuter)*
 - `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`

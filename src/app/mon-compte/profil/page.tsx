@@ -226,8 +226,9 @@ export default function ProfilPage() {
     }
   }
 
-  const handleEmailChange = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleEmailChange = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault()
+    if (!newEmail) return
     setEmailError(null)
     setSuccess(null)
     setEmailSubmitting(true)
@@ -247,8 +248,8 @@ export default function ProfilPage() {
     }
   }
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handlePasswordChange = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault()
     setPasswordError(null)
     setSuccess(null)
 
@@ -613,15 +614,15 @@ export default function ProfilPage() {
               )}
             </div>
             {showEmailForm && (
-              <form onSubmit={handleEmailChange} className="space-y-3">
+              <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Nouvel email</label>
                   <input
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    required
                     autoFocus
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleEmailChange() }}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                     placeholder="nouveau@email.com"
                   />
@@ -635,11 +636,16 @@ export default function ProfilPage() {
                   >
                     Annuler
                   </button>
-                  <Button variant="primary" className={emailSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                  <Button
+                    variant="primary"
+                    type="button"
+                    onClick={() => handleEmailChange()}
+                    className={emailSubmitting ? 'opacity-50 pointer-events-none' : ''}
+                  >
                     {emailSubmitting ? 'Envoi...' : 'Confirmer'}
                   </Button>
                 </div>
-              </form>
+              </div>
             )}
           </div>
 
@@ -707,14 +713,13 @@ export default function ProfilPage() {
                   )}
                 </div>
               ) : (
-                <form onSubmit={handlePasswordChange} className="space-y-3">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe actuel</label>
                     <input
                       ref={currentPasswordRef}
                       type="password"
                       autoComplete="current-password"
-                      required
                       autoFocus
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
                       placeholder="••••••••"
@@ -772,11 +777,16 @@ export default function ProfilPage() {
                     >
                       Annuler
                     </button>
-                    <Button variant="primary" className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}>
+                    <Button
+                      variant="primary"
+                      type="button"
+                      onClick={() => handlePasswordChange()}
+                      className={passwordSubmitting ? 'opacity-50 pointer-events-none' : ''}
+                    >
                       {passwordSubmitting ? 'Mise à jour...' : 'Confirmer'}
                     </Button>
                   </div>
-                </form>
+                </div>
               )
             )}
           </div>

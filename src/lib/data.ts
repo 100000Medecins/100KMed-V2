@@ -3,7 +3,7 @@ import type { NavItem, SoftwareItem, PartnerLogo, MissionItem, VideoItem } from 
 export const navItems: NavItem[] = [
   { label: "Qui sommes-nous ?", href: "/qui-sommes-nous" },
   { label: "Comparatif LGC", href: "/solutions" },
-  { label: "Comparatif Agenda", href: "/solutions/agenda-medical" },
+  { label: "Comparatif Agenda", href: "/solutions/agendas-medicaux" },
   { label: "Comparatif IA", href: "/solutions/intelligence-artificielle-medecine" },
 ];
 

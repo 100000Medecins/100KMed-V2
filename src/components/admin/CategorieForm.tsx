@@ -94,14 +94,18 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
       </div>
 
       <div>
-        <label htmlFor="slug" className={labelClass}>Slug (URL)</label>
+        <label htmlFor="slug" className={labelClass}>
+          Slug (URL)
+          {categorie && <span className="ml-2 text-xs text-amber-600 font-normal">— non modifiable après création</span>}
+        </label>
         <input
           id="slug"
           type="text"
           name="slug"
           defaultValue={categorie?.slug ?? ''}
           placeholder="Généré automatiquement si vide"
-          className={inputClass}
+          readOnly={!!categorie}
+          className={`${inputClass} ${categorie ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
         />
       </div>
 

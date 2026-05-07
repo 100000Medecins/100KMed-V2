@@ -133,7 +133,7 @@ const html = `<!DOCTYPE html>
           <td style="padding:26px 28px;" valign="middle" width="58%">
             <p style="margin:0 0 6px;font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;">📅 Agenda médical</p>
             <p style="margin:0 0 14px;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.65;">Doctolib, Maiia, Médistory… Quel agenda s'adapte le mieux à votre pratique ? Délais, ergonomie, tarifs — comparez les avis de vos confrères et faites le bon choix.</p>
-            <a href="${S}/solutions/agenda-medical" style="display:inline-block;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">Explorer les agendas →</a>
+            <a href="${S}/solutions/agendas-medicaux" style="display:inline-block;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">Explorer les agendas →</a>
           </td>
           <!-- Image bottom-right comme sur /comparatifs -->
           <td style="text-align:right;vertical-align:bottom;padding:0 0 10px 0;width:42%;">
