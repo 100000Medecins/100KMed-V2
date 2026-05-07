@@ -97,7 +97,7 @@ export default function ProfilPage() {
           setSelectedAvatar(loadedAvatar)
           initialValuesRef.current = { nom: loadedNom, prenom: loadedPrenom, specialite: loadedSpecialite, modeExercice: loadedModeExercice, selectedAvatar: loadedAvatar }
 
-          const fromPsc = !!(data.rpps || user?.user_metadata?.provider === 'psc')
+          const fromPsc = !!data.rpps
           setIsFromPsc(fromPsc)
           // Utilisateur PSC sans mot de passe = aucune identité "email" dans Supabase
           if (fromPsc) {
