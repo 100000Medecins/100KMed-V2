@@ -48,7 +48,7 @@ export async function GET(request: Request) {
 
     if (user) {
       if (type === 'email_change' && user.email) {
-        await supabase.from('users').update({ email: user.email }).eq('id', user.id)
+        await supabase.from('users').update({ email: user.email, contact_email: user.email }).eq('id', user.id)
       }
 
       const { data: profile } = await supabase
