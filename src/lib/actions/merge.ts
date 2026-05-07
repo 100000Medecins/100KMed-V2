@@ -98,6 +98,9 @@ export async function mergeAccounts(
     await s.from('users').update(rppsUpdate).eq('id', keepId)
   }
 
+  // Migrer les questionnaires de thèse créés par le compte supprimé
+  await s.from('questionnaires_these').update({ created_by: keepId }).eq('created_by', deleteId)
+
   // Supprimer les dépendances du compte supprimé (FK sans CASCADE)
   await s.from('users_notification_preferences').delete().eq('user_id', deleteId)
   await s.from('users_preferences').delete().eq('user_id', deleteId)
