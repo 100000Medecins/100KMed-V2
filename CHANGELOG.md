@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-05-09] — Optimisation bundle client (framer-motion)
+
+### Perf — Analyse bundle + suppression framer-motion
+- Installé `@next/bundle-analyzer` pour cartographier les chunks JS (client, serveur, middleware)
+- Diagnostic : framer-motion (250 modules, chunk ~8342.js) chargé sur la homepage uniquement pour les animations flottantes du Hero
+- Remplacement de `framer-motion` par des animations CSS pures (`@keyframes hero-float` + CSS custom properties inline)
+- `HeroIllustration.tsx` devient un Server Component (suppression de `'use client'`)
+- `framer-motion` désinstallé du `package.json`
+- Autres findings analysés et classés sans action requise : `ua-parser-js` (interne Next.js), `@anthropic-ai/sdk` (isolé aux routes API), tiptap (isolé aux pages `/admin/*`), pagination avis déjà serveur-side (10/page via API)
+- Doc détaillée : `docs/optimisation-bundlecode-05-2026.md`
+
+---
+
+## [2026-05-09] — Fix note rédaction homepage
+
+### Fix — Note rédaction affichée 0.1 sur la homepage (Premiocare et autres)
+- `getNotesRedacGlobales` (homepage) calculait une moyenne brute de tous les `note_redac_base5` dans `resultats`, y compris les critères non-applicables stockés à `-0.50`
+- Résultat : Premiocare affichait 0.1 en homepage, 4.2 sur la fiche et en listing — incohérence visible
+- Fix : `getNotesRedacGlobales` lit désormais `solutions.evaluation_redac_note` (colonne stockée, maintenue par trigger), aligné sur `getNotesGlobalesRedac` utilisé en listing
+
+### TODO — Mises à jour
+- Marqué terminé : Note rédaction fausse homepage ✅
+- Marqué terminé : Alléger les pages du site (bundle / code inspection) ✅
+
+---
+
 ## [2026-05-08] — Fix auth email change + fusion PSC + suppressions de compte
 
 ### Fix — Template email "Change email address" (Supabase dashboard)
