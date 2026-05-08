@@ -54,16 +54,16 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
   const solutionIds = solutions.map((s) => s.id)
 
   // Fetch en parallèle
+  const needsRedacNotes = tri !== 'nom'
+  const needsUserNotes = tri === 'note_utilisateurs'
+  const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
+
   const [tags, criteresMajeurs, notesRedac, nbNotesMap] = await Promise.all([
     getTags(categorie.id),
     getCriteresMajeurs(categorie.id),
-    getNotesGlobalesRedac(solutionIds),
+    needsRedacNotes ? getNotesGlobalesRedac(solutionIds) : Promise.resolve({} as Record<string, number>),
     getNbNotesUtilisateurs(solutionIds),
   ])
-
-  // Notes selon le tri demandé
-  const needsUserNotes = tri === 'note_utilisateurs'
-  const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
 
   const [notesUtilisateurs, notesCritere] = await Promise.all([
     needsUserNotes ? getNotesUtilisateursGlobales(solutionIds) : Promise.resolve({} as Record<string, number>),

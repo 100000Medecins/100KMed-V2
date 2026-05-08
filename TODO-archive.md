@@ -5,6 +5,13 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-08**
+- [OK] 2026-05-08 : Audit BDD complet (Nettoyage)
+  - Corrections critiques et importantes appliquées (sécurité RLS, intégrité FK, index, types)
+  - Rapport détaillé : `docs/audit_bdd_05_2026.md` — Schéma : `docs/schema_bdd_05_2026.md`
+- [OK] 2026-05-08 : Architecture email PSC — email synthétique vs réel (Bugs à corriger)
+  - Décision : ne rien changer tant que le fix `getUserById` avant `generateLink` couvre tous les cas
+
 **2026-05-07**
 - [OK] 2026-05-07 : URGENT — Vérifier les occurrences de l'ancien slug `agenda-medical` en BDD (URGENT)
   - Vérification MCP Supabase : `categories.slug` et `questionnaire_sections.categorie_slug` = `agendas-medicaux` ✅

@@ -37,6 +37,33 @@
 - Marqué terminé : Fusion PSC mauvais compte conservé ✅
 - Marqué terminé : Suppression compte — crash Server Components ✅
 
+### Fix — Crash sanitizeHtml(null) sur pages IA / Agenda
+- `sanitizeHtml()` appelé avec `null` sur certaines fiches (champs éditoriaux vides)
+- Fix : guard `|| ''` avant chaque appel dans les composants concernés
+
+### BDD — Audit complet (3 passes) + corrections
+- Policy `etudes_cliniques` INSERT restreinte à `role='digital_medical_hub'` (tout authentifié pouvait soumettre)
+- Trigger `update_editeurs_updated_at` ajouté (colonne `updated_at` créée sans trigger)
+- Colonnes supprimées : `users.age` (doublon inutilisé), `solutions.date_fondation` (TEXT inutilisé)
+- `solutions.updated_at` + trigger ajoutés ; policy publique `email_templates` supprimée
+- FK + index sur `solutions_utilisees.solution_precedente_id`
+- `database.ts` régénéré post-migrations ; `CLAUDE.md` note stale corrigée (editeurs.updated_at)
+- Docs : `audit_bdd_05_2026.md` (v4 final), `schema_bdd_05_2026.md`, `avatars_migration_plan.md`
+
+### Nettoyage — Code aligné sur les colonnes BDD supprimées
+- `solutions.ts` : suppression branche `meilleure_note` (référençait `date_publication` supprimée)
+- `admin-solutions.ts`, `SolutionForm.tsx`, `SolutionWithSearch.tsx` : suppression `date_lancement`
+- `users.ts` : `getTrancheAge` — `parseInt(annee_naissance)` → accès direct INTEGER
+
+### Perf — Listing catégorie : appel getNotesGlobalesRedac conditionnel
+- En mode alphabétique (`tri === 'nom'`), la requête était appelée inutilement
+- Fix : `needsRedacNotes = tri !== 'nom'` dans `[idCategorie]/page.tsx`
+
+### TODO — Mises à jour (session 2)
+- Archivé : Audit BDD complet ✅
+- Archivé : Architecture email PSC (décision validée) ✅
+- Ajouté : Plan migration avatars (`docs/avatars_migration_plan.md`)
+
 ---
 
 ## [2026-05-07] — Fix système de notation + comparateur détaillé toutes catégories

@@ -192,16 +192,16 @@ getNotesRedac(solutionId)
 
 > Pour l'historique complet de l'audit de confusion du 2026-04-26, voir `docs/nettoyageBDD.md`.
 
-## Incohérences code (état 2026-04-27)
+## Incohérences code (état 2026-05-08)
 
-| # | Problème | Impact | Priorité |
-|---|----------|--------|----------|
-| 1 | `getNotesUtilisateursGlobales()` lit tous les `resultats` sans filtre `parent_id IS NULL` | Homepage + listing affichent une note gonflée (sous-critères inclus) | 🔴 Corrigé 2026-04-27 |
-| 2 | `getAverageNoteUtilisateurs()` lit `evaluations.moyenne_utilisateur` au lieu de `resultats` | Page détail diverge du listing | 🔴 Corrigé 2026-04-27 |
-| 3 | Comparatif `/comparer` : requête `resultats` sans filtre | Affiche les lignes sous-critères dans le tableau | 🟡 Corrigé 2026-04-27 |
-| 4 | `solutions.evaluation_redac_note` écrasé à NULL au save admin | Notes rédaction disparaissent du listing | 🟡 À corriger |
-| 5 | Listing : affiche `note_redac` en mode alpha, `note_utilisateurs` en mode tri | Confusion | 🟡 À corriger |
-| 6 | Trigger `trigger_update_evaluation_redac_note` absent des migrations SQL | Perte si projet recréé | 🟡 À ajouter |
+| # | Problème | Impact | Statut |
+|---|----------|--------|--------|
+| 1 | `getNotesUtilisateursGlobales()` lit tous les `resultats` sans filtre `parent_id IS NULL` | Homepage + listing affichent une note gonflée (sous-critères inclus) | ✅ Corrigé 2026-04-27 |
+| 2 | `getAverageNoteUtilisateurs()` lit `evaluations.moyenne_utilisateur` au lieu de `resultats` | Page détail diverge du listing | ✅ Corrigé 2026-04-27 |
+| 3 | Comparatif `/comparer` : requête `resultats` sans filtre | Affiche les lignes sous-critères dans le tableau | ✅ Corrigé 2026-04-27 |
+| 4 | `solutions.evaluation_redac_note` écrasé à NULL au save admin | Notes rédaction disparaissent du listing | ✅ Inexistant — vérifié 2026-05-08 : `extractSolutionFromFormData` ne contient pas ce champ, BDD alignée (24/24) |
+| 5 | Listing : appel `getNotesGlobalesRedac` inutile en mode alpha + affichage `note_redac` en mode alpha | Requête DB inutile + confusion | ✅ Corrigé 2026-05-08 — `tri === 'nom'` → skip fetch + `displayNote = null` |
+| 6 | Trigger `trigger_update_evaluation_redac_note` absent des migrations SQL | Perte si projet recréé | ✅ Présent dans `005_trigger_evaluation_redac_note.sql` |
 
 ---
 
@@ -258,10 +258,14 @@ La migration SQL est terminée depuis le 2026-04-12. Il ne reste que des correct
 - `getAverageNoteUtilisateurs()` : source du `note` basculée vers `resultats` (la distribution reste depuis `evaluations`)
 - Page comparatif `/comparer` : filtre ajouté sur `resultats` pour n'afficher que les critères majeurs
 
-### Reste à faire (Phase 2 suite)
+### Corrigé le 2026-05-08
 
-- Listing : ne pas afficher de note en mode alphabétique (`tri === 'nom'` → note = null)
-- Page catégorie : tri par défaut = `note_utilisateurs` au lieu de `nom`
-- Admin `extractSolutionFromFormData` : supprimer la ligne qui écrit `evaluation_redac_note = null`
-- Ajouter le DDL du trigger `trigger_update_evaluation_redac_note` dans une migration SQL
-- Supprimer `evaluations_firebase_backup` le 2026-06-26
+- Listing : `getNotesGlobalesRedac` conditionné sur `tri !== 'nom'` (perf) — `page.tsx`
+- `SolutionList` : `displayNote = null` quand `tri === 'nom'` (déjà en place)
+- Tri par défaut `note_utilisateurs` (déjà en place)
+- `extractSolutionFromFormData` : ne contient pas `evaluation_redac_note` (bug inexistant)
+- Trigger `005_trigger_evaluation_redac_note.sql` : déjà présent dans les migrations
+
+### Reste à faire
+
+- Supprimer `evaluations_firebase_backup` le **2026-06-26** (2 mois après migration, si aucune régression)

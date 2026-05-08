@@ -15,10 +15,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Suppression de compte (avec et sans suppression des avis)
 - Suppression admin d'un utilisateur
 
-#### Consolidation base de données — héritage Firebase
-
-> ✅ **Phase 1 SQL terminée** (2026-04-12) : 595 évaluations Firebase converties 0-10→0-5, sous-critères `detail_*` ajoutés, `resultats` recalculés. Backup `evaluations_firebase_backup` créé le 2026-04-26. Voir `docs/database-notes.md` et `docs/nettoyageBDD.md` pour le détail.
-
 #### Alléger les pages du site (bundle / code inspection)
 - Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
 - Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
@@ -49,13 +45,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
 ### Bugs à corriger
-
-~~#### Architecture email PSC — email synthétique vs réel *(à discuter)*~~
-~~- `auth.users.email` reste l'email synthétique `psc-RPPS@psc.sante.fr` ; le vrai email est dans `public.users.contact_email`~~
-~~- Option possible : mettre à jour `auth.users.email` via admin API quand PSC fournit un vrai email (éviterait le `getUserById` avant `generateLink`)~~
-~~- Risque si l'email réel est déjà pris par un autre compte (nécessiterait un flow de fusion dédié)~~
-~~- **Décision** : ne rien changer tant que le fix actuel (`getUserById` avant `generateLink`) couvre tous les cas~~
-[OK] Fait 2026-05-08
 
 ### UX / UI
 
@@ -107,7 +96,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Créer les catégories : Télétransmission, Téléconsultation, Téléexpertise
 
 ### Avatars
-- Changer les avatars utilisateurs
+- Remplacer les avatars utilisateurs — **coupler obligatoirement avec la migration technique** (voir `docs/avatars_migration_plan.md`)
+- Actuellement : `users.portrait` stocke l'URL dénormalisée (copie) → changer les images sans migration = UPDATE massif sur 5800+ utilisateurs
+- Plan en 4 étapes : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales

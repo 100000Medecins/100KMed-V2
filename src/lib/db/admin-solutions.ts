@@ -59,7 +59,6 @@ export async function getSolutionByIdAdmin(id: string) {
     categorie_id: typedData.categorie?.id ?? null,
     editeur_id: raw.id_editeur as string | null,
     website_url: raw.website as string | null,
-    date_lancement: raw.lancement as string | null,
     meta_title: ((raw.meta as Record<string, string | null>) ?? {}).title ?? null,
     meta_description: ((raw.meta as Record<string, string | null>) ?? {}).description ?? null,
     meta_canonical: ((raw.meta as Record<string, string | null>) ?? {}).canonical ?? null,

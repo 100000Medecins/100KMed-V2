@@ -178,12 +178,7 @@ export async function getSolutionsByCategorieAndType(
     .select(`*, editeur:editeurs(*), categorie:categories!inner(*)`)
     .eq('categorie.id', categorieId)
 
-  // Le "type" dans le backend legacy sert à trier différemment
-  if (type === 'meilleure_note') {
-    query = query.order('date_publication', { ascending: false })
-  } else {
-    query = query.order('nom', { ascending: true })
-  }
+  query = query.order('nom', { ascending: true })
 
   query = query.limit(limit)
 

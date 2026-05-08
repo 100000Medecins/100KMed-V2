@@ -363,7 +363,7 @@ export type Database = {
           contact_pays: string | null
           contact_telephone: string | null
           contact_ville: string | null
-          creation: string | null
+          created_at: string | null
           culture: string | null
           description: string | null
           gouvernance: string | null
@@ -375,6 +375,7 @@ export type Database = {
           nom: string | null
           nom_commercial: string | null
           siret: string | null
+          updated_at: string | null
           user_id: string | null
           website: string | null
         }
@@ -385,7 +386,7 @@ export type Database = {
           contact_pays?: string | null
           contact_telephone?: string | null
           contact_ville?: string | null
-          creation?: string | null
+          created_at?: string | null
           culture?: string | null
           description?: string | null
           gouvernance?: string | null
@@ -397,6 +398,7 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
+          updated_at?: string | null
           user_id?: string | null
           website?: string | null
         }
@@ -407,7 +409,7 @@ export type Database = {
           contact_pays?: string | null
           contact_telephone?: string | null
           contact_ville?: string | null
-          creation?: string | null
+          created_at?: string | null
           culture?: string | null
           description?: string | null
           gouvernance?: string | null
@@ -419,6 +421,7 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
+          updated_at?: string | null
           user_id?: string | null
           website?: string | null
         }
@@ -445,6 +448,54 @@ export type Database = {
         }
         Relationships: []
       }
+      emails_campagnes: {
+        Row: {
+          created_at: string
+          envoye_a: number | null
+          id: string
+          lien: string | null
+          ref_id: string
+          scheduled_at: string | null
+          sent_at: string | null
+          specialites_cibles: string[]
+          statut: string
+          texte_promoteur: string | null
+          titre: string
+          total: number | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          envoye_a?: number | null
+          id?: string
+          lien?: string | null
+          ref_id: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          specialites_cibles?: string[]
+          statut?: string
+          texte_promoteur?: string | null
+          titre: string
+          total?: number | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          envoye_a?: number | null
+          id?: string
+          lien?: string | null
+          ref_id?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          specialites_cibles?: string[]
+          statut?: string
+          texte_promoteur?: string | null
+          titre?: string
+          total?: number | null
+          type?: string
+        }
+        Relationships: []
+      }
       etudes_cliniques: {
         Row: {
           created_at: string | null
@@ -455,6 +506,8 @@ export type Database = {
           id: string
           images: Json | null
           lien: string | null
+          specialites_cibles: string[] | null
+          statut: string
           titre: string
           updated_at: string | null
         }
@@ -467,6 +520,8 @@ export type Database = {
           id?: string
           images?: Json | null
           lien?: string | null
+          specialites_cibles?: string[] | null
+          statut?: string
           titre: string
           updated_at?: string | null
         }
@@ -479,6 +534,8 @@ export type Database = {
           id?: string
           images?: Json | null
           lien?: string | null
+          specialites_cibles?: string[] | null
+          statut?: string
           titre?: string
           updated_at?: string | null
         }
@@ -557,13 +614,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_evaluation_solution_utilisee"
-            columns: ["user_id", "solution_id"]
-            isOneToOne: true
-            referencedRelation: "solutions_utilisees"
-            referencedColumns: ["user_id", "solution_id"]
           },
           {
             foreignKeyName: "fk_evaluations_solution"
@@ -846,6 +896,7 @@ export type Database = {
           id: string
           image_url: string | null
           lien: string
+          specialites_cibles: string[] | null
           statut: string
           titre: string
           updated_at: string | null
@@ -858,6 +909,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           lien: string
+          specialites_cibles?: string[] | null
           statut?: string
           titre: string
           updated_at?: string | null
@@ -870,6 +922,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           lien?: string
+          specialites_cibles?: string[] | null
           statut?: string
           titre?: string
           updated_at?: string | null
@@ -965,22 +1018,17 @@ export type Database = {
       solutions: {
         Row: {
           actif: boolean | null
-          date_debut: string | null
-          date_fin: string | null
-          date_fondation: string | null
+          created_at: string | null
           date_maj: string | null
-          date_publication: string | null
           description: string | null
           duree_engagement: Json | null
           evaluation_redac_avis: string | null
           evaluation_redac_note: number | null
           evaluation_redac_points_faibles: string[] | null
           evaluation_redac_points_forts: string[] | null
-          fin_vie: string | null
           id: string
           id_categorie: string | null
           id_editeur: string | null
-          lancement: string | null
           logo_titre: string | null
           logo_url: string | null
           meta: Json | null
@@ -989,7 +1037,6 @@ export type Database = {
           nb_utilisateurs: Json | null
           nom: string
           pays_origine: string | null
-          prix_created: string | null
           prix_devise: string | null
           prix_duree_engagement_mois: number | null
           prix_frequence: string | null
@@ -1001,22 +1048,17 @@ export type Database = {
         }
         Insert: {
           actif?: boolean | null
-          date_debut?: string | null
-          date_fin?: string | null
-          date_fondation?: string | null
+          created_at?: string | null
           date_maj?: string | null
-          date_publication?: string | null
           description?: string | null
           duree_engagement?: Json | null
           evaluation_redac_avis?: string | null
           evaluation_redac_note?: number | null
           evaluation_redac_points_faibles?: string[] | null
           evaluation_redac_points_forts?: string[] | null
-          fin_vie?: string | null
           id?: string
           id_categorie?: string | null
           id_editeur?: string | null
-          lancement?: string | null
           logo_titre?: string | null
           logo_url?: string | null
           meta?: Json | null
@@ -1025,7 +1067,6 @@ export type Database = {
           nb_utilisateurs?: Json | null
           nom: string
           pays_origine?: string | null
-          prix_created?: string | null
           prix_devise?: string | null
           prix_duree_engagement_mois?: number | null
           prix_frequence?: string | null
@@ -1037,22 +1078,17 @@ export type Database = {
         }
         Update: {
           actif?: boolean | null
-          date_debut?: string | null
-          date_fin?: string | null
-          date_fondation?: string | null
+          created_at?: string | null
           date_maj?: string | null
-          date_publication?: string | null
           description?: string | null
           duree_engagement?: Json | null
           evaluation_redac_avis?: string | null
           evaluation_redac_note?: number | null
           evaluation_redac_points_faibles?: string[] | null
           evaluation_redac_points_forts?: string[] | null
-          fin_vie?: string | null
           id?: string
           id_categorie?: string | null
           id_editeur?: string | null
-          lancement?: string | null
           logo_titre?: string | null
           logo_url?: string | null
           meta?: Json | null
@@ -1061,7 +1097,6 @@ export type Database = {
           nb_utilisateurs?: Json | null
           nom?: string
           pays_origine?: string | null
-          prix_created?: string | null
           prix_devise?: string | null
           prix_duree_engagement_mois?: number | null
           prix_frequence?: string | null
@@ -1105,6 +1140,13 @@ export type Database = {
           id_solution?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_criteres_actifs_critere"
+            columns: ["id_critere"]
+            isOneToOne: false
+            referencedRelation: "criteres"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_criteres_actifs_solution"
             columns: ["id_solution"]
@@ -1215,6 +1257,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_solutions_tags_tag"
+            columns: ["id_tag"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_tags_solution"
             columns: ["id_solution"]
             isOneToOne: false
@@ -1255,6 +1304,13 @@ export type Database = {
           {
             foreignKeyName: "fk_utilisees_solution"
             columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_utilisees_solution_precedente"
+            columns: ["solution_precedente_id"]
             isOneToOne: false
             referencedRelation: "solutions"
             referencedColumns: ["id"]
@@ -1335,8 +1391,7 @@ export type Database = {
       }
       users: {
         Row: {
-          age: number | null
-          annee_naissance: string | null
+          annee_naissance: number | null
           contact_adresse: string | null
           contact_cp: string | null
           contact_email: string | null
@@ -1365,8 +1420,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          age?: number | null
-          annee_naissance?: string | null
+          annee_naissance?: number | null
           contact_adresse?: string | null
           contact_cp?: string | null
           contact_email?: string | null
@@ -1395,8 +1449,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          age?: number | null
-          annee_naissance?: string | null
+          annee_naissance?: number | null
           contact_adresse?: string | null
           contact_cp?: string | null
           contact_email?: string | null

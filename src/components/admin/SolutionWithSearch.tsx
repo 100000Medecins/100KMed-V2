@@ -14,7 +14,6 @@ type Solution = Database['public']['Tables']['solutions']['Row'] & {
   categorie_id?: string | null
   editeur_id?: string | null
   website_url?: string | null
-  date_lancement?: string | null
   meta_title?: string | null
   meta_description?: string | null
   meta_canonical?: string | null

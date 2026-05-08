@@ -84,7 +84,7 @@ Editorial text may contain HTML tags. Use `sanitizeHtml()` from `src/lib/sanitiz
 Some fields exist in code but not in the auto-generated DB types — use `as any` casts:
 - Tables `actualites` and `documents` are absent from `database.ts` types → `(supabase as any).from('actualites')`
 - `Actualite` and `DocumentRow` types in `models.ts` are typed as `any`
-- `solutions.updated_at` and `editeurs.updated_at` do not exist — don't use in queries
+- `editeurs.updated_at` and `solutions.updated_at` now exist (added 2026-05-08) — safe to use in queries
 - `solutions.prix` (JSONB) no longer exists — use `prix_ttc`, `prix_devise`, `prix_frequence`, `prix_duree_engagement_mois` columns instead
 - `tags.is_principale_fonctionnalite` was renamed to `is_tag_principal`
 - All `editeurs` string fields are `string | null` — always add `|| ''` or `?? undefined` when passing to HTML attributes

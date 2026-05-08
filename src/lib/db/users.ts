@@ -176,8 +176,8 @@ export async function isSolutionFavorite(solutionId: string, userId: string) {
 export function getTrancheAge(user: User): string | null {
   if (!user.annee_naissance) return null
 
-  const annee = parseInt(user.annee_naissance, 10)
-  if (isNaN(annee)) return null
+  const annee = user.annee_naissance
+  if (!annee) return null
 
   const age = new Date().getFullYear() - annee
 

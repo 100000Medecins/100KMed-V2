@@ -70,7 +70,13 @@
       "PowerShell(claude mcp list --json 2>&1)",
       "PowerShell(head -50)",
       "PowerShell(claude mcp get supabase 2>&1)",
-      "PowerShell(claude mcp remove \"supabase\" -s user 2>&1)"
+      "PowerShell(claude mcp remove \"supabase\" -s user 2>&1)",
+      "PowerShell(Resolve-DnsName db.qnspmlskzgqrqtuvsbuo.supabase.co 2>&1)",
+      "PowerShell(Resolve-DnsName aws-0-eu-west-1.pooler.supabase.com 2>&1)",
+      "PowerShell(Resolve-DnsName aws-1-eu-west-1.pooler.supabase.com 2>&1)",
+      "PowerShell(claude mcp add supabase -s user --command \"npx\" -- \"--yes\" \"@modelcontextprotocol/server-postgres\" \"postgresql://claude_readonly.qnspmlskzgqrqtuvsbuo:Pay3taCotis@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require\" 2>&1)",
+      "PowerShell(claude mcp add --help 2>&1)",
+      "PowerShell(claude mcp add supabase -s user -- npx \"--yes\" \"@modelcontextprotocol/server-postgres\" \"postgresql://claude_readonly.qnspmlskzgqrqtuvsbuo:Pay3taCotis@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require\" 2>&1)"
     ]
   }
 }
