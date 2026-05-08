@@ -5,29 +5,31 @@
 
 ---
 
-## [2026-05-09] — Optimisation bundle client (framer-motion)
+## [2026-05-09] — Fix note rédaction homepage + bundle + sécurité deps
+
+### Fix — Note rédaction affichée 0.1 sur la homepage
+- `getNotesRedacGlobales` calculait une moyenne brute de tous les `note_redac_base5` dans `resultats`, y compris les critères N/A stockés à `-0.50`
+- Résultat : Premiocare affichait 0.1 en homepage, 4.2 sur sa fiche et en listing
+- Fix : lit `solutions.evaluation_redac_note` (colonne stockée, maintenue par trigger), aligné sur `getNotesGlobalesRedac` utilisé en listing
 
 ### Perf — Analyse bundle + suppression framer-motion
-- Installé `@next/bundle-analyzer` pour cartographier les chunks JS (client, serveur, middleware)
-- Diagnostic : framer-motion (250 modules, chunk ~8342.js) chargé sur la homepage uniquement pour les animations flottantes du Hero
-- Remplacement de `framer-motion` par des animations CSS pures (`@keyframes hero-float` + CSS custom properties inline)
-- `HeroIllustration.tsx` devient un Server Component (suppression de `'use client'`)
-- `framer-motion` désinstallé du `package.json`
-- Autres findings analysés et classés sans action requise : `ua-parser-js` (interne Next.js), `@anthropic-ai/sdk` (isolé aux routes API), tiptap (isolé aux pages `/admin/*`), pagination avis déjà serveur-side (10/page via API)
-- Doc détaillée : `docs/optimisation-bundlecode-05-2026.md`
+- `@next/bundle-analyzer` installé pour cartographier les chunks JS (client/serveur/middleware)
+- Diagnostic : framer-motion (250 modules, chunk ~8342.js) chargé pour les animations Hero uniquement
+- Remplacement par animations CSS pures (`@keyframes hero-float` + CSS custom properties inline)
+- `HeroIllustration.tsx` devient Server Component (suppression `'use client'`)
+- `framer-motion` désinstallé ; autres findings classés sans action requise
+- Doc : `docs/optimisation-bundlecode-05-2026.md`
 
----
-
-## [2026-05-09] — Fix note rédaction homepage
-
-### Fix — Note rédaction affichée 0.1 sur la homepage (Premiocare et autres)
-- `getNotesRedacGlobales` (homepage) calculait une moyenne brute de tous les `note_redac_base5` dans `resultats`, y compris les critères non-applicables stockés à `-0.50`
-- Résultat : Premiocare affichait 0.1 en homepage, 4.2 sur la fiche et en listing — incohérence visible
-- Fix : `getNotesRedacGlobales` lit désormais `solutions.evaluation_redac_note` (colonne stockée, maintenue par trigger), aligné sur `getNotesGlobalesRedac` utilisé en listing
+### Sécurité — npm audit fix (27 → 15 vulnérabilités)
+- 1 critical résolue : protobufjs (arbitrary code execution)
+- 7 high résolues : axios, flatted, fast-xml-parser, node-forge, picomatch, minimatch…
+- 4 moderate résolues
+- Restants sans action : firebase chain (scripts only), next/eslint (session Next.js dédiée), xlsx (no fix disponible)
 
 ### TODO — Mises à jour
 - Marqué terminé : Note rédaction fausse homepage ✅
-- Marqué terminé : Alléger les pages du site (bundle / code inspection) ✅
+- Marqué terminé : Alléger les pages du site — bundle / code inspection ✅
+- Ajouté : Import ~10 utilisateurs Firebase post-migration
 
 ---
 

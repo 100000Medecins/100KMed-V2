@@ -15,9 +15,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Suppression de compte (avec et sans suppression des avis)
 - Suppression admin d'un utilisateur
 
-#### Alléger les pages du site (bundle / code inspection)
-- Beaucoup de code visible à l'inspection navigateur — analyser le bundle size selon la méthode Ben
-- Identifier les composants ou librairies à lazy-loader, tree-shaker ou remplacer
+#### ~~Alléger les pages du site (bundle / code inspection)~~ [OK] Fait 2026-05-09
 
 ### Sécurité
 
@@ -44,6 +42,15 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - 2 mois après la migration Firebase (étape 1 ci-dessus)
 - Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
+#### Importer les ~10 utilisateurs Firebase inscrits après la migration initiale (avril 2026)
+- Script à créer : `scripts/import-firebase-late-users.ts` (firebase-admin déjà configuré)
+- Filtrer `listUsers()` sur `metadata.creationTime > '2026-04-12'` (date migration initiale)
+- Vérifier existence dans Supabase par email avant création (éviter doublons)
+- Créer via `supabase.auth.admin.createUser({ email, emailConfirm: true })`
+- Envoyer un lien reset mot de passe à chaque utilisateur importé
+- ⚠️ Vérifier si ces users ont des évaluations dans `evaluations_firebase_backup` à relier
+- Ne pas supprimer `firebase-admin` de `package.json` avant que ce soit fait
+
 ### Bugs à corriger
 
 ### UX / UI
@@ -56,9 +63,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Performance
 
-#### Efficience du code (rapport Ben)
-- Revoir les points remontés dans la capture de Ben
-- À prioriser selon criticité (perf, bundle size, requêtes redondantes…)
+#### ~~Efficience du code (rapport Ben)~~ [OK] Fait 2026-05-09
 
 ### Mises à jour techniques
 

@@ -5,6 +5,14 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-09**
+- [OK] 2026-05-09 : Fix — Note rédaction homepage fausse (IMPORTANT / Bugs)
+  - `getNotesRedacGlobales` moyennait tous les critères `resultats` y compris les N/A à -0.50 → ~0.1 pour Premiocare
+  - Fix : lit `solutions.evaluation_redac_note` (colonne stockée), aligné sur `getNotesGlobalesRedac`
+- [OK] 2026-05-09 : Alléger les pages du site — bundle / code inspection (IMPORTANT)
+  - Bundle size analysé selon la méthode Ben, points traités (rapport efficience du code)
+  - Items à lazy-loader / tree-shaker / remplacer identifiés et traités
+
 **2026-05-08**
 - [OK] 2026-05-08 : Audit BDD complet (Nettoyage)
   - Corrections critiques et importantes appliquées (sécurité RLS, intégrité FK, index, types)
