@@ -94,3 +94,8 @@
 .prose-custom blockquote p {
   @apply text-sm text-navy font-medium leading-relaxed italic mb-0;
 }
+
+@keyframes hero-float {
+  from { transform: translateY(var(--y-from)) rotate(var(--r-from)); }
+  to   { transform: translateY(var(--y-to))   rotate(var(--r-to));   }
+}
