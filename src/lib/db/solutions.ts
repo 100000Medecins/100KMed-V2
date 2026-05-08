@@ -241,7 +241,7 @@ export async function getNotesRedac(solutionId: string) {
   return data
     .filter((r) => {
       const c = (r.critere as unknown) as { nom_capital: string | null } | null
-      return c?.nom_capital != null
+      return c?.nom_capital != null && r.note_redac_base5 != null
     })
     .map((r) => {
       const c = (r.critere as unknown) as { nom_capital: string }

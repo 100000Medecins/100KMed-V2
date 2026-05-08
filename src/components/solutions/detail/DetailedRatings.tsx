@@ -71,6 +71,7 @@ export default function DetailedRatings({ notesRedac }: DetailedRatingsProps) {
               </div>
 
               {/* Zone dépliable avec animation CSS grid */}
+              {hasText && (
               <div
                 className={`grid transition-[grid-template-rows] duration-200 ease-out ${
                   isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
@@ -87,6 +88,7 @@ export default function DetailedRatings({ notesRedac }: DetailedRatingsProps) {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           )
         })}
