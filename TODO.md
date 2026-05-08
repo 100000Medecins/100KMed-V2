@@ -90,6 +90,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Supabase** → Redirect URLs : vérifier que `https://www.100000medecins.org/reinitialiser-mot-de-passe` est dans la liste
 - **PSC** : aucune action — le relay `/connexionPsc` gère automatiquement le basculement dev→www (déjà en place)
 
+#### DNS — mise en prod *(jour J uniquement)*
+- `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)
+- `www` : remplacer CNAME `webacc8.sd6.ghst.net` par `cname.vercel-dns.com.`
+- Supprimer les 4 CNAME SSL sectigo/comodoca (certificats ancien hébergeur)
+- Vérifier que le wildcard `* CNAME webredir.vip.gandi.net.` n'interfère pas
+
 ---
 
 ### Thèmes alternatifs du site
@@ -119,9 +125,3 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
 - Les données seront peuplées ultérieurement via recherche automatique
 - Ne pas modifier l'affichage front avant que le toggle soit activé
-
-### DNS — mise en prod *(jour J uniquement)*
-- `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)
-- `www` : remplacer CNAME `webacc8.sd6.ghst.net` par `cname.vercel-dns.com.`
-- Supprimer les 4 CNAME SSL sectigo/comodoca (certificats ancien hébergeur)
-- Vérifier que le wildcard `* CNAME webredir.vip.gandi.net.` n'interfère pas
