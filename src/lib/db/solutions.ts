@@ -252,30 +252,19 @@ export async function getNotesRedac(solutionId: string) {
 
 export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]
 
-/**
- * Récupère la note moyenne rédaction pour une liste de solutions.
- * Retourne un map solutionId -> moyenne des note_redac_base5.
- */
 export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
   const supabase = await createServerClient()
   const { data, error } = await supabase
-    .from('resultats')
-    .select('solution_id, note_redac_base5')
-    .in('solution_id', solutionIds)
-    .not('note_redac_base5', 'is', null)
+    .from('solutions')
+    .select('id, evaluation_redac_note')
+    .in('id', solutionIds)
+    .not('evaluation_redac_note', 'is', null)
   if (error || !data) return {}
-  const sums: Record<string, { total: number; count: number }> = {}
-  for (const row of data) {
-    const id = row.solution_id as string
-    const note = row.note_redac_base5 as number
-    if (!sums[id]) sums[id] = { total: 0, count: 0 }
-    sums[id].total += note
-    sums[id].count += 1
-  }
   const map: Record<string, number> = {}
-  for (const [id, { total, count }] of Object.entries(sums)) {
-    map[id] = Math.round((total / count) * 10) / 10
+  for (const row of data) {
+    const note = row.evaluation_redac_note as number | null
+    if (note != null) map[row.id] = note
   }
   return map
 }
