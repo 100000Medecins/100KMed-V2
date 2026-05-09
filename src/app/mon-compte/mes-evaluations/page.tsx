@@ -44,7 +44,7 @@ export default function MesEvaluationsPage() {
     Promise.all([
       s
         .from('solutions_utilisees')
-        .select('*, solution:solutions(*, editeur:editeurs(*), categorie:categories(*))')
+        .select('*, solution:solutions!fk_utilisees_solution(*, editeur:editeurs(*), categorie:categories(*))')
         .eq('user_id', user.id)
         .neq('statut_evaluation', 'ancienne'),
       s
