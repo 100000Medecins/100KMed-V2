@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={poppins.variable}>
+    <html lang="fr" className={`${poppins.variable} overflow-x-hidden`}>
       <body className="overflow-x-hidden">
         <ScrollRestoration />
         <AuthProvider>{children}</AuthProvider>
