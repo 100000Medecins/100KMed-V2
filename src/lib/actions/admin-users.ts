@@ -2,6 +2,7 @@
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { revalidatePath } from 'next/cache'
 
 /**
  * Met à jour un champ texte d'un utilisateur (nom, prenom, email).
@@ -66,6 +67,8 @@ export async function deleteUser(userId: string) {
   for (const solutionId of solutionIds) {
     await recalcResultatsPourSolution(solutionId as string)
   }
+  // Invalider le cache ISR des pages solutions même si aucune évaluation n'était publiée
+  revalidatePath('/solutions', 'layout')
 }
 
 /**

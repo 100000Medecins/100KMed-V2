@@ -104,7 +104,10 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     .eq('solution_id', solutionId)
     .eq('statut', 'publiee')
 
-  if (!evaluations || evaluations.length === 0) return
+  if (!evaluations || evaluations.length === 0) {
+    revalidatePath('/solutions', 'layout')
+    return
+  }
 
   for (const critere of criteres) {
     const key = critere.identifiant_tech as string
@@ -145,6 +148,8 @@ export async function recalcResultatsPourSolution(solutionId: string) {
       await supabase.from('resultats').insert(payload)
     }
   }
+
+  revalidatePath('/solutions', 'layout')
 }
 
 /**

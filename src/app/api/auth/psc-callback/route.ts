@@ -366,22 +366,29 @@ export async function GET(request: Request) {
         .update({ statut: 'publiee', user_id: userId, email_temp: null, token_verification: null })
         .eq('id', ev.id)
 
-      // Créer solutions_utilisees si elle n'existe pas (nécessaire pour l'affichage dans mon compte)
+      // Créer ou mettre à jour solutions_utilisees (nécessaire pour l'affichage dans mon compte)
       if (ev.solution_id) {
         const { data: existingSU } = await supabaseAdmin
           .from('solutions_utilisees')
-          .select('id')
+          .select('id, statut_evaluation')
           .eq('solution_id', ev.solution_id)
           .eq('user_id', userId)
           .limit(1)
 
         if (!existingSU || existingSU.length === 0) {
-          await supabaseAdmin.from('solutions_utilisees').insert({
+          const { error: suError } = await supabaseAdmin.from('solutions_utilisees').insert({
             user_id: userId,
             solution_id: ev.solution_id,
             statut_evaluation: 'finalisee',
             date_debut: new Date().toISOString().split('T')[0],
           })
+          if (suError) console.error('[PSC] solutions_utilisees insert error:', suError)
+        } else if ((existingSU[0] as { statut_evaluation?: string }).statut_evaluation === 'ancienne') {
+          // Réactiver si l'entrée avait été marquée ancienne
+          await supabaseAdmin
+            .from('solutions_utilisees')
+            .update({ statut_evaluation: 'finalisee' })
+            .eq('id', (existingSU[0] as { id: string }).id)
         }
 
         await recalcResultatsPourSolution(ev.solution_id)
@@ -396,9 +403,9 @@ export async function GET(request: Request) {
       .single()
 
     const next = !profile?.is_complete
-      ? '/completer-profil'
+      ? (evaluationLiee ? '/completer-profil?evaluation=publiee' : '/completer-profil')
       : evaluationLiee
-        ? '/mon-compte/profil?evaluation=publiee'
+        ? '/mon-compte/mes-evaluations?evaluation=publiee'
         : '/mon-compte/profil'
 
     return NextResponse.redirect(

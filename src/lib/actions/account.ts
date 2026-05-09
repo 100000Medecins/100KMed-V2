@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { revalidatePath } from 'next/cache'
 
 interface DeleteAccountOptions {
   supprimerAvis: boolean
@@ -126,6 +127,8 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
   for (const solutionId of solutionIdsToRecalc) {
     await recalcResultatsPourSolution(solutionId)
   }
+  // Invalider le cache ISR des pages solutions même si aucune évaluation n'était publiée
+  revalidatePath('/solutions', 'layout')
 
   return { status: 'SUCCESS' }
 }

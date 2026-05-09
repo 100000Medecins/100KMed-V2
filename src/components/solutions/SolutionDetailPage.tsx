@@ -106,6 +106,7 @@ export default function SolutionDetailPage({
                   solutionNom={solution.nom}
                   resultats={filteredResultats}
                   autreSolutions={autreSolutions || []}
+                  hasNoteRedac={(solution.categorie as unknown as { has_note_redac?: boolean } | null)?.has_note_redac ?? true}
                 />
               </div>
 

@@ -40,6 +40,13 @@ export default function CompleterProfilPage() {
   const isEditeur = modeExercice === 'Éditeur'
   const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
 
+  const [evaluationPubRef] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('evaluation') === 'publiee'
+    }
+    return false
+  })
+
   useEffect(() => {
     // Pré-sélectionner le mode éditeur si ?type=editeur dans l'URL
     const params = new URLSearchParams(window.location.search)
@@ -147,7 +154,9 @@ export default function CompleterProfilPage() {
           password,
         })
       }
-      window.location.href = '/mon-compte/profil'
+      window.location.href = evaluationPubRef
+        ? '/mon-compte/mes-evaluations?evaluation=publiee'
+        : '/mon-compte/profil'
     } catch (err) {
       console.error('Erreur complétion profil:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
