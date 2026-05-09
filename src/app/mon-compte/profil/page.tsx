@@ -22,6 +22,7 @@ export default function ProfilPage() {
 
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
+  const [pseudo, setPseudo] = useState('')
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
@@ -65,7 +66,7 @@ export default function ProfilPage() {
   const [resetSent, setResetSent] = useState(false)
 
   const supabaseRef = useRef(createClient())
-  const initialValuesRef = useRef({ nom: '', prenom: '', specialite: '', modeExercice: '', selectedAvatar: null as string | null })
+  const initialValuesRef = useRef({ nom: '', prenom: '', pseudo: '', specialite: '', modeExercice: '', selectedAvatar: null as string | null })
 
   // Charger le profil existant
   useEffect(() => {
@@ -77,7 +78,7 @@ export default function ProfilPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase as any)
           .from('users')
-          .select('nom, prenom, specialite, mode_exercice, portrait, rpps, contact_email')
+          .select('nom, prenom, pseudo, specialite, mode_exercice, portrait, rpps, contact_email')
           .eq('id', user.id)
           .single()
         if (data) {
@@ -89,13 +90,15 @@ export default function ProfilPage() {
           const loadedModeExercice = data.mode_exercice || ''
           const loadedAvatar = data.portrait || null
 
+          const loadedPseudo = data.pseudo || ''
           setNom(loadedNom)
           setPrenom(loadedPrenom)
+          setPseudo(loadedPseudo)
           setContactEmail(data.contact_email || null)
           setSpecialite(loadedSpecialite)
           setModeExercice(loadedModeExercice)
           setSelectedAvatar(loadedAvatar)
-          initialValuesRef.current = { nom: loadedNom, prenom: loadedPrenom, specialite: loadedSpecialite, modeExercice: loadedModeExercice, selectedAvatar: loadedAvatar }
+          initialValuesRef.current = { nom: loadedNom, prenom: loadedPrenom, pseudo: loadedPseudo, specialite: loadedSpecialite, modeExercice: loadedModeExercice, selectedAvatar: loadedAvatar }
 
           const fromPsc = !!data.rpps
           setIsFromPsc(fromPsc)
@@ -160,6 +163,7 @@ export default function ProfilPage() {
   const isValid = nom.trim() && prenom.trim() && modeExercice && (isEditeur ? claimFilled : !!specialite)
   const isDirty = nom !== initialValuesRef.current.nom ||
     prenom !== initialValuesRef.current.prenom ||
+    pseudo !== initialValuesRef.current.pseudo ||
     specialite !== initialValuesRef.current.specialite ||
     modeExercice !== initialValuesRef.current.modeExercice ||
     selectedAvatar !== initialValuesRef.current.selectedAvatar
@@ -175,6 +179,7 @@ export default function ProfilPage() {
       await updateProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
+        pseudo: pseudo.trim() || undefined,
         specialite: isEditeur ? '' : specialite,
         mode_exercice: modeExercice,
       })
@@ -196,7 +201,7 @@ export default function ProfilPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
       }
-      initialValuesRef.current = { nom: nom.trim(), prenom: prenom.trim(), specialite, modeExercice, selectedAvatar }
+      initialValuesRef.current = { nom: nom.trim(), prenom: prenom.trim(), pseudo: pseudo.trim(), specialite, modeExercice, selectedAvatar }
       setSuccess('Profil mis à jour avec succès.')
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
@@ -473,6 +478,22 @@ export default function ProfilPage() {
                   />
                 </div>
               )}
+              {/* Pseudo — éditable même pour les comptes PSC */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Pseudo</label>
+                <input
+                  type="text"
+                  value={pseudo}
+                  onChange={(e) => setPseudo(e.target.value)}
+                  maxLength={50}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                  placeholder="Votre pseudo (optionnel)"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Si renseigné, votre pseudo sera affiché à la place de votre prénom + initiale sur vos avis publiés.
+                </p>
+              </div>
+
               {/* Email PSC technique, affiché uniquement s'il diffère du contact_email */}
               {user?.email && contactEmail && user.email !== contactEmail && (
                 <div className="sm:col-span-2">
@@ -513,6 +534,21 @@ export default function ProfilPage() {
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Pseudo</label>
+                <input
+                  type="text"
+                  value={pseudo}
+                  onChange={(e) => setPseudo(e.target.value)}
+                  maxLength={50}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                  placeholder="Votre pseudo (optionnel)"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Si renseigné, votre pseudo sera affiché à la place de votre prénom + initiale sur vos avis publiés.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {!isEditeur && (
                   <div>
