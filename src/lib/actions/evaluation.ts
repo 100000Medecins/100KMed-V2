@@ -105,6 +105,11 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     .eq('statut', 'publiee')
 
   if (!evaluations || evaluations.length === 0) {
+    // Remettre à zéro les données utilisateurs dans resultats (plus aucune éval publiée)
+    await supabase
+      .from('resultats')
+      .update({ notes: {}, nb_notes: 0, moyenne_utilisateurs: null, moyenne_utilisateurs_base5: null })
+      .eq('solution_id', solutionId)
     revalidatePath('/solutions', 'layout')
     return
   }
