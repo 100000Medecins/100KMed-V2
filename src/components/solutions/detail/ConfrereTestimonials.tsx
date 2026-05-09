@@ -84,6 +84,7 @@ export default function ConfrereTestimonials({
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return
+    document.getElementById('temoignages')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     fetchPage(newPage, tri)
   }
 

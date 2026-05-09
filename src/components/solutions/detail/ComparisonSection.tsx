@@ -292,10 +292,10 @@ export default function ComparisonSection({
   return (
     <section className="bg-white rounded-card shadow-card [overflow:clip]">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-navy shrink-0">Radar comparatif</h2>
+      <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h2 className="text-xl font-bold text-navy">Radar comparatif</h2>
         {hasNoteRedac && (
-          <div className="flex items-center rounded-full border border-gray-200 overflow-hidden text-xs md:text-sm font-medium shrink-0">
+          <div className="flex items-center rounded-full border border-gray-200 overflow-hidden text-xs md:text-sm font-medium shrink-0 self-start sm:self-auto">
             <button
               onClick={() => setNoteMode('redac')}
               className={`px-3 py-1.5 md:px-4 transition-colors ${noteMode === 'redac' ? 'bg-navy text-white' : 'text-gray-500 hover:text-navy'}`}
