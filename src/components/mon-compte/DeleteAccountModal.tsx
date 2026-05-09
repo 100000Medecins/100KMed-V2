@@ -15,15 +15,18 @@ export default function DeleteAccountModal({ onClose }: Props) {
   const [raison, setRaison] = useState('')
   const [step, setStep] = useState<'form' | 'confirm'>('form')
   const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [, startTransition] = useTransition()
 
   function handleConfirm() {
+    setIsDeleting(true)
     setError(null)
     startTransition(async () => {
       try {
         await deleteAccount({ supprimerAvis, raison })
         await signOut()
       } catch (e) {
+        setIsDeleting(false)
         setError(e instanceof Error ? e.message : 'Une erreur est survenue.')
         setStep('form')
       }
@@ -41,7 +44,7 @@ export default function DeleteAccountModal({ onClose }: Props) {
           </div>
           <button
             onClick={onClose}
-            disabled={isPending}
+            disabled={isDeleting}
             className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
@@ -156,17 +159,17 @@ export default function DeleteAccountModal({ onClose }: Props) {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setStep('form')}
-                disabled={isPending}
+                disabled={isDeleting}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-navy transition-colors disabled:opacity-50"
               >
                 Retour
               </button>
               <button
                 onClick={handleConfirm}
-                disabled={isPending}
+                disabled={isDeleting}
                 className="px-5 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded-xl transition-colors"
               >
-                {isPending ? 'Suppression...' : 'Supprimer définitivement'}
+                {isDeleting ? 'Suppression...' : 'Supprimer définitivement'}
               </button>
             </div>
           </div>
