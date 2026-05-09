@@ -212,19 +212,25 @@ export default function ConfrereTestimonials({
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => handlePageChange(p)}
-              className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                p === page
-                  ? 'bg-accent-blue text-white'
-                  : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              {p}
-            </button>
-          ))}
+          {/* Boutons numérotés sur desktop, compteur condensé sur mobile */}
+          <div className="hidden sm:flex items-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => handlePageChange(p)}
+                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                  p === page
+                    ? 'bg-accent-blue text-white'
+                    : 'text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <span className="sm:hidden text-sm font-medium text-gray-600 px-2">
+            {page} / {totalPages}
+          </span>
 
           <button
             onClick={() => handlePageChange(page + 1)}
@@ -234,7 +240,7 @@ export default function ConfrereTestimonials({
             <ChevronRight className="w-4 h-4" />
           </button>
 
-          <span className="text-xs text-gray-400 ml-2">
+          <span className="hidden sm:inline text-xs text-gray-400 ml-2">
             {page} sur {totalPages}
           </span>
         </div>

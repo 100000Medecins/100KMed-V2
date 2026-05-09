@@ -124,7 +124,7 @@ export default function Navbar() {
         boxShadow: isHome && !isScrolled ? 'none' : '0 2px 20px rgba(0,0,0,0.18)',
       }}
     >
-      <nav className="max-w-7xl mx-auto px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
+      <nav className="max-w-7xl mx-auto pl-5 pr-0 min-[1150px]:px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
         {/* Col 1 : Logo */}
         <div className="flex items-center">
           <a href="/" className="flex items-center shrink-0">

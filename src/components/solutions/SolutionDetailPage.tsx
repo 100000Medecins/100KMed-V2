@@ -75,7 +75,7 @@ export default function SolutionDetailPage({
           {/* 2 colonnes : contenu principal + sidebar */}
           <div className="grid lg:grid-cols-[1fr_340px] gap-8">
             {/* Colonne gauche */}
-            <div className="space-y-8">
+            <div className="space-y-8 min-w-0">
               <div id="avis-redaction" className="scroll-mt-[140px]">
                 <EditorialReview
                   avisRedaction={solution.evaluation_redac_avis}
@@ -132,7 +132,7 @@ export default function SolutionDetailPage({
             </div>
 
             {/* Colonne droite (sidebar) */}
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0">
               <MainFeatures tags={solution.tags || []} />
               <CategoryLink categorie={solution.categorie} />
             </div>

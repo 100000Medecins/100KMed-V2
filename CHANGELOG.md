@@ -31,6 +31,22 @@
 - Marqué terminé : Alléger les pages du site — bundle / code inspection ✅
 - Ajouté : Import ~10 utilisateurs Firebase post-migration
 
+### Fix — Overflow horizontal mobile sur pages solution
+
+- Cause racine : items CSS Grid sans `min-w-0` → la pagination des témoignages
+  (flex nowrap, jusqu'à 12 boutons sur Weda) forçait la grille à 620px sur mobile
+- Fix : `min-w-0` sur les deux colonnes du grid dans `SolutionDetailPage.tsx`
+- Fix : pagination condensée sur mobile (`← X/Y →`) dans `ConfrereTestimonials.tsx`
+  au lieu des boutons numérotés en flex-nowrap
+- Fix : scroll automatique vers le début des avis au changement de page
+
+### UX / UI — Navbar mobile + boutons d'ancre page solution
+
+- Navbar mobile : padding asymétrique `pl-5 pr-0` pour mieux ancrer les boutons
+  (loupe, Évaluer, burger) vers le bord droit
+- Boutons d'ancre (page solution) : `text-[11px]` + `px-2.5` + `gap-1` sur mobile
+  pour tenir en 2 lignes au lieu de 3
+
 ---
 
 ## [2026-05-08] — Fix auth email change + fusion PSC + suppressions de compte
