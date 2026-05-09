@@ -96,7 +96,7 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
       .select('solution_id')
       .eq('user_id', user.id)
       .eq('statut', 'publiee')
-    solutionIdsToRecalc = [...new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean) as string[])]
+    solutionIdsToRecalc = Array.from(new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean) as string[]))
 
     await supabase.from('evaluations').delete().eq('user_id', user.id)
   } else {

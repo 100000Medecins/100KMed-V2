@@ -249,7 +249,7 @@ export async function updateProfile(userData: {
   nom?: string
   prenom?: string
   pseudo?: string
-  annee_naissance?: string
+  annee_naissance?: number
   specialite?: string
   mode_exercice?: string
   densite_population?: string

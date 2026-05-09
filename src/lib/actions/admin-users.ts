@@ -47,7 +47,7 @@ export async function deleteUser(userId: string) {
     .select('solution_id')
     .eq('user_id', userId)
     .eq('statut', 'publiee')
-  const solutionIds = [...new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean))]
+  const solutionIds = Array.from(new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean)))
 
   // Supprimer les données liées (FK sans CASCADE)
   await supabase.from('evaluations').delete().eq('user_id', userId)
