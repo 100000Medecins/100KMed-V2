@@ -144,7 +144,7 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
   const mobileHasSingleSort = mobileOptions.length === 1
 
   return (
-    <div ref={sortBarRef} className="sticky top-[80px] z-10 bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-card py-3 px-4 mb-6">
+    <div ref={sortBarRef} className="sticky top-[80px] z-10 bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-card py-3 px-4 mb-0 md:mb-6">
 
       {/* MOBILE */}
       <div className="sm:hidden">
@@ -154,20 +154,31 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
           <span className="text-xs text-gray-400">{count} solution{count > 1 ? 's' : ''}</span>
         </div>
 
-        {/* Ligne 2 : boutons de tri (+ Note globale inline si 1 seule option) */}
-        <div className="flex gap-1.5 items-center flex-nowrap">
+        {/* Ligne 2 : boutons de tri + Note globale sous le bouton actif (ou inline si 1 seule option) */}
+        <div className="flex gap-1.5 items-start flex-nowrap">
           {mobileOptions.map((opt) => {
             const active = isOptActive(opt.value)
             const ArrowIcon = currentDir === 'asc' ? ArrowUp : ArrowDown
             return (
-              <button
-                key={opt.value}
-                onClick={() => handleTriClick(opt.value)}
-                className={mobileSortBtnClass(active)}
-              >
-                {opt.label}
-                {active && <ArrowIcon className="w-3 h-3 shrink-0" />}
-              </button>
+              <div key={opt.value} className="flex flex-col items-center gap-2">
+                <button
+                  onClick={() => handleTriClick(opt.value)}
+                  className={mobileSortBtnClass(active)}
+                >
+                  {opt.label}
+                  {active && <ArrowIcon className="w-3 h-3 shrink-0" />}
+                </button>
+                {/* Note globale sous le bouton actif (cas plusieurs options de tri) */}
+                {!mobileHasSingleSort && active && showCritereDropdown && criteresMajeurs.length > 0 && (
+                  <div className="relative inline-block">
+                    <button onClick={() => setDropdownOpen((v) => !v)} className={critereBtnClass(true)}>
+                      {critereBtnLabel}
+                      <ChevronDown className={`w-3 h-3 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {dropdownList}
+                  </div>
+                )}
+              </div>
             )
           })}
 
@@ -182,19 +193,6 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
             </div>
           )}
         </div>
-
-        {/* Ligne 3 : Note globale centrée (seulement si 2 options de tri) */}
-        {!mobileHasSingleSort && showCritereDropdown && criteresMajeurs.length > 0 && (
-          <div className="mt-2 flex justify-center">
-            <div className="relative inline-block">
-              <button onClick={() => setDropdownOpen((v) => !v)} className={critereBtnClass(true)}>
-                {critereBtnLabel}
-                <ChevronDown className={`w-3 h-3 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {dropdownList}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* DESKTOP */}

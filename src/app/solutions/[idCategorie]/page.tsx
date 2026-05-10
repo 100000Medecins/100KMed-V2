@@ -113,7 +113,7 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
             <div className="flex items-center gap-2 md:gap-10">
               <div className="flex-1">
                 {/* Titre */}
-                <h1 className="text-xl md:text-3xl font-bold text-white mb-2 md:mb-6 flex items-center gap-3">
+                <h1 className="text-lg md:text-3xl font-bold text-white mb-2 md:mb-6 flex items-center gap-3">
                   {categorie.icon && <span className="text-2xl md:text-3xl">{categorie.icon}</span>}
                   {categorie.nom}
                 </h1>
@@ -142,11 +142,24 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
         </section>
 
         {/* Filtres + liste */}
-        <section className="max-w-7xl mx-auto px-6 py-10">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar filtres (tags uniquement) */}
+        <section className="max-w-7xl mx-auto px-6 pt-4 pb-10 md:py-10">
+          <div className="grid grid-cols-1 md:grid-cols-[13rem_1fr] gap-3 md:gap-x-8 md:gap-y-3">
+            {/* Trier par : mobile = en haut, desktop = colonne droite ligne 1 */}
+            <div className="md:col-start-2 md:row-start-1">
+              <SolutionSortBar
+                criteresMajeurs={criteresMajeurs}
+                currentTri={tri}
+                currentCritere={critereId}
+                currentDir={dir}
+                selectedTagIds={selectedTagIds}
+                count={solutionsAvecNotes.length}
+                hideNoteRedac={!(categorie as any).has_note_redac}
+              />
+            </div>
+
+            {/* Sidebar filtres : mobile = milieu, desktop = colonne gauche ligne 2 (aligné avec la 1ère tuile) */}
             {tags.length > 0 && (
-              <aside className="w-full md:w-52 shrink-0">
+              <aside className="md:col-start-1 md:row-start-2 mb-2 md:mb-0">
                 <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
                   <SolutionFilters
                     tags={tags}
@@ -160,17 +173,8 @@ export default async function SolutionsPage({ params, searchParams }: PageProps)
               </aside>
             )}
 
-            {/* Grille solutions */}
-            <div className="flex-1 min-w-0">
-              <SolutionSortBar
-                criteresMajeurs={criteresMajeurs}
-                currentTri={tri}
-                currentCritere={critereId}
-                currentDir={dir}
-                selectedTagIds={selectedTagIds}
-                count={solutionsAvecNotes.length}
-                hideNoteRedac={!(categorie as any).has_note_redac}
-              />
+            {/* Liste solutions : mobile = bas, desktop = colonne droite ligne 2 */}
+            <div className="md:col-start-2 md:row-start-2 min-w-0">
               <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} />
             </div>
           </div>

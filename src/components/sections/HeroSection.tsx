@@ -142,8 +142,8 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
         </div>
       )}
 
-      {/* Fondu de sortie — transparent coloré (pas noir) pour éviter la bande lumineuse */}
-      <div className="pointer-events-none h-8" style={{ background: 'linear-gradient(to bottom, rgba(15, 30, 56, 0), #D8E6F8)' }} />
+      {/* Fondu de sortie — vers #C6D5EE pour matcher bg-surface-muted de la section suivante */}
+      <div className="pointer-events-none h-8" style={{ background: 'linear-gradient(to bottom, rgba(15, 30, 56, 0), #C6D5EE)' }} />
     </section>
   );
 }

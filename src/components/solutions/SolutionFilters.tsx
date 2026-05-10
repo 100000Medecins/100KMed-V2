@@ -98,7 +98,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between mb-2">
+      <div className="hidden md:flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-navy">{labelFiltres || 'Fonctionnalités'}</h3>
         {selectedTagIds.length > 0 && (
           <button onClick={() => router.push(buildUrl([]), { scroll: false })} className="text-xs text-accent-blue hover:underline">
@@ -106,6 +106,13 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
           </button>
         )}
       </div>
+      {selectedTagIds.length > 0 && (
+        <div className="md:hidden flex justify-end mb-2">
+          <button onClick={() => router.push(buildUrl([]), { scroll: false })} className="text-xs text-accent-blue hover:underline">
+            Effacer
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-x-3 sm:block">
       {groups.map((group) => {
@@ -119,7 +126,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
               <button
                 type="button"
                 onClick={() => toggleGroup(group.id)}
-                className="flex items-start gap-1.5 w-full pt-3 pb-1 sm:cursor-default"
+                className="flex items-start gap-1.5 w-full pt-3 pb-1 text-left sm:cursor-default"
               >
                 <p className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5 flex-wrap leading-tight">
                   {group.label}

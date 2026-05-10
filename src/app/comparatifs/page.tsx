@@ -86,25 +86,22 @@ export default async function ComparatifsPage() {
                     <Link
                       key={cat.slug}
                       href={`/solutions/${cat.slug}`}
-                      className="relative overflow-hidden rounded-2xl md:rounded-3xl min-h-[130px] md:min-h-[220px] flex flex-col justify-start p-4 md:p-8 group"
+                      className="relative overflow-hidden rounded-2xl md:rounded-3xl min-h-[140px] md:min-h-[220px] flex flex-col items-center justify-between p-4 md:p-8 group"
                       style={{ background: 'linear-gradient(135deg, #148080 0%, #7c35c0 55%, #1e4da0 100%)' }}
                     >
-                      {/* Illustration : image uploadée ou emoji en fallback */}
+                      <span className="text-[12px] md:text-xl font-extrabold text-white text-center leading-snug relative z-10">{cat.nom}</span>
+
                       {cat.image_url ? (
                         <img
                           src={cat.image_url}
                           alt=""
-                          className="absolute bottom-2 right-2 md:bottom-3 md:right-6 max-h-[75px] md:max-h-[155px] max-w-[45%] w-auto object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none"
+                          className={`${cat.slug === 'agendas-medicaux' ? 'max-h-[60px]' : cat.slug === 'logiciels-metier' ? 'max-h-[79px]' : 'max-h-[69px]'} md:max-h-[125px] max-w-[70%] w-auto object-contain opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 select-none pointer-events-none`}
                         />
                       ) : cat.icon ? (
-                        <span className="absolute bottom-2 right-2 md:bottom-4 md:right-6 text-[60px] md:text-[120px] leading-none opacity-25 group-hover:opacity-40 transition-opacity duration-300 select-none">
+                        <span className="text-[50px] md:text-[100px] leading-none opacity-30 group-hover:opacity-50 transition-opacity duration-300 select-none">
                           {cat.icon}
                         </span>
                       ) : null}
-                      <span className="text-sm md:text-xl font-extrabold text-white mb-2 md:mb-3 leading-snug relative z-10">{cat.nom}</span>
-                      <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white font-semibold px-2.5 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm w-fit group-hover:bg-white/35 transition-colors duration-200 relative z-10">
-                        Explorer →
-                      </span>
                     </Link>
                   ))}
                 </div>

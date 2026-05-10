@@ -31,6 +31,15 @@
   et scrolle automatiquement vers la barre de recherche
 - Page notation `[...slug]` : boutons "Soumettre / Retour" en colonne sur mobile (full width)
 
+### UX / UI — Refonte mobile pages comparatifs + fix gradient hero
+- Page `/comparatifs` : tuiles en layout centré (titre haut + illustration centrée), suppression du bouton "Explorer" (la tuile entière reste cliquable), sizing per-slug des illustrations sur mobile (`agendas-medicaux` 60px, `logiciels-metier` 79px, autres 69px)
+- Page `/solutions/[idCategorie]` : layout passé en grid CSS — "Trier par" au-dessus des filtres sur mobile, "Fonctionnalités" alignée avec la 1ère ligne de tuiles sur desktop. Hero `text-xl` → `text-lg` mobile pour titres longs ("IA Documentaires"). Padding section réduit
+- `SolutionFilters.tsx` : `text-left` sur les boutons de groupe — corrige le centrage hérité de `<button>` sur les longs titres ("LOGICIEL D'AIDE À LA PRESCRIPTION", "STRUCTURE D'EXERCICE CIBLÉE"). Masquage du titre "Fonctionnalités" sur mobile
+- `SolutionSortBar.tsx` : "Note globale" rendu sous le bouton de tri actif (au lieu d'être centré indépendamment). `mb-6` mobile → 0
+- Hero homepage : gradient de sortie aligné sur `#C6D5EE` (= `bg-surface-muted`) — supprime la barre claire visible au raccord avec la section suivante
+- Section "Les logiciels les mieux notés" : `py-20 md:py-28` → `pt-8 pb-20 md:pt-14 md:pb-28`
+- Cleanup `solution/noter/page.tsx` : suppression du `useRef` + `scrollIntoView` mobile inutilisés
+
 ### TODO — Mises à jour
 - Aucun item terminé cette session
 
