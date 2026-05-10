@@ -84,6 +84,28 @@ export async function submitScores(
 }
 
 /**
+ * Crée une ligne solutions_utilisees pour (userId, solutionId) si elle n'existe pas.
+ * Utilisé après rattachement d'évals anonymes pour qu'elles apparaissent dans
+ * /mon-compte/mes-evaluations (qui itère sur solutions_utilisees).
+ */
+export async function ensureSolutionUtilisee(userId: string, solutionId: string) {
+  const supabase = createServiceRoleClient()
+  const { data: existing } = await supabase
+    .from('solutions_utilisees')
+    .select('id')
+    .eq('solution_id', solutionId)
+    .eq('user_id', userId)
+    .limit(1)
+  if (existing && existing.length > 0) return
+  await supabase.from('solutions_utilisees').insert({
+    user_id: userId,
+    solution_id: solutionId,
+    statut_evaluation: 'finalisee',
+    date_debut: new Date().toISOString().split('T')[0],
+  })
+}
+
+/**
  * Recalcule les résultats agrégés d'une solution depuis les évaluations publiées.
  * Seules les évaluations statut='publiee' sont prises en compte (Option B — full recalc).
  * Appelé à chaque nouvelle évaluation publiée et à chaque finalisation PSC.

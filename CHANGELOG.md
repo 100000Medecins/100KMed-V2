@@ -7,6 +7,17 @@
 
 ## [2026-05-10] — Rattachement évals anonymes + audit recalc résultats + mobile
 
+### Fix — solutions_utilisees manquante après rattachement éval anonyme
+- Symptôme : éval anonyme rattachée à un compte (signup, login ou fusion) → la note
+  apparaît sur la page solution mais l'évaluation n'apparaît pas dans
+  `/mon-compte/mes-evaluations`
+- Cause : `submitEvaluationAnonyme` ne crée pas de `solutions_utilisees` (normal),
+  mais le rattachement ultérieur n'en crée pas non plus alors que la page
+  `mes-evaluations` itère sur cette table
+- Fix : nouveau helper `ensureSolutionUtilisee(userId, solutionId)` (idempotent)
+  appelé à chaque rattachement — `auth/callback` (signup), `rattacherEvalsAnonymes`
+  (login), `psc-callback` (3 chemins), `merge.ts` (après migration)
+
 ### Fix — Rattachement évals anonymes à un compte
 - Cas "nouveau compte avec même email" : `api/auth/callback` rattache les évals
   `en_attente_psc` correspondant à l'email après confirmation d'inscription (`type=signup`)

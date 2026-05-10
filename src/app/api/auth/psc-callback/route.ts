@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { resolveSpecialite } from '@/lib/constants/profil'
-import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
   const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeSavoirFaire?: string; codeTypeSavoirFaire?: string }> } | undefined
@@ -140,7 +140,10 @@ export async function GET(request: Request) {
         .eq('user_id', currentUserId)
         .eq('statut', 'en_attente_psc')
       for (const ev of pendingAssoc ?? []) {
-        if (ev.solution_id) await recalcResultatsPourSolution(ev.solution_id)
+        if (ev.solution_id) {
+          await ensureSolutionUtilisee(currentUserId, ev.solution_id)
+          await recalcResultatsPourSolution(ev.solution_id)
+        }
       }
 
       // Générer un magic link pour rafraîchir la session avec le profil mis à jour
@@ -277,7 +280,10 @@ export async function GET(request: Request) {
         .eq('user_id', userId)
         .eq('statut', 'en_attente_psc')
       for (const ev of pendingExisting ?? []) {
-        if (ev.solution_id) await recalcResultatsPourSolution(ev.solution_id)
+        if (ev.solution_id) {
+          await ensureSolutionUtilisee(userId, ev.solution_id)
+          await recalcResultatsPourSolution(ev.solution_id)
+        }
       }
     }
 

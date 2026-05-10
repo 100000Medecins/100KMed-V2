@@ -436,8 +436,9 @@ export async function rattacherEvalsAnonymes(): Promise<number> {
     .eq('email_temp', user.email.toLowerCase())
     .eq('statut', 'en_attente_psc')
 
-  const { recalcResultatsPourSolution } = await import('@/lib/actions/evaluation')
+  const { recalcResultatsPourSolution, ensureSolutionUtilisee } = await import('@/lib/actions/evaluation')
   const solutionIds = [...new Set(pendingEvals.map((e) => e.solution_id).filter(Boolean) as string[])]
+  await Promise.all(solutionIds.map((id) => ensureSolutionUtilisee(user.id, id)))
   await Promise.all(solutionIds.map((id) => recalcResultatsPourSolution(id)))
 
   return pendingEvals.length

@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { verifyFusionToken } from '@/lib/auth/fusionToken'
-import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 
 export interface FusionAccount {
   id: string
@@ -134,6 +134,13 @@ export async function mergeAccounts(
 
   // Publier les évaluations en attente sur le compte conservé (maintenant qu'il a le RPPS)
   await s.from('evaluations').update({ statut: 'publiee' }).eq('user_id', keepId).eq('statut', 'en_attente_psc')
+
+  // Garantir une solutions_utilisees pour chaque éval migrée (évals issues du flux
+  // anonyme rattachées par PSC peuvent ne pas en avoir, sinon elles n'apparaissent
+  // pas dans /mon-compte/mes-evaluations après fusion)
+  for (const solutionId of migratedSolutionIds) {
+    await ensureSolutionUtilisee(keepId, solutionId)
+  }
 
   // Recalculer les scores pour toutes les solutions impactées par la migration
   for (const solutionId of migratedSolutionIds) {

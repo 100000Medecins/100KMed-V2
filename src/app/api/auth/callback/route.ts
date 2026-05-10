@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { createServiceRoleClient } from '@/lib/supabase/server'
-import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 
 /**
  * Callback Auth pour Supabase — gère deux formats :
@@ -67,7 +67,10 @@ export async function GET(request: Request) {
             .eq('email_temp', user.email.toLowerCase())
             .eq('statut', 'en_attente_psc')
           for (const ev of pendingEvals) {
-            if (ev.solution_id) await recalcResultatsPourSolution(ev.solution_id)
+            if (ev.solution_id) {
+              await ensureSolutionUtilisee(user.id, ev.solution_id)
+              await recalcResultatsPourSolution(ev.solution_id)
+            }
           }
         }
       }
