@@ -5,6 +5,21 @@
 
 ---
 
+## [2026-05-11] — Fix : statut éval rattachée respecte la validation PSC
+
+### Fix — Rattachement éval anonyme ne doit pas publier sans RPPS
+- Symptôme : éval anonyme → inscription email/mdp (sans PSC) → l'éval était publiée
+  sur la page solution alors que l'utilisateur n'avait pas validé son identité médicale
+- Cause : `auth/callback`, `rattacherEvalsAnonymes()` et `merge.ts` passaient
+  systématiquement `statut: 'publiee'` au rattachement, ignorant la règle métier
+- Fix : avant rattachement, lecture de `users.rpps` du compte cible
+  - RPPS présent → `publiee` + recalc
+  - RPPS absent → `en_attente_psc` (éval rattachée mais pas publiée, l'utilisateur
+    voit la bannière "Validez via PSC" dans `/mon-compte/mes-evaluations`,
+    publication automatique au moment de la validation PSC via `psc-callback`)
+
+---
+
 ## [2026-05-10] — Rattachement évals anonymes + audit recalc résultats + mobile
 
 ### Fix — solutions_utilisees manquante après rattachement éval anonyme

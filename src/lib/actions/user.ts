@@ -430,16 +430,28 @@ export async function rattacherEvalsAnonymes(): Promise<number> {
 
   if (!pendingEvals || pendingEvals.length === 0) return 0
 
+  // Ne publier que si l'utilisateur a un RPPS (identité PSC vérifiée).
+  // Sinon : éval rattachée mais statut reste en_attente_psc.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileRow } = await (adminSupabase as any)
+    .from('users')
+    .select('rpps')
+    .eq('id', user.id)
+    .single()
+  const nouveauStatut = profileRow?.rpps ? 'publiee' : 'en_attente_psc'
+
   await adminSupabase
     .from('evaluations')
-    .update({ user_id: user.id, statut: 'publiee', email_temp: null, token_verification: null })
+    .update({ user_id: user.id, statut: nouveauStatut, email_temp: null, token_verification: null })
     .eq('email_temp', user.email.toLowerCase())
     .eq('statut', 'en_attente_psc')
 
   const { recalcResultatsPourSolution, ensureSolutionUtilisee } = await import('@/lib/actions/evaluation')
   const solutionIds = [...new Set(pendingEvals.map((e) => e.solution_id).filter(Boolean) as string[])]
   await Promise.all(solutionIds.map((id) => ensureSolutionUtilisee(user.id, id)))
-  await Promise.all(solutionIds.map((id) => recalcResultatsPourSolution(id)))
+  if (nouveauStatut === 'publiee') {
+    await Promise.all(solutionIds.map((id) => recalcResultatsPourSolution(id)))
+  }
 
   return pendingEvals.length
 }

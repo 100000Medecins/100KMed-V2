@@ -61,15 +61,28 @@ export async function GET(request: Request) {
           .eq('email_temp', user.email.toLowerCase())
           .eq('statut', 'en_attente_psc')
         if (pendingEvals && pendingEvals.length > 0) {
+          // Ne publier que si l'utilisateur a un RPPS (identité PSC vérifiée).
+          // Sinon : éval rattachée mais statut reste en_attente_psc → publication
+          // automatique au moment où l'utilisateur validera son PSC.
+          const { data: profileRow } = await adminSupabase
+            .from('users')
+            .select('rpps')
+            .eq('id', user.id)
+            .single()
+          const nouveauStatut = (profileRow as { rpps?: string | null } | null)?.rpps
+            ? 'publiee'
+            : 'en_attente_psc'
           await adminSupabase
             .from('evaluations')
-            .update({ user_id: user.id, statut: 'publiee', email_temp: null, token_verification: null })
+            .update({ user_id: user.id, statut: nouveauStatut, email_temp: null, token_verification: null })
             .eq('email_temp', user.email.toLowerCase())
             .eq('statut', 'en_attente_psc')
           for (const ev of pendingEvals) {
             if (ev.solution_id) {
               await ensureSolutionUtilisee(user.id, ev.solution_id)
-              await recalcResultatsPourSolution(ev.solution_id)
+              if (nouveauStatut === 'publiee') {
+                await recalcResultatsPourSolution(ev.solution_id)
+              }
             }
           }
         }

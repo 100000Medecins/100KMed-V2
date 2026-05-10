@@ -132,8 +132,12 @@ export async function mergeAccounts(
     return { ok: false, error: 'Erreur lors de la suppression du compte auth.' }
   }
 
-  // Publier les évaluations en attente sur le compte conservé (maintenant qu'il a le RPPS)
-  await s.from('evaluations').update({ statut: 'publiee' }).eq('user_id', keepId).eq('statut', 'en_attente_psc')
+  // Publier les évaluations en attente uniquement si le compte conservé a un RPPS
+  // (identité PSC vérifiée — peut venir du compte source via fusion, ou déjà présent)
+  const { data: keepRpps } = await s.from('users').select('rpps').eq('id', keepId).single()
+  if ((keepRpps as { rpps?: string | null } | null)?.rpps) {
+    await s.from('evaluations').update({ statut: 'publiee' }).eq('user_id', keepId).eq('statut', 'en_attente_psc')
+  }
 
   // Garantir une solutions_utilisees pour chaque éval migrée (évals issues du flux
   // anonyme rattachées par PSC peuvent ne pas en avoir, sinon elles n'apparaissent
