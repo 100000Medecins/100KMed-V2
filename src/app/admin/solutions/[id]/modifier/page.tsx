@@ -5,6 +5,7 @@ import { getAllCategoriesAdmin } from '@/lib/db/categories'
 import { getEditeurs } from '@/lib/db/editeurs'
 import { getSolutionByIdAdmin, getResultatsRedacAdmin, getTagsForSolutionAdmin } from '@/lib/db/admin-solutions'
 import SolutionWithSearch from '@/components/admin/SolutionWithSearch'
+import RecalcSolutionButton from '@/components/admin/RecalcSolutionButton'
 import { updateSolution } from '@/lib/actions/admin'
 
 interface PageProps {
@@ -41,6 +42,9 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
           solutionId={id}
           action={boundAction}
         />
+      </div>
+      <div className="mt-4 flex justify-end">
+        <RecalcSolutionButton solutionId={id} />
       </div>
     </div>
   )

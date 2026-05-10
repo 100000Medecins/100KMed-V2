@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/server'
+import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 
 /**
  * Callback Auth pour Supabase — gère deux formats :
@@ -49,6 +51,25 @@ export async function GET(request: Request) {
     if (user) {
       if (type === 'email_change' && user.email) {
         await supabase.from('users').update({ email: user.email, contact_email: user.email }).eq('id', user.id)
+      }
+
+      if (type === 'signup' && user.email) {
+        const adminSupabase = createServiceRoleClient()
+        const { data: pendingEvals } = await adminSupabase
+          .from('evaluations')
+          .select('id, solution_id')
+          .eq('email_temp', user.email.toLowerCase())
+          .eq('statut', 'en_attente_psc')
+        if (pendingEvals && pendingEvals.length > 0) {
+          await adminSupabase
+            .from('evaluations')
+            .update({ user_id: user.id, statut: 'publiee', email_temp: null, token_verification: null })
+            .eq('email_temp', user.email.toLowerCase())
+            .eq('statut', 'en_attente_psc')
+          for (const ev of pendingEvals) {
+            if (ev.solution_id) await recalcResultatsPourSolution(ev.solution_id)
+          }
+        }
       }
 
       const { data: profile } = await supabase

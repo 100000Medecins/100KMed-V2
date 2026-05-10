@@ -5,6 +5,37 @@
 
 ---
 
+## [2026-05-10] — Rattachement évals anonymes + audit recalc résultats + mobile
+
+### Fix — Rattachement évals anonymes à un compte
+- Cas "nouveau compte avec même email" : `api/auth/callback` rattache les évals
+  `en_attente_psc` correspondant à l'email après confirmation d'inscription (`type=signup`)
+- Cas "compte existant + login email/mdp" : nouvelle action `rattacherEvalsAnonymes()`
+  appelée au chargement de `/mon-compte/profil`
+- Fix `merge.ts` : recalc des résultats manquant après fusion de comptes — cause du
+  bug "éval visible dans mes-évaluations mais note absente sur la page solution"
+
+### Fix — Audit complet des appels recalcResultatsPourSolution
+- `account.ts` : recalc déclenché même quand `supprimerAvis: false` (anonymisation) —
+  le bug silencieux laissait les scores de l'ancien `user_id` dans `resultats.notes`
+- Suppression de `finalizeEvaluation` (dead code, jamais appelée, bug recalc manquant)
+- Suppression de `deleteAccount()` dans `user.ts` (doublon orphelin sans recalc)
+
+### Admin — Boutons recalc résultats
+- Nouvel endpoint `POST /api/admin/recalc-solution` : supporte `solutionId` ou `all:true`
+- Bouton "Recalculer les résultats" sur la page modifier d'une solution
+- Bouton "Recalcul global" sur la liste des solutions (avec confirmation)
+
+### UX / UI — Mobile évaluation
+- Page `/solution/noter` : clic sur une catégorie collapse les autres tuiles sur mobile
+  et scrolle automatiquement vers la barre de recherche
+- Page notation `[...slug]` : boutons "Soumettre / Retour" en colonne sur mobile (full width)
+
+### TODO — Mises à jour
+- Aucun item terminé cette session
+
+---
+
 ## [2026-05-09] — Fix note rédaction homepage + bundle + sécurité deps
 
 ### Fix — Note rédaction affichée 0.1 sur la homepage

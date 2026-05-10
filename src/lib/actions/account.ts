@@ -88,19 +88,18 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
   const s = supabase as any
 
   // 4. Traiter les évaluations
-  let solutionIdsToRecalc: string[] = []
-  if (supprimerAvis) {
-    // Récupérer les solutions affectées avant suppression
-    const { data: affectedEvals } = await supabase
-      .from('evaluations')
-      .select('solution_id')
-      .eq('user_id', user.id)
-      .eq('statut', 'publiee')
-    solutionIdsToRecalc = Array.from(new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean) as string[]))
+  // Récupérer les solutions impactées dans tous les cas (suppression ou anonymisation)
+  const { data: affectedEvals } = await supabase
+    .from('evaluations')
+    .select('solution_id')
+    .eq('user_id', user.id)
+    .eq('statut', 'publiee')
+  const solutionIdsToRecalc = Array.from(new Set((affectedEvals ?? []).map((e) => e.solution_id).filter(Boolean) as string[]))
 
+  if (supprimerAvis) {
     await supabase.from('evaluations').delete().eq('user_id', user.id)
   } else {
-    // Anonymiser : dissocier du compte mais garder la contribution aux scores
+    // Anonymiser : user_id = null, les scores ne sont plus comptabilisés (recalc ci-dessous)
     await s.from('evaluations').update({ user_id: null }).eq('user_id', user.id)
   }
 

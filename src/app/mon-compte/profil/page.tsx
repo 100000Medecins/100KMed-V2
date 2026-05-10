@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
+import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
@@ -117,6 +117,11 @@ export default function ProfilPage() {
       }
     }
     load()
+  }, [user, authLoading])
+
+  useEffect(() => {
+    if (authLoading || !user) return
+    rattacherEvalsAnonymes().catch(() => {})
   }, [user, authLoading])
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import { getCategories } from '@/lib/db/categories'
 import AdminCategoryFilter from '@/components/admin/AdminCategoryFilter'
 import AdminSolutionsTable from '@/components/admin/AdminSolutionsTable'
 import ScrollToSolution from '@/components/admin/ScrollToSolution'
+import RecalcAllSolutionsButton from '@/components/admin/RecalcAllSolutionsButton'
 
 interface PageProps {
   searchParams: { categorie?: string }
@@ -37,13 +38,16 @@ export default async function AdminSolutionsPage({ searchParams }: PageProps) {
             <span className="text-green-600 font-medium">{filtered.filter(s => s.actif).length} active{filtered.filter(s => s.actif).length > 1 ? 's' : ''}</span>
           </p>
         </div>
-        <Link
-          href="/admin/solutions/nouveau"
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft hover:shadow-card transition-all duration-300"
-        >
-          <Plus className="w-4 h-4" />
-          Ajouter une solution
-        </Link>
+        <div className="flex items-center gap-3">
+          <RecalcAllSolutionsButton />
+          <Link
+            href="/admin/solutions/nouveau"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft hover:shadow-card transition-all duration-300"
+          >
+            <Plus className="w-4 h-4" />
+            Ajouter une solution
+          </Link>
+        </div>
       </div>
 
       {/* Filtre par catégorie */}

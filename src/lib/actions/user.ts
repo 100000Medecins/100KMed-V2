@@ -363,37 +363,6 @@ export async function cancelEmailChange() {
 }
 
 /**
- * Supprime le compte utilisateur.
- * Remplace : mutation deleteUser
- *
- * Note : la suppression cascade via les FK supprime automatiquement
- * les évaluations, favoris, solutions utilisées, préférences.
- */
-export async function deleteAccount() {
-  const supabase = await createServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non authentifié')
-
-  // Utiliser le service role pour bypasser le RLS et garantir la suppression effective
-  const supabaseAdmin = createServiceRoleClient()
-
-  await supabaseAdmin.from('evaluations').delete().eq('user_id', user.id)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabaseAdmin as any).from('solutions_utilisees').delete().eq('user_id', user.id)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabaseAdmin as any).from('users_notification_preferences').delete().eq('user_id', user.id)
-  await supabaseAdmin.from('users').delete().eq('id', user.id)
-  await supabaseAdmin.auth.admin.deleteUser(user.id)
-
-  await supabase.auth.signOut()
-
-  return { status: 'SUCCESS' }
-}
-
-/**
  * Ajoute une préférence à l'utilisateur.
  * Remplace : mutation setPreferenceUser
  */
@@ -440,4 +409,36 @@ export async function removePreference(preferenceId: string) {
 
   revalidatePath('/mon-compte/mes-preferences')
   return { status: 'SUCCESS' }
+}
+
+/**
+ * Rattache les évaluations anonymes en attente (en_attente_psc) à l'utilisateur
+ * connecté, en matchant sur email_temp. Utilisé au chargement du profil pour
+ * couvrir le cas "compte existant + connexion email/mdp" (pas de callback signup).
+ */
+export async function rattacherEvalsAnonymes(): Promise<number> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) return 0
+
+  const adminSupabase = createServiceRoleClient()
+  const { data: pendingEvals } = await adminSupabase
+    .from('evaluations')
+    .select('id, solution_id')
+    .eq('email_temp', user.email.toLowerCase())
+    .eq('statut', 'en_attente_psc')
+
+  if (!pendingEvals || pendingEvals.length === 0) return 0
+
+  await adminSupabase
+    .from('evaluations')
+    .update({ user_id: user.id, statut: 'publiee', email_temp: null, token_verification: null })
+    .eq('email_temp', user.email.toLowerCase())
+    .eq('statut', 'en_attente_psc')
+
+  const { recalcResultatsPourSolution } = await import('@/lib/actions/evaluation')
+  const solutionIds = [...new Set(pendingEvals.map((e) => e.solution_id).filter(Boolean) as string[])]
+  await Promise.all(solutionIds.map((id) => recalcResultatsPourSolution(id)))
+
+  return pendingEvals.length
 }

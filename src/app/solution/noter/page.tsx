@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -32,6 +32,17 @@ export default function ChoisirSolutionPage() {
   const [search, setSearch] = useState('')
   const [selectedCategorie, setSelectedCategorie] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  const handleCategorieClick = (slug: string) => {
+    const next = selectedCategorie === slug ? null : slug
+    setSelectedCategorie(next)
+    if (next && window.innerWidth < 768) {
+      setTimeout(() => {
+        searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    }
+  }
 
   useEffect(() => {
     if (authLoading) return
@@ -98,14 +109,32 @@ export default function ChoisirSolutionPage() {
 
           {/* Cartes de catégories style comparatifs */}
           {categories.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               {categories.map((cat) => {
                 const isActive = selectedCategorie === cat.slug
+                if (selectedCategorie && !isActive) {
+                  return <div key={cat.slug} className="hidden md:block">
+                    <button
+                      type="button"
+                      onClick={() => handleCategorieClick(cat.slug)}
+                      className="relative overflow-hidden rounded-3xl min-h-[100px] w-full flex flex-col justify-start p-5 text-left transition-all duration-200 group"
+                      style={{ background: 'linear-gradient(135deg, #148080 0%, #7c35c0 55%, #1e4da0 100%)' }}
+                    >
+                      {cat.image_url ? (
+                        <img src={cat.image_url} alt="" className="absolute top-1/2 -translate-y-1/2 right-8 h-[80px] w-auto object-contain opacity-80 group-hover:opacity-100 transition-all duration-300 select-none pointer-events-none" />
+                      ) : cat.icon ? (
+                        <span className="absolute bottom-3 right-4 text-[80px] leading-none opacity-25 select-none">{cat.icon}</span>
+                      ) : null}
+                      <span className="text-lg font-extrabold text-white mb-2 leading-snug relative z-10">{cat.nom}</span>
+                      <span className="inline-flex items-center gap-1 bg-white/20 text-white font-semibold px-3 py-1.5 rounded-full text-xs w-fit relative z-10">{cat.count} logiciel{cat.count > 1 ? 's' : ''}</span>
+                    </button>
+                  </div>
+                }
                 return (
                   <button
                     key={cat.slug}
                     type="button"
-                    onClick={() => setSelectedCategorie(isActive ? null : cat.slug)}
+                    onClick={() => handleCategorieClick(cat.slug)}
                     className="relative overflow-hidden rounded-3xl min-h-[100px] flex flex-col justify-start p-5 text-left transition-all duration-200 group"
                     style={{
                       background: isActive
@@ -137,7 +166,7 @@ export default function ChoisirSolutionPage() {
           )}
 
           {/* Barre de recherche */}
-          <div className="relative mb-4">
+          <div ref={searchRef} className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"

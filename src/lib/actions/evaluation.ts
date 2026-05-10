@@ -354,45 +354,6 @@ export async function setupEvaluation(
   return { status: 'SUCCESS' }
 }
 
-/**
- * Finalise une évaluation.
- * Remplace : mutation setEvaluationFinalisee
- */
-export async function finalizeEvaluation(solutionId: string) {
-  const supabase = await createServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non authentifié')
-
-  // Déterminer le statut selon la présence du RPPS (identité PSC vérifiée)
-  const admin = createServiceRoleClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (admin as any)
-    .from('users')
-    .select('rpps')
-    .eq('id', user.id)
-    .single()
-  const statut = profile?.rpps ? 'publiee' : 'en_attente_psc'
-
-  // Mettre à jour le statut de la solution utilisée
-  await supabase
-    .from('solutions_utilisees')
-    .update({ statut_evaluation: 'finalisee' })
-    .eq('solution_id', solutionId)
-    .eq('user_id', user.id)
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any)
-    .from('evaluations')
-    .update({ last_date_note: new Date().toISOString(), statut })
-    .eq('solution_id', solutionId)
-    .eq('user_id', user.id)
-
-  revalidatePath(`/solutions`)
-  return { status: 'SUCCESS' }
-}
 
 /**
  * Reconfirme une évaluation en un clic (remet last_date_note à maintenant,

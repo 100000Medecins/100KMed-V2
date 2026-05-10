@@ -2,6 +2,7 @@
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { verifyFusionToken } from '@/lib/auth/fusionToken'
+import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 
 export interface FusionAccount {
   id: string
@@ -55,6 +56,17 @@ export async function mergeAccounts(
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = supabase as any
+
+  // Récupérer les solution_ids des évals migrées pour recalc après fusion
+  const { data: evalsToMigrate } = await s
+    .from('evaluations')
+    .select('solution_id')
+    .eq('user_id', deleteId)
+  const migratedSolutionIds = [...new Set(
+    ((evalsToMigrate as Array<{ solution_id: string }>) || [])
+      .map((e) => e.solution_id)
+      .filter(Boolean)
+  )] as string[]
 
   // Migrer les évaluations
   await s.from('evaluations').update({ user_id: keepId }).eq('user_id', deleteId)
@@ -122,6 +134,11 @@ export async function mergeAccounts(
 
   // Publier les évaluations en attente sur le compte conservé (maintenant qu'il a le RPPS)
   await s.from('evaluations').update({ statut: 'publiee' }).eq('user_id', keepId).eq('statut', 'en_attente_psc')
+
+  // Recalculer les scores pour toutes les solutions impactées par la migration
+  for (const solutionId of migratedSolutionIds) {
+    await recalcResultatsPourSolution(solutionId)
+  }
 
   // Générer un magic link pour établir la session sur le compte conservé
   // Utiliser auth.users.email (pas public.users.email) — évite de créer un utilisateur fantôme

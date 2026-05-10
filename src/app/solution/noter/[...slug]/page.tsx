@@ -1082,21 +1082,23 @@ export default function NoterPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mt-8">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                <Button
+                  variant="primary"
+                  onClick={handleSubmitAnonyme}
+                  className={`w-full sm:w-auto sm:order-2 ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {submitting ? 'Envoi en cours...' : 'Recevoir mon lien de vérification'}
+                  </span>
+                </Button>
                 <button
                   onClick={handleBack}
-                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                  className="sm:order-1 text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Retour
                 </button>
-                <Button
-                  variant="primary"
-                  onClick={handleSubmitAnonyme}
-                  className={submitting ? 'opacity-50 pointer-events-none' : ''}
-                >
-                  {submitting ? 'Envoi en cours...' : 'Recevoir mon lien de vérification'}
-                </Button>
               </div>
             </>
           )}
@@ -1157,15 +1159,39 @@ export default function NoterPage({ params }: PageProps) {
               )}
 
               {/* Navigation */}
-              <div className="flex justify-between items-center mt-8">
-                <button
-                  onClick={handleBack}
-                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Retour
-                </button>
-                <div className="flex items-center gap-3">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                {/* Bouton principal — pleine largeur sur mobile */}
+                {isLastStep ? (
+                  <Button
+                    variant="primary"
+                    onClick={handleSubmit}
+                    className={`w-full sm:w-auto sm:order-2 ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      {submitting ? 'Envoi en cours...' : 'Soumettre mon évaluation'}
+                    </span>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    onClick={handleNext}
+                    className="w-full sm:w-auto sm:order-2"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      Suivant
+                      <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </Button>
+                )}
+                {/* Actions secondaires */}
+                <div className="flex items-center justify-between sm:order-1 sm:gap-4">
+                  <button
+                    onClick={handleBack}
+                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Retour
+                  </button>
                   {!isLastStep && (
                     <button
                       onClick={handleSubmit}
@@ -1175,25 +1201,6 @@ export default function NoterPage({ params }: PageProps) {
                       <SkipForward className="w-4 h-4" />
                       Passer et soumettre
                     </button>
-                  )}
-                  {isLastStep ? (
-                    <Button
-                      variant="primary"
-                      onClick={handleSubmit}
-                      className={submitting ? 'opacity-50 pointer-events-none' : ''}
-                    >
-                      {submitting ? 'Envoi en cours...' : 'Soumettre mon évaluation'}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      onClick={handleNext}
-                    >
-                      <span className="flex items-center gap-2">
-                        Suivant
-                        <ArrowRight className="w-4 h-4" />
-                      </span>
-                    </Button>
                   )}
                 </div>
               </div>
