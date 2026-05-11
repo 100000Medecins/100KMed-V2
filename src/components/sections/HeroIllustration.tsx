@@ -1,15 +1,15 @@
 import type { CSSProperties } from 'react'
 
 const FLOATS = {
-  leftCard:       { y: [-5,  4], r: 0.9,  dur: 5.1, delay: 0.3, baseR: -5 },
-  rightCard:      { y: [-3,  6], r: 0.7,  dur: 4.6, delay: 1.2, baseR:  4 },
-  centralCard:    { y: [-6,  3], r: 0.5,  dur: 5.8, delay: 0.6, baseR:  0 },
-  badgeSolutions: { y: [-4,  5], r: 1.0,  dur: 4.2, delay: 1.7, baseR: -2 },
-  badgeAvis:      { y: [-5,  3], r: 1.2,  dur: 3.9, delay: 0.9, baseR: -4 },
-  badgeInscrits:  { y: [-3,  5], r: 0.8,  dur: 5.3, delay: 0.1, baseR: -3 },
-  citation:       { y: [-4,  4], r: 0.9,  dur: 4.7, delay: 1.5, baseR:  2 },
-  segur:          { y: [-3,  3], r: 0.4,  dur: 6.0, delay: 0.4, baseR: -2 },
-  rpps:           { y: [-4,  2], r: 0.5,  dur: 5.5, delay: 2.0, baseR:  2 },
+  leftCard:       { y: [-10,  8], r: 1.7,  dur: 3.5, delay: 0.3, baseR: -5 },
+  rightCard:      { y: [ -6, 12], r: 1.4,  dur: 3.2, delay: 1.2, baseR:  4 },
+  centralCard:    { y: [-12,  6], r: 1.0,  dur: 4.0, delay: 0.6, baseR:  0 },
+  badgeSolutions: { y: [ -8, 10], r: 1.9,  dur: 2.9, delay: 1.7, baseR: -2 },
+  badgeAvis:      { y: [-10,  6], r: 2.2,  dur: 2.7, delay: 0.9, baseR: -4 },
+  badgeInscrits:  { y: [ -6, 10], r: 1.5,  dur: 3.6, delay: 0.1, baseR: -3 },
+  citation:       { y: [ -8,  8], r: 1.7,  dur: 3.2, delay: 1.5, baseR:  2 },
+  segur:          { y: [ -6,  6], r: 0.8,  dur: 4.0, delay: 0.4, baseR: -2 },
+  rpps:           { y: [ -8,  4], r: 1.0,  dur: 3.8, delay: 2.0, baseR:  2 },
 }
 
 type FloatKey = keyof typeof FLOATS
