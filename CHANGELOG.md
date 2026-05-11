@@ -5,6 +5,23 @@
 
 ---
 
+## [2026-05-12] — UX/UI : completer-profil sans échappatoire + hero plus dynamique
+
+### UX / UI — Page completer-profil sans navigation cliquable
+- Remplacement de la `Navbar` cliquable par un header minimal sur `/completer-profil`
+  (logo non cliquable + lien "Se déconnecter" en haut à droite, `Footer` supprimé)
+- Raison : tout utilisateur PSC sans `is_complete=true` est de toute façon
+  re-redirigé ici à chaque login → éviter l'errance dans le site sans mot de passe
+- Escape hatch conservée : déconnexion explicite pour éviter la session active qui
+  re-piège l'utilisateur à chaque visite
+
+### UX / UI — Hero illustration plus vivant
+- Amplitude des animations flottantes ~1.8x plus large (translation 18-22px vs 9px,
+  rotation ~1.5-2° vs ~1°) sur `HeroIllustration`
+- Durées ~30% plus courtes (2.7-4s vs 3.9-6s) → mouvement plus perceptible
+
+---
+
 ## [2026-05-11] — Fix : statut éval rattachée respecte la validation PSC
 
 ### Fix — Rattachement éval anonyme ne doit pas publier sans RPPS
