@@ -5,7 +5,32 @@
 
 ---
 
-## [2026-05-12] — UX/UI : completer-profil sans échappatoire + hero plus dynamique
+## [2026-05-12] — Import users Firebase tardifs
+
+### Migration — 55 users Firebase post-2026-01-01 importés dans Supabase
+- Contexte : la migration initiale Firebase→Supabase du 12 avril 2026 a omis des
+  comptes créés entre janvier et avril (raison probable : timing du snapshot).
+  Plan défini la veille, exécuté ce jour.
+- Périmètre scanné : 1029 users Firestore avec `creation >= 2026-01-01`
+  - 492 déjà présents dans Supabase via RPPS (skip)
+  - 482 sans email exploitable côté Firebase (skip — comportement identique
+    au flow PSC actuel : à leur prochaine connexion PSC, ils seront redirigés
+    sur `/completer-profil` exactement comme un nouveau)
+  - 55 candidats nets importés (auth + table `users` + évaluations Firebase
+    remappées avec `critereId → identifiantTech`)
+  - 0 conflit email, 0 doublon interne Firebase
+- Cas spéciaux gérés :
+  - `dr.azerad@gmail.com` (David, RPPS 10100394740) : déjà migré, ses 5 évals
+    Firebase = tests perso → skippées
+  - `eva.de.peretti@gmail.com` : déjà migrée, éval `Crossway` commune (on garde
+    la version Supabase 2023-01-20), éval `Odaiji` (2026-04-07) absente côté
+    Supabase → importée
+- Bilan : **55 users créés, 18 évaluations importées, 10 solutions recalculées,
+  0 erreur**. Comptes créés sans email de notification (option B : ces users
+  pourront faire "mot de passe oublié" s'ils reviennent).
+- Script : `scripts/import-firebase-late-users.ts` (idempotent, dry-run par
+  défaut, `--execute` requis pour écrire). Conservé pour archive et au cas
+  où d'autres users tardifs apparaîtraient.
 
 ### UX / UI — Page completer-profil sans navigation cliquable
 - Remplacement de la `Navbar` cliquable par un header minimal sur `/completer-profil`

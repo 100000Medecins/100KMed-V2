@@ -1,0 +1,1 @@
+- [Accès Firebase Admin opérationnel](firebase_access.md) — service account JSON regénéré 2026-05-12, scripts prêts à l'emploi, structure Firestore documentée

@@ -42,34 +42,13 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - 2 mois après la migration Firebase (étape 1 ci-dessus)
 - Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
-#### Importer les ~10 utilisateurs Firebase inscrits après la migration initiale (avril 2026)
-- **Plan défini le 2026-05-12** — projet à lancer quand on aura le temps (durée ~1-2h)
-- Script à créer : `scripts/import-firebase-late-users.ts` (firebase-admin v13.7.0 déjà dans package.json)
+#### ~~Importer les utilisateurs Firebase tardifs~~ [OK] Fait 2026-05-12
+- Fenêtre élargie à 2026-01-01 (au lieu du seul post-migration) : 1029 users scannés
+- 55 users créés + 18 évaluations importées + 10 solutions recalculées, 0 erreur
+- Détails dans CHANGELOG. Script conservé : `scripts/import-firebase-late-users.ts`
 
-**Pré-requis bloquant** :
-- Récupérer le service account JSON `scripts/medecins-7a4ed-firebase-adminsdk-setys-*.json` (absent du repo, gitignored)
-  - Soit depuis l'autre machine où la migration initiale a tourné
-  - Soit re-télécharger depuis Firebase Console → projet `medecins-7a4ed` → Paramètres → Comptes de service → Générer nouvelle clé privée
-
-**Hypothèse à valider une fois Firebase accessible** :
-- `evaluations_firebase_backup` (Supabase) date a priori de la migration initiale → les évals des 10 users tardifs ne sont PAS dedans, elles sont uniquement dans Firestore live
-- Conséquence : lire profils + évaluations directement depuis Firestore, pas depuis le backup Supabase
-
-**Plan d'exécution** :
-1. Init Firebase Admin + Supabase service role
-2. `auth.listUsers()` filtré sur `metadata.creationTime > '2026-04-12'`
-3. Pour chaque user : lire profil Firestore (`users/{uid}`) + ses évaluations (collection à confirmer en explorant)
-4. **Phase 1 — `--dry-run`** : afficher liste des users et leurs évals, rien d'autre. Le user valide.
-5. **Phase 2 — exécution** :
-   - Vérifier existence par email dans Supabase auth avant création (éviter doublons : compte ré-inscrit via PSC depuis)
-   - Créer compte : `supabase.auth.admin.createUser({ email, email_confirm: true })`
-   - Insert dans `public.users` (nom, prénom, spécialité, mode_exercice depuis Firestore)
-   - Pour chaque éval Firestore : insert dans `evaluations` avec nouveau `user_id` Supabase, puis `ensureSolutionUtilisee()` + `recalcResultatsPourSolution()`
-6. **Pas d'email de notification** (option B retenue : création silencieuse, ces users ne sont pas revenus depuis 1 mois, ils pourront faire "mot de passe oublié" s'ils reviennent)
-
-**À la fin du projet** :
-- Confirmer que ces users (et leurs évals) sont bien dans Supabase
-- Ne supprimer `firebase-admin` de `package.json` et `evaluations_firebase_backup` qu'après ça
+**Restant à faire avant suppression de `firebase-admin` et `evaluations_firebase_backup`** :
+- Attendre période de stabilité (cf. item "Supprimer `evaluations_firebase_backup`" prévu 2026-06-26)
 
 ### Bugs à corriger
 
