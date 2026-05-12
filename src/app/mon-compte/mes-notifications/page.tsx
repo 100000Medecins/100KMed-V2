@@ -43,8 +43,7 @@ function Toggle({
 }
 
 export default function MesNotificationsPage() {
-  const { userRole } = useAuth()
-  const isEditeur = userRole === 'editeur'
+  const { isEditeur } = useAuth()
   const [prefs, setPrefs] = useState<Prefs>({
     relance_emails: true,
     marketing_emails: true,

@@ -35,8 +35,7 @@ function buildGroupes(categories: NavCategorie[]): Groupe[] {
 }
 
 export default function Navbar() {
-  const { user, userRole, loading, signOut } = useAuth();
-  const isEditeur = userRole === 'editeur'
+  const { user, isEditeur, loading, signOut } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);

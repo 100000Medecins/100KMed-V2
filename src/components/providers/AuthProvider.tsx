@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null
   userRole: string | null
   isEtudiant: boolean
+  isEditeur: boolean
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userRole: null,
   isEtudiant: false,
+  isEditeur: false,
   loading: false,
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
@@ -55,6 +57,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [isEtudiant, setIsEtudiant] = useState(false)
+  const [isEditeur, setIsEditeur] = useState(false)
   const [loading, setLoading] = useState(true)
   const userIdRef = useRef<string | null>(null)
 
@@ -75,12 +78,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase as any).from('users').select('role, mode_exercice').eq('id', userId).single()
-        setUserRole((data as any)?.role ?? null)
-        setIsEtudiant((data as any)?.mode_exercice === 'Étudiant')
+        const role = (data as any)?.role ?? null
+        const modeExercice = (data as any)?.mode_exercice
+        setUserRole(role)
+        setIsEtudiant(modeExercice === 'Étudiant')
+        // isEditeur dès l'inscription (mode_exercice) — sans attendre la validation admin (role)
+        setIsEditeur(modeExercice === 'Éditeur' || role === 'editeur')
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
         setUserRole(null)
         setIsEtudiant(false)
+        setIsEditeur(false)
       }
     }
 
@@ -102,7 +110,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       // fetchRole en fire-and-forget : ne doit jamais bloquer setLoading
       if (newUser) fetchRole(newUser.id)
-      else { setUserRole(null); setIsEtudiant(false) }
+      else { setUserRole(null); setIsEtudiant(false); setIsEditeur(false) }
     })
 
     return () => subscription.unsubscribe()
@@ -192,12 +200,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setUserRole(null)
     setIsEtudiant(false)
+    setIsEditeur(false)
     // Déléguer la déconnexion à la route serveur qui nettoie les cookies SSR
     window.location.href = '/api/auth/signout'
   }
 
   return (
-    <AuthContext.Provider value={{ user, userRole, isEtudiant, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ user, userRole, isEtudiant, isEditeur, loading, signInWithPSC, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   )

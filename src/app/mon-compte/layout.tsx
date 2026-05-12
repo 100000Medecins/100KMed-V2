@@ -10,9 +10,8 @@ import { useEffect, useState } from 'react'
 
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, userRole, signOut, loading } = useAuth()
+  const { user, isEditeur, signOut, loading } = useAuth()
   const [hasQuestionnaires, setHasQuestionnaires] = useState(false)
-  const isEditeur = userRole === 'editeur'
 
   useEffect(() => {
     if (!user || isEditeur) return
