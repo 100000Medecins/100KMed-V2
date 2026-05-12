@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-05-13] — Fix chaîne d'inscription / approbation / UI éditeur
+
+### Fix — Lien bidirectionnel manquant après approbation
+- `approuverEditeurClaim` ne remplissait que `users.editeur_id` et `users.role = 'editeur'`, sans toucher à `editeurs.user_id`
+- Conséquence : `/mon-compte/mon-espace-editeur` cherche via `editeurs.user_id` → affichait "Aucun éditeur associé" même après validation admin
+- Fix : ajout d'un `UPDATE editeurs SET user_id = ... WHERE id = ...` dans le flux d'approbation + revalidation des paths côté éditeur
+
+### Fix — Sélecteur d'éditeur non verrouillé sur /mon-compte/profil
+- L'utilisateur pouvait re-soumettre des claims successifs, le sélecteur restait ouvert
+- Fix : chargement du dernier claim (`editeur_claims` ordre desc), affichage verrouillé avec badge selon statut (`en_attente` orange, `approuve` vert avec ✓)
+- Si statut `rejete` : sélecteur réouvert avec affichage de la note admin
+- Validation du formulaire ajustée : ne réclame plus `claimFilled` quand un claim verrouillé existe
+
+### Fix — UI épurée dès l'inscription éditeur (avant validation admin)
+- Avant : l'UI éditeur (masquage "Évaluer un logiciel", onglets "Mes évaluations" / "Études cliniques" / "Questionnaires de thèse", 3 notifs) ne s'appliquait qu'après que l'admin ait défini `users.role = 'editeur'`
+- Fix : nouveau flag `isEditeur` dans `AuthProvider`, true si `mode_exercice === 'Éditeur'` OU `role === 'editeur'`. L'UI filtrée s'applique dès le premier login post-inscription
+- 3 composants utilisant le flag : `Navbar.tsx`, `app/mon-compte/layout.tsx`, `mes-notifications/page.tsx`
+
+### TODO — Mises à jour
+- Marqué terminé : Vérifier tous les comportements utilisateurs (tests end-to-end) ✅
+- Ajouté (IMPORTANT) : Vérifier le comportement d'un inscrit en tant qu'éditeur
+- Ajouté (UX/UI) : Point rouge admin sur catégories parent si modération en attente
+- Ajouté (UX/UI) : Parcours utilisateur pour proposer une vidéo stories & tutos
+
+---
+
 ## [2026-05-12] — Nettoyage colonnes obsolètes table `solutions`
 
 ### Refactor — Suppression colonnes Firebase résiduelles sans usage front
