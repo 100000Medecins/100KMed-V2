@@ -208,7 +208,6 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     general: true,
     apparence: false,
-    tarification: false,
     editorial: false,
     criteres: false,
     fonctionnalites: false,
@@ -367,78 +366,15 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             )}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label htmlFor="version" className={labelClass}>Version</label>
-            <input
-              id="version"
-              type="text"
-              name="version"
-              defaultValue={solution?.version ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="logo_titre" className={labelClass}>Titre du logo</label>
-            <input
-              id="logo_titre"
-              type="text"
-              name="logo_titre"
-              defaultValue={solution?.logo_titre ?? ''}
-              className={inputClass}
-            />
-          </div>
-        </div>
-      </Section>
-
-      {/* Section 2 — Tarification */}
-      <Section
-        title="Tarification et segments"
-        isOpen={openSections.tarification}
-        onToggle={() => toggleSection('tarification')}
-      >
         <div>
-          <label htmlFor="prix" className={labelClass}>Prix (JSON)</label>
-          <textarea
-            id="prix"
-            name="prix"
-            defaultValue={(solution as any)?.prix ? JSON.stringify((solution as any).prix, null, 2) : ''}
-            rows={4}
-            className={textareaClass}
-            placeholder='{ "mensuel": 99, "annuel": 990 }'
+          <label htmlFor="logo_titre" className={labelClass}>Titre du logo</label>
+          <input
+            id="logo_titre"
+            type="text"
+            name="logo_titre"
+            defaultValue={solution?.logo_titre ?? ''}
+            className={inputClass}
           />
-        </div>
-        <div>
-          <label htmlFor="segments" className={labelClass}>Segments (JSON)</label>
-          <textarea
-            id="segments"
-            name="segments"
-            defaultValue={solution?.segments ? JSON.stringify(solution.segments, null, 2) : ''}
-            rows={3}
-            className={textareaClass}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label htmlFor="nb_utilisateurs" className={labelClass}>Nb utilisateurs (JSON)</label>
-            <textarea
-              id="nb_utilisateurs"
-              name="nb_utilisateurs"
-              defaultValue={solution?.nb_utilisateurs ? JSON.stringify(solution.nb_utilisateurs, null, 2) : ''}
-              rows={2}
-              className={textareaClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="duree_engagement" className={labelClass}>Durée engagement (JSON)</label>
-            <textarea
-              id="duree_engagement"
-              name="duree_engagement"
-              defaultValue={solution?.duree_engagement ? JSON.stringify(solution.duree_engagement, null, 2) : ''}
-              rows={2}
-              className={textareaClass}
-            />
-          </div>
         </div>
       </Section>
 

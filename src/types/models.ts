@@ -120,15 +120,6 @@ export type EvaluationScores = Record<string, string | number | null>
 /** Structure des notes par utilisateur (stocké dans resultats.notes) */
 export type NotesParUtilisateur = Record<string, number>
 
-/** Structure du prix (stocké dans solutions.prix) */
-export interface Prix {
-  prix_ttc: number
-  devise: string
-  frequence: string
-  duree_engagement_mois: number
-  created: string
-}
-
 /** Structure de la répartition HSL (stocké dans solutions) */
 export interface ColorHSL {
   h: number

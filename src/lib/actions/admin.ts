@@ -86,7 +86,6 @@ function extractSolutionFromFormData(formData: FormData) {
     logo_url: (formData.get('logo_url') as string) || null,
     logo_titre: (formData.get('logo_titre') as string) || null,
     website: (formData.get('website_url') as string) || null,
-    version: (formData.get('version') as string) || null,
     evaluation_redac_avis: (formData.get('evaluation_redac_avis') as string) || null,
     evaluation_redac_points_forts: (formData.get('evaluation_redac_points_forts') as string)
       ? (formData.get('evaluation_redac_points_forts') as string).split('\n').filter(Boolean)
@@ -101,9 +100,6 @@ function extractSolutionFromFormData(formData: FormData) {
       const c = (formData.get('meta_canonical') as string) || null
       return (t || d || c) ? { title: t, description: d, canonical: c } : null
     })(),
-    segments: formData.get('segments') ? (() => { try { return JSON.parse(formData.get('segments') as string) } catch { return null } })() : null,
-    nb_utilisateurs: formData.get('nb_utilisateurs') ? (() => { try { return JSON.parse(formData.get('nb_utilisateurs') as string) } catch { return null } })() : null,
-    duree_engagement: formData.get('duree_engagement') ? (() => { try { return JSON.parse(formData.get('duree_engagement') as string) } catch { return null } })() : null,
   }
 }
 

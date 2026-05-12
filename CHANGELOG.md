@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-05-12] — Nettoyage colonnes obsolètes table `solutions`
+
+### Refactor — Suppression colonnes Firebase résiduelles sans usage front
+- Champs admin retirés de `SolutionForm.tsx` (section "Tarification et segments"
+  + input "Version") : ils s'affichaient encore alors qu'ils n'avaient plus
+  aucune traduction côté site
+- Colonnes DROP : `solutions.version`, `solutions.segments`,
+  `solutions.nb_utilisateurs`, `solutions.duree_engagement`
+  (migration `006_cleanup_solutions_obsolete_columns.sql`)
+- Server action `extractSolutionFromFormData` (`src/lib/actions/admin.ts`) :
+  retrait des 4 propriétés correspondantes du payload
+- Composant `SolutionDetail.legacy.tsx` supprimé (mort, plus importé nulle part,
+  seul consommateur du champ `version`)
+- Type `Prix` retiré de `src/types/models.ts` (faisait référence à `solutions.prix`
+  déjà supprimé précédemment, jamais importé ailleurs)
+- Champ `logo_titre` conservé : utilisé comme `alt` d'image sur `SolutionList`,
+  `SolutionHero`, page éditeur, admin éditeurs (SEO + accessibilité)
+- Migration SQL appliquée + `database.ts` régénéré au cours de la session
+
+---
+
 ## [2026-05-12] — Import users Firebase tardifs
 
 ### Migration — 55 users Firebase post-2026-01-01 importés dans Supabase
