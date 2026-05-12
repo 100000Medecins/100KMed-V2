@@ -46,6 +46,12 @@ export default function ProfilPage() {
   const isEditeur = modeExercice === 'Éditeur'
   const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
   const claimFilled = showLibreTexte ? libreTexte.trim().length > 0 : claimValue.length > 0
+  // État du claim existant (verrouille le sélecteur si une demande est en cours ou approuvée)
+  const [existingClaim, setExistingClaim] = useState<{
+    statut: 'en_attente' | 'approuve' | 'rejete'
+    label: string
+    noteAdmin: string | null
+  } | null>(null)
 
   // Email
   const [showEmailForm, setShowEmailForm] = useState(false)
@@ -81,6 +87,29 @@ export default function ProfilPage() {
           .select('nom, prenom, pseudo, specialite, mode_exercice, portrait, rpps, contact_email')
           .eq('id', user.id)
           .single()
+
+        // Récupérer le claim éditeur le plus récent (en_attente / approuve / rejete)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: claimRow } = await (supabase as any)
+          .from('editeur_claims')
+          .select('statut, libre_texte, note_admin, editeur:editeurs(nom, nom_commercial), solution:solutions(nom)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (claimRow) {
+          const label = claimRow.editeur?.nom_commercial
+            || claimRow.editeur?.nom
+            || claimRow.solution?.nom
+            || claimRow.libre_texte
+            || 'Demande en cours'
+          setExistingClaim({
+            statut: claimRow.statut,
+            label,
+            noteAdmin: claimRow.note_admin || null,
+          })
+        }
+
         if (data) {
           const loadedNom = data.nom || ''
           const loadedPrenom = data.prenom || ''
@@ -165,7 +194,9 @@ export default function ProfilPage() {
     }
   }
 
-  const isValid = nom.trim() && prenom.trim() && modeExercice && (isEditeur ? claimFilled : !!specialite)
+  // Si un claim approuvé ou en attente existe, le champ éditeur est considéré rempli (verrouillé en lecture seule)
+  const hasLockedClaim = !!existingClaim && existingClaim.statut !== 'rejete'
+  const isValid = nom.trim() && prenom.trim() && modeExercice && (isEditeur ? (hasLockedClaim || claimFilled) : !!specialite)
   const isDirty = nom !== initialValuesRef.current.nom ||
     prenom !== initialValuesRef.current.prenom ||
     pseudo !== initialValuesRef.current.pseudo ||
@@ -189,7 +220,8 @@ export default function ProfilPage() {
         mode_exercice: modeExercice,
       })
 
-      if (isEditeur) {
+      // Ne créer un nouveau claim que si aucun claim verrouillé (approuvé ou en attente) n'existe
+      if (isEditeur && !hasLockedClaim && claimFilled) {
         let editeur_id: string | undefined
         let solution_id: string | undefined
         if (claimValue.startsWith('editeur:')) editeur_id = claimValue.replace('editeur:', '')
@@ -598,22 +630,41 @@ export default function ProfilPage() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                       Votre solution ou éditeur <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={claimValue}
-                      onChange={(e) => setClaimValue(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
-                    >
-                      <option value="">Sélectionnez votre solution ou éditeur</option>
-                      <option value={LIBRE_TEXTE_VALUE}>Je ne trouve pas dans la liste</option>
-                      {claimOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Votre demande sera examinée par notre équipe avant validation.
-                    </p>
+
+                    {/* Si un claim existe (en_attente / approuve / rejete) → afficher verrouillé */}
+                    {existingClaim && existingClaim.statut !== 'rejete' ? (
+                      <div className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500 flex items-center justify-between">
+                        <span>{existingClaim.label}</span>
+                        {existingClaim.statut === 'approuve' ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                            <Check className="w-3 h-3" /> Approuvé
+                          </span>
+                        ) : (
+                          <span className="text-xs text-orange-600 font-medium">En attente</span>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <select
+                          value={claimValue}
+                          onChange={(e) => setClaimValue(e.target.value)}
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                        >
+                          <option value="">Sélectionnez votre solution ou éditeur</option>
+                          <option value={LIBRE_TEXTE_VALUE}>Je ne trouve pas dans la liste</option>
+                          {claimOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {existingClaim?.statut === 'rejete'
+                            ? `Demande précédente refusée${existingClaim.noteAdmin ? ` : ${existingClaim.noteAdmin}` : ''}. Vous pouvez en soumettre une nouvelle.`
+                            : 'Votre demande sera examinée par notre équipe avant validation.'}
+                        </p>
+                      </>
+                    )}
                   </div>
-                  {showLibreTexte && (
+                  {showLibreTexte && !hasLockedClaim && (
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Nom de votre solution ou éditeur <span className="text-red-500">*</span>

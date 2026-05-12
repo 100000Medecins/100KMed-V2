@@ -8,12 +8,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### IMPORTANT
 
-#### Vérifier tous les comportements utilisateurs (tests end-to-end)
+#### ~~Vérifier tous les comportements utilisateurs (tests end-to-end)~~ [OK] Fait 2026-05-12
 - Connexion email/mot de passe, inscription, reset password
 - Changement d'email et de mot de passe depuis le profil
 - Connexion PSC, fusion PSC (compte existant), banner PSC post-fusion
 - Suppression de compte (avec et sans suppression des avis)
 - Suppression admin d'un utilisateur
+
+#### Vérifier le comportement d'un inscrit en tant qu'éditeur
+- Inscription via le parcours éditeur (revendication d'une fiche solution)
+- Connexion éditeur, accès aux fiches revendiquées
+- Édition des champs autorisés, modération éventuelle
+- Cas limites : éditeur qui revendique une fiche déjà claim, suppression de compte éditeur
 
 #### ~~Alléger les pages du site (bundle / code inspection)~~ [OK] Fait 2026-05-09
 
@@ -53,6 +59,19 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Bugs à corriger
 
 ### UX / UI
+
+#### Point rouge admin sur catégories parent (sidebar)
+- Afficher un point rouge sur la catégorie parent dans la colonne de gauche de l'admin si :
+  - Nouvelle étude & thèse à valider
+  - Nouvelle vidéo à valider
+  - Nouvel éditeur à valider (demande en attente dans `editeur_claims`)
+- Objectif : voir d'un coup d'œil ce qui demande modération
+
+#### Permettre à un utilisateur inscrit de proposer une nouvelle vidéo (stories & tutos)
+- Ajouter un parcours côté front pour qu'un utilisateur connecté soumette une proposition de vidéo
+- Modération admin avant publication (à intégrer avec le point rouge admin ci-dessus)
+
+
 
 #### Créer un design system pour le site
 - Définir les tokens de design (couleurs, typographie, espacement, ombres, border-radius) dans un fichier de référence

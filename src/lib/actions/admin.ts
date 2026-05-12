@@ -704,6 +704,12 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
     .update({ editeur_id: editeurId, role: 'editeur' })
     .eq('id', claim.user_id)
 
+  // Lien bidirectionnel : remplir editeurs.user_id pour que /mon-compte/mon-espace-editeur trouve l'éditeur
+  await supabase
+    .from('editeurs')
+    .update({ user_id: claim.user_id })
+    .eq('id', editeurId)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('editeur_claims')
@@ -712,6 +718,8 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
 
   revalidatePath('/admin/editeurs')
   revalidatePath('/admin/utilisateurs')
+  revalidatePath('/mon-compte/mon-espace-editeur')
+  revalidatePath('/mon-compte/profil')
 }
 
 export async function rejeterEditeurClaim(claimId: string, noteAdmin?: string) {

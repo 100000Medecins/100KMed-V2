@@ -35,7 +35,8 @@ function buildGroupes(categories: NavCategorie[]): Groupe[] {
 }
 
 export default function Navbar() {
-  const { user, loading, signOut } = useAuth();
+  const { user, userRole, loading, signOut } = useAuth();
+  const isEditeur = userRole === 'editeur'
   const pathname = usePathname();
   const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
@@ -291,12 +292,14 @@ export default function Navbar() {
           >
             <Search className="w-5 h-5" />
           </button>
-          {/* Bouton Évaluer mobile */}
-          <div className="min-[1150px]:hidden">
-            <Button variant="white" href="/solution/noter" className="text-xs py-1.5 px-3">
-              Évaluer
-            </Button>
-          </div>
+          {/* Bouton Évaluer mobile — masqué pour les éditeurs */}
+          {!isEditeur && (
+            <div className="min-[1150px]:hidden">
+              <Button variant="white" href="/solution/noter" className="text-xs py-1.5 px-3">
+                Évaluer
+              </Button>
+            </div>
+          )}
           {/* Burger mobile — toujours à droite */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -310,9 +313,11 @@ export default function Navbar() {
           <div className="hidden min-[1150px]:flex items-center gap-3">
             {!loading && user ? (
               <>
-                <Button variant="primary" href="/solution/noter" className="border-2 border-white">
-                  Évaluer un logiciel
-                </Button>
+                {!isEditeur && (
+                  <Button variant="primary" href="/solution/noter" className="border-2 border-white">
+                    Évaluer un logiciel
+                  </Button>
+                )}
                 <div ref={accountMenuRef} className="relative">
                   <button
                     type="button"
@@ -466,9 +471,11 @@ export default function Navbar() {
             <div className="pt-4 space-y-2">
               {!loading && user ? (
                 <>
-                  <Button variant="primary" href="/solution/noter" className="w-full justify-center border border-white/40">
-                    Évaluer un logiciel
-                  </Button>
+                  {!isEditeur && (
+                    <Button variant="primary" href="/solution/noter" className="w-full justify-center border border-white/40">
+                      Évaluer un logiciel
+                    </Button>
+                  )}
                   <Button variant="white" href="/mon-compte/profil" className="w-full justify-center" onClick={() => setIsMobileOpen(false)}>
                     <UserCircle className="w-4 h-4" />
                     Mon compte

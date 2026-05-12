@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notifications'
+import { useAuth } from '@/components/providers/AuthProvider'
 import Link from 'next/link'
 import { Bell, RefreshCw, Mail, CheckCircle, FlaskConical, BookOpen } from 'lucide-react'
 
@@ -42,6 +43,8 @@ function Toggle({
 }
 
 export default function MesNotificationsPage() {
+  const { userRole } = useAuth()
+  const isEditeur = userRole === 'editeur'
   const [prefs, setPrefs] = useState<Prefs>({
     relance_emails: true,
     marketing_emails: true,
@@ -87,26 +90,28 @@ export default function MesNotificationsPage() {
 
       <div className="bg-white rounded-card shadow-card divide-y divide-gray-100">
 
-        {/* Relances évaluations */}
-        <div className="flex items-start justify-between gap-4 p-5">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 w-9 h-9 rounded-xl bg-accent-blue/10 flex items-center justify-center flex-shrink-0">
-              <RefreshCw className="w-4 h-4 text-accent-blue" />
+        {/* Relances évaluations — masqué pour les éditeurs */}
+        {!isEditeur && (
+          <div className="flex items-start justify-between gap-4 p-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 w-9 h-9 rounded-xl bg-accent-blue/10 flex items-center justify-center flex-shrink-0">
+                <RefreshCw className="w-4 h-4 text-accent-blue" />
+              </div>
+              <div>
+                <p className="font-medium text-navy text-sm">Rappels de revalidation</p>
+                <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
+                  Recevez un email lorsque votre avis sur un logiciel date de plus d&apos;un an,
+                  pour confirmer qu&apos;il est toujours d&apos;actualité.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-navy text-sm">Rappels de revalidation</p>
-              <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
-                Recevez un email lorsque votre avis sur un logiciel date de plus d&apos;un an,
-                pour confirmer qu&apos;il est toujours d&apos;actualité.
-              </p>
-            </div>
+            <Toggle
+              checked={prefs.relance_emails}
+              onChange={(v) => handleToggle('relance_emails', v)}
+              disabled={isPending}
+            />
           </div>
-          <Toggle
-            checked={prefs.relance_emails}
-            onChange={(v) => handleToggle('relance_emails', v)}
-            disabled={isPending}
-          />
-        </div>
+        )}
 
         {/* Emails marketing / annonces */}
         <div className="flex items-start justify-between gap-4 p-5">
@@ -129,57 +134,61 @@ export default function MesNotificationsPage() {
           />
         </div>
 
-        {/* Études cliniques */}
-        <div className="flex items-start justify-between gap-4 p-5">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-              <FlaskConical className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-medium text-navy text-sm">Études cliniques</p>
-                <span className="text-xs text-emerald-600 font-medium">avec le Digital Medica Hub</span>
+        {/* Études cliniques — masqué pour les éditeurs */}
+        {!isEditeur && (
+          <div className="flex items-start justify-between gap-4 p-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <FlaskConical className="w-4 h-4 text-emerald-500" />
               </div>
-              <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
-                Recevez des informations à propos d&apos;études cliniques sur de nouveaux logiciels
-                médicaux ou appareils connectés en santé.
-              </p>
-              <p className="text-xs text-emerald-600 mt-1">
-                Plus d&apos;informations dans l&apos;onglet{' '}
-                <Link href="/mon-compte/etudes-cliniques" className="font-medium underline hover:text-emerald-700">
-                  Études cliniques
-                </Link>.
-              </p>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium text-navy text-sm">Études cliniques</p>
+                  <span className="text-xs text-emerald-600 font-medium">avec le Digital Medica Hub</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
+                  Recevez des informations à propos d&apos;études cliniques sur de nouveaux logiciels
+                  médicaux ou appareils connectés en santé.
+                </p>
+                <p className="text-xs text-emerald-600 mt-1">
+                  Plus d&apos;informations dans l&apos;onglet{' '}
+                  <Link href="/mon-compte/etudes-cliniques" className="font-medium underline hover:text-emerald-700">
+                    Études cliniques
+                  </Link>.
+                </p>
+              </div>
             </div>
+            <Toggle
+              checked={prefs.etudes_cliniques}
+              onChange={(v) => handleToggle('etudes_cliniques', v)}
+              disabled={isPending}
+            />
           </div>
-          <Toggle
-            checked={prefs.etudes_cliniques}
-            onChange={(v) => handleToggle('etudes_cliniques', v)}
-            disabled={isPending}
-          />
-        </div>
+        )}
 
-        {/* Questionnaires de thèse / e-santé */}
-        <div className="flex items-start justify-between gap-4 p-5">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-4 h-4 text-amber-500" />
+        {/* Questionnaires de thèse / e-santé — masqué pour les éditeurs */}
+        {!isEditeur && (
+          <div className="flex items-start justify-between gap-4 p-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-4 h-4 text-amber-500" />
+              </div>
+              <div>
+                <p className="font-medium text-navy text-sm">Questionnaires de recherche</p>
+                <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
+                  Répondez à des questionnaires de thèse ou des études académiques
+                  sur le thème de l&apos;e-santé.
+                </p>
+                <p className="text-xs text-gray-400 mt-1 italic">Plus d&apos;informations prochainement.</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-navy text-sm">Questionnaires de recherche</p>
-              <p className="text-xs text-gray-500 mt-0.5 max-w-sm">
-                Répondez à des questionnaires de thèse ou des études académiques
-                sur le thème de l&apos;e-santé.
-              </p>
-              <p className="text-xs text-gray-400 mt-1 italic">Plus d&apos;informations prochainement.</p>
-            </div>
+            <Toggle
+              checked={prefs.questionnaires_these}
+              onChange={(v) => handleToggle('questionnaires_these', v)}
+              disabled={isPending}
+            />
           </div>
-          <Toggle
-            checked={prefs.questionnaires_these}
-            onChange={(v) => handleToggle('questionnaires_these', v)}
-            disabled={isPending}
-          />
-        </div>
+        )}
 
         {/* Note transactionnels */}
         <div className="flex items-start gap-3 p-5 bg-surface-light rounded-b-card">

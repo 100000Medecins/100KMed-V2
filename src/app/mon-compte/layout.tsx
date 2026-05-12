@@ -8,32 +8,36 @@ import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useEffect, useState } from 'react'
 
-const baseNavItems = [
-  { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
-  { href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck },
-  { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
-]
-
 export default function MonCompteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { user, userRole, signOut, loading } = useAuth()
   const [hasQuestionnaires, setHasQuestionnaires] = useState(false)
+  const isEditeur = userRole === 'editeur'
 
   useEffect(() => {
-    if (!user) return
+    if (!user || isEditeur) return
     import('@/lib/actions/questionnaires-these').then(({ hasMesQuestionnaires }) => {
       hasMesQuestionnaires().then(setHasQuestionnaires)
     })
-  }, [user])
+  }, [user, isEditeur])
 
+  // Items masqués pour les éditeurs : Mes évaluations, Études cliniques, Questionnaires de thèse, Mes questionnaires de thèse
   const navItems = [
-    ...baseNavItems,
-    ...(userRole === 'editeur'
+    { href: '/mon-compte/profil', label: 'Mon compte', icon: UserCircle },
+    ...(isEditeur
+      ? []
+      : [{ href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck }]),
+    { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
+    ...(isEditeur
       ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Mon espace éditeur', icon: Building2 }]
       : []),
-    { href: '/mon-compte/etudes-cliniques', label: 'Études cliniques', icon: FlaskConical },
-    { href: '/mon-compte/questionnaires-these', label: 'Questionnaires de thèse', icon: BookOpen },
-    ...(hasQuestionnaires || pathname.startsWith('/mon-compte/mes-questionnaires-these')
+    ...(isEditeur
+      ? []
+      : [
+          { href: '/mon-compte/etudes-cliniques', label: 'Études cliniques', icon: FlaskConical },
+          { href: '/mon-compte/questionnaires-these', label: 'Questionnaires de thèse', icon: BookOpen },
+        ]),
+    ...(!isEditeur && (hasQuestionnaires || pathname.startsWith('/mon-compte/mes-questionnaires-these'))
       ? [{ href: '/mon-compte/mes-questionnaires-these', label: 'Mes questionnaires de thèse', icon: GraduationCap }]
       : []),
   ]
