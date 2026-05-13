@@ -1,6 +1,8 @@
 # Flux de création utilisateur — 100 000 Médecins
 
-Daté 2026-05-02. À mettre à jour si le flux change.
+Daté 2026-05-14. À mettre à jour si le flux change.
+
+> **Voir aussi** : [auth-navigation.md](auth-navigation.md) pour la **couche navigation** (`window.location.href` vs `router.push`, middleware, redirections post-auth). Ce doc-ci couvre la **couche données** (quelles tables sont remplies à quel moment, race conditions, rattachements).
 
 ---
 
@@ -73,7 +75,7 @@ Pour les utilisateurs email/mdp :
 - Redirect vers le wallet PSC
 
 ### Étape 2 — Callback PSC
-**Route** : `src/app/api/auth/psc-callback/route.ts`
+**Route** : `src/app/api/auth/psc-callback/route.ts` (Route Handler, côté serveur)
 
 1. Valide `state` (anti-CSRF)
 2. Échange le `code` contre des tokens PSC
@@ -83,11 +85,22 @@ Pour les utilisateurs email/mdp :
    - `SubjectRefPro.exercices[0].codeSavoirFaire` (type=`'S'`) → spécialité (code SM, résolu via `SM_SPECIALITES`)
    - `activities[0].codeModeExercice` → mode d'exercice (`L`=Libéral, `S`=Salarié)
 4. Crée ou met à jour `auth.users` via admin API (`generateLink` ou `updateUserById`)
-5. Vérifie OTP côté serveur → crée la session cookie
-6. Crée `public.users` si inexistant (avec `rpps`, nom, prénom, spécialité)
-7. Si `is_complete = false` → redirect `/completer-profil`
+5. Crée `public.users` si inexistant (avec `rpps`, nom, prénom, spécialité)
+6. Rattache les évaluations anonymes `en_attente_psc` (voir §Flux 3)
+7. Génère un magiclink Supabase via `auth.admin.generateLink({ type: 'magiclink' })`
+8. Redirige vers `/auth/psc-session?token=<token_hash>&next=<destination>` où `destination` vaut `/completer-profil` si `is_complete=false`, sinon `/mon-compte/profil` (avec `?evaluation=publiee` si une éval a été rattachée)
 
-### Étape 3 — Complétion du profil PSC
+> ⚠️ La session cookie **n'est pas créée par le callback**. Elle est créée à l'étape 3 ci-dessous, côté client.
+
+### Étape 3 — Création de session (`/auth/psc-session`)
+**Page client** : `src/app/auth/psc-session/page.tsx`
+
+1. Lit le `token` en query string
+2. Appelle `supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' })` → consomme le magiclink et **crée la session cookie côté navigateur**
+3. En cas de succès : `window.location.replace(next)` (navigation native — voir [auth-navigation.md](auth-navigation.md))
+4. Timeout 10s ou erreur : `window.location.replace('/connexion?error=psc_session_error')`
+
+### Étape 4 — Complétion du profil PSC
 **Page** : `/completer-profil` (flag `isFromPsc = true`)
 
 - Champs PSC en **lecture seule** : nom, prénom, spécialité, mode d'exercice (`isFromPsc` détecté via `profile.rpps` ou `user_metadata.provider === 'psc'`)
