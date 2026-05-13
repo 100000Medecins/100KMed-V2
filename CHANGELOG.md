@@ -5,7 +5,13 @@
 
 ---
 
-## [2026-05-14] — Footer désabonnement : 3 senders manquants + doc à jour
+## [2026-05-14] — Footer désabonnement : 3 senders + 3 templates transactionnels + doc
+
+### Fix — Footer "Gérer mes notifications" retiré des 3 templates transactionnels
+- **Constat (mea culpa)** : j'avais incorrectement supposé hier que les mails de reset mdp étaient des mails Supabase natifs. Vérification faite, le template `reinitialisation_mot_de_passe` est bien envoyé par notre code (`sendPasswordReset` → `admin.generateLink` pour générer le lien + `buildEmail` + SendGrid). Le bug "lien mort" rapporté par un utilisateur le 13/05 venait donc bien d'un mail à nous.
+- **Mais** : pour les mails transactionnels/sécurité (`reinitialisation_mot_de_passe`, `verification_psc`, `suppression_compte`), le footer "Gérer mes préférences" n'a pas de sens — l'utilisateur ne peut pas opter-out (la page elle-même affiche "Les emails de compte ne peuvent pas être désactivés"). Donc plutôt que de "réparer" le lien avec la nouvelle archi HMAC, on retire le footer entièrement de ces 3 templates.
+- **Mise à jour BDD** : 3 templates UPDATE'd via `scripts/clean-transactional-email-templates.mjs` (dry-run par défaut, --apply pour écrire). Le bloc `<p>...{{lien_desabonnement}}...</p>` retiré, le logo et la séparation conservés. ~220 chars retirés par template. Idempotent.
+- **Tooling créé** : `scripts/dump-email-templates.mjs` (dump des templates choisis vers `tmp/email-templates/{id}.html` pour inspection/backup).
 
 ### Fix — 3 routes d'envoi ne passaient pas par `generateUnsubscribeLink()`
 - `src/app/api/admin/send-newsletter/route.ts`, `send-infos-mensuels/route.ts` et `test-email/route.ts` hardcodaient `${siteUrl}/mon-compte/mes-notifications` au lieu d'appeler `generateUnsubscribeLink()`. Leurs mails contenaient donc un lien qui exigeait une session loggée → perd l'intérêt du HMAC-only mis en place la veille.
@@ -19,6 +25,9 @@
 ### Docs — Drift PSC corrigée dans user-creation-flow + cross-refs entre docs
 - `docs/user-creation-flow.md` §Flux 2 disait "Vérifie OTP côté serveur" alors que le code vérifie l'OTP **côté client** dans `/auth/psc-session` via `supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })`. Le callback se contente de générer un magiclink et de rediriger. Découpage du Flux 2 en 2 étapes distinctes : "Callback PSC" (serveur, prépare le magiclink) et "Création de session" (client, consomme le magiclink).
 - Ajout d'un encart "Voir aussi" en tête de chaque doc (`auth-navigation.md` et `user-creation-flow.md`) pointant vers l'autre, avec la séparation explicite des angles : navigation vs données. Pas de fusion — chaque doc reste consultable seul selon le bug qu'on chasse.
+
+### Chore — `.gitignore`
+- Ajout de `tmp/` pour éviter de commiter les dumps DB transitoires générés par les scripts d'inspection.
 
 ---
 
