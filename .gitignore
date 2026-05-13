@@ -36,3 +36,6 @@ yarn-error.log*
 *.csv
 
 .vercel
+
+# Working files (dumps DB transitoires, etc.)
+tmp/
