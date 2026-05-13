@@ -5,6 +5,23 @@
 
 ---
 
+## [2026-05-14] — Footer désabonnement : 3 senders manquants + doc à jour
+
+### Fix — 3 routes d'envoi ne passaient pas par `generateUnsubscribeLink()`
+- `src/app/api/admin/send-newsletter/route.ts`, `send-infos-mensuels/route.ts` et `test-email/route.ts` hardcodaient `${siteUrl}/mon-compte/mes-notifications` au lieu d'appeler `generateUnsubscribeLink()`. Leurs mails contenaient donc un lien qui exigeait une session loggée → perd l'intérêt du HMAC-only mis en place la veille.
+- Patch : import + appel de `generateUnsubscribeLink(user.id, siteUrl)` dans les 3 routes.
+- `test-email` : lookup du destinataire en base via son email pour générer un vrai lien HMAC fonctionnel en preview (fallback sur l'URL loggée si destinataire absent de la base) → l'aperçu admin reflète désormais ce que recevront les vrais utilisateurs.
+
+### Docs — Architecture emails : section footer HMAC ajoutée
+- `docs/email-architecture.md` : nouvelle section "Footer Gérer mes préférences (lien HMAC-only)" — explique l'architecture (URL idempotente, HMAC `sha256(EMAIL_SECRET, "notif:uid:iat")`, TTL 1 an, résistance aux scanners Outlook/Gmail), la génération via single source of truth (`generateUnsubscribeLink`), et la contrainte d'inclure `{{lien_desabonnement}}` dans le HTML du template (le `master_layout` ne l'injecte pas automatiquement).
+- Checklist d'ajout d'un nouvel email étendue : placeholder à inclure dans le template + appel de `generateUnsubscribeLink` côté code + test du lien après envoi.
+
+### Docs — Drift PSC corrigée dans user-creation-flow + cross-refs entre docs
+- `docs/user-creation-flow.md` §Flux 2 disait "Vérifie OTP côté serveur" alors que le code vérifie l'OTP **côté client** dans `/auth/psc-session` via `supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })`. Le callback se contente de générer un magiclink et de rediriger. Découpage du Flux 2 en 2 étapes distinctes : "Callback PSC" (serveur, prépare le magiclink) et "Création de session" (client, consomme le magiclink).
+- Ajout d'un encart "Voir aussi" en tête de chaque doc (`auth-navigation.md` et `user-creation-flow.md`) pointant vers l'autre, avec la séparation explicite des angles : navigation vs données. Pas de fusion — chaque doc reste consultable seul selon le bug qu'on chasse.
+
+---
+
 ## [2026-05-13] — Refonte désabonnement (HMAC-only) + 2 fixes UI
 
 ### Feat — Désabonnement HMAC-only, résistant aux scanners email
