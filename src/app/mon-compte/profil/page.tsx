@@ -368,8 +368,8 @@ export default function ProfilPage() {
         </div>
       )}
 
-      {/* Bannière PSC — vérification identité médicale (utilisateurs email/mdp sans RPPS) */}
-      {!isFromPsc && !loading && (
+      {/* Bannière PSC — vérification identité médicale (utilisateurs email/mdp sans RPPS, hors éditeurs) */}
+      {!isFromPsc && !isEditeur && !loading && (
         <div className="bg-blue-50 border border-blue-200 rounded-card p-5 mb-6">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
