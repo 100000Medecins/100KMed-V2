@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { buildEmail } from '@/lib/actions/emailTemplates'
+import { createServiceRoleClient } from '@/lib/supabase/server'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
 
 const DEFAULT_TEST_EMAIL = 'david.azerad@100000medecins.org'
@@ -69,9 +71,25 @@ export async function POST(req: NextRequest) {
   }
 
   const siteUrl = new URL(req.url).origin
+  const to = (testEmail?.trim()) || DEFAULT_TEST_EMAIL
+
+  // Pour que le preview soit fidèle, on génère un vrai lien HMAC pour le destinataire
+  // si on le retrouve dans la base — sinon fallback vers la page loggée.
+  let lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recipient } = await (supabase as any)
+    .from('users')
+    .select('id')
+    .eq('email', to)
+    .maybeSingle()
+  if (recipient?.id) {
+    lienDesabonnement = generateUnsubscribeLink(recipient.id, siteUrl)
+  }
+
   const baseVars = SAMPLE_VARS[templateId] ?? {}
   const vars = 'lien_desabonnement' in baseVars
-    ? { ...baseVars, lien_desabonnement: `${siteUrl}/mon-compte/mes-notifications` }
+    ? { ...baseVars, lien_desabonnement: lienDesabonnement }
     : baseVars
   const result = await buildEmail(templateId, vars, siteUrl)
 
@@ -79,7 +97,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Template "${templateId}" introuvable ou vide en base de données.` }, { status: 404 })
   }
 
-  const to = (testEmail?.trim()) || DEFAULT_TEST_EMAIL
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   try {
     await sgMail.send({

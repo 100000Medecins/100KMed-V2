@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
 
 function generateToken(): string {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
   for (const user of users) {
     if (!user.email) continue
     try {
-      const lienDesabonnement = `${siteUrl}/mon-compte/mes-notifications`
+      const lienDesabonnement = generateUnsubscribeLink(user.id, siteUrl)
       const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
 
       const sujet = (template.sujet as string)
