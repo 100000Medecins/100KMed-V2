@@ -1,6 +1,6 @@
 # Architecture emails — 100 000 Médecins
 
-*Dernière mise à jour : 2026-04-27*
+*Dernière mise à jour : 2026-05-13*
 
 ---
 
@@ -89,6 +89,50 @@ Chaque template a un éditeur avec :
 
 ---
 
+## Footer "Gérer mes préférences de notification" (lien HMAC-only)
+
+> Tous les emails marketing/relance/newsletter doivent contenir ce footer.
+> Le lien permet à un utilisateur de modifier ses préférences **sans se logguer**.
+
+### Architecture
+
+Le lien dans le footer ressemble à :
+```
+{siteUrl}/gerer-notifications?uid={userId}&iat={timestamp}&token={HMAC}
+```
+
+- **`uid`** : id du destinataire
+- **`iat`** : timestamp d'émission Unix
+- **`token`** : `sha256(EMAIL_SECRET, "notif:" + uid + ":" + iat)` — TTL 1 an
+
+La page `/gerer-notifications` est un Server Component **idempotent** (GET ne modifie rien). Le HMAC est revérifié à chaque toggle (POST via server action). **Aucun magiclink, aucune session créée** → résistant aux scanners anti-phishing (Outlook Safe Links, Gmail) qui consommeraient un magiclink single-use.
+
+Si le navigateur a déjà une session active, un lien "Aller à mon compte" s'affiche en bas de la page.
+
+### Génération du lien (single source of truth)
+
+```ts
+import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+
+const lienDesabonnement = generateUnsubscribeLink(user.id, siteUrl)
+```
+
+Cette fonction est l'unique point de génération. Tous les endpoints d'envoi doivent l'utiliser. **Ne jamais hardcoder** `${siteUrl}/mon-compte/mes-notifications` (qui exigerait une session loggée — perd l'intérêt du footer).
+
+### À inclure dans le template HTML (BDD)
+
+Le footer doit contenir explicitement le placeholder `{{lien_desabonnement}}` quelque part dans le HTML stocké en `email_templates.contenu_html`. Exemple :
+
+```html
+<p style="font-size:11px;color:#888;">
+  <a href="{{lien_desabonnement}}" style="color:#888;">Gérer mes préférences de notification</a>
+</p>
+```
+
+Le `master_layout` **ne contient pas** ce footer automatiquement — chaque template doit l'inclure dans son contenu. Sans ce placeholder, la variable est ignorée et l'email part sans footer.
+
+---
+
 ## Flux de réinitialisation de mot de passe (custom SendGrid)
 
 > Ce flux **n'utilise pas** `supabase.auth.resetPasswordForEmail()`. Il utilise `admin.generateLink()` pour générer le lien, puis envoie lui-même l'email via SendGrid avec le template `reinitialisation_mot_de_passe`.
@@ -140,7 +184,10 @@ Après ouverture de session, appel direct à `PUT /auth/v1/user` (bypass SDK) po
 
 ## Checklist ajout d'un nouvel email SendGrid
 
-1. Insérer un nouveau template dans `email_templates` via SQL ou l'admin (id unique, sujet, contenu_html)
-2. Ajouter les `SAMPLE_VARS` pour cet id dans `/api/admin/test-email/route.ts`
-3. Créer ou modifier la route d'envoi pour appeler `buildEmail(templateId, vars, siteUrl)` puis `sgMail.send()`
-4. Tester depuis Admin → Emails → onglet correspondant → "Tester"
+1. Insérer un nouveau template dans `email_templates` via SQL ou l'admin (id unique, sujet, contenu_html).
+2. **Si l'email est marketing/relance/newsletter** : inclure `{{lien_desabonnement}}` dans le footer du template (voir section « Footer Gérer mes préférences »). Sans ce placeholder, le footer ne s'affiche pas.
+3. Ajouter les `SAMPLE_VARS` pour cet id dans `/api/admin/test-email/route.ts` (avec `lien_desabonnement: '#'` si applicable — le `'#'` sera remplacé au runtime par un vrai lien HMAC si le destinataire existe en base).
+4. Créer ou modifier la route d'envoi pour :
+   - appeler `buildEmail(templateId, vars, siteUrl)` puis `sgMail.send()`
+   - **Si applicable** : passer `lien_desabonnement: generateUnsubscribeLink(user.id, siteUrl)` dans les vars (ne jamais hardcoder l'URL).
+5. Tester depuis Admin → Emails → onglet correspondant → "Tester" puis cliquer le lien du footer pour vérifier qu'il atterrit sur `/gerer-notifications`, pas sur `/mon-compte/mes-notifications`.
