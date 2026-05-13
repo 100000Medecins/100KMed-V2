@@ -143,3 +143,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
 - Les données seront peuplées ultérieurement via recherche automatique
 - Ne pas modifier l'affichage front avant que le toggle soit activé
+
+### ROR sur le site
+- Intégrer le ROR (Répertoire Opérationnel des Ressources) sur le site
+- À cadrer : périmètre, source de données, modalités d'affichage et de filtrage
+
+### La météo de l'e-santé
+- Concept d'indicateur synthétique de l'état du secteur e-santé (logiciels médicaux, adoption, satisfaction)
+- À cadrer : indicateurs retenus, mode de calcul, fréquence de mise à jour, format d'affichage

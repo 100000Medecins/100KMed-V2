@@ -94,6 +94,30 @@ After any SQL migration, regenerate types:
 npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts
 ```
 
+### GRANTs explicites sur toute nouvelle table (anticipation Supabase 2026-10-30)
+
+À partir du **30 octobre 2026**, Supabase n'expose plus automatiquement les nouvelles tables de `public` à la Data API (PostgREST/`supabase-js`) : il faut des `GRANT` explicites. Les tables existantes ne sont pas affectées.
+
+**Réflexe à appliquer dès maintenant** sur toute migration `CREATE TABLE` dans `public` :
+
+```sql
+CREATE TABLE public.ma_table (
+  id uuid primary key default gen_random_uuid(),
+  ...
+);
+
+-- GRANTs (anticipation du changement 2026-10-30)
+GRANT SELECT ON public.ma_table TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ma_table TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ma_table TO service_role;
+
+-- RLS (niveau ligne, distinct des GRANTs niveau table)
+ALTER TABLE public.ma_table ENABLE ROW LEVEL SECURITY;
+-- + CREATE POLICY adaptées au cas d'usage
+```
+
+Ajuster les `GRANT` par rôle selon le cas : par exemple, ne pas accorder `INSERT/UPDATE/DELETE` à `anon` si la table ne doit pas être modifiable sans auth. Si un GRANT manque, PostgREST renvoie `42501` avec le `GRANT` exact à exécuter.
+
 ### Supabase types
 
 `src/types/database.ts` is auto-generated. Always remind the user to run the command above after providing SQL migrations.
