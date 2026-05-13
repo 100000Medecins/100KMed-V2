@@ -5,6 +5,34 @@
 
 ---
 
+## [2026-05-13] — Refonte désabonnement (HMAC-only) + 2 fixes UI
+
+### Feat — Désabonnement HMAC-only, résistant aux scanners email
+- **Symptôme remonté** : utilisateur clique sur "Gérer mes préférences de notification" en bas d'un mail → page d'erreur. Causes côté code écartées au diagnostic (le flow marche en navigation propre).
+- **Cause probable** : les scanners anti-phishing (Outlook Safe Links, Gmail) pré-fetchent les URLs sortantes et consomment le magiclink Supabase **single-use** avant que l'utilisateur ne clique → lien mort à l'arrivée.
+- **Ancien flow** : `/api/se-desabonner?uid&token` → vérif HMAC → génération magiclink Supabase → redirect `/auth/psc-session` → `verifyOtp` (consomme l'OTP) → session créée → `/mon-compte/mes-notifications`. Faille = la consommation de l'OTP est exposée en GET.
+- **Nouveau flow** : `/gerer-notifications?uid&iat&token` rendue par un Server Component, page idempotente (GET ne modifie aucun état). HMAC vérifié côté serveur à chaque toggle (POST avec token rejoué via server action). Aucun magiclink, aucune session créée — le scanner peut pré-fetcher à l'infini, rien ne se consomme.
+- **HMAC** : `sha256(EMAIL_SECRET, "notif:<userId>:<iat>")` — `iat` en query param, TTL 1 an. Écran "Lien expiré" gracieux au-delà, avec CTA `/connexion`. Vérif via `timingSafeEqual` pour éviter les attaques timing.
+- **Détection de session existante** : si l'utilisateur est déjà loggué dans le navigateur (cookie Supabase présent), un lien "Aller à mon compte" s'affiche en bas de la page publique.
+- **Propagation auto** : tous les emails (campagnes, relances, newsletter, lancement, questionnaires, études) suivent automatiquement via `generateUnsubscribeLink()` mis à jour — aucune modif côté cron/templates.
+- **Domaine-agnostique** : URL relative, l'origin est dérivé de `req.url` ou `NEXT_PUBLIC_SITE_URL` → zéro changement de code lors du futur switch `dev.100000medecins.org` → `www.100000medecins.org`.
+- **Fichiers créés** : `src/lib/email/notif-token.ts`, `src/lib/actions/notifications-public.ts`, `src/app/gerer-notifications/{page,GererNotificationsClient}.tsx`.
+- **Fichier supprimé** : `src/app/api/se-desabonner/route.ts` — sinistralité nulle car pré-launch (anciens liens en inbox non communiqués hors test interne).
+- **Script de test** : `scripts/preview-unsub-link.mjs` génère un vrai lien pour un user donné (résolution uid|email via Supabase), supporte `--local` et `--target=https://...`.
+
+### Fix — Bannière PSC masquée pour les éditeurs sur /mon-compte/profil
+- La bannière "Vérifiez votre identité médicale" (CTA Pro Santé Connect) s'affichait pour tout utilisateur sans RPPS, **y compris** ceux inscrits comme éditeur.
+- Or PSC n'a aucun sens pour un éditeur (il représente un logiciel, n'évalue pas) — condition étendue avec `!isEditeur` (calculé via `modeExercice === 'Éditeur'`, donc actif dès l'inscription, avant validation admin), cohérent avec la logique mise en place hier sur Navbar/layout.
+
+### Fix — Contraste des étapes inactives sur le questionnaire d'évaluation
+- Remontée utilisateurs : sur les pages `/solution/noter/[...]`, les étapes non actives (cercle + label) étaient quasi-invisibles selon les écrans (`bg-gray-200` + `text-gray-400` sur fond bleuté).
+- Cercle inactif cliquable : `bg-gray-400` + `text-white` (au lieu de `bg-gray-200/text-gray-500`).
+- Cercle inactif non-cliquable : `bg-gray-300` + `text-gray-600`.
+- Label : `text-gray-400` → `text-gray-600` (et `text-gray-300` → `text-gray-500` pour non-cliquable).
+- Hiérarchie préservée : étape active toujours en `text-navy` + cercle `bg-accent-blue`.
+
+---
+
 ## [2026-05-13] — Fix chaîne d'inscription / approbation / UI éditeur
 
 ### Fix — Lien bidirectionnel manquant après approbation
