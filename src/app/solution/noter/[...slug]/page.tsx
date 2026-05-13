@@ -440,8 +440,8 @@ function StepIndicator({
                     : isDone
                       ? 'bg-green-500 text-white hover:bg-green-600'
                       : isClickable
-                        ? 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-400 text-white hover:bg-gray-500'
+                        : 'bg-gray-300 text-gray-600 cursor-not-allowed'
                 }`}
               >
                 {isDone ? '✓' : stepNum}
@@ -458,10 +458,10 @@ function StepIndicator({
                   isActive
                     ? 'text-navy'
                     : isDone && isClickable
-                      ? 'text-gray-500 hover:text-navy'
+                      ? 'text-gray-600 hover:text-navy'
                       : isClickable
-                        ? 'text-gray-400 hover:text-gray-600'
-                        : 'text-gray-300 cursor-not-allowed'
+                        ? 'text-gray-600 hover:text-navy'
+                        : 'text-gray-500 cursor-not-allowed'
                 }`}
               >
                 {step.label}
