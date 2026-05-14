@@ -693,7 +693,7 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: claim, error: claimError } = await (supabase as any)
     .from('editeur_claims')
-    .select('user_id')
+    .select('user_id, solution_id')
     .eq('id', claimId)
     .single()
 
@@ -704,6 +704,15 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
     .from('users')
     .update({ editeur_id: editeurId, role: 'editeur' })
     .eq('id', claim.user_id)
+
+  // Si la demande portait sur une solution (sans éditeur), la rattacher à l'éditeur validé —
+  // sinon la solution revendiquée n'apparaîtrait jamais dans l'espace éditeur du user
+  if (claim.solution_id) {
+    await supabase
+      .from('solutions')
+      .update({ id_editeur: editeurId })
+      .eq('id', claim.solution_id)
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
