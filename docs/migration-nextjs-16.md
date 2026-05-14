@@ -42,6 +42,37 @@ Build **propre, aucun warning ni erreur**.
 
 ---
 
+## Journal d'exécution (résultats réels)
+
+> Mis à jour au fur et à mesure. La migration s'est passée **beaucoup plus proprement que prévu**.
+
+### ✅ Pré-vol — fait
+Branche `chore/nextjs-16` créée, baseline Next 14 capturée (ci-dessus), cible `16.2.6` confirmée, guide d'upgrade Next 16 lu.
+
+### ✅ Phase 1 — fait
+- `next@16.2.6` + `react@19.2.6` + `react-dom@19.2.6` + types installés — **aucun conflit de peer deps** (`@tiptap/react@3.21` a accepté React 19.2.6 sans broncher).
+- Codemod `next-async-request-api` : **15 fichiers transformés, 0 erreur**. `lib/supabase/server.ts` faisait **déjà** `await cookies()` → non touché.
+- `src/middleware.ts` → `src/proxy.ts` + export `middleware` → `proxy` (rename manuel, le warning de build a disparu).
+- Au lieu du codemod interactif `upgrade`, chemin manuel contrôlé (install + codemods individuels) — shell non-interactif.
+- **Build Next 16.2.6 (Turbopack) : 100 % propre, 0 warning, 72/72 pages.**
+- Commits : `198b1a3` (bump), `afcb213` (codemod async + proxy).
+
+### ✅ Phase 2 — fait
+- **ESLint** : `eslint@9` + `eslint-config-next@16.2.6`. Codemod `next-lint-to-eslint-cli` → création `eslint.config.mjs` (flat config) + script `"lint": "next lint"` → `"eslint ."`. `npm run lint` fonctionnel. **385 problèmes remontés = dette pré-existante** (`no-explicit-any` sur les casts Supabase documentés) — hors scope, `next build` ne lint plus.
+- **bundle-analyzer / Turbopack** : ⚠️ **prédiction 🔴 fausse** — le build n'échoue PAS. `@next/bundle-analyzer@16` détecte Turbopack, skip proprement le rapport, et suggère `next experimental-analyze` ou `next build --webpack`. → reclassé 🟡.
+- **`npm run dev`** : boote en ~411ms (Next 16.2.6 Turbopack). Le mécanisme de **lockfile Next 16** confirmé (empêche un 2e `next dev`).
+- Commits : `1a04f89` (bump eslint), `684facb` (migration ESLint).
+
+### ✅ Phase 3 (local) — fait, tout passe
+Validé sur `npm run dev` : `proxy` (redirections routes protégées) ✅, connexion fraîche email/MDP ✅, routes dynamiques (15 fichiers transformés) ✅, admin (badges sidebar + CRUD) ✅, espace éditeur (édition + audit log) ✅, suppression compte (admin + mon-compte) ✅.
+Bug d'affichage avatar sur page solution = **pré-existant** (présent aussi sur `dev.100000medecins.org` / Next 14), hors scope.
+
+### ⏳ Reste à faire
+- **PSC e2e** + **crons `/api/cron/*`** → testables uniquement sur `dev.100000medecins.org` déployé (Phase 4).
+- Vulnérabilités npm : 15 → **13** après le bump eslint. Reliquat à auditer post-migration.
+
+---
+
 ## Phases
 
 ### Pré-vol (jour 1, ~1h)
@@ -91,8 +122,8 @@ Checkpoint ferme : **build vert + parcours critiques OK → on continue. Sinon �
 
 | Symptôme | Cause | Fix rapide |
 |---|---|---|
-| **`next build` échoue : "webpack configuration was found"** | Next 16 : Turbopack par défaut sur `dev` ET `build`. Le wrapper `@next/bundle-analyzer` injecte du webpack config. | Soit `next build --webpack` dans le script `package.json`, soit vérifier que `@next/bundle-analyzer@16` supporte Turbopack. Tester `npm run build` ET `ANALYZE=true npm run build` séparément. |
-| **`middleware.ts` ne fonctionne plus** | Next 16 : `middleware` renommé `proxy`. Fichier `src/middleware.ts` → `src/proxy.ts`, export `middleware` → `proxy`. Runtime passe `edge` → `nodejs`. | Le codemod fait le rename. **Retester toute l'auth Supabase** : connexion, routes protégées `/mon-compte/*`, redirections. `@supabase/ssr` marche sur nodejs, donc OK en principe. |
+| ~~`next build` échoue : webpack config~~ — **prédiction fausse, voir 🟡** | — | `@next/bundle-analyzer@16` skip proprement sous Turbopack, ne casse pas le build. Reclassé 🟡. |
+| ✅ **`middleware.ts` → `proxy.ts`** — fait | Next 16 : `middleware` renommé `proxy`. Runtime passe `edge` → `nodejs`. | Rename fait (`src/proxy.ts`, export `proxy`). Auth Supabase + redirections routes protégées **retestées OK** en Phase 3. |
 | `cookies()`/`headers()` : "should be awaited" — **erreur dure, plus de compat sync** (~22 fichiers, dont `lib/supabase/server.ts`) | Next 16 : APIs de requête async, la compat synchrone de Next 15 est **totalement retirée** | Codemod le fait. Si raté : `const cookieStore = await cookies()`. **Priorité absolue : `lib/supabase/server.ts`** — toute l'auth en dépend. |
 | `params`/`searchParams` : "should be awaited" — **erreur dure** (~32 fichiers de routes) | Idem : compat sync retirée en Next 16 | Codemod + `npx next typegen` (génère les helpers `PageProps`/`LayoutProps`/`RouteContext`). Si raté : `const { idCategorie } = await params` |
 | `npm install` échoue sur peer deps | React 19.2 pas encore accepté par une lib tierce | Tracer la lib coupable. `--legacy-peer-deps` en dernier recours. tiptap 3.x / zustand 5 sont OK React 19. |
