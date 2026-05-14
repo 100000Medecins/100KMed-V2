@@ -28,7 +28,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
       : [{ href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck }]),
     { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
     ...(isEditeur
-      ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Mon espace éditeur', icon: Building2 }]
+      ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Espace éditeur', icon: Building2 }]
       : []),
     ...(isEditeur
       ? []

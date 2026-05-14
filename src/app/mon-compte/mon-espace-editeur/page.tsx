@@ -12,7 +12,6 @@ type Solution = {
   nom: string
   slug: string | null
   logo_url: string | null
-  image_url: string | null
   actif: boolean | null
   prix_ttc: number | null
   prix_devise: string | null
@@ -101,12 +100,7 @@ export default function MonEspaceEditeurPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-navy">Mon espace éditeur</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {editeur.nom_commercial || editeur.nom} — {solutions.length} solution{solutions.length > 1 ? 's' : ''}
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold text-navy">Espace éditeur</h1>
 
       {/* Bloc unique : champs éditeur partagés */}
       <EditeurInfoCard
@@ -201,7 +195,7 @@ function EditeurInfoCard({
       >
         <div className="flex items-center gap-3">
           <Building2 className="w-5 h-5 text-accent-blue" />
-          <span className="font-semibold text-navy">Mon entreprise</span>
+          <span className="font-semibold text-navy">{editeur.nom_commercial || editeur.nom || 'Mon entreprise'}</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
@@ -320,7 +314,6 @@ function SolutionEditeurCard({
   onSaved: (s: Solution) => void
 }) {
   const [logoUrl, setLogoUrl] = useState(solution.logo_url ?? '')
-  const [imageUrl, setImageUrl] = useState(solution.image_url ?? '')
   const [prixTtc, setPrixTtc] = useState(solution.prix_ttc?.toString() ?? '')
   const [prixDevise, setPrixDevise] = useState(solution.prix_devise ?? 'EUR')
   const [prixFrequence, setPrixFrequence] = useState(solution.prix_frequence ?? '')
@@ -335,7 +328,6 @@ function SolutionEditeurCard({
     try {
       const fields = {
         logo_url: logoUrl,
-        image_url: imageUrl,
         prix_ttc: prixTtc === '' ? null : Number(prixTtc),
         prix_devise: prixDevise,
         prix_frequence: prixFrequence,
@@ -348,7 +340,6 @@ function SolutionEditeurCard({
       onSaved({
         ...solution,
         logo_url: logoUrl,
-        image_url: imageUrl,
         prix_ttc: fields.prix_ttc,
         prix_devise: prixDevise,
         prix_frequence: prixFrequence,
@@ -404,25 +395,14 @@ function SolutionEditeurCard({
       {isOpen && (
         <div className="border-t border-gray-100 px-6 pb-6 pt-5 space-y-6">
 
-          {/* Logo + image principale */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-navy mb-1.5">Logo solution (URL)</label>
-              <div className="flex gap-3 items-start">
-                {logoUrl && (
-                  <img src={logoUrl} alt="" className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
-                )}
-                <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-navy mb-1.5">Image principale (URL)</label>
-              <div className="flex gap-3 items-start">
-                {imageUrl && (
-                  <img src={imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0" />
-                )}
-                <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
+          {/* Logo solution */}
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1.5">Logo solution (URL)</label>
+            <div className="flex gap-3 items-start">
+              {logoUrl && (
+                <img src={logoUrl} alt="" className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
+              )}
+              <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
             </div>
           </div>
 
