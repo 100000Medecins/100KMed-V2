@@ -38,7 +38,7 @@ export async function getUserById(id: string) {
 
   const { data, error } = await supabase
     .from('users')
-    .select('pseudo, portrait, specialite, mode_exercice')
+    .select('pseudo, nom, prenom, portrait, specialite, mode_exercice')
     .eq('id', id)
     .single()
 

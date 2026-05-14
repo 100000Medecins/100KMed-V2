@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import RatingBadge from '@/components/ui/RatingBadge'
+import { getDisplayName } from '@/lib/displayName'
 
 interface Avis {
   id: string
-  user: { pseudo: string | null; portrait: string | null; specialite: string | null } | null
+  user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null } | null
   moyenne_utilisateur: number | null
   last_date_note: string | null
 }
@@ -54,12 +55,12 @@ export default function UserReviewsSidebar({
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-accent-blue/10 flex items-center justify-center text-accent-blue text-xs font-bold">
-              {(a.user?.pseudo || 'A').charAt(0).toUpperCase()}
+              {getDisplayName(a.user).charAt(0).toUpperCase()}
             </div>
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-navy truncate">
-              {a.user?.pseudo || 'Anonyme'}
+              {getDisplayName(a.user)}
             </p>
             {a.user?.specialite && (
               <p className="text-xs text-gray-400">{a.user.specialite}</p>

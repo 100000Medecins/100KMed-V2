@@ -215,7 +215,7 @@ export default function ProfilPage() {
       await updateProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
-        pseudo: pseudo.trim() || undefined,
+        pseudo: pseudo.trim() || null,
         specialite: isEditeur ? '' : specialite,
         mode_exercice: modeExercice,
       })
@@ -527,7 +527,7 @@ export default function ProfilPage() {
                   placeholder="Votre pseudo (optionnel)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Si renseigné, votre pseudo sera affiché à la place de votre prénom + initiale sur vos avis publiés.
+                  Si laissé vide, vos avis publiés afficheront votre prénom suivi de l&apos;initiale de votre nom.
                 </p>
               </div>
 
@@ -582,7 +582,7 @@ export default function ProfilPage() {
                   placeholder="Votre pseudo (optionnel)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Si renseigné, votre pseudo sera affiché à la place de votre prénom + initiale sur vos avis publiés.
+                  Si laissé vide, vos avis publiés afficheront votre prénom suivi de l&apos;initiale de votre nom.
                 </p>
               </div>
 

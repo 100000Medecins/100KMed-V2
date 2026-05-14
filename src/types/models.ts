@@ -134,7 +134,7 @@ export interface ColorHSL {
 export interface AvisUtilisateur {
   idEvaluation: string
   idUser: string
-  user?: Pick<User, 'pseudo' | 'portrait' | 'specialite' | 'mode_exercice'>
+  user?: Pick<User, 'pseudo' | 'nom' | 'prenom' | 'portrait' | 'specialite' | 'mode_exercice'>
   avisGeneral?: Array<{ nomCourt: string; note: number }>
   avisSynthese?: {
     commentaire: string

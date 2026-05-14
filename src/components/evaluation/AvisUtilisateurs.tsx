@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import RatingBadge from '@/components/ui/RatingBadge'
+import { getDisplayName } from '@/lib/displayName'
 import type { AvisUtilisateur } from '@/types/models'
 
 interface AvisUtilisateursProps {
@@ -67,7 +68,7 @@ export default function AvisUtilisateurs({
                 )}
                 <div className="flex-1">
                   <span className="text-sm font-medium text-navy">
-                    {item.user?.pseudo || 'Anonyme'}
+                    {getDisplayName(item.user)}
                   </span>
                   {item.user?.specialite && (
                     <p className="text-xs text-gray-400">{item.user.specialite}</p>

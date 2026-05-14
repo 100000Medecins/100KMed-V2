@@ -48,7 +48,7 @@ export async function getAvisUtilisateurs(
       scores,
       moyenne_utilisateur,
       last_date_note,
-      user:users(pseudo, portrait, specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, portrait, specialite, mode_exercice)
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null) // Seulement les évaluations finalisées
@@ -79,7 +79,7 @@ export async function getAvisUtilisateurs(
   const avis = (data || []).map((row: Record<string, unknown>) => ({
     idEvaluation: row.id as string,
     idUser: row.user_id as string,
-    user: row.user as { pseudo: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null ?? undefined,
+    user: row.user as { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null ?? undefined,
     lastDateNote: row.last_date_note as string | null,
   }))
 
@@ -108,7 +108,7 @@ export async function getLastAvisUtilisateurs(
       scores,
       moyenne_utilisateur,
       last_date_note,
-      user:users(pseudo, portrait, specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, portrait, specialite, mode_exercice)
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
@@ -123,7 +123,7 @@ export async function getLastAvisUtilisateurs(
     scores: unknown
     moyenne_utilisateur: number | null
     last_date_note: string | null
-    user: { pseudo: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null
+    user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null
   }>
 }
 
@@ -155,7 +155,7 @@ export async function getAvisUtilisateursPaginated(
       moyenne_utilisateur,
       last_date_note,
       temps_precedente_solution,
-      user:users(pseudo, portrait, specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, portrait, specialite, mode_exercice)
     `, { count: 'exact' })
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
@@ -192,7 +192,7 @@ export async function getAvisUtilisateursPaginated(
     }
   }
 
-  type UserRow = { pseudo: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null }
+  type UserRow = { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null }
 
   const avis = (data || []).map((row: Record<string, unknown>) => {
     const scores = (row.scores || {}) as Record<string, unknown>

@@ -491,7 +491,6 @@ export async function submitEvaluation(
     await supabase.from('users').insert({
       id: user.id,
       email: user.email,
-      pseudo: user.email?.split('@')[0] || 'Utilisateur',
     })
   }
 

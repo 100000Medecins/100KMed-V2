@@ -109,7 +109,6 @@ export async function createUserProfile(userId: string, email: string) {
     await supabase.from('users').insert({
       id: userId,
       email,
-      pseudo: email.split('@')[0] || 'Utilisateur',
       ...(email?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
     })
   }
@@ -144,7 +143,7 @@ export async function completeProfile(data: {
     .update({
       nom: data.nom,
       prenom: data.prenom,
-      pseudo: data.pseudo?.trim() || `${data.prenom} ${data.nom.charAt(0)}.`,
+      pseudo: data.pseudo?.trim() || null,
       role: 'medecin',
       specialite: data.specialite,
       mode_exercice: data.mode_exercice,
@@ -248,7 +247,7 @@ export async function createEditeurClaim(params: {
 export async function updateProfile(userData: {
   nom?: string
   prenom?: string
-  pseudo?: string
+  pseudo?: string | null
   annee_naissance?: number
   specialite?: string
   mode_exercice?: string
@@ -298,9 +297,6 @@ export async function updateProfile(userData: {
     email: user.email ?? '',
     ...userData,
     is_complete: isComplete,
-  }
-  if (!upsertData.pseudo) {
-    upsertData.pseudo = user.email?.split('@')[0] ?? 'Utilisateur'
   }
 
   const { error } = await supabase.from('users').upsert(upsertData, { onConflict: 'id' })

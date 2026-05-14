@@ -5,13 +5,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
 import { resolveSpecialite } from '@/lib/constants/profil'
 import { getCritereLabels } from '@/lib/constants/criteres'
+import { getDisplayName } from '@/lib/displayName'
 
 const CRITERE_ORDER = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix']
 
 interface Avis {
   id: string
   userId: string
-  user: { pseudo: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null
+  user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null
   moyenne: number | null
   date: string | null
   commentaire: string | null
@@ -133,13 +134,13 @@ export default function ConfrereTestimonials({
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-sm font-bold text-navy">
-                        {(item.user?.pseudo || '?')[0].toUpperCase()}
+                        {getDisplayName(item.user)[0].toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-navy">
-                      {item.user?.pseudo || 'Anonyme'}
+                      {getDisplayName(item.user)}
                     </p>
                     <p className="text-xs text-gray-400">
                       {item.user?.mode_exercice && `${item.user.mode_exercice}`}
