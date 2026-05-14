@@ -58,12 +58,15 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Bugs à corriger
 
-#### Fusion PSC sur compte email/MDP existant — identité PSC non appliquée
-- Scénario : créer un compte email/MDP (nom/prénom bidons), se déconnecter, puis connexion PSC avec **le même email**
-- Comportement constaté : on est bien connecté sur le compte existant (les évaluations sont là), MAIS le compte n'est **pas marqué PSC-validé** et les identifiants PSC (nom, prénom, RPPS, spécialité) **ne remplacent pas** les identifiants bidons du compte email/MDP
-- Attendu : le callback PSC devrait fusionner — appliquer le RPPS + écraser nom/prénom/spécialité avec les données PSC + marquer `isFromPsc`
-- `psc-callback/route.ts` n'a pas été touché par la migration Next 16 → bug **pré-existant** (ou introduit par un commit récent non-migration, ex. `refactor(profil): pseudo vide par défaut` — à vérifier)
-- Logique délicate (historique de bugs `fix(merge)`/`fix(psc)`) → investigation + fix + re-test dédiés
+#### Fusion PSC sur compte email/MDP existant — doublon de compte *(en cours, branche `fix/psc-fusion`)*
+- **Scénario** : compte email/MDP créé, déconnexion, connexion PSC fraîche → **2e compte `public.users` créé** au lieu de fusionner
+- **Root cause confirmé** (données BDD 2026-05-14) : PSC a renvoyé rpps + nom + prénom mais **PAS d'email** dans `userInfo`. Preuve : le compte PSC a l'email synthétique `psc-RPPS@psc.sante.fr` (généré uniquement quand `userInfo.email` est null). Du coup le callback n'a **aucune clé partagée** : lookup par `rpps` échoue (le compte email/MDP n'en a pas), lookup par `email` sauté (`email` est null) → création d'un compte séparé
+- **Pas une régression migration** — `psc-callback/route.ts` non touché par Next 16. C'est un trou de logique/UX pré-existant : sans identifiant partagé, le callback ne peut pas relier les 2 comptes
+- **Contrainte produit** : évaluer sans PSC reste possible → pas de parcours forcé "connecte-toi d'abord"
+- **Direction proposée** :
+  - *Solution A (fix principal)* : capturer l'email manquant via `/completer-profil` (déjà dans le parcours PSC) — champ email requis si email synthétique → à la soumission, lookup compte existant → si match, déclencher le flux `/fusionner-compte` existant. Bonus : élimine les emails synthétiques
+  - *Solution B (filet)* : détection a posteriori d'un compte jumeau (même `email`/`contact_email`) → bandeau proposant la fusion
+- Logique délicate (historique `fix(merge)`/`fix(psc)`) → comprendre l'infra de fusion existante avant de coder
 
 #### Affichage avatar cassé sur une page solution
 - Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)
