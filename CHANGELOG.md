@@ -29,6 +29,28 @@
 ### Chore — `.gitignore`
 - Ajout de `tmp/` pour éviter de commiter les dumps DB transitoires générés par les scripts d'inspection.
 
+### Refactor — N éditeurs par éditeur + chaîne complète d'édition côté éditeur
+- DB : DROP des colonnes `editeurs.culture` et `editeurs.gouvernance` (jamais lues côté code). DROP `editeurs.user_id` : le lien bidirectionnel disparaît au profit de `users.editeur_id` seul, ce qui permet N utilisateurs de partager le même éditeur (employés d'une même boîte). FK `users.editeur_id` passée en `ON DELETE SET NULL` pour éviter les orphelins.
+- Backend : `approuverEditeurClaim` simplifié (un seul UPDATE sur users), `assignEditeurToUser` ne touche plus à `editeurs.user_id`, helper `assertEditeurAccessToSolution` factorise la vérif de sécurité, split des actions en `updateEditeurByUser` (champs partagés table editeurs) et `updateSolutionByEditeur` (champs spécifiques solution).
+- Page `/mon-compte/mon-espace-editeur` restructurée en 2 blocs : "Mon entreprise" unique (nom_commercial, logo entreprise + titre, website, mot éditeur, contact email/tel/adresse complète) et 1 carte par solution (logo solution, image principale, tarification complète prix_ttc/devise/frequence/duree, galerie). Message clair "demande en cours de validation" si claim pas encore approuvée.
+- Côté admin (`/admin/utilisateurs`) : utilise `users.editeur_id` comme source de vérité ; le ✗ "déjà revendiqué" disparaît puisque N users par éditeur est désormais autorisé.
+
+### Feature — Audit log des modifications éditeur + page admin de consultation
+- Nouvelle table `editeurs_edit_log` (user_id, table_cible, id_cible, champ, ancienne_valeur, nouvelle_valeur, created_at) avec GRANTs explicites (anticipation Supabase 2026-10-30) + RLS (éditeur ne voit que ses propres logs).
+- `updateEditeurByUser` et `updateSolutionByEditeur` lisent les anciennes valeurs avant l'UPDATE, calculent le diff champ par champ, n'enregistrent que les vrais changements.
+- Page `/admin/editeurs-log` : tableau triable par date (200 dernières modifications), colonnes date / éditeur / table / champ / avant / après.
+
+### Feature — Point rouge admin (badges modération sur sidebar)
+- `getAdminBadges()` (`src/lib/db/admin-badges.ts`) fetch en parallèle les compteurs : `editeur_claims` en_attente, `etudes_cliniques` + `questionnaires_these` en_attente, `emails_campagnes` pending dont `scheduled_at <= now()`.
+- Layout admin fetche les badges côté serveur et les passe à la sidebar.
+- `AdminSidebar.tsx` : badge (cercle rouge + compteur, "99+" max) à droite du label. Le parent "Solutions" agrège automatiquement les badges de ses sous-items.
+- Architecture extensible : pour brancher Blog, Vidéos, Planning plus tard, ajouter une clé dans `AdminBadges` et la requête correspondante.
+
+### Style — Ajustements UI mineurs
+- Paddings verticaux réduits sur AboutMission, BlogPreview, RecommendedSoftware (homepage)
+- Boutons "Évaluer" et "Site internet" du hero solution rapetissés sur mobile
+- "Lire cet article" → "Lire l'article" sur les MissionCard
+
 ---
 
 ## [2026-05-13] — Refonte désabonnement (HMAC-only) + 2 fixes UI
