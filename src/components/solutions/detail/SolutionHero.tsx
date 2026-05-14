@@ -119,8 +119,12 @@ export default function SolutionHero({
                 )}
 
                 {/* CTAs */}
-                <div className="flex flex-wrap gap-3">
-                  <Button variant="primary" href={`/solution/noter/${categorieSlug}/${solution.slug}`}>
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                  <Button
+                    variant="primary"
+                    href={`/solution/noter/${categorieSlug}/${solution.slug}`}
+                    className="!px-4 !py-2.5 !text-xs sm:!px-7 sm:!py-3.5 sm:!text-sm"
+                  >
                     Évaluer {solution.nom}
                   </Button>
                   {!!(solution as unknown as Record<string, unknown>).website && (
@@ -128,9 +132,9 @@ export default function SolutionHero({
                       href={(solution as unknown as Record<string, unknown>).website as string}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-3 rounded-button border-2 border-gray-200 text-gray-700 hover:border-navy hover:text-navy transition-colors text-sm font-medium"
+                      className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-button border-2 border-gray-200 text-gray-700 hover:border-navy hover:text-navy transition-colors text-xs font-medium sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Site internet
                     </a>
                   )}

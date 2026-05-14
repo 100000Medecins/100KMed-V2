@@ -32,7 +32,7 @@ export default function MissionCard({ item }: MissionCardProps) {
       </p>
 
       <span className="inline-flex items-center gap-2 bg-navy text-white text-sm font-semibold px-5 py-2.5 rounded-full group-hover:bg-accent-blue transition-colors duration-300">
-        Lire cet article
+        Lire l&apos;article
         <ArrowRight className="w-4 h-4" />
       </span>
     </a>

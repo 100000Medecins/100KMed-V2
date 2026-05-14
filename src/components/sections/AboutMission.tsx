@@ -66,7 +66,7 @@ export default async function AboutMission() {
   const titreHtml = titre || '<span class="text-accent-blue">10000médecins.org</span>,<br class="hidden md:block" />pour vous accompagner dans l\'ère numérique.'
 
   return (
-    <section className="py-12 md:py-16" id="about">
+    <section className="pt-12 pb-2 md:pt-16 md:pb-4" id="about">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-14">
           <h2

@@ -46,7 +46,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
   }, [active.solutions])
 
   return (
-    <section className="bg-surface-muted bg-dots pt-8 pb-20 md:pt-14 md:pb-28" id="tools">
+    <section className="bg-surface-muted bg-dots pt-8 pb-10 md:pt-14 md:pb-14" id="tools">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Left sidebar */}
