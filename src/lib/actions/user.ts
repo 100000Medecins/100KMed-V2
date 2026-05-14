@@ -4,6 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { buildEmail } from '@/lib/actions/emailTemplates'
+import { generateFusionToken } from '@/lib/auth/fusionToken'
 import sgMail from '@sendgrid/mail'
 
 /**
@@ -129,7 +130,7 @@ export async function completeProfile(data: {
   pseudo?: string
   portrait?: string
   password?: string
-}) {
+}): Promise<{ status: 'SUCCESS' } | { status: 'NEEDS_FUSION'; fusionToken: string }> {
   const authClient = await createServerClient()
   const {
     data: { user },
@@ -137,6 +138,24 @@ export async function completeProfile(data: {
   if (!user) throw new Error('Non authentifié')
 
   const supabase = createServiceRoleClient()
+
+  // Détection de conflit d'email : si l'utilisateur veut passer son email auth vers une
+  // adresse déjà utilisée par un autre compte (cas typique : compte PSC à email synthétique
+  // qui saisit son vrai email, déjà porté par un compte email/MDP) → proposer une fusion
+  // plutôt que d'échouer silencieusement sur le updateUserById plus bas.
+  if (user.email !== data.contact_email) {
+    const { data: conflicting } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', data.contact_email)
+      .neq('id', user.id)
+      .limit(1)
+    const conflictId = conflicting?.[0]?.id
+    if (conflictId) {
+      const fusionToken = generateFusionToken(user.id, conflictId)
+      return { status: 'NEEDS_FUSION', fusionToken }
+    }
+  }
 
   const { error } = await supabase
     .from('users')

@@ -118,7 +118,7 @@ export default function CompleterProfilPage() {
     setError(null)
 
     try {
-      await completeProfile({
+      const result = await completeProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
         specialite: isEditeur ? '' : specialite,
@@ -128,6 +128,12 @@ export default function CompleterProfilPage() {
         portrait: selectedAvatar || undefined,
         password: isFromPsc ? password : undefined,
       })
+
+      // L'email saisi appartient déjà à un autre compte → rediriger vers la fusion
+      if (result.status === 'NEEDS_FUSION') {
+        window.location.href = `/fusionner-compte?token=${encodeURIComponent(result.fusionToken)}`
+        return
+      }
 
       if (isEditeur) {
         let editeur_id: string | undefined
