@@ -147,10 +147,10 @@ export async function getEditeurDataForUser(userId: string) {
 
   if (!editeur) return null
 
-  // Récupérer les solutions de cet éditeur (avec prix + image + galerie)
+  // Récupérer les solutions de cet éditeur (avec prix + galerie)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, logo_url, image_url, actif, prix_ttc, prix_devise, prix_frequence, prix_duree_engagement_mois, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, slug, logo_url, actif, prix_ttc, prix_devise, prix_frequence, prix_duree_engagement_mois, galerie:solutions_galerie(id, url, titre, ordre, type)')
     .eq('id_editeur', editeur.id)
     .order('nom', { ascending: true })
 
@@ -270,7 +270,6 @@ export async function updateSolutionByEditeur(
   solutionId: string,
   fields: {
     logo_url?: string
-    image_url?: string
     prix_ttc?: number | null
     prix_devise?: string
     prix_frequence?: string
