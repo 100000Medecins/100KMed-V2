@@ -191,7 +191,7 @@ async function assertEditeurAccessToSolution(
 
 /**
  * Met à jour les champs autorisés de l'éditeur (table `editeurs`).
- * Vérifie que l'utilisateur est bien un éditeur validé.
+ * Logge chaque champ modifié dans editeurs_edit_log pour audit.
  */
 export async function updateEditeurByUser(
   userId: string,
@@ -221,20 +221,49 @@ export async function updateEditeurByUser(
     throw new Error('Non autorisé')
   }
 
-  // Filtrer les champs définis pour ne pas écraser par undefined
+  // Filtrer les champs définis (undefined = pas touché)
+  const requested = Object.entries(fields).filter(([, v]) => v !== undefined)
+  if (requested.length === 0) return
+
+  // Lire les valeurs actuelles pour calculer le diff (audit log)
+  const fieldsList = requested.map(([k]) => k).join(', ')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: current } = await (supabase as any)
+    .from('editeurs')
+    .select(fieldsList)
+    .eq('id', userRow.editeur_id)
+    .single()
+
   const updates: Record<string, string | null> = {}
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) updates[key] = value || null
+  const logRows: Array<{ user_id: string; table_cible: string; id_cible: string; champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }> = []
+  for (const [key, value] of requested) {
+    const newVal = value ? String(value) : null
+    const oldVal = current?.[key] != null ? String(current[key]) : null
+    if (newVal !== oldVal) {
+      updates[key] = newVal
+      logRows.push({
+        user_id: userId,
+        table_cible: 'editeurs',
+        id_cible: userRow.editeur_id,
+        champ: key,
+        ancienne_valeur: oldVal,
+        nouvelle_valeur: newVal,
+      })
+    }
   }
 
   if (Object.keys(updates).length === 0) return
 
   await supabase.from('editeurs').update(updates).eq('id', userRow.editeur_id)
+  if (logRows.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('editeurs_edit_log').insert(logRows)
+  }
 }
 
 /**
  * Met à jour les champs autorisés d'une solution (table `solutions`).
- * Vérifie que la solution appartient bien à l'éditeur de l'utilisateur.
+ * Logge chaque champ modifié dans editeurs_edit_log pour audit.
  */
 export async function updateSolutionByEditeur(
   userId: string,
@@ -251,15 +280,43 @@ export async function updateSolutionByEditeur(
   const supabase = createServiceRoleClient()
   await assertEditeurAccessToSolution(supabase, userId, solutionId)
 
-  // Filtrer les champs définis
+  const requested = Object.entries(fields).filter(([, v]) => v !== undefined)
+  if (requested.length === 0) return
+
+  // Lire valeurs actuelles pour audit
+  const fieldsList = requested.map(([k]) => k).join(', ')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: current } = await (supabase as any)
+    .from('solutions')
+    .select(fieldsList)
+    .eq('id', solutionId)
+    .single()
+
   const updates: Record<string, string | number | null> = {}
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) updates[key] = value === '' ? null : value
+  const logRows: Array<{ user_id: string; table_cible: string; id_cible: string; champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }> = []
+  for (const [key, value] of requested) {
+    const newVal = value === '' || value == null ? null : value
+    const oldVal = current?.[key] != null ? current[key] : null
+    if (String(newVal) !== String(oldVal)) {
+      updates[key] = newVal
+      logRows.push({
+        user_id: userId,
+        table_cible: 'solutions',
+        id_cible: solutionId,
+        champ: key,
+        ancienne_valeur: oldVal != null ? String(oldVal) : null,
+        nouvelle_valeur: newVal != null ? String(newVal) : null,
+      })
+    }
   }
 
   if (Object.keys(updates).length === 0) return
 
   await supabase.from('solutions').update(updates).eq('id', solutionId)
+  if (logRows.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('editeurs_edit_log').insert(logRows)
+  }
 }
 
 /**

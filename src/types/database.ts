@@ -418,6 +418,39 @@ export type Database = {
         }
         Relationships: []
       }
+      editeurs_edit_log: {
+        Row: {
+          ancienne_valeur: string | null
+          champ: string
+          created_at: string
+          id: string
+          id_cible: string
+          nouvelle_valeur: string | null
+          table_cible: string
+          user_id: string | null
+        }
+        Insert: {
+          ancienne_valeur?: string | null
+          champ: string
+          created_at?: string
+          id?: string
+          id_cible: string
+          nouvelle_valeur?: string | null
+          table_cible: string
+          user_id?: string | null
+        }
+        Update: {
+          ancienne_valeur?: string | null
+          champ?: string
+          created_at?: string
+          id?: string
+          id_cible?: string
+          nouvelle_valeur?: string | null
+          table_cible?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           contenu_html: string

@@ -3,6 +3,7 @@ import { createHmac } from 'crypto'
 import AdminLoginForm from '@/components/admin/AdminLoginForm'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminHeader from '@/components/admin/AdminHeader'
+import { getAdminBadges } from '@/lib/db/admin-badges'
 
 function isValidToken(token: string): boolean {
   const expected = createHmac('sha256', process.env.ADMIN_PASSWORD!)
@@ -23,11 +24,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     )
   }
 
+  const badges = await getAdminBadges()
+
   return (
     <div className="min-h-screen bg-surface-light">
       <AdminHeader />
       <div className="flex">
-        <AdminSidebar />
+        <AdminSidebar badges={badges} />
         <main className="flex-1 p-6 md:p-8 min-w-0">
           {children}
         </main>

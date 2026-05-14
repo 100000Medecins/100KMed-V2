@@ -3,12 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays } from 'lucide-react'
+import type { AdminBadges } from '@/lib/db/admin-badges'
 
 type NavItem = {
   href: string
   label: string
   icon: React.ElementType
-  children?: { href: string; label: string; icon: React.ElementType }[]
+  badgeKey?: keyof AdminBadges  // si défini → applique le badge correspondant
+  children?: NavItem[]
 }
 
 const navItems: NavItem[] = [
@@ -26,7 +28,7 @@ const navItems: NavItem[] = [
     label: 'Solutions',
     icon: Package,
     children: [
-      { href: '/admin/editeurs', label: 'Éditeurs', icon: Building2 },
+      { href: '/admin/editeurs', label: 'Éditeurs', icon: Building2, badgeKey: 'editeurClaims' },
       { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
       { href: '/admin/seo', label: 'SEO', icon: Search },
       { href: '/admin/questionnaires', label: 'Questionnaires', icon: ListChecks },
@@ -34,9 +36,9 @@ const navItems: NavItem[] = [
   },
   { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
   { href: '/admin/blog', label: 'Blog', icon: Newspaper },
-  { href: '/admin/questionnaires-these', label: 'Études & Thèses', icon: GraduationCap },
+  { href: '/admin/questionnaires-these', label: 'Études & Thèses', icon: GraduationCap, badgeKey: 'etudesThese' },
   { href: '/admin/videos', label: 'Vidéos & Tutos', icon: Video },
-  { href: '/admin/emails', label: 'Emails', icon: Mail },
+  { href: '/admin/emails', label: 'Emails', icon: Mail, badgeKey: 'emails' },
   { href: '/admin/planning', label: 'Planning', icon: CalendarDays },
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
@@ -45,8 +47,28 @@ function matchPath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/')
 }
 
-export default function AdminSidebar() {
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
+export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
   const pathname = usePathname()
+
+  // Le badge d'un parent agrège les badges de ses enfants
+  const getBadgeForItem = (item: NavItem): number => {
+    let total = item.badgeKey ? badges[item.badgeKey] : 0
+    if (item.children) {
+      for (const child of item.children) {
+        if (child.badgeKey) total += badges[child.badgeKey]
+      }
+    }
+    return total
+  }
 
   return (
     <aside className="w-64 flex-shrink-0 p-6 hidden md:block">
@@ -55,6 +77,7 @@ export default function AdminSidebar() {
           const Icon = item.icon
           const isActive = matchPath(pathname, item.href)
           const isChildActive = item.children?.some((c) => matchPath(pathname, c.href))
+          const parentBadge = getBadgeForItem(item)
 
           return (
             <div key={item.href}>
@@ -67,7 +90,8 @@ export default function AdminSidebar() {
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                <Badge count={parentBadge} />
               </Link>
 
               {item.children && (isActive || isChildActive) && (
@@ -75,6 +99,7 @@ export default function AdminSidebar() {
                   {item.children.map((child) => {
                     const isChildCurrent = matchPath(pathname, child.href)
                     const ChildIcon = child.icon
+                    const childBadge = child.badgeKey ? badges[child.badgeKey] : 0
                     return (
                       <Link
                         key={child.href}
@@ -86,7 +111,8 @@ export default function AdminSidebar() {
                         }`}
                       >
                         <ChildIcon className="w-3 h-3" />
-                        {child.label}
+                        <span className="flex-1">{child.label}</span>
+                        <Badge count={childBadge} />
                       </Link>
                     )
                   })}
