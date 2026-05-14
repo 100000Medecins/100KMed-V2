@@ -82,6 +82,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
   - Nouvel éditeur à valider (demande en attente dans `editeur_claims`)
 - Objectif : voir d'un coup d'œil ce qui demande modération
 
+#### Afficher la date de dernière connexion des utilisateurs en admin
+- La donnée existe déjà : `auth.users.last_sign_in_at` (natif Supabase, maj à chaque connexion email/MDP **et** PSC)
+- Aucune migration nécessaire — lire via `supabase.auth.admin.getUserById()` / `listUsers()`
+- Usage : colonne "Dernière connexion" dans `/admin/utilisateurs`, repérer les comptes inactifs
+
 #### Permettre à un utilisateur inscrit de proposer une nouvelle vidéo (stories & tutos)
 - Ajouter un parcours côté front pour qu'un utilisateur connecté soumette une proposition de vidéo
 - Modération admin avant publication (à intégrer avec le point rouge admin ci-dessus)
