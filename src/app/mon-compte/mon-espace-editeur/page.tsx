@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { getEditeurDataForUser, updateEditeurByUser, updateSolutionByEditeur, syncGalerieByEditeur } from '@/lib/actions/admin-users'
-import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 type GalerieItem = { id?: number; url: string; titre: string | null; ordre: number | null; type?: string | null }
@@ -54,7 +54,13 @@ export default function MonEspaceEditeurPage() {
   const [openSolutionId, setOpenSolutionId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user || userRole !== 'editeur') return
+    if (!user) return
+    if (userRole === null) return // rôle pas encore résolu → on attend
+    if (userRole !== 'editeur') {
+      // Éditeur déclaré mais demande pas encore validée par l'admin → rien à charger
+      setFetching(false)
+      return
+    }
     getEditeurDataForUser(user.id).then((d) => {
       setData(d as { editeur: Editeur; solutions: Solution[] } | null)
       setFetching(false)
@@ -68,8 +74,16 @@ export default function MonEspaceEditeurPage() {
   if (userRole !== 'editeur') {
     return (
       <div className="bg-white rounded-card shadow-card p-8 text-center">
-        <p className="text-gray-600 text-sm">Votre demande d&apos;accès éditeur est en cours de validation par l&apos;administrateur.</p>
-        <p className="text-xs text-gray-400 mt-2">Vous recevrez l&apos;accès à votre espace dès qu&apos;elle sera approuvée.</p>
+        <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+          <Clock className="w-6 h-6 text-amber-500" />
+        </div>
+        <h2 className="text-base font-semibold text-navy mb-1">Demande d&apos;accès éditeur en cours</h2>
+        <p className="text-sm text-gray-500 max-w-md mx-auto">
+          Votre demande de rattachement à un éditeur a bien été enregistrée. Elle est en attente de validation par l&apos;équipe 100&nbsp;000 Médecins.
+        </p>
+        <p className="text-xs text-gray-400 mt-3">
+          Vous aurez accès à votre espace éditeur dès qu&apos;elle sera approuvée.
+        </p>
       </div>
     )
   }
