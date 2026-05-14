@@ -58,7 +58,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Bugs à corriger
 
-#### Fusion PSC sur compte email/MDP existant — doublon de compte *(en cours, branche `fix/psc-fusion`)*
+#### ~~Fusion PSC sur compte email/MDP existant — doublon de compte~~ [OK] Fait 2026-05-15
 - **Scénario** : compte email/MDP créé, déconnexion, connexion PSC fraîche → **2e compte `public.users` créé** au lieu de fusionner
 - **Root cause confirmé** (données BDD 2026-05-14) : PSC a renvoyé rpps + nom + prénom mais **PAS d'email** dans `userInfo`. Preuve : le compte PSC a l'email synthétique `psc-RPPS@psc.sante.fr` (généré uniquement quand `userInfo.email` est null). Du coup le callback n'a **aucune clé partagée** : lookup par `rpps` échoue (le compte email/MDP n'en a pas), lookup par `email` sauté (`email` est null) → création d'un compte séparé
 - **Pas une régression migration** — `psc-callback/route.ts` non touché par Next 16. C'est un trou de logique/UX pré-existant : sans identifiant partagé, le callback ne peut pas relier les 2 comptes
