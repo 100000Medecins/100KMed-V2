@@ -39,3 +39,7 @@ yarn-error.log*
 
 # Working files (dumps DB transitoires, etc.)
 tmp/
+
+# Claude Code — config locale par développeur
+# Ne jamais committer : accumule des patterns de permissions pouvant contenir des secrets
+.claude/settings.local.json
