@@ -58,6 +58,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Bugs à corriger
 
+#### Fusion PSC sur compte email/MDP existant — identité PSC non appliquée
+- Scénario : créer un compte email/MDP (nom/prénom bidons), se déconnecter, puis connexion PSC avec **le même email**
+- Comportement constaté : on est bien connecté sur le compte existant (les évaluations sont là), MAIS le compte n'est **pas marqué PSC-validé** et les identifiants PSC (nom, prénom, RPPS, spécialité) **ne remplacent pas** les identifiants bidons du compte email/MDP
+- Attendu : le callback PSC devrait fusionner — appliquer le RPPS + écraser nom/prénom/spécialité avec les données PSC + marquer `isFromPsc`
+- `psc-callback/route.ts` n'a pas été touché par la migration Next 16 → bug **pré-existant** (ou introduit par un commit récent non-migration, ex. `refactor(profil): pseudo vide par défaut` — à vérifier)
+- Logique délicate (historique de bugs `fix(merge)`/`fix(psc)`) → investigation + fix + re-test dédiés
+
+#### Affichage avatar cassé sur une page solution
+- Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)
+- Confirmé **pré-existant** : présent aussi sur `dev.100000medecins.org` en Next 14 → pas une régression migration
+- Identifier la page concernée et la cause (URL portrait dénormalisée invalide ?)
+
 ### UX / UI
 
 #### Point rouge admin sur catégories parent (sidebar)
