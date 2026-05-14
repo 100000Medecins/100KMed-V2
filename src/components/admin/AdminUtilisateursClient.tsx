@@ -13,6 +13,7 @@ type User = {
   nom: string | null
   prenom: string | null
   role: string | null
+  editeur_id: string | null
   specialite: string | null
   rpps: string | null
   created_at: string | null
@@ -23,7 +24,6 @@ type Editeur = {
   nom: string | null
   nom_commercial: string | null
   logo_url: string | null
-  user_id: string | null
 }
 
 type SortField = 'created_at' | 'nom'
@@ -65,7 +65,7 @@ export default function AdminUtilisateursClient({
   pendingClaimUserIds?: string[]
 }) {
   const [users, setUsers] = useState<User[]>(initialUsers)
-  const [editeurs, setEditeurs] = useState<Editeur[]>(initialEditeurs)
+  const [editeurs] = useState<Editeur[]>(initialEditeurs)
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -145,18 +145,20 @@ export default function AdminUtilisateursClient({
     URL.revokeObjectURL(url)
   }
 
-  const getEditeurForUser = (userId: string) => editeurs.find((e) => e.user_id === userId) ?? null
+  const getEditeurForUser = (userId: string) => {
+    const u = users.find((x) => x.id === userId)
+    return u?.editeur_id ? editeurs.find((e) => e.id === u.editeur_id) ?? null : null
+  }
 
   const handleAssign = (userId: string, role: string, editeurId: string | null) => {
     startTransition(async () => {
       await assignEditeurToUser(userId, role, editeurId)
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)))
-      setEditeurs((prev) =>
-        prev.map((e) => {
-          if (e.user_id === userId) return { ...e, user_id: null }
-          if (e.id === editeurId) return { ...e, user_id: userId }
-          return e
-        })
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId
+            ? { ...u, role, editeur_id: role === 'editeur' ? editeurId : null }
+            : u
+        )
       )
       setSuccessId(userId)
       setTimeout(() => setSuccessId(null), 2000)
@@ -501,7 +503,6 @@ function UserRow({
               {editeurs.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.nom_commercial || e.nom}
-                  {e.user_id && e.user_id !== user.id ? ' ✗' : ''}
                 </option>
               ))}
             </select>

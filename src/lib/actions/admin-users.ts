@@ -82,16 +82,11 @@ export async function assignEditeurToUser(
 ) {
   const supabase = createServiceRoleClient()
 
-  // Mettre à jour le rôle de l'utilisateur
-  await supabase.from('users').update({ role }).eq('id', userId)
-
-  // Détacher l'ancien éditeur éventuellement lié à cet utilisateur
-  await supabase.from('editeurs').update({ user_id: null }).eq('user_id', userId)
-
-  // Si rôle éditeur et un éditeur est sélectionné → associer
-  if (role === 'editeur' && editeurId) {
-    await supabase.from('editeurs').update({ user_id: userId }).eq('id', editeurId)
-  }
+  // users.editeur_id est la source de vérité (N users peuvent partager le même éditeur)
+  await supabase.from('users').update({
+    role,
+    editeur_id: role === 'editeur' ? editeurId : null,
+  }).eq('id', userId)
 }
 
 /**
@@ -134,28 +129,28 @@ export async function getHdhOptins(requestingUserId: string) {
 export async function getEditeurDataForUser(userId: string) {
   const supabase = createServiceRoleClient()
 
-  // Vérifier le rôle
+  // Vérifier le rôle ET récupérer l'editeur_id en une requête
   const { data: userRow } = await supabase
     .from('users')
-    .select('role')
+    .select('role, editeur_id')
     .eq('id', userId)
     .single()
 
-  if (userRow?.role !== 'editeur') return null
+  if (userRow?.role !== 'editeur' || !userRow.editeur_id) return null
 
-  // Récupérer l'éditeur associé
+  // Récupérer l'éditeur via users.editeur_id (tous les champs éditables côté éditeur)
   const { data: editeur } = await supabase
     .from('editeurs')
-    .select('id, nom, nom_commercial, logo_url, website, mot_editeur')
-    .eq('user_id', userId)
+    .select('id, nom, nom_commercial, logo_url, logo_titre, website, mot_editeur, contact_email, contact_telephone, contact_adresse, contact_cp, contact_ville, contact_pays')
+    .eq('id', userRow.editeur_id)
     .single()
 
   if (!editeur) return null
 
-  // Récupérer les solutions de cet éditeur
+  // Récupérer les solutions de cet éditeur (avec prix + image + galerie)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, logo_url, actif, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, slug, logo_url, image_url, actif, prix_ttc, prix_devise, prix_frequence, prix_duree_engagement_mois, galerie:solutions_galerie(id, url, titre, ordre, type)')
     .eq('id_editeur', editeur.id)
     .order('nom', { ascending: true })
 
@@ -163,63 +158,108 @@ export async function getEditeurDataForUser(userId: string) {
 }
 
 /**
- * Met à jour les champs éditeur autorisés pour une solution.
+ * Vérifie que l'utilisateur est un éditeur validé et que la solution lui appartient.
+ * Retourne l'editeur_id ou throw.
+ */
+async function assertEditeurAccessToSolution(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+  solutionId: string
+): Promise<string> {
+  // users.editeur_id = source de vérité (N users par éditeur possible)
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('role, editeur_id')
+    .eq('id', userId)
+    .single()
+
+  if (userRow?.role !== 'editeur' || !userRow.editeur_id) {
+    throw new Error('Non autorisé')
+  }
+
+  const { data: solution } = await supabase
+    .from('solutions')
+    .select('id')
+    .eq('id', solutionId)
+    .eq('id_editeur', userRow.editeur_id)
+    .single()
+
+  if (!solution) throw new Error('Solution non autorisée')
+
+  return userRow.editeur_id
+}
+
+/**
+ * Met à jour les champs autorisés de l'éditeur (table `editeurs`).
+ * Vérifie que l'utilisateur est bien un éditeur validé.
+ */
+export async function updateEditeurByUser(
+  userId: string,
+  fields: {
+    nom_commercial?: string
+    logo_url?: string
+    logo_titre?: string
+    mot_editeur?: string
+    website?: string
+    contact_email?: string
+    contact_telephone?: string
+    contact_adresse?: string
+    contact_cp?: string
+    contact_ville?: string
+    contact_pays?: string
+  }
+) {
+  const supabase = createServiceRoleClient()
+
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('role, editeur_id')
+    .eq('id', userId)
+    .single()
+
+  if (userRow?.role !== 'editeur' || !userRow.editeur_id) {
+    throw new Error('Non autorisé')
+  }
+
+  // Filtrer les champs définis pour ne pas écraser par undefined
+  const updates: Record<string, string | null> = {}
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined) updates[key] = value || null
+  }
+
+  if (Object.keys(updates).length === 0) return
+
+  await supabase.from('editeurs').update(updates).eq('id', userRow.editeur_id)
+}
+
+/**
+ * Met à jour les champs autorisés d'une solution (table `solutions`).
  * Vérifie que la solution appartient bien à l'éditeur de l'utilisateur.
  */
 export async function updateSolutionByEditeur(
   userId: string,
   solutionId: string,
   fields: {
-    mot_editeur?: string
     logo_url?: string
-    website?: string
+    image_url?: string
+    prix_ttc?: number | null
+    prix_devise?: string
+    prix_frequence?: string
+    prix_duree_engagement_mois?: number | null
   }
 ) {
   const supabase = createServiceRoleClient()
+  await assertEditeurAccessToSolution(supabase, userId, solutionId)
 
-  // Vérifier que l'utilisateur est bien éditeur et récupérer son éditeur
-  const { data: editeur } = await supabase
-    .from('editeurs')
-    .select('id')
-    .eq('user_id', userId)
-    .single()
-
-  if (!editeur) throw new Error('Non autorisé')
-
-  // Vérifier que la solution appartient à cet éditeur
-  const { data: solution } = await supabase
-    .from('solutions')
-    .select('id')
-    .eq('id', solutionId)
-    .eq('id_editeur', editeur.id)
-    .single()
-
-  if (!solution) throw new Error('Solution non autorisée')
-
-  // Mettre à jour les champs éditeur sur la solution ET sur l'éditeur selon le champ
-  const solutionFields: Record<string, string> = {}
-  const editeurFields: Record<string, string> = {}
-
-  if (fields.logo_url !== undefined) {
-    solutionFields.logo_url = fields.logo_url
-    editeurFields.logo_url = fields.logo_url
-  }
-  if (fields.website !== undefined) {
-    editeurFields.website = fields.website
-  }
-  if (fields.mot_editeur !== undefined) {
-    editeurFields.mot_editeur = fields.mot_editeur
+  // Filtrer les champs définis
+  const updates: Record<string, string | number | null> = {}
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined) updates[key] = value === '' ? null : value
   }
 
-  const updates: PromiseLike<unknown>[] = []
-  if (Object.keys(solutionFields).length > 0) {
-    updates.push(supabase.from('solutions').update(solutionFields).eq('id', solutionId))
-  }
-  if (Object.keys(editeurFields).length > 0) {
-    updates.push(supabase.from('editeurs').update(editeurFields).eq('id', editeur.id))
-  }
+  if (Object.keys(updates).length === 0) return
 
-  await Promise.all(updates)
+  await supabase.from('solutions').update(updates).eq('id', solutionId)
 }
 
 /**
@@ -232,24 +272,7 @@ export async function syncGalerieByEditeur(
   galerieItems: Array<{ url: string; titre: string | null; ordre: number | null; type?: string | null }>
 ) {
   const supabase = createServiceRoleClient()
-
-  // Vérification sécurité
-  const { data: editeur } = await supabase
-    .from('editeurs')
-    .select('id')
-    .eq('user_id', userId)
-    .single()
-
-  if (!editeur) throw new Error('Non autorisé')
-
-  const { data: solution } = await supabase
-    .from('solutions')
-    .select('id')
-    .eq('id', solutionId)
-    .eq('id_editeur', editeur.id)
-    .single()
-
-  if (!solution) throw new Error('Solution non autorisée')
+  await assertEditeurAccessToSolution(supabase, userId, solutionId)
 
   // Supprimer et réinsérer
   await supabase.from('solutions_galerie').delete().eq('id_solution', solutionId)

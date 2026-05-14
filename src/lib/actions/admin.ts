@@ -699,16 +699,11 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
 
   if (claimError || !claim) throw new Error('Demande introuvable')
 
+  // users.editeur_id est la source de vérité (N users peuvent partager le même éditeur)
   await supabase
     .from('users')
     .update({ editeur_id: editeurId, role: 'editeur' })
     .eq('id', claim.user_id)
-
-  // Lien bidirectionnel : remplir editeurs.user_id pour que /mon-compte/mon-espace-editeur trouve l'éditeur
-  await supabase
-    .from('editeurs')
-    .update({ user_id: claim.user_id })
-    .eq('id', editeurId)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
