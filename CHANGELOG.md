@@ -5,6 +5,22 @@
 
 ---
 
+## [2026-05-14] — Refonte pseudo (vide par défaut) + fix build database.ts
+
+### Fix — Ligne artefact de plugin dans `src/types/database.ts` (cassait le build)
+- `database.ts` contenait une ligne `<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />`, committée dans `a9937de` — artefact du plugin Claude Code `supabase`.
+- Ce n'est pas du TypeScript valide → `npm run build` / `tsc` échouent → le déploiement Vercel aurait échoué.
+- Ligne retirée. À surveiller côté config du plugin pour éviter que ça se reproduise.
+
+### Refactor — Pseudo vide par défaut, fallback "Prénom N." calculé à l'affichage
+- **Constat** : le texte d'aide promettait "si non rempli → prénom + initiale", mais ce fallback n'était implémenté nulle part. Les composants d'avis faisaient `pseudo || 'Anonyme'`. Un auto-remplissage du pseudo avec la partie locale de l'email (`createUserProfile`, `updateProfile`, `evaluation.ts`) masquait le trou — on voyait la partie email au lieu de 'Anonyme'.
+- **A — Arrêt de l'auto-remplissage** : `createUserProfile` n'insère plus de pseudo, `completeProfile` fait `pseudo?.trim() || null`, `updateProfile` ne re-remplit plus si vide, `evaluation.ts` n'insère plus de pseudo. La page profil envoie désormais `null` (et non `undefined`) pour qu'un pseudo vidé soit réellement effacé en base.
+- **B — Vrai fallback à l'affichage** : nouveau helper `src/lib/displayName.ts` → `getDisplayName({ pseudo, prenom, nom })` retourne `pseudo` sinon `"Prénom N."` sinon `"Anonyme"` (dernier cas : users sans prénom, ex. évaluations anonymes). Les requêtes `getAvisUtilisateurs` / `getLastAvisUtilisateurs` / `getAvisUtilisateursPaginated` (`evaluations.ts`) et `getUserById` (`users.ts`) chargent maintenant `nom, prenom`. Types alignés (`models.ts` + types inline des composants). Helper utilisé dans `AvisUtilisateurs`, `UserReviewsSidebar`, `ConfrereTestimonials`.
+- **C — Texte d'aide profil** : "Si laissé vide, vos avis publiés afficheront votre prénom suivi de l'initiale de votre nom."
+- **Existant non touché** : les pseudos déjà en base (partie email ou "Prénom N." selon le parcours d'origine) sont laissés tels quels — seules les sauvegardes futures sont propres.
+
+---
+
 ## [2026-05-14] — Footer désabonnement : 3 senders + 3 templates transactionnels + doc
 
 ### Fix — Footer "Gérer mes notifications" retiré des 3 templates transactionnels
