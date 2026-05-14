@@ -5,11 +5,12 @@ import Footer from '@/components/layout/Footer'
 
 export const metadata = { title: 'Désabonnement confirmé — 100 000 Médecins' }
 
-export default function DesabonnementConfirmePage({
-  searchParams,
-}: {
-  searchParams: { erreur?: string }
-}) {
+export default async function DesabonnementConfirmePage(
+  props: {
+    searchParams: Promise<{ erreur?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const erreur = searchParams.erreur
 
   return (

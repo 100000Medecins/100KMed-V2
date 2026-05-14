@@ -11,10 +11,11 @@ import ScrollToSolution from '@/components/admin/ScrollToSolution'
 import RecalcAllSolutionsButton from '@/components/admin/RecalcAllSolutionsButton'
 
 interface PageProps {
-  searchParams: { categorie?: string }
+  searchParams: Promise<{ categorie?: string }>
 }
 
-export default async function AdminSolutionsPage({ searchParams }: PageProps) {
+export default async function AdminSolutionsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const [solutions, categories] = await Promise.all([
     getAllSolutionsAdmin(),
     getCategories(),

@@ -11,10 +11,11 @@ import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
 
 interface PageProps {
-  params: { idCategorie: string; idSolution: string }
+  params: Promise<{ idCategorie: string; idSolution: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   try {
     const solution = await getSolutionBySlug(params.idSolution)
     const meta = solution.meta as Record<string, string | null> | null
@@ -32,7 +33,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function SolutionPage({ params }: PageProps) {
+export default async function SolutionPage(props: PageProps) {
+  const params = await props.params;
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
   if (!solution) notFound()
 

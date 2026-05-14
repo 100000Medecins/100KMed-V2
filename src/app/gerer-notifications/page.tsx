@@ -7,10 +7,11 @@ import GererNotificationsClient from './GererNotificationsClient'
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  searchParams: { uid?: string; iat?: string; token?: string }
+  searchParams: Promise<{ uid?: string; iat?: string; token?: string }>
 }
 
-export default async function GererNotificationsPage({ searchParams }: Props) {
+export default async function GererNotificationsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const content = await renderContent(searchParams)
   return (
     <>

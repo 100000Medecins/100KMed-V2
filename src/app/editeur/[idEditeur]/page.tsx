@@ -9,10 +9,11 @@ import SolutionList from '@/components/solutions/SolutionList'
 export const revalidate = 3600 // ISR : 1 heure
 
 interface PageProps {
-  params: { idEditeur: string }
+  params: Promise<{ idEditeur: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   try {
     const { editeur } = await getEditeurWithSolutions(params.idEditeur)
     return {
@@ -30,7 +31,8 @@ export async function generateStaticParams() {
   return []
 }
 
-export default async function EditeurPage({ params }: PageProps) {
+export default async function EditeurPage(props: PageProps) {
+  const params = await props.params;
   let editeur, solutions
   try {
     const result = await getEditeurWithSolutions(params.idEditeur)

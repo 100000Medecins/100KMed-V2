@@ -14,11 +14,12 @@ import SolutionFilters from '@/components/solutions/SolutionFilters'
 import SolutionSortBar from '@/components/solutions/SolutionSortBar'
 
 interface PageProps {
-  params: { idCategorie: string }
-  searchParams: { tags?: string; tri?: string; critere?: string; dir?: string }
+  params: Promise<{ idCategorie: string }>
+  searchParams: Promise<{ tags?: string; tri?: string; critere?: string; dir?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
   if (!categorie) return { title: 'Solutions' }
   return {
@@ -35,7 +36,9 @@ const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
   note_utilisateurs: 'desc',
 }
 
-export default async function SolutionsPage({ params, searchParams }: PageProps) {
+export default async function SolutionsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
   if (!categorie) notFound()
 

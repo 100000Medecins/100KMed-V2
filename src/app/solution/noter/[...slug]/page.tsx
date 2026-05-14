@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, use } from 'react';
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -12,7 +12,7 @@ import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Ma
 import { getCritereLabel } from '@/lib/constants/criteres'
 
 interface PageProps {
-  params: { slug: string[] }
+  params: Promise<{ slug: string[] }>
 }
 
 const CRITERES = [
@@ -477,7 +477,8 @@ function StepIndicator({
 
 // ─── Page principale ─────────────────────────────────────────────────────────
 
-export default function NoterPage({ params }: PageProps) {
+export default function NoterPage(props: PageProps) {
+  const params = use(props.params);
   const [categorieSlug, solutionSlug] = params.slug
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
