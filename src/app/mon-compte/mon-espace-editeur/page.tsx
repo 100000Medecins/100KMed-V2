@@ -81,7 +81,7 @@ export default function MonEspaceEditeurPage() {
         <p className="text-sm text-gray-500 max-w-md mx-auto">
           Votre demande de rattachement à un éditeur a bien été enregistrée. Elle est en attente de validation par l&apos;équipe 100&nbsp;000 Médecins.
         </p>
-        <p className="text-xs text-gray-400 mt-3">
+        <p className="text-sm text-gray-500 max-w-md mx-auto mt-3">
           Vous aurez accès à votre espace éditeur dès qu&apos;elle sera approuvée.
         </p>
       </div>
