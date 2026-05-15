@@ -14,10 +14,6 @@ interface Editeur {
   logo_url: string | null
   logo_titre: string | null
   website: string | null
-  contact_email: string | null
-  contact_telephone: string | null
-  contact_adresse: string | null
-  contact_cp: string | null
   contact_ville: string | null
   contact_pays: string | null
   nb_employes: number | null
@@ -71,6 +67,8 @@ export default function EditeurWithSearch({ editeur, action }: Props) {
   }
 
   // Merge editeur + applied values for initialValues
+  // Note : contact_email/telephone/adresse/cp ne sont plus stockés sur editeurs (déplacés sur solutions),
+  // on les laisse remontés par Tavily mais ils ne sont plus appliqués au form.
   const initialValues: EditeurSuggestion | undefined = appliedValues
     ? {
         nom: editeur.nom ?? '',
@@ -78,10 +76,10 @@ export default function EditeurWithSearch({ editeur, action }: Props) {
         description: appliedValues.description !== undefined ? appliedValues.description : editeur.description,
         website: appliedValues.website !== undefined ? appliedValues.website : editeur.website,
         logo_url: appliedValues.logo_url !== undefined ? appliedValues.logo_url : editeur.logo_url,
-        contact_email: appliedValues.contact_email !== undefined ? appliedValues.contact_email : editeur.contact_email,
-        contact_telephone: appliedValues.contact_telephone !== undefined ? appliedValues.contact_telephone : editeur.contact_telephone,
-        contact_adresse: appliedValues.contact_adresse !== undefined ? appliedValues.contact_adresse : editeur.contact_adresse,
-        contact_cp: appliedValues.contact_cp !== undefined ? appliedValues.contact_cp : editeur.contact_cp,
+        contact_email: null,
+        contact_telephone: null,
+        contact_adresse: null,
+        contact_cp: null,
         contact_ville: appliedValues.contact_ville !== undefined ? appliedValues.contact_ville : editeur.contact_ville,
         contact_pays: appliedValues.contact_pays !== undefined ? appliedValues.contact_pays : editeur.contact_pays,
         nb_employes: appliedValues.nb_employes !== undefined ? appliedValues.nb_employes : editeur.nb_employes,
@@ -140,10 +138,10 @@ export default function EditeurWithSearch({ editeur, action }: Props) {
               description: appliedValues?.description !== undefined ? appliedValues.description : editeur.description,
               website: appliedValues?.website !== undefined ? appliedValues.website : editeur.website,
               logo_url: appliedValues?.logo_url !== undefined ? appliedValues.logo_url : editeur.logo_url,
-              contact_email: appliedValues?.contact_email !== undefined ? appliedValues.contact_email : editeur.contact_email,
-              contact_telephone: appliedValues?.contact_telephone !== undefined ? appliedValues.contact_telephone : editeur.contact_telephone,
-              contact_adresse: appliedValues?.contact_adresse !== undefined ? appliedValues.contact_adresse : editeur.contact_adresse,
-              contact_cp: appliedValues?.contact_cp !== undefined ? appliedValues.contact_cp : editeur.contact_cp,
+              contact_email: null,
+              contact_telephone: null,
+              contact_adresse: null,
+              contact_cp: null,
               contact_ville: appliedValues?.contact_ville !== undefined ? appliedValues.contact_ville : editeur.contact_ville,
               contact_pays: appliedValues?.contact_pays !== undefined ? appliedValues.contact_pays : editeur.contact_pays,
               nb_employes: appliedValues?.nb_employes !== undefined ? appliedValues.nb_employes : editeur.nb_employes,

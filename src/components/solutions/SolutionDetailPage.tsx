@@ -132,7 +132,7 @@ export default function SolutionDetailPage({
               </div>
 
               <div id="support" className="scroll-mt-[140px]">
-                <SupportSection editeur={solution.editeur} />
+                <SupportSection solution={solution} />
               </div>
             </div>
 

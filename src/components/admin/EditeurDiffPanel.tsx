@@ -11,15 +11,13 @@ type DiffField = {
   isImage?: boolean
 }
 
+// Note : contact_email/telephone/adresse/cp ne sont plus stockés sur editeurs
+// (déplacés au niveau solutions). On les exclut donc du diff même si Tavily les remonte.
 const DIFF_FIELDS: DiffField[] = [
   { key: 'nom_commercial', label: 'Nom commercial' },
   { key: 'description', label: 'Description', isHtml: true },
   { key: 'website', label: 'Site web' },
   { key: 'logo_url', label: 'Logo', isImage: true },
-  { key: 'contact_email', label: 'Email' },
-  { key: 'contact_telephone', label: 'Téléphone' },
-  { key: 'contact_adresse', label: 'Adresse' },
-  { key: 'contact_cp', label: 'Code postal' },
   { key: 'contact_ville', label: 'Ville' },
   { key: 'contact_pays', label: 'Pays' },
   { key: 'nb_employes', label: 'Nb employés' },

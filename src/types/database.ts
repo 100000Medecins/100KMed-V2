@@ -359,9 +359,7 @@ export type Database = {
         Row: {
           contact_adresse: string | null
           contact_cp: string | null
-          contact_email: string | null
           contact_pays: string | null
-          contact_telephone: string | null
           contact_ville: string | null
           created_at: string | null
           description: string | null
@@ -373,18 +371,13 @@ export type Database = {
           nom: string | null
           nom_commercial: string | null
           siret: string | null
-          support_email: string | null
-          support_telephone: string | null
-          support_website: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
           contact_adresse?: string | null
           contact_cp?: string | null
-          contact_email?: string | null
           contact_pays?: string | null
-          contact_telephone?: string | null
           contact_ville?: string | null
           created_at?: string | null
           description?: string | null
@@ -396,18 +389,13 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
-          support_email?: string | null
-          support_telephone?: string | null
-          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
           contact_adresse?: string | null
           contact_cp?: string | null
-          contact_email?: string | null
           contact_pays?: string | null
-          contact_telephone?: string | null
           contact_ville?: string | null
           created_at?: string | null
           description?: string | null
@@ -419,9 +407,6 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
-          support_email?: string | null
-          support_telephone?: string | null
-          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -1051,6 +1036,8 @@ export type Database = {
       solutions: {
         Row: {
           actif: boolean | null
+          contact_email: string | null
+          contact_telephone: string | null
           created_at: string | null
           date_maj: string | null
           description: string | null
@@ -1075,11 +1062,16 @@ export type Database = {
           prix_ttc_max: number | null
           prix_ttc_min: number | null
           slug: string | null
+          support_email: string | null
+          support_telephone: string | null
+          support_website: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
           actif?: boolean | null
+          contact_email?: string | null
+          contact_telephone?: string | null
           created_at?: string | null
           date_maj?: string | null
           description?: string | null
@@ -1104,11 +1096,16 @@ export type Database = {
           prix_ttc_max?: number | null
           prix_ttc_min?: number | null
           slug?: string | null
+          support_email?: string | null
+          support_telephone?: string | null
+          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
           actif?: boolean | null
+          contact_email?: string | null
+          contact_telephone?: string | null
           created_at?: string | null
           date_maj?: string | null
           description?: string | null
@@ -1133,6 +1130,9 @@ export type Database = {
           prix_ttc_max?: number | null
           prix_ttc_min?: number | null
           slug?: string | null
+          support_email?: string | null
+          support_telephone?: string | null
+          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }

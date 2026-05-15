@@ -106,6 +106,9 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [evaluationRedacAvis, setEvaluationRedacAvis] = useState(solution?.evaluation_redac_avis ?? '')
   const [motEditeur, setMotEditeur] = useState(solution?.mot_editeur ?? '')
   const [logoUrl, setLogoUrl] = useState(solution?.logo_url ?? '')
+  const [prixMode, setPrixMode] = useState<'unique' | 'plage'>(
+    solution?.prix_ttc_min != null || solution?.prix_ttc_max != null ? 'plage' : 'unique'
+  )
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null)
   const logoFileInputRef = useRef<HTMLInputElement>(null)
@@ -209,6 +212,8 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     general: true,
     apparence: false,
     editorial: false,
+    contacts: false,
+    tarification: false,
     criteres: false,
     fonctionnalites: false,
     fonctionnalitesAssociees: false,
@@ -438,6 +443,197 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             onChange={setMotEditeur}
             minHeight={200}
           />
+        </div>
+      </Section>
+
+      {/* Section — Contacts utiles (commerciaux + support) */}
+      <Section
+        title="Contacts utiles (page solution)"
+        isOpen={openSections.contacts}
+        onToggle={() => toggleSection('contacts')}
+      >
+        <p className="text-xs text-gray-500">
+          Si renseignés, apparaissent en bas de cette page solution dans « Contacts utiles ».
+          Modifiables également par l&apos;éditeur depuis son espace pro.
+        </p>
+
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-navy uppercase tracking-wider">Contacts commerciaux (demande de démo, devis…)</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="contact_email" className={labelClass}>Email commercial</label>
+              <input
+                id="contact_email"
+                type="email"
+                name="contact_email"
+                defaultValue={solution?.contact_email ?? ''}
+                placeholder="contact@..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="contact_telephone" className={labelClass}>Téléphone commercial</label>
+              <input
+                id="contact_telephone"
+                type="text"
+                name="contact_telephone"
+                defaultValue={solution?.contact_telephone ?? ''}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-3 border-t border-gray-100">
+          <h4 className="text-xs font-semibold text-navy uppercase tracking-wider">Contacts support (SAV, assistance technique)</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="support_email" className={labelClass}>Email support</label>
+              <input
+                id="support_email"
+                type="email"
+                name="support_email"
+                defaultValue={solution?.support_email ?? ''}
+                placeholder="support@..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="support_telephone" className={labelClass}>Téléphone support</label>
+              <input
+                id="support_telephone"
+                type="text"
+                name="support_telephone"
+                defaultValue={solution?.support_telephone ?? ''}
+                className={inputClass}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="support_website" className={labelClass}>Site / page de support</label>
+            <input
+              id="support_website"
+              type="url"
+              name="support_website"
+              defaultValue={solution?.support_website ?? ''}
+              placeholder="https://..."
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* Section — Tarification */}
+      <Section
+        title="Tarification"
+        isOpen={openSections.tarification}
+        onToggle={() => toggleSection('tarification')}
+      >
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+          ⏱ Bientôt affiché sur le site. Modifiable également par l&apos;éditeur depuis son espace pro.
+        </p>
+
+        <div className="inline-flex bg-gray-100 rounded-xl p-1">
+          <button
+            type="button"
+            onClick={() => setPrixMode('unique')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              prixMode === 'unique' ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-navy'
+            }`}
+          >
+            Prix unique
+          </button>
+          <button
+            type="button"
+            onClick={() => setPrixMode('plage')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              prixMode === 'plage' ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-navy'
+            }`}
+          >
+            Plage de prix
+          </button>
+        </div>
+
+        <div className={`grid grid-cols-1 ${prixMode === 'plage' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3`}>
+          {prixMode === 'unique' ? (
+            <div>
+              <label htmlFor="prix_ttc" className={labelClass}>Prix TTC</label>
+              <input
+                id="prix_ttc"
+                type="number"
+                step="0.01"
+                name="prix_ttc"
+                defaultValue={solution?.prix_ttc ?? ''}
+                placeholder="0.00"
+                className={inputClass}
+              />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label htmlFor="prix_ttc_min" className={labelClass}>Min TTC</label>
+                <input
+                  id="prix_ttc_min"
+                  type="number"
+                  step="0.01"
+                  name="prix_ttc_min"
+                  defaultValue={solution?.prix_ttc_min ?? ''}
+                  placeholder="0.00"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="prix_ttc_max" className={labelClass}>Max TTC</label>
+                <input
+                  id="prix_ttc_max"
+                  type="number"
+                  step="0.01"
+                  name="prix_ttc_max"
+                  defaultValue={solution?.prix_ttc_max ?? ''}
+                  placeholder="0.00"
+                  className={inputClass}
+                />
+              </div>
+            </>
+          )}
+          <div>
+            <label htmlFor="prix_devise" className={labelClass}>Devise</label>
+            <select
+              id="prix_devise"
+              name="prix_devise"
+              defaultValue={solution?.prix_devise ?? 'EUR'}
+              className={selectClass}
+            >
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="prix_frequence" className={labelClass}>Fréquence</label>
+            <select
+              id="prix_frequence"
+              name="prix_frequence"
+              defaultValue={solution?.prix_frequence ?? ''}
+              className={selectClass}
+            >
+              <option value="">—</option>
+              <option value="mois">par mois</option>
+              <option value="an">par an</option>
+              <option value="unique">paiement unique</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="prix_duree_engagement_mois" className={labelClass}>Durée engag. (mois)</label>
+            <input
+              id="prix_duree_engagement_mois"
+              type="number"
+              name="prix_duree_engagement_mois"
+              defaultValue={solution?.prix_duree_engagement_mois ?? ''}
+              placeholder="0"
+              className={inputClass}
+            />
+          </div>
         </div>
       </Section>
 

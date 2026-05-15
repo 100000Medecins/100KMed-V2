@@ -12,10 +12,6 @@ interface Editeur {
   logo_url: string | null
   logo_titre: string | null
   website: string | null
-  contact_email: string | null
-  contact_telephone: string | null
-  contact_adresse: string | null
-  contact_cp: string | null
   contact_ville: string | null
   contact_pays: string | null
   nb_employes: number | null
@@ -187,53 +183,9 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
         </div>
       </Section>
 
-      <Section title="Contact">
+      <Section title="Localisation">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="contact_email" className={labelClass}>Email</label>
-            <input
-              id="contact_email"
-              type="email"
-              name="contact_email"
-              defaultValue={editeur?.contact_email ?? v?.contact_email ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="contact_telephone" className={labelClass}>Téléphone</label>
-            <input
-              id="contact_telephone"
-              type="text"
-              name="contact_telephone"
-              defaultValue={editeur?.contact_telephone ?? v?.contact_telephone ?? ''}
-              className={inputClass}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="contact_adresse" className={labelClass}>Adresse</label>
-          <input
-            id="contact_adresse"
-            type="text"
-            name="contact_adresse"
-            defaultValue={editeur?.contact_adresse ?? v?.contact_adresse ?? ''}
-            className={inputClass}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <label htmlFor="contact_cp" className={labelClass}>Code postal</label>
-            <input
-              id="contact_cp"
-              type="text"
-              name="contact_cp"
-              defaultValue={editeur?.contact_cp ?? v?.contact_cp ?? ''}
-              className={inputClass}
-            />
-          </div>
-          <div className="col-span-2">
             <label htmlFor="contact_ville" className={labelClass}>Ville</label>
             <input
               id="contact_ville"

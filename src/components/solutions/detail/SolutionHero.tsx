@@ -52,14 +52,21 @@ export default function SolutionHero({
   categorieSlug,
   hasDetailedRatings,
 }: SolutionHeroProps) {
-  const hasSupport = !!(solution.editeur && (solution.editeur.support_email || solution.editeur.support_telephone || solution.editeur.support_website))
+  const sol = solution as unknown as Record<string, string | null>
+  const hasContactsUtiles = !!(
+    sol.contact_email ||
+    sol.contact_telephone ||
+    sol.support_email ||
+    sol.support_telephone ||
+    sol.support_website
+  )
   const anchors = [
     { id: 'avis-redaction', label: 'Avis de la rédaction', show: !!solution.evaluation_redac_avis },
     { id: 'galerie', label: 'Galerie', show: !!(solution.galerie && solution.galerie.length > 0) },
     { id: 'notes-detaillees', label: 'Evaluation détaillée', show: hasDetailedRatings },
     { id: 'avis-utilisateurs', label: 'Notes utilisateurs', show: true },
     { id: 'mot-editeur', label: 'Mot éditeur', show: !!solution.mot_editeur },
-    { id: 'support', label: 'Support', show: hasSupport },
+    { id: 'support', label: 'Contacts utiles', show: hasContactsUtiles },
   ].filter(a => a.show)
   return (
     <div>

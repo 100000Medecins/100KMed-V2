@@ -1,25 +1,36 @@
 export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { updateEditeur } from '@/lib/actions/admin'
 import EditeurWithSearch from '@/components/admin/EditeurWithSearch'
+import EditeurSolutionsManager from '@/components/admin/EditeurSolutionsManager'
+import type { SolutionLite } from '@/components/admin/EditeurSolutionsManager'
 import type { Editeur } from '@/types/models'
 
 interface PageProps {
   params: Promise<{ id: string }>
 }
 
-async function getEditeurSolutions(id: string) {
+async function getEditeurSolutions(id: string): Promise<SolutionLite[]> {
   const supabase = createServiceRoleClient()
   const { data } = await supabase
     .from('solutions')
     .select('id, nom, actif')
     .eq('id_editeur', id)
     .order('nom', { ascending: true })
-  return data ?? []
+  return (data ?? []) as SolutionLite[]
+}
+
+async function getSolutionsSansEditeur(): Promise<SolutionLite[]> {
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('solutions')
+    .select('id, nom, actif')
+    .is('id_editeur', null)
+    .order('nom', { ascending: true })
+  return (data ?? []) as SolutionLite[]
 }
 
 export default async function AdminModifierEditeurPage({ params }: PageProps) {
@@ -28,7 +39,10 @@ export default async function AdminModifierEditeurPage({ params }: PageProps) {
   const { data: editeur } = await supabase.from('editeurs').select('*').eq('id', id).single()
   if (!editeur) notFound()
 
-  const solutions = await getEditeurSolutions(id)
+  const [solutions, solutionsSansEditeur] = await Promise.all([
+    getEditeurSolutions(id),
+    getSolutionsSansEditeur(),
+  ])
   const boundAction = updateEditeur.bind(null, id)
 
   return (
@@ -56,30 +70,11 @@ export default async function AdminModifierEditeurPage({ params }: PageProps) {
         </div>
 
         <div>
-          <div className="bg-white rounded-card shadow-card p-6">
-            <h2 className="text-sm font-semibold text-navy mb-4">
-              Solutions liées ({solutions.length})
-            </h2>
-            {solutions.length === 0 ? (
-              <p className="text-sm text-gray-400">Aucune solution liée.</p>
-            ) : (
-              <ul className="space-y-2">
-                {solutions.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between gap-2">
-                    <span className={`text-sm ${s.actif ? 'text-navy' : 'text-gray-400 line-through'}`}>
-                      {s.nom}
-                    </span>
-                    <Link
-                      href={`/admin/solutions/${s.id}/modifier`}
-                      className="text-xs text-accent-blue hover:underline flex-shrink-0"
-                    >
-                      Modifier
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <EditeurSolutionsManager
+            editeurId={id}
+            solutionsLiees={solutions}
+            solutionsSansEditeur={solutionsSansEditeur}
+          />
         </div>
       </div>
     </div>
