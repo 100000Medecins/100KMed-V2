@@ -8,6 +8,7 @@ import UserReviewsSection from './detail/UserReviewsSection'
 import ConfrereTestimonials from './detail/ConfrereTestimonials'
 import ComparisonSection from './detail/ComparisonSection'
 import PublisherWord from './detail/PublisherWord'
+import SupportSection from './detail/SupportSection'
 import type { SolutionWithRelations, ResultatWithCritere } from '@/types/models'
 import type { NoteRedac } from '@/lib/db/solutions'
 
@@ -128,6 +129,10 @@ export default function SolutionDetailPage({
                   motEditeur={solution.mot_editeur}
                   editeur={solution.editeur}
                 />
+              </div>
+
+              <div id="support" className="scroll-mt-[140px]">
+                <SupportSection editeur={solution.editeur} />
               </div>
             </div>
 

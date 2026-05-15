@@ -141,16 +141,16 @@ export async function getEditeurDataForUser(userId: string) {
   // Récupérer l'éditeur via users.editeur_id (tous les champs éditables côté éditeur)
   const { data: editeur } = await supabase
     .from('editeurs')
-    .select('id, nom, nom_commercial, logo_url, logo_titre, website, mot_editeur, contact_email, contact_telephone, contact_adresse, contact_cp, contact_ville, contact_pays')
+    .select('id, nom, nom_commercial, logo_url, logo_titre, website, mot_editeur, contact_email, contact_telephone, contact_ville, contact_pays, support_email, support_telephone, support_website')
     .eq('id', userRow.editeur_id)
     .single()
 
   if (!editeur) return null
 
-  // Récupérer les solutions de cet éditeur (avec prix + galerie)
+  // Récupérer les solutions de cet éditeur (avec prix + galerie + mot éditeur par solution)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, logo_url, actif, prix_ttc, prix_devise, prix_frequence, prix_duree_engagement_mois, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, slug, logo_url, actif, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, galerie:solutions_galerie(id, url, titre, ordre, type)')
     .eq('id_editeur', editeur.id)
     .order('nom', { ascending: true })
 
@@ -203,10 +203,11 @@ export async function updateEditeurByUser(
     website?: string
     contact_email?: string
     contact_telephone?: string
-    contact_adresse?: string
-    contact_cp?: string
     contact_ville?: string
     contact_pays?: string
+    support_email?: string
+    support_telephone?: string
+    support_website?: string
   }
 ) {
   const supabase = createServiceRoleClient()
@@ -270,7 +271,10 @@ export async function updateSolutionByEditeur(
   solutionId: string,
   fields: {
     logo_url?: string
+    mot_editeur?: string
     prix_ttc?: number | null
+    prix_ttc_min?: number | null
+    prix_ttc_max?: number | null
     prix_devise?: string
     prix_frequence?: string
     prix_duree_engagement_mois?: number | null

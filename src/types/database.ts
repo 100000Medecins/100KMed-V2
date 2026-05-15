@@ -373,6 +373,9 @@ export type Database = {
           nom: string | null
           nom_commercial: string | null
           siret: string | null
+          support_email: string | null
+          support_telephone: string | null
+          support_website: string | null
           updated_at: string | null
           website: string | null
         }
@@ -393,6 +396,9 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
+          support_email?: string | null
+          support_telephone?: string | null
+          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -413,6 +419,9 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
+          support_email?: string | null
+          support_telephone?: string | null
+          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -1063,6 +1072,8 @@ export type Database = {
           prix_duree_engagement_mois: number | null
           prix_frequence: string | null
           prix_ttc: number | null
+          prix_ttc_max: number | null
+          prix_ttc_min: number | null
           slug: string | null
           updated_at: string | null
           website: string | null
@@ -1090,6 +1101,8 @@ export type Database = {
           prix_duree_engagement_mois?: number | null
           prix_frequence?: string | null
           prix_ttc?: number | null
+          prix_ttc_max?: number | null
+          prix_ttc_min?: number | null
           slug?: string | null
           updated_at?: string | null
           website?: string | null
@@ -1117,6 +1130,8 @@ export type Database = {
           prix_duree_engagement_mois?: number | null
           prix_frequence?: string | null
           prix_ttc?: number | null
+          prix_ttc_max?: number | null
+          prix_ttc_min?: number | null
           slug?: string | null
           updated_at?: string | null
           website?: string | null
