@@ -5,7 +5,28 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-15**
+- [OK] 2026-05-15 : Fusion PSC sur compte email/MDP existant — doublon de compte (Bugs à corriger)
+  - Scénario : compte email/MDP créé, déconnexion, connexion PSC fraîche → 2e compte `public.users` créé au lieu de fusionner
+  - Root cause : PSC userInfo sans email → callback sans clé partagée (rpps absent du compte email, email PSC null) → création d'un compte séparé
+  - Solution A implémentée : `/completer-profil` détecte le conflit email → déclenche le flux `/fusionner-compte` existant (token HMAC 15 min)
+  - `mergeAccounts` enrichi : dedup `evaluations` sur UNIQUE(user_id, solution_id) en gardant la plus récente
+
+**2026-05-12**
+- [OK] 2026-05-12 : Vérifier tous les comportements utilisateurs — tests end-to-end (IMPORTANT)
+  - Connexion email/mot de passe, inscription, reset password
+  - Changement d'email et de mot de passe depuis le profil
+  - Connexion PSC, fusion PSC (compte existant), banner PSC post-fusion
+  - Suppression de compte (avec et sans suppression des avis)
+  - Suppression admin d'un utilisateur
+- [OK] 2026-05-12 : Importer les utilisateurs Firebase tardifs (Nettoyage)
+  - Fenêtre élargie à 2026-01-01 (au lieu du seul post-migration) : 1029 users scannés
+  - 55 users créés + 18 évaluations importées + 10 solutions recalculées, 0 erreur
+  - Détails dans CHANGELOG. Script conservé : `scripts/import-firebase-late-users.ts`
+
 **2026-05-09**
+- [OK] 2026-05-09 : Efficience du code — rapport Ben (Performance)
+  - Tous les points du rapport efficience traités (voir aussi l'item "Alléger les pages du site" ci-dessous)
 - [OK] 2026-05-09 : Fix — Note rédaction homepage fausse (IMPORTANT / Bugs)
   - `getNotesRedacGlobales` moyennait tous les critères `resultats` y compris les N/A à -0.50 → ~0.1 pour Premiocare
   - Fix : lit `solutions.evaluation_redac_note` (colonne stockée), aligné sur `getNotesGlobalesRedac`

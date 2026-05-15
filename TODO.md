@@ -8,20 +8,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### IMPORTANT
 
-#### ~~Vérifier tous les comportements utilisateurs (tests end-to-end)~~ [OK] Fait 2026-05-12
-- Connexion email/mot de passe, inscription, reset password
-- Changement d'email et de mot de passe depuis le profil
-- Connexion PSC, fusion PSC (compte existant), banner PSC post-fusion
-- Suppression de compte (avec et sans suppression des avis)
-- Suppression admin d'un utilisateur
-
 #### Vérifier le comportement d'un inscrit en tant qu'éditeur
 - Inscription via le parcours éditeur (revendication d'une fiche solution)
 - Connexion éditeur, accès aux fiches revendiquées
 - Édition des champs autorisés, modération éventuelle
 - Cas limites : éditeur qui revendique une fiche déjà claim, suppression de compte éditeur
-
-#### ~~Alléger les pages du site (bundle / code inspection)~~ [OK] Fait 2026-05-09
 
 ### Sécurité
 
@@ -37,6 +28,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
+#### Favoriser l'entraide entre utilisateurs (« trucs et astuces »)
+- Compléter le support éditeur officiel par un canal communautaire où les médecins partagent leurs astuces concrètes sur chaque solution
+- Pistes à explorer :
+  - Espace « trucs et astuces » par solution (commentaires courts, vote utile/pas utile)
+  - Lien vers groupe WhatsApp ou Telegram dédié à la catégorie / solution
+  - Forum léger (Discourse / Discord) intégré au site
+- À cadrer : modération, prévention spam, articulation avec les avis existants
+
 ### Nettoyage
 
 #### Supprimer les anciens dossiers Frontend-V2-main *(dans 1–2 semaines de stabilité confirmée)*
@@ -48,25 +47,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - 2 mois après la migration Firebase (étape 1 ci-dessus)
 - Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
 
-#### ~~Importer les utilisateurs Firebase tardifs~~ [OK] Fait 2026-05-12
-- Fenêtre élargie à 2026-01-01 (au lieu du seul post-migration) : 1029 users scannés
-- 55 users créés + 18 évaluations importées + 10 solutions recalculées, 0 erreur
-- Détails dans CHANGELOG. Script conservé : `scripts/import-firebase-late-users.ts`
-
 **Restant à faire avant suppression de `firebase-admin` et `evaluations_firebase_backup`** :
 - Attendre période de stabilité (cf. item "Supprimer `evaluations_firebase_backup`" prévu 2026-06-26)
 
 ### Bugs à corriger
-
-#### ~~Fusion PSC sur compte email/MDP existant — doublon de compte~~ [OK] Fait 2026-05-15
-- **Scénario** : compte email/MDP créé, déconnexion, connexion PSC fraîche → **2e compte `public.users` créé** au lieu de fusionner
-- **Root cause confirmé** (données BDD 2026-05-14) : PSC a renvoyé rpps + nom + prénom mais **PAS d'email** dans `userInfo`. Preuve : le compte PSC a l'email synthétique `psc-RPPS@psc.sante.fr` (généré uniquement quand `userInfo.email` est null). Du coup le callback n'a **aucune clé partagée** : lookup par `rpps` échoue (le compte email/MDP n'en a pas), lookup par `email` sauté (`email` est null) → création d'un compte séparé
-- **Pas une régression migration** — `psc-callback/route.ts` non touché par Next 16. C'est un trou de logique/UX pré-existant : sans identifiant partagé, le callback ne peut pas relier les 2 comptes
-- **Contrainte produit** : évaluer sans PSC reste possible → pas de parcours forcé "connecte-toi d'abord"
-- **Direction proposée** :
-  - *Solution A (fix principal)* : capturer l'email manquant via `/completer-profil` (déjà dans le parcours PSC) — champ email requis si email synthétique → à la soumission, lookup compte existant → si match, déclencher le flux `/fusionner-compte` existant. Bonus : élimine les emails synthétiques
-  - *Solution B (filet)* : détection a posteriori d'un compte jumeau (même `email`/`contact_email`) → bandeau proposant la fusion
-- Logique délicate (historique `fix(merge)`/`fix(psc)`) → comprendre l'infra de fusion existante avant de coder
 
 #### Affichage avatar cassé sur une page solution
 - Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)
@@ -101,7 +85,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Performance
 
-#### ~~Efficience du code (rapport Ben)~~ [OK] Fait 2026-05-09
+_(rien à faire pour l'instant)_
 
 ### Mises à jour techniques
 
@@ -156,13 +140,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
 
-### Simplifier l'indicateur de prix (à peupler plus tard automatiquement)
-- Remplacer le champ JSON `nb_utilisateurs` et la section tarification complexe par :
-  - Un champ `prix_moyen` (numérique, en €/mois)
-  - Un indicateur visuel 1 à 4 euros jaunes, calculé en comparant `prix_moyen` à la médiane de la catégorie
-- Ajouter un **toggle admin** "Afficher le prix sur le front" (OFF par défaut — ne rien afficher pour l'instant)
-- Les données seront peuplées ultérieurement via recherche automatique
-- Ne pas modifier l'affichage front avant que le toggle soit activé
+### Refaire le système d'affichage des prix
+- **État actuel (2026-05-15)** : édition côté éditeur en place dans `/mon-compte/mon-espace-editeur`
+  - Soit **prix unique** : `prix_ttc`
+  - Soit **plage de prix** : `prix_ttc_min` + `prix_ttc_max`
+  - Plus `prix_devise`, `prix_frequence`, `prix_duree_engagement_mois`
+  - Badge « Bientôt affiché sur le site » dans le formulaire éditeur
+- **Restant à décider / faire** :
+  - **Logique de classement** : quelle valeur retenir pour trier une solution en plage de prix ? (min, max, moyenne, médiane ?) → trancher
+  - **Indicateur visuel** : 1 à 4 euros jaunes calculés vs. médiane de la catégorie (ou autre)
+  - **Bouton classement par prix** dans la page comparatif (`/solutions/[idCategorie]`)
+  - **Toggle admin** « Afficher le prix sur le front » (OFF par défaut) pour switcher quand prêt
+  - Affichage côté front (page solution + listing comparatif) une fois la logique tranchée
 
 ### ROR sur le site
 - Intégrer le ROR (Répertoire Opérationnel des Ressources) sur le site
