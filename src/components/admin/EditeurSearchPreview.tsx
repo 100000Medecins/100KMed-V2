@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, Loader2, Sparkles, RefreshCw } from 'lucide-react'
 import { searchEditeurInfo, type EditeurSuggestion } from '@/lib/actions/searchEditeur'
 import EditeurForm from '@/components/admin/EditeurForm'
@@ -9,12 +10,39 @@ import { createEditeur } from '@/lib/actions/admin'
 const inputClass =
   'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
 
+const emptySuggestion = (nom: string): EditeurSuggestion => ({
+  nom,
+  nom_commercial: null,
+  description: null,
+  website: null,
+  contact_email: null,
+  contact_telephone: null,
+  contact_adresse: null,
+  contact_cp: null,
+  contact_ville: null,
+  contact_pays: null,
+  nb_employes: null,
+  siret: null,
+  logo_url: null,
+})
+
 export default function EditeurSearchPreview() {
-  const [nom, setNom] = useState('')
-  const [suggestion, setSuggestion] = useState<EditeurSuggestion | null>(null)
+  const searchParams = useSearchParams()
+  const fromClaim = searchParams.get('fromClaim')
+  const prefillNom = searchParams.get('prefillNom') ?? ''
+
+  const [nom, setNom] = useState(prefillNom)
+  const [suggestion, setSuggestion] = useState<EditeurSuggestion | null>(
+    prefillNom ? emptySuggestion(prefillNom) : null
+  )
   const [formKey, setFormKey] = useState(0)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Force le re-render du form lorsqu'on arrive via query param avec un nom à pré-remplir
+  useEffect(() => {
+    if (prefillNom) setFormKey((k) => k + 1)
+  }, [prefillNom])
 
   async function handleSearch() {
     if (!nom.trim()) return
@@ -38,8 +66,20 @@ export default function EditeurSearchPreview() {
     setFormKey((k) => k + 1)
   }
 
+  // Wrapper qui injecte le contexte de claim dans le FormData avant l'action serveur
+  async function createAction(formData: FormData) {
+    if (fromClaim) formData.set('fromClaim', fromClaim)
+    return createEditeur(formData)
+  }
+
   return (
     <div className="space-y-6">
+      {fromClaim && (
+        <div className="bg-accent-blue/5 border border-accent-blue/20 text-accent-blue text-sm px-4 py-3 rounded-xl">
+          Création d&apos;un éditeur depuis une demande en attente. Après enregistrement, la demande sera automatiquement approuvée et associée à ce nouvel éditeur.
+        </div>
+      )}
+
       {/* Barre de recherche */}
       <div className="bg-gradient-to-r from-accent-blue/5 to-accent-blue/10 border border-accent-blue/20 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-3">
@@ -47,7 +87,7 @@ export default function EditeurSearchPreview() {
           <p className="text-sm font-semibold text-navy">Remplissage automatique</p>
         </div>
         <p className="text-xs text-gray-500 mb-4">
-          Entrez le nom de l'éditeur et laissez l'IA rechercher les informations disponibles sur internet.
+          Entrez le nom de l&apos;éditeur et laissez l&apos;IA rechercher les informations disponibles sur internet.
           Vous pourrez les modifier avant de sauvegarder.
         </p>
         <div className="flex gap-3">
@@ -120,7 +160,7 @@ export default function EditeurSearchPreview() {
       <EditeurForm
         key={formKey}
         initialValues={suggestion ?? undefined}
-        action={createEditeur}
+        action={createAction}
       />
     </div>
   )

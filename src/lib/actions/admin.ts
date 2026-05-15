@@ -646,6 +646,10 @@ export async function createEditeur(formData: FormData) {
   }).select('id').single()
   if (error) return { error: error.message }
   revalidatePath('/admin/editeurs')
+  const fromClaim = (formData.get('fromClaim') as string) || ''
+  if (fromClaim) {
+    redirect(`/admin/editeurs?tab=demandes&approveClaim=${encodeURIComponent(fromClaim)}&withEditeur=${encodeURIComponent(data.id)}`)
+  }
   redirect(`/admin/editeurs/${data.id}/modifier`)
 }
 

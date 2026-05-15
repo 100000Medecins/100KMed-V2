@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, X, Building2, AlertCircle } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Check, X, Building2, AlertCircle, Plus } from 'lucide-react'
 import { approuverEditeurClaim, rejeterEditeurClaim } from '@/lib/actions/admin'
 
 export type ClaimRow = {
@@ -28,8 +29,36 @@ export default function AdminEditeurClaims({
   claims: ClaimRow[]
   editeurs: EditeurOption[]
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const [selectedEditeur, setSelectedEditeur] = useState<Record<string, string>>({})
+  const [flash, setFlash] = useState<string | null>(null)
+  const autoApproveDone = useRef(false)
+
+  // Au retour depuis « + Créer un nouvel éditeur » → auto-approbation
+  useEffect(() => {
+    if (autoApproveDone.current) return
+    const approveClaim = searchParams.get('approveClaim')
+    const withEditeur = searchParams.get('withEditeur')
+    if (!approveClaim || !withEditeur) return
+    autoApproveDone.current = true
+
+    setPending((p) => ({ ...p, [approveClaim]: true }))
+    approuverEditeurClaim(approveClaim, withEditeur)
+      .then(() => {
+        setFlash('Nouvel éditeur créé et demande approuvée.')
+        setTimeout(() => setFlash(null), 4000)
+      })
+      .catch(() => {
+        setFlash("Éditeur créé mais erreur à l'approbation — approuvez manuellement.")
+      })
+      .finally(() => {
+        setPending((p) => ({ ...p, [approveClaim]: false }))
+        // Nettoyer l'URL pour éviter une nouvelle exécution si on revient en arrière
+        router.replace('/admin/editeurs?tab=demandes')
+      })
+  }, [searchParams, router])
 
   const handleApprouver = async (claim: ClaimRow) => {
     const editeurId = claim.editeur?.id || selectedEditeur[claim.id]
@@ -48,8 +77,21 @@ export default function AdminEditeurClaims({
   const enAttente = claims.filter((c) => c.statut === 'en_attente')
   const traitees = claims.filter((c) => c.statut !== 'en_attente')
 
+  const buildCreateUrl = (claim: ClaimRow) => {
+    const prefill = claim.libre_texte || claim.solution?.nom || ''
+    const params = new URLSearchParams({ fromClaim: claim.id })
+    if (prefill) params.set('prefillNom', prefill)
+    return `/admin/editeurs/nouveau?${params.toString()}`
+  }
+
   return (
     <div className="space-y-8">
+
+      {flash && (
+        <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl">
+          {flash}
+        </div>
+      )}
 
       {enAttente.length === 0 ? (
         <div className="bg-white rounded-card shadow-card px-6 py-16 text-center text-gray-400 text-sm">
@@ -122,24 +164,29 @@ export default function AdminEditeurClaims({
 
                 {/* Sélection d'éditeur si pas d'éditeur direct */}
                 {needsEditeurSelection && (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <p className="text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">
-                      Sélectionnez l&apos;éditeur à associer, ou{' '}
-                      <Link href="/admin/editeurs/nouveau" className="underline font-medium">
-                        créez-en un nouveau
-                      </Link>{' '}
-                      d&apos;abord.
+                      Associez à un éditeur existant, ou créez-en un nouveau pré-rempli avec cette demande.
                     </p>
-                    <select
-                      value={selectedEditeur[claim.id] || ''}
-                      onChange={(e) => setSelectedEditeur((s) => ({ ...s, [claim.id]: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
-                    >
-                      <option value="">Choisir un éditeur...</option>
-                      {editeurs.map((ed) => (
-                        <option key={ed.id} value={ed.id}>{ed.nom}</option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select
+                        value={selectedEditeur[claim.id] || ''}
+                        onChange={(e) => setSelectedEditeur((s) => ({ ...s, [claim.id]: e.target.value }))}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+                      >
+                        <option value="">Choisir un éditeur existant...</option>
+                        {editeurs.map((ed) => (
+                          <option key={ed.id} value={ed.id}>{ed.nom}</option>
+                        ))}
+                      </select>
+                      <Link
+                        href={buildCreateUrl(claim)}
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold bg-navy text-white rounded-xl hover:bg-navy/90 transition-colors whitespace-nowrap"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Créer un nouvel éditeur
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
