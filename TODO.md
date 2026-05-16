@@ -8,18 +8,19 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### IMPORTANT
 
-#### Vérifier le comportement d'un inscrit en tant qu'éditeur
-- Inscription via le parcours éditeur (revendication d'une fiche solution)
-- Connexion éditeur, accès aux fiches revendiquées
-- Édition des champs autorisés, modération éventuelle
-- Cas limites : éditeur qui revendique une fiche déjà claim, suppression de compte éditeur
+#### ~~Vérifier le comportement d'un inscrit en tant qu'éditeur~~ ✅ Fait 2026-05-15
+- ~~Inscription via le parcours éditeur (revendication d'une fiche solution)~~
+- ~~Connexion éditeur, accès aux fiches revendiquées~~
+- ~~Édition des champs autorisés, modération éventuelle~~
+- ~~Cas limites : éditeur qui revendique une fiche déjà claim, suppression de compte éditeur~~
 
 ### Sécurité
 
-#### Passer DMARC de `quarantine 10%` à `quarantine 100%` puis `reject`
+#### Passer DMARC de `quarantine 50%` à `quarantine 100%` puis `reject`
 - ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
-- **Prochaine étape (2026-05-17 à 2026-05-31)** : passer à `p=quarantine pct=100` — surveiller les rapports DMARC (`rua=`) pour vérifier que SendGrid et Supabase passent bien SPF/DKIM
-- Étape finale (après quelques semaines à 100%) : passer à `p=reject`
+- ✅ `pct=10` → `pct=50` fait le 2026-05-15 (rapports clean : 24 mails sur 3 semaines, 100 % DKIM/SPF aligné sur Gandi + SendGrid, 0 source inconnue)
+- **Prochaine étape (~2026-05-29 à 2026-06-05)** : passer à `pct=100` après 2 semaines de stabilité à 50 % et idéalement un envoi groupé légitime entre-temps
+- Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
 ### Communication
@@ -38,42 +39,46 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
-#### Supprimer les anciens dossiers Frontend-V2-main *(dans 1–2 semaines de stabilité confirmée)*
-- Sur le **desktop** : supprimer `Frontend-V2-main` dans la zone Synology (actuellement conservé en filet de sécurité)
-- Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main` de la tâche de synchro Synology "100000Medecins", sans toucher au reste du dossier "100 000 Médecins"
-- Ne pas supprimer avant d'avoir confirmé que le nouveau setup Git/GitHub tourne sans problème
+#### ~~Supprimer les anciens dossiers Frontend-V2-main~~ ✅ Laptop + desktop faits 2026-05-15/16
+- ~~Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main`~~ — fait via `robocopy /MIR` (contournement path-too-long Windows)
+- ~~**À confirmer côté desktop / NAS**~~ — confirmé par David
 
-#### *(2026-06-26)* Supprimer `evaluations_firebase_backup`
-- 2 mois après la migration Firebase (étape 1 ci-dessus)
-- Vérifier qu'aucun problème de régression n'a été constaté, puis `DROP TABLE evaluations_firebase_backup`
-
-**Restant à faire avant suppression de `firebase-admin` et `evaluations_firebase_backup`** :
-- Attendre période de stabilité (cf. item "Supprimer `evaluations_firebase_backup`" prévu 2026-06-26)
+#### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
+- `DROP TABLE evaluations_firebase_backup` (Supabase)
+- Désinstaller `firebase-admin` du `package.json`
+- Supprimer les scripts `scripts/*firebase*.ts` qui ne servent plus
+- Vérifier qu'aucun import résiduel de `firebase-admin` ne traîne dans `src/`
+- Exporter une dernière fois les collections clés (`users`, `evaluations`, `criteres`, `categories`) en JSON local au cas où (archive longue durée)
+- **Résilier le projet Firebase** côté console Google
+- Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
 
 ### Bugs à corriger
 
-#### Affichage avatar cassé sur une page solution
-- Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)
-- Confirmé **pré-existant** : présent aussi sur `dev.100000medecins.org` en Next 14 → pas une régression migration
-- Identifier la page concernée et la cause (URL portrait dénormalisée invalide ?)
+#### ~~Affichage avatar cassé sur une page solution~~ ✅ Fait 2026-05-16
+- ~~Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)~~
+- ~~Cause : 60 utilisateurs avaient `portrait = 'Avatars/avatar-XX.png'` (vestige Firebase) au lieu de `/images/portraits/avatar-XX.png`~~
+- ~~Fix data-only : `UPDATE users SET portrait = REPLACE(portrait, 'Avatars/', '/images/portraits/') WHERE portrait LIKE 'Avatars/%'` → 60 lignes corrigées~~
 
 ### UX / UI
 
-#### Point rouge admin sur catégories parent (sidebar)
-- Afficher un point rouge sur la catégorie parent dans la colonne de gauche de l'admin si :
-  - Nouvelle étude & thèse à valider
-  - Nouvelle vidéo à valider
-  - Nouvel éditeur à valider (demande en attente dans `editeur_claims`)
-- Objectif : voir d'un coup d'œil ce qui demande modération
+#### ~~Point rouge admin sur catégories parent (sidebar)~~ ✅ Fait 2026-05-14, étendu vidéos 2026-05-16
+- ~~Implémenté dans `src/lib/db/admin-badges.ts` (`getAdminBadges()`) + `src/components/admin/AdminSidebar.tsx` : badges pour `editeur_claims`, `etudes_cliniques` + `questionnaires_these` en attente, `emails_campagnes` à envoyer~~
+- ~~À enrichir avec « videos en attente » quand on ajoutera le parcours "Proposer une vidéo"~~ → fait avec Plan B "Proposer une vidéo"
 
-#### Afficher la date de dernière connexion des utilisateurs en admin
-- La donnée existe déjà : `auth.users.last_sign_in_at` (natif Supabase, maj à chaque connexion email/MDP **et** PSC)
-- Aucune migration nécessaire — lire via `supabase.auth.admin.getUserById()` / `listUsers()`
-- Usage : colonne "Dernière connexion" dans `/admin/utilisateurs`, repérer les comptes inactifs
+#### ~~Afficher la date de dernière connexion des utilisateurs en admin~~ ✅ Fait 2026-05-16
+- ~~Niveau 1 : colonne « Dernière connexion » triable dans `/admin/utilisateurs` (relatif "il y a Xj/sem./mois", titre = date complète)~~
+- ~~Niveau 2 : 3 cards Actifs 7/30/90 jours + LineChart "Dernière connexion par mois" (12 mois) + BarChart "Distribution de l'inactivité" (7 buckets) dans `/admin/statistiques`~~
+- ~~Source : `auth.users.last_sign_in_at` lu via `supabase.auth.admin.listUsers` paginé~~
+- Limite documentée : Supabase ne stocke que la **dernière** connexion → pas un vrai MAU. Pour avoir un MAU réel, il faudrait un cron quotidien snapshottant `last_sign_in_at` dans `user_login_history`. À planifier seulement si besoin avéré.
 
-#### Permettre à un utilisateur inscrit de proposer une nouvelle vidéo (stories & tutos)
-- Ajouter un parcours côté front pour qu'un utilisateur connecté soumette une proposition de vidéo
-- Modération admin avant publication (à intégrer avec le point rouge admin ci-dessus)
+#### ~~Permettre à un utilisateur inscrit de proposer (idée / correction / vidéo)~~ ✅ Fait 2026-05-16
+- ~~Espace `/mon-compte/proposer` avec 3 onglets : Idée → Correction → Vidéo~~
+- ~~Idée + Correction : nouvelle table `propositions_utilisateurs` (type `idee`/`correction`, statut `en_attente`/`traite`/`refuse`, RLS + GRANTs explicites). Champ `url_concernee` pré-rempli auto avec `document.referrer` same-origin (correction surtout)~~
+- ~~Vidéo : utilise la table `videos` étendue (cf. ci-dessous), formulaire spécifique (URL YouTube + preview embed)~~
+- ~~Email de notification admin envoyé à `contact@100000medecins.org` à chaque nouvelle proposition (best-effort, ne bloque pas si SendGrid down)~~
+- ~~Admin `/admin/propositions` (idée + correction) avec filtres statut/type, actions Traiter / Refuser / Remettre en attente / Supprimer. Badge sidebar admin `propositions`~~
+- ~~Admin `/admin/videos` : panel "Propositions à modérer" déjà en place (Plan B initial)~~
+- ~~Sidebar `/mon-compte` : item "Proposer" avec icône Sparkles, actif sur tout le sous-arbre `/proposer/*`~~
 
 
 
@@ -89,10 +94,11 @@ _(rien à faire pour l'instant)_
 
 ### Mises à jour techniques
 
-#### Mettre à jour Next.js
-- Actuellement en version `14.2.35` — versions récentes disponibles
-- **Ne pas faire pendant un coup de stress** : prévoir une session dédiée (peut casser App Router, configs Tailwind, etc.)
-- Tester sur `dev`, valider en preview Vercel avant de merger sur `main`
+#### Passer en main avec Next.js 16
+- ✅ Migration Next 16 en cours sur `dev`, site de test live, comportement OK partout
+- **Restant** : merger `dev` → `main` (la branche `main` est encore en Next 14.2.35)
+- Avant merge : vérifier la liste des changements depuis dernier push `main` (`git log main..dev`), faire une preview Vercel finale sur main avant déploiement prod
+- Voir `docs/migration-nextjs-16.md` pour le détail des points migrés
 
 #### Régler les vulnérabilités npm (`npm audit`)
 - 26 vulnérabilités : 2 low, 13 moderate, 10 high, 1 critical

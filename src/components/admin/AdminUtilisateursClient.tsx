@@ -17,6 +17,21 @@ type User = {
   specialite: string | null
   rpps: string | null
   created_at: string | null
+  last_sign_in_at: string | null
+}
+
+function formatLastSignIn(iso: string | null): string {
+  if (!iso) return 'Jamais'
+  const ms = Date.now() - new Date(iso).getTime()
+  if (ms < 0) return 'Jamais'
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24))
+  if (days === 0) return "Aujourd'hui"
+  if (days === 1) return 'Hier'
+  if (days < 7) return `il y a ${days}j`
+  if (days < 30) return `il y a ${Math.floor(days / 7)} sem.`
+  if (days < 365) return `il y a ${Math.floor(days / 30)} mois`
+  const years = Math.floor(days / 365)
+  return `il y a ${years} an${years > 1 ? 's' : ''}`
 }
 
 type Editeur = {
@@ -26,7 +41,7 @@ type Editeur = {
   logo_url: string | null
 }
 
-type SortField = 'created_at' | 'nom'
+type SortField = 'created_at' | 'nom' | 'last_sign_in_at'
 type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200]
@@ -93,8 +108,18 @@ export default function AdminUtilisateursClient({
 
   // Tri
   const sorted = [...filtered].sort((a, b) => {
-    const va = sortField === 'nom' ? (a.nom || a.pseudo || '').toLowerCase() : (a.created_at || '')
-    const vb = sortField === 'nom' ? (b.nom || b.pseudo || '').toLowerCase() : (b.created_at || '')
+    let va: string, vb: string
+    if (sortField === 'nom') {
+      va = (a.nom || a.pseudo || '').toLowerCase()
+      vb = (b.nom || b.pseudo || '').toLowerCase()
+    } else if (sortField === 'last_sign_in_at') {
+      // Jamais connecté = chaîne vide → en bas en desc, en haut en asc
+      va = a.last_sign_in_at || ''
+      vb = b.last_sign_in_at || ''
+    } else {
+      va = a.created_at || ''
+      vb = b.created_at || ''
+    }
     if (va < vb) return sortDir === 'asc' ? -1 : 1
     if (va > vb) return sortDir === 'asc' ? 1 : -1
     return 0
@@ -312,6 +337,11 @@ export default function AdminUtilisateursClient({
                       Inscription <SortIcon field="created_at" />
                     </button>
                   </th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 hidden lg:table-cell">
+                    <button onClick={() => handleSort('last_sign_in_at')} className="flex items-center hover:text-navy transition-colors">
+                      Dernière connexion <SortIcon field="last_sign_in_at" />
+                    </button>
+                  </th>
                   <th className="px-4 py-3 w-12" />
                 </tr>
               </thead>
@@ -526,6 +556,14 @@ function UserRow({
       {/* Date inscription */}
       <td className="px-4 py-3 text-xs text-gray-400 hidden lg:table-cell whitespace-nowrap">
         {user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : '—'}
+      </td>
+
+      {/* Dernière connexion */}
+      <td
+        className={`px-4 py-3 text-xs hidden lg:table-cell whitespace-nowrap ${user.last_sign_in_at ? 'text-gray-500' : 'text-gray-300 italic'}`}
+        title={user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('fr-FR') : 'Jamais connecté'}
+      >
+        {formatLastSignIn(user.last_sign_in_at)}
       </td>
 
       {/* Supprimer */}

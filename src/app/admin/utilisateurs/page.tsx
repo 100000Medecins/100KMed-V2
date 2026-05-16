@@ -19,6 +19,19 @@ async function getAllUsers(supabase: ReturnType<typeof createServiceRoleClient>)
     if (data.length < PAGE) break
     from += PAGE
   }
+
+  // Récupère last_sign_in_at depuis auth.users et l'ajoute à chaque user
+  const lastSignInMap = new Map<string, string | null>()
+  let page = 1
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error || !data?.users || data.users.length === 0) break
+    for (const u of data.users) lastSignInMap.set(u.id, u.last_sign_in_at ?? null)
+    if (data.users.length < 1000) break
+    page++
+  }
+  for (const u of all) u.last_sign_in_at = lastSignInMap.get(u.id) ?? null
+
   return all
 }
 

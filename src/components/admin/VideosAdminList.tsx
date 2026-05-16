@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { GripVertical, Pencil, Plus, Trash2, Home, Check } from 'lucide-react'
 import { toggleVideoStatut, reorderVideosAndRubriques, createVideoRubrique, deleteVideoRubrique, setHomepageVideos } from '@/lib/actions/admin'
@@ -237,6 +237,18 @@ export default function VideosAdminList({ initialVideos, rubriques }: { initialV
   const [items, setItems] = useState(() => buildItems(initialVideos, rubriques))
   const [newRubrique, setNewRubrique] = useState('')
   const [isPending, startTransition] = useTransition()
+
+  // Re-sync items quand le serveur renvoie un set d'ids différent (ex. nouvelle vidéo
+  // approuvée depuis VideosPendingPanel). Compare uniquement les ids pour préserver
+  // un éventuel réordonnancement local en cours sur la même liste.
+  const serverIdsKey = useMemo(
+    () => [...initialVideos.map(v => v.id), '|', ...rubriques.map(r => r.id)].sort().join(','),
+    [initialVideos, rubriques]
+  )
+  useEffect(() => {
+    setItems(buildItems(initialVideos, rubriques))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverIdsKey])
 
   // Homepage selection state
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000

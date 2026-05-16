@@ -5,6 +5,92 @@
 
 ---
 
+## [2026-05-16] — Stats activité utilisateurs + parcours "Proposer une vidéo"
+
+### Feature — Colonne « Dernière connexion » dans `/admin/utilisateurs`
+- Source : `auth.users.last_sign_in_at` (natif Supabase, MAJ à chaque login email/MDP **et** PSC).
+- Lu côté serveur via `supabase.auth.admin.listUsers` paginé (1000/page) puis mergé par id avec les profils publics. Coût : ~6 appels paginés sur ~5 916 users → page un peu plus lente au premier hit (admin only, force-dynamic, acceptable).
+- UI : nouvelle colonne triable, format relatif (« il y a 3j », « il y a 2 mois », etc.), tooltip avec date+heure complète au survol. Affichage italique gris pour les comptes jamais connectés.
+
+### Feature — Stats d'activité dans `/admin/statistiques`
+- 3 nouvelles cards KPI : **Actifs 7 jours / 30 jours / 90 jours** (avec % du total).
+- LineChart « Dernière connexion par mois (12 derniers mois) » — note d'avertissement explicite sous le graphe : Supabase ne stocke que la dernière connexion → ce n'est pas un vrai MAU mais un proxy d'activité historique. Pour un vrai MAU, il faudrait un cron qui snapshotte quotidiennement.
+- BarChart horizontal « Distribution de l'inactivité » — 7 buckets exclusifs : <7j / 7-30j / 30-90j / 90-180j / 180-365j / >1 an / Jamais connecté. Utile pour identifier la cohorte fantôme à recibler.
+- Réutilise les composants `LineChart`, `BarChartHorizontal`, `KpiCard` et `Panel` déjà existants.
+
+### Feature — Parcours utilisateur « Proposer » (Idée / Correction / Vidéo) + modération admin
+- **Sidebar `/mon-compte`** : nouvel item "Proposer" (icône Sparkles), actif sur tout le sous-arbre `/proposer/*`, caché pour les éditeurs.
+- **Espace `/mon-compte/proposer`** avec 3 onglets dans cet ordre : **Idée** (par défaut) → **Correction** → **Vidéo**. Layout client avec tab nav (border-bottom, pas de page reload entre onglets).
+- **Migration SQL** : nouvelle table `propositions_utilisateurs` (id, user_id FK auth.users ON DELETE SET NULL, type CHECK('idee','correction'), titre, description, url_concernee, statut CHECK('en_attente','traite','refuse'), admin_notes, created_at, updated_at). GRANTs explicites (anticipation 2026-10-30) + RLS (utilisateur ne voit/crée que ses propres propositions). Index sur statut, user_id, type.
+- **Migration SQL videos** (déjà appliquée plus haut dans la journée) : `ALTER TABLE videos ADD COLUMN created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL` + `CREATE INDEX idx_videos_statut`. Statuts videos étendus : `publie`, `brouillon`, `en_attente`, `refuse`.
+- **Composant partagé** `src/components/mon-compte/PropositionForm.tsx` pour Idée et Correction (mêmes champs, copy distincte par type). Champ URL pré-rempli automatiquement avec `document.referrer` same-origin sauf si on vient déjà du sous-arbre `/proposer/` (évite que les changements d'onglet écrasent l'URL).
+- **Server actions** (`src/lib/actions/propositions.ts`) : `submitProposition({type, titre, description, urlConcernee})` (utilisateur connecté → INSERT statut='en_attente' + envoi email best-effort), `setPropositionStatut(id, statut)`, `deleteProposition(id)`. Garde `assertAdmin` pour les 2 dernières.
+- **Server actions vidéos** (`src/lib/actions/videos.ts`) : inchangées — `submitVideoProposal`, `approveVideoProposal`, `rejectVideoProposal`.
+- **Notification admin email** : à chaque nouvelle proposition (idée ou correction), envoi SendGrid à `contact@100000medecins.org` avec proposeur, titre, URL concernée, description, lien vers `/admin/propositions`. Best-effort : si SendGrid down ou clé absente, l'INSERT a déjà eu lieu — l'utilisateur ne voit pas l'erreur.
+- **Admin `/admin/propositions`** : page de modération avec filtres (statut : En attente / Toutes / Traitées / Refusées + type : Tous / Idée / Correction). Pour chaque proposition : icône+couleur par type, titre, description (whitespace-pre-wrap), proposeur (lien mailto si email), URL concernée (résolue en absolute pour `/...` paths), boutons Traiter / Refuser / Remettre en attente / Supprimer.
+- **Admin `/admin/videos`** : panel "Propositions à modérer" déjà en place depuis ce matin (mêmes patterns, table `videos`).
+- **Badges** : `getAdminBadges()` étend la signature avec `propositions: number` (en plus de `videos: number`). Sidebar admin : badge ajouté aux items "Vidéos & Tutos" et "Propositions" (nouvel item après Vidéos).
+- **VideoForm** : sélecteur de statut élargi (`publie`, `brouillon`, `en_attente`, `refuse`).
+- **Sécurité publique** : les requêtes `getHomepageVideos`, `getVideos`, `getStoriesTutos` filtrent déjà sur `statut='publie'` → propositions en attente et refus invisibles côté front. Les propositions idée/correction ne sont jamais exposées en public.
+- **Restructure UI** : la page provisoire `/mon-compte/proposer-video` créée plus tôt dans la journée a été supprimée (remplacée par `/mon-compte/proposer/video`).
+
+### Fix — `assertAdmin()` des nouvelles actions admin propositions / vidéos
+
+- **Symptôme** : « Non autorisé » au clic sur Traiter / Refuser / Supprimer dans `/admin/propositions`, et idem sur Publier / Refuser dans le panel pending de `/admin/videos`.
+- **Cause** : `assertAdmin()` (dupliqué dans `propositions.ts` et `videos.ts`) cherchait un user Supabase avec `role='admin'`. Or l'admin du site est cookie-based HMAC (`admin_token` dérivé de `ADMIN_PASSWORD`), pas Supabase Auth — l'admin n'a donc pas de session Supabase avec ce rôle.
+- **Fix** : alignement sur le pattern déjà dupliqué dans `admin.ts`, `groupes.ts`, `questionnaires.ts` — `generateToken()` + vérif cookie `admin_token`. `submitProposition` et `submitVideoProposal` (côté utilisateur connecté) restent inchangées.
+
+### Fix — Vidéo approuvée invisible dans `/admin/videos` jusqu'au reload
+
+- **Symptôme** : après acceptation d'une proposition vidéo, la vidéo passait bien à `statut='publie'` en base mais n'apparaissait pas dans la liste principale sans F5.
+- **Cause** : `VideosAdminList` est un client component qui initialise son state via `useState(() => buildItems(initialVideos, rubriques))` — appelé une seule fois au mount. `revalidatePath('/admin/videos')` côté serveur n'a aucun effet visible tant que le client ne refetch pas ses props.
+- **Fix** : `router.refresh()` ajouté dans `VideosPendingPanel.tsx` après approve/reject réussi (force le refetch). `useEffect` ajouté dans `VideosAdminList.tsx` qui re-synchronise `items` quand l'ensemble des IDs côté serveur change. Clef stable basée sur les IDs uniquement (séparateur `'|'` entre vidéos et rubriques) → un drag & drop local en cours n'est pas écrasé tant qu'aucun ajout/suppression n'arrive en parallèle.
+
+---
+
+## [2026-05-16] — Fix avatars : format legacy `Avatars/` + uniformisation avatar-28 (bug source Firebase)
+
+### Fix #1 — `users.portrait` au format relatif `Avatars/avatar-XX.png`
+- **Symptôme** : sur la page solution `/solutions/.../weda`, l'avatar de l'utilisateur "Ahc" (CESAR ANCELLE-HANSEN) s'affichait cassé (icône image brisée).
+- **Cause** : `users.portrait` contenait `Avatars/avatar-28.png` (chemin relatif sans `/` initial). Le navigateur tentait de résoudre depuis l'URL courante → 404. Format attendu côté code : `/images/portraits/avatar-XX.png` (servi depuis `public/images/portraits/`).
+- **Périmètre** : 60 utilisateurs sur 5 916 (le reste avait déjà le bon format).
+- **Fix** : `UPDATE users SET portrait = REPLACE(portrait, 'Avatars/', '/images/portraits/') WHERE portrait LIKE 'Avatars/%'` → 60 lignes corrigées.
+
+### Investigation — distribution anormale `avatar-28` partagée par 99,8 % des comptes
+- **Constat post-fix #1** : 5 898 / 5 916 utilisateurs (99,8 %) avaient `/images/portraits/avatar-28.png`. Pas un effet du fix #1 (5 838 l'avaient déjà avant), mais le fix l'a rendu visuellement plus flagrant sur la page Weda.
+- **Vérifications côté code Supabase** : DEFAULT de la colonne `portrait` = NULL (confirmé par test d'insertion). Aucun INSERT applicatif ne force avatar-28 (parcours `/completer-profil` initialise `selectedAvatar = null`, scripts d'inscription `createUserProfile`, callbacks PSC, `auth/confirm`, `evaluation.ts` — tous laissent `portrait` absent ou recopient la valeur source).
+- **Vraie cause — bug natif Firebase (ancien site)** : query sur Firestore production via `firebase-admin` (JSON conservé sur le laptop) → sur 6 437 docs `users`, **6 421 avaient `Avatars/avatar-28.png`** (99,8 %), 7 avaient un avatar personnalisé, 1 NULL, 8 sans champ portrait. L'ancien site forçait `avatar-28` comme valeur par défaut. Le script de migration `migrate-firebase-to-supabase.ts` (ligne 429) a fidèlement recopié via `portrait: d.portrait || null` — pas de bug de migration, pas de bug Supabase, **uniquement Firebase amont**.
+- **Conséquence** : pas de patch code à faire — les nouvelles inscriptions web ne récidivent pas (vérifié : sur les inscriptions récentes avec heure précise, Julienne 2026-05-15 → avatar-3, Joris 2026-04-25 → avatar-41).
+
+### Fix #2 — Redistribution aléatoire des `avatar-28` sur les 48 avatars du catalogue
+- `UPDATE users SET portrait = '/images/portraits/avatar-' || (floor(random() * 48) + 1)::int || '.png' WHERE portrait = '/images/portraits/avatar-28.png'` → 5 898 lignes redistribuées.
+- Vérif : top 10 entre 132 et 148 par avatar, attendu ~123 (variance conforme à un tirage uniforme sur 48 valeurs).
+- **Effet de bord négligeable** : statistiquement 1 utilisateur sur 5 898 avait peut-être réellement choisi `avatar-28` — il sera re-randomisé. Tolérable.
+- 9 utilisateurs au portrait NULL laissés intacts.
+
+### Reste à faire (non bloquant)
+- La vraie migration vers UUID décrite dans `docs/avatars_migration_plan.md` permettrait de changer les images sans `UPDATE` massif. Non urgent — l'avatar du site est maintenant cohérent.
+
+---
+
+## [2026-05-15] — DMARC `pct=10` → `pct=50` + nettoyage legacy
+
+### Ops — DMARC `pct=10` → `pct=50` sur `100000medecins.org`
+- Analyse des 4 rapports DMARC reçus depuis le passage à `pct=10` (2026-05-03) : 1 rapport Outlook (2026-04-25, encore en `p=none`) + 3 rapports Google (2026-05-10, 11, 13).
+- 24 mails observés au total, 2 sources identifiées et 100 % alignées :
+  - **Gandi** (217.70.183.x, IPv6 `2001:4b98:dc4:8::`) — DKIM selector `gm1`, SPF `100000medecins.org` — 5 mails.
+  - **SendGrid** (149.72.x, 159.183.x) — DKIM selector `s1` + `sendgrid.info/smtpapi`, SPF `em1895.100000medecins.org` — 19 mails.
+- 0 record en échec, 0 source inconnue, 0 disposition quarantine appliquée. Volume faible (essentiellement des tests pré-launch vers Gmail/Outlook) mais signal propre.
+- Record DNS `_dmarc.100000medecins.org` mis à jour : `v=DMARC1; p=quarantine; pct=50; rua=mailto:david.azerad@100000medecins.org` (les tags `sp`, `adkim`, `aspf`, `np`, `fo` omis reprennent les défauts qui matchent la config précédente).
+- Prochaine étape prévue ~2026-05-29 à 2026-06-05 : passage à `pct=100` après 2 semaines de stabilité et idéalement un envoi groupé légitime entre-temps. Puis `p=reject` 2-3 semaines plus tard si tout reste clean.
+
+### Chore — Suppression des anciens dossiers `Frontend-V2-main` (post-migration Synology)
+- Laptop : `C:\Users\david\Documents\100 000 Médecins\Claude IA\Frontend-V2-main` supprimé. Le `node_modules` résiduel (10 paquets) plantait l'Explorer Windows à cause de la limite 260 chars sur les chemins profonds — contourné via `robocopy /MIR` depuis un dossier vide temporaire.
+- Desktop : commande équivalente fournie à exécuter via Synology Drive ou en local. À confirmer si la synchro Synology bidirectionnelle a déjà propagé la suppression côté NAS.
+- Item TODO "Supprimer les anciens dossiers Frontend-V2-main" barré côté laptop (date 2026-05-15). Repo migré hors Synology depuis le 2026-04-25 → 3 semaines de stabilité, largement au-delà du délai prévu de 1-2 semaines.
+
+---
+
 ## [2026-05-14] — Refonte pseudo (vide par défaut) + fix build database.ts
 
 ### Fix — Ligne artefact de plugin dans `src/types/database.ts` (cassait le build)

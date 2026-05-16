@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -39,6 +39,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
     ...(!isEditeur && (hasQuestionnaires || pathname.startsWith('/mon-compte/mes-questionnaires-these'))
       ? [{ href: '/mon-compte/mes-questionnaires-these', label: 'Mes questionnaires de thèse', icon: GraduationCap }]
       : []),
+    ...(isEditeur ? [] : [{ href: '/mon-compte/proposer', label: 'Proposer', icon: Sparkles }]),
   ]
 
   if (loading) {
@@ -63,7 +64,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
               <nav className="bg-white rounded-card shadow-card p-4 space-y-1">
                 {navItems.map((item) => {
                   const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                   return (
                     <Link
                       key={item.href}

@@ -96,6 +96,8 @@ export default function VideoForm({ video, rubriques = [], action }: VideoFormPr
             <select name="statut" defaultValue={video?.statut ?? 'publie'} className={inputClass}>
               <option value="publie">Publié</option>
               <option value="brouillon">Brouillon</option>
+              <option value="en_attente">En attente de modération</option>
+              <option value="refuse">Refusé</option>
             </select>
           </div>
         </div>
