@@ -5,6 +5,14 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-17**
+- [OK] 2026-05-17 : Remplacer les avatars utilisateurs — couplé avec la migration technique (Avatars)
+  - Voir `docs/avatars_migration_plan.md`
+  - Migration `users.portrait` text URL → uuid avec FK vers `avatars(id)` + nouveau catalogue de 67 avatars (50 médicaux + 17 décalés geek)
+  - Plan en 4 étapes réalisé : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images
+  - Pipeline scripté : `generate-avatars.ts` + `finalize-avatars.ts` + `upload-avatars-to-supabase.ts` (~10 USD pour 160 PNG via Retro Diffusion)
+  - Plus de risque de UPDATE massif sur 5800+ utilisateurs pour changer les images (le portrait est maintenant une référence par UUID, plus une URL dénormalisée)
+
 **2026-05-16**
 - [OK] 2026-05-16 : Affichage avatar cassé sur une page solution (Bugs à corriger)
   - Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)

@@ -23,7 +23,7 @@ export default async function GererNotificationsPage(props: Props) {
   )
 }
 
-async function renderContent(searchParams: Props['searchParams']) {
+async function renderContent(searchParams: Awaited<Props['searchParams']>) {
   const uid = searchParams.uid
   const iatStr = searchParams.iat
   const token = searchParams.token

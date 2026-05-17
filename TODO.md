@@ -65,6 +65,12 @@ _(rien à faire pour l'instant)_
 - Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
 - ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
 
+#### Refacto questionnaires d'évaluation — sortir du fallback ambigu `default`
+- **Constat** : le slug `default` joue 2 rôles incompatibles → (1) le vrai questionnaire "Logiciels métier" (labellisé "Logiciels métier (défaut)" dans l'admin), (2) le filet de secours pour toute catégorie sans entrée BDD. Résultat : les utilisateurs des catégories non-migrées (aujourd'hui `objetsconnectes`, `teleconsultation`) voient le questionnaire Logiciels métier au lieu d'un message adapté.
+- **Étape 1** : créer un slug `logiciels-metiers` en BDD avec le contenu actuel de `default` (copie des 10 sections + ~40 questions), puis vider `default` ou le remplacer par un questionnaire neutre court. Adapter `slugLabels` dans `src/app/admin/questionnaires/page.tsx`.
+- **Étape 2** : modifier `getSectionsForSlug` (`src/lib/actions/questionnaires.ts`) pour ne plus tomber silencieusement sur `default` quand la catégorie n'a pas de questionnaire — afficher plutôt un message UX "Questionnaire en cours d'élaboration pour cette catégorie" côté front.
+- **Étape 3** : supprimer le code mort `SECTIONS_DETAILLEES` (~120 lignes) et `SECTIONS_PAR_CATEGORIE` (~70 lignes) dans `src/app/solution/noter/[...slug]/page.tsx` une fois que toutes les catégories ont leur questionnaire BDD et que le filet de secours hardcodé n'est plus utile.
+
 ### Déploiement final
 
 #### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
@@ -101,22 +107,23 @@ _(rien à faire pour l'instant)_
 - **Questionnaire d'évaluation — implémenter en BDD** : créer les `criteres` (avec hiérarchie `parent_id`), remplir `categories.schema_evaluation` (JSONB) et `categories.criteres_recherche` (liste d'IDs critères mis en avant dans la page comparatif), tester le flow `/solution/noter/teletransmission/[idSolution]` de bout en bout — chantier principal restant
 - **Uploader les logos** des 20 solutions via l'admin
 - **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
-- **Activer** (`actif=true`) la catégorie et la classer dans la sur-catégorie "Logiciels médicaux" de la navbar quand tout est OK
-- **Tooltip téléservices** : ajouter un champ `description` sur `tags` (BDD) + tooltip/click mobile sur la sidebar comparatif pour expliquer ce que contient "Pack téléservices CNAM de base" (ADRi, AATi, ALDi, DMTi, IMTi, HRi, INSi)
+- ~~Classer dans la sur-catégorie "Logiciels médicaux"~~ [OK] Fait 2026-05-18 (groupe correct en BDD)
+- **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
+- ~~Tooltip téléservices CNAM~~ [OK] Fait 2026-05-18 — `<AcronymText>` déjà appliqué sur les libellés de tags dans `SolutionFilters.tsx`, et les 7 sigles `ADRi`, `AATi`, `ALDi`, `DMTi`, `IMTi`, `HRi`, `INSi` sont en BDD `acronymes` avec leurs définitions complètes
+
+### ~~Solutions liées (interopérabilités, suites produits)~~ [OK] Fait 2026-05-18
+- Table `solution_liens` + UI sidebar `SolutionLiensCard` + admin `SolutionLiensManager` + seed initial 22 liens (voir CHANGELOG 2026-05-18).
+- **Évolution future possible** : permettre aux éditeurs de proposer un lien depuis `/mon-compte/mon-espace-editeur` (avec validation admin).
 
 ### Avatars
-- ~~Remplacer les avatars utilisateurs — **coupler obligatoirement avec la migration technique** (voir `docs/avatars_migration_plan.md`)~~ [OK] Fait 2026-05-17
-- ~~Actuellement : `users.portrait` stocke l'URL dénormalisée (copie) → changer les images sans migration = UPDATE massif sur 5800+ utilisateurs~~ [OK] Fait 2026-05-17
-- ~~Plan en 4 étapes : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images~~ [OK] Fait 2026-05-17
 
-#### Page admin `/admin/utilisateurs/avatars` (CRUD catalogue)
-- Sous-menu/onglet accessible depuis la page `/admin/utilisateurs` actuelle
-- Liste les avatars catalogue (`user_id IS NULL`), grille drag & drop pour réordonner (`display_order`)
-- Actions : ajouter (upload PNG 256×256 → Supabase Storage `avatars/portraits/` + INSERT avec `display_order = MAX + 1`), supprimer (Storage + BDD, la FK `ON DELETE SET NULL` gère les users qui l'avaient choisi)
-- Stack : `@dnd-kit/sortable` pour le drag & drop
-- Server actions à créer dans `src/lib/actions/admin.ts` : `adminAddAvatar`, `adminDeleteAvatar`, `adminReorderAvatars`, `adminPurgeAvatarOrphans`
-- Section bonus en bas : "Avatars perso utilisateurs" avec count + bouton "Purger orphelins Storage" (déclenche `scripts/cleanup-avatar-storage.ts` côté server)
-- Estim : ~2-3h, non bloquant — le catalogue est en place, c'est pour faciliter les évolutions futures sans toucher au code/SQL/scripts
+- ~~Page admin `/admin/utilisateurs/avatars` (CRUD catalogue avec drag & drop `@dnd-kit/sortable`)~~ [OK] Fait 2026-05-18
+- ~~Génération d'avatar perso (photo → pixel art) — abandonnée~~ [OK] Décision finale 2026-05-18 : remplacée par génération text-to-image basée sur description user (composant `<RequestCustomAvatar>` réécrit, `generatePersonalAvatar(description)` wrap dans le prompt master low_res 64)
+
+#### Pistes futures pour génération avatar perso depuis photo (si réenvie un jour)
+- Pipeline 2 étapes : img2img RD (strength modéré) + post-traitement `sharp` côté server (downscale 64×64 nearest + quantize palette + re-upscale 256×256). ~1h de dev. Probabilité succès ~60-70 %.
+- Service dédié photo→pixel art (Pixel Me, Replicate avec modèle entraîné spécifiquement). Probabilité plus élevée mais migration API.
+- ControlNet (face detection + style transfer) avec un modèle pixel art dédié.
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales

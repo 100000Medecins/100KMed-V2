@@ -5,6 +5,57 @@
 
 ---
 
+## [2026-05-18] — Solutions liées + admin avatars catalogue + bascule génération perso text2image + acronymes disambiguation
+
+### Feature — Solutions liées (table `solution_liens` + UI sidebar + admin + seed initial)
+- Migration SQL : table `solution_liens(id, solution_a_id, solution_b_id, type, created_at)`, lien non-dirigé (CHECK `a_id < b_id` + UNIQUE sur `(a_id, b_id, type)`), FK ON DELETE CASCADE, GRANTs explicites (anticipation Supabase 2026-10-30), RLS lecture publique.
+- Types autorisés : `meme_suite`, `interoperable`, `embedded`, `partenariat`.
+- **UI publique** : composant `SolutionLiensCard` (sidebar de la fiche solution) — vignettes logo + nom + catégorie + libellé du type. Click → fiche de l'autre solution dans sa catégorie.
+- **Admin** : `SolutionLiensManager` dans le formulaire d'édition d'une solution (recherche + sélecteur type).
+- **Server actions** : `src/lib/actions/solution-liens.ts` (`createLien`, `deleteLien`).
+- **DB queries** : `src/lib/db/solution-liens.ts` (lecture publique des liens d'une solution avec jointure sur l'autre fiche).
+- **Seed initial — 22 liens créés via SQL Editor** :
+  - 11 liens Télétransmission↔LGC d'origine (`meme_suite`) — Doctolib Tt↔Médecin, VitalZen↔Weda, MLM Tt↔MLM, Crossway Tt↔Crossway, AxiSanté Tt↔AxiSanté 5, HelloDoc Tt↔HelloDoc, Libellia Tt↔Libellia, Hypermed Tt↔HyperMed, Desmos Médecins Tt↔Desmos Médecin, Odaiji Tt↔Odaiji, Acteur.fr Tt↔Acteur.fr
+  - 1 lien `embedded` : Stellair Intégral↔Odaiji Tt
+  - 2 liens `interoperable` : Simply Vitale↔MLM, Simply Vitale↔Crossway
+  - 3 liens `meme_suite` cross-éditeurs : HelloDoc Edition SESAM↔HelloDoc, ExpressVitale↔Medistory, AxiAM↔AxiSanté 5 (historique CGM)
+  - 5 liens suite Doctolib (`meme_suite`) : Médecin↔Agenda↔Tt + Doctolib Assistant relié aux 3 autres
+
+### Admin — Manager du catalogue d'avatars (`/admin/utilisateurs/avatars`)
+- CRUD complet du catalogue d'avatars (67 fiches) avec drag & drop pour l'ordre (`@dnd-kit/sortable`).
+- Création / suppression / réordonnement / upload de nouveaux PNG vers le bucket Storage `avatars/`.
+- Server actions dédiées (`src/lib/actions/admin-avatars.ts`).
+- Nouveau layout `src/app/admin/utilisateurs/layout.tsx` qui rassemble les sous-pages (gestion users + avatars).
+
+### Module — Bascule génération avatar perso : img2img → text2image
+- **Contexte** : la pipeline img2img Retro Diffusion (photo user → pixel art) livrée le 2026-05-17 ne donnait pas un rendu satisfaisant — fidélité à la photo trop élevée pour donner un vrai look catalogue (les essais ressemblaient à des photos pixelisées plutôt qu'à des avatars de style cohérent).
+- **Décision** : abandon img2img, bascule vers **text-to-image** avec description fournie par l'user (champ texte, 10-300 caractères). Prompt master appliqué côté serveur : `pixel art portrait, ${desc}, frontal bust, chunky pixels, 8-bit retro, transparent bg, friendly face`. Résolution native 64×64 puis upscale nearest ×4 → 256×256 via `sharp`.
+- **Style aligné** sur le catalogue low_res 64 (sans le mot "Bullfrog" qui faisait littéralement apparaître des grenouilles quand RD filtrait les IP).
+- **UX** (`<RequestCustomAvatar>` réécrit) : textarea + bouton Générer + display résultat + boutons "Choisir" / "Re-générer". Quota inchangé (3 par 24h, exemptions par env var).
+- **Cleanup auto désactivé** : `cleanupAbandonedPersonalAvatars` n'est plus appelé à chaque génération / sélection d'avatar — l'user veut pouvoir conserver tous ses avatars perso (anciens choix + essais) dans la grille "Mes avatars personnels" et les supprimer manuellement via ✕ rouge.
+
+### Feature — Acronymes : champ `disambiguation` + génération auto IA + intégration tags
+- **Champ `disambiguation`** : nouvelle colonne TEXT NULL sur `acronymes`, pour préciser entre plusieurs significations possibles d'un même sigle. Champ texte optionnel dans le form CRUD admin.
+- **Suppression du `.toUpperCase()` automatique** : certains sigles ont une casse mixte intentionnelle (ex. `ADRi`, `DMTi` — le `i` en minuscule signifie "intégré").
+- **Génération auto IA** (`src/lib/actions/generateAcronyme.ts`) : nouvelle server action qui, à partir d'un sigle, génère définition + description courte via l'API Anthropic. Bouton "Générer avec IA" dans le form admin — permet de pré-remplir rapidement les champs à valider / ajuster.
+- **Intégration sur les libellés de tags** : `<AcronymText>` désormais appliqué dans `SolutionFilters.tsx` — les sigles dans les filtres deviennent survolables avec tooltip définition (notamment les 7 téléservices CNAM `ADRi`, `AATi`, `ALDi`, `DMTi`, `IMTi`, `HRi`, `INSi`). Idem dans `GlossaireClient` et la page `/glossaire`.
+- **Cache** (`acronymesCache.ts`) : adaptation pour le nouveau champ disambiguation.
+
+### Fix — Hint FK explicite sur les jointures avatars
+- **Symptôme** : depuis la migration `users.portrait` `text` → `uuid` + FK (livrée 2026-05-17), certaines requêtes Supabase utilisant `avatar:avatars(url)` étaient ambigües côté PostgREST.
+- **Fix** : explicitation du nom de la contrainte FK dans les selects → `avatar:avatars!users_portrait_fkey(url)` dans `src/lib/db/users.ts` (`getUserById`) et `src/lib/db/evaluations.ts` (`getAvisUtilisateurs`, `getLastAvisUtilisateurs`, `getAvisUtilisateursPaginated`).
+
+### Docs — Refonte du brouillon questionnaire téletransmission
+- `docs/teletransmission-questionnaire.md` retravaillé en prévision du chantier "Questionnaire d'évaluation pour la catégorie Télétransmission" (TODO en attente).
+
+### Fix — Typing `Awaited<Props['searchParams']>` dans `/gerer-notifications` (Next.js 16)
+- Petit ajustement : `searchParams` est une Promise en Next 16, le helper `renderContent` doit le recevoir `Awaited` pour éviter l'erreur TypeScript.
+
+### TODO — Mises à jour
+- Marqué terminé : "Solutions liées (interopérabilités, suites produits)" — table + UI + seed initial 22 liens livrés.
+
+---
+
 ## [2026-05-17] — Migration complète des avatars (catalogue + perso + bannière)
 
 ### Module — Renouvellement du catalogue d'avatars (67 nouveaux)
