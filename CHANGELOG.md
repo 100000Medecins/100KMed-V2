@@ -5,6 +5,46 @@
 
 ---
 
+## [2026-05-17] — Migration complète des avatars (catalogue + perso + bannière)
+
+### Module — Renouvellement du catalogue d'avatars (67 nouveaux)
+- 60 médicaux générés via API Retro Diffusion (RD Plus + Classic + prompt master Bullfrog v1) + 17 décalés "geek" (jedi, wookie, yoda, robot, sorcier, chevalier, pirate, ninja, samouraï, cowboy, vampire, astronaute, steampunk, princesse, viking, détective, boxer, sorcière, cyborg, savant fou) — archétypes génériques, pas de personnages identifiables nommément (choix IP).
+- Pipeline scripté de bout en bout : `scripts/generate-avatars.ts` (batch 80 prompts × 2 variantes = 160 PNG), `scripts/finalize-avatars.ts` (tri → renommage `avatar-1..67.png` + upscale x2 nearest neighbor 256×256), `scripts/upload-avatars-to-supabase.ts` (bucket Storage public + génération SQL d'insert).
+- Coût final : ~10 USD pour 160 images (estim initiale 30 USD largement surévaluée).
+- Doc complète du style + prompts + workflow dans `docs/avatars-prompts-theme-hospital.md` (historique des décisions plans A/B/C tracé).
+
+### Module — Migration BDD avatars (URL → UUID + FK)
+- `users.portrait` : type `text` → `uuid`, FK `users_portrait_fkey` vers `avatars(id)` avec `ON DELETE SET NULL`.
+- `avatars` : ajout colonnes `display_order INTEGER` (catalogue : 1-50 médicaux puis 51-67 décalés) et `user_id UUID NULL REFERENCES users(id) ON DELETE CASCADE` (catalogue : NULL ; perso : user_id).
+- Nouvelle table `avatar_generations` (id, user_id, created_at) pour le tracking du quota + RLS (self read).
+- Reset complet : `UPDATE users SET portrait = NULL` (révoque migration random de la veille qui assignait un avatar arbitraire à 5 908 utilisateurs sans considération de genre/ethnie) + `DELETE FROM avatars` (49 anciens supprimés).
+- GRANTs explicites sur `avatar_generations` (anticipation Supabase 2026-10-30).
+- Types TS régénérés.
+
+### Feature — Génération d'avatar personnel à partir d'une photo (img2img Retro Diffusion)
+- Server action `generatePersonalAvatar(formData)` : appel API RD avec `input_image` base64 + `prompt_style: rd_plus__classic` + `strength: 0.65` (équilibre fidélité photo / stylisation pixel art). PNG résultat uploadé dans `avatars/personal/<user_id>/<ts>.png` + ligne `avatars` avec `user_id` non-NULL.
+- Quota : 3 générations / 24h par user (table `avatar_generations` + helper `getRemainingAvatarGenerations`). Exemption via env var `AVATAR_QUOTA_UNLIMITED_EMAILS` (séparés par virgules) — affiche le décompte mais autorise au-delà de 0.
+- **RGPD** : la photo source n'est jamais stockée, juste envoyée à l'API RD. Seul le PNG résultat (stylisé pixel art) est conservé.
+- Cleanup automatique : à chaque génération / sélection / suppression d'avatar, les essais perso non choisis sont supprimés (BDD + fichier Storage) via `cleanupAbandonedPersonalAvatars()`. Au plus 1 avatar perso stocké à la fois par user (son portrait actuel).
+- Script de garbage collection des orphelins Storage : `scripts/cleanup-avatar-storage.ts` (compare fichiers `avatars/personal/**/*.png` vs lignes BDD, supprime les fichiers non référencés). À lancer ponctuellement.
+
+### UX / UI — Page profil + bannière
+- **Bannière `<NouveauxAvatarsBanner>`** : insérée dans `/mon-compte/layout.tsx`, affichée si `users.portrait IS NULL` ET cookie `avatars_banner_dismissed` pas set. Mode accordéon : ligne compacte avec icône Sparkles + 5 avatars chevauchés en illustration + chevron, déploie la grille complète + lien mailto "Aucun ne me ressemble — envoyer une photo" + lien "Ne plus jamais m'afficher". Cookie 1 an.
+- **Page profil `Mon avatar`** : 2 sections distinctes "Mes avatars personnels" (au-dessus si l'user en a) puis "Catalogue", médaillons ronds avec fond pastel `bg-surface-light` (PNG transparents préservés), grille 4 cols mobile / 8 sm / 10 md, bouton Supprimer à côté de Changer en mode compact, ✕ rouge en hover sur chaque avatar perso (avec confirmation).
+- Composant `<RequestCustomAvatar>` (replié par défaut, visible uniquement quand la grille de sélection est ouverte) : upload photo (max 5 Mo), preview, bouton Générer avec loader 5-15s, affichage du résultat + bouton "Le choisir comme avatar" + "Re-générer (utilise un crédit)", display du quota restant + mention "illimité pour ton compte" pour les exemptés.
+
+### Décisions assumées (choix éditoriaux / techniques)
+- Style final : compromis "pixel art cartoon moderne 16-bit propre" entre Bullfrog et Stardew Valley. Le Bullfrog Theme Hospital pur n'était pas reproductible de façon homogène avec RD Plus (biais "jeune femme → anime" trop fort, même bombardé d'anti-anime). Le rendu retenu privilégie la cohérence du set sur la pureté du style cible.
+- Pas de portraits voilés dans le set médical (choix éditorial assumé — la diversité passe par âges, ethnies, coupes de cheveux, tenues).
+- Archétypes geek génériques uniquement (pas de Yoda/Pikachu/Link nommément) pour éviter tout risque IP.
+- Fond transparent dans les PNG ; les "médaillons" pastels sont reproduits via `bg-surface-light` côté CSS (flexible, modifiable sans toucher aux images).
+
+### TODO — Mises à jour
+- Marqué terminé : "Remplacer les avatars utilisateurs" (entrée Avatars de la TODO).
+- À venir : page admin `/admin/avatars` (CRUD via Supabase Storage, drag & drop pour l'ordre, ~2-3h de dev, non bloquant).
+
+---
+
 ## [2026-05-16] — Stats activité utilisateurs + parcours "Proposer une vidéo"
 
 ### Feature — Colonne « Dernière connexion » dans `/admin/utilisateurs`

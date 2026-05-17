@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes } from '@/lib/actions/user'
+import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes, getAvatars, removeAvatar, deletePersonalAvatar } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
-import { SPECIALITES, MODES_EXERCICE, AVATARS, SM_SPECIALITES } from '@/lib/constants/profil'
+import { SPECIALITES, MODES_EXERCICE, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
+import RequestCustomAvatar from '@/components/mon-compte/RequestCustomAvatar'
 import { Check, Lock, Mail, Trash2, KeyRound, ShieldCheck } from 'lucide-react'
 import { useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -26,6 +27,8 @@ export default function ProfilPage() {
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [avatars, setAvatars] = useState<Array<{ id: string; url: string; isPersonal: boolean }>>([])
+  const selectedAvatarUrl = selectedAvatar ? avatars.find(a => a.id === selectedAvatar)?.url ?? null : null
   const [isFromPsc, setIsFromPsc] = useState(false)
   const [contactEmail, setContactEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,6 +84,9 @@ export default function ProfilPage() {
     const supabase = createClient()
     const load = async () => {
       try {
+        // Catalogue avatars (UUID → URL) — chargé en parallèle du profil
+        getAvatars().then(setAvatars).catch(() => {})
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase as any)
           .from('users')
@@ -894,10 +900,10 @@ export default function ProfilPage() {
               <button
                 type="button"
                 onClick={() => setShowAvatarPicker(true)}
-                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity"
+                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity bg-surface-light"
                 title="Changer d'avatar"
               >
-                <img src={selectedAvatar} alt="Mon avatar" className="w-full h-full object-cover" />
+                {selectedAvatarUrl && <img src={selectedAvatarUrl} alt="Mon avatar" className="w-full h-full object-cover" />}
               </button>
               <button
                 type="button"
@@ -906,6 +912,18 @@ export default function ProfilPage() {
               >
                 Changer
               </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await removeAvatar()
+                  setSelectedAvatar(null)
+                  initialValuesRef.current.selectedAvatar = null
+                }}
+                className="text-xs font-medium text-gray-400 hover:text-red-500 hover:underline ml-2"
+                title="Supprimer mon avatar et revenir au cercle initiale"
+              >
+                Supprimer
+              </button>
             </div>
           ) : (
             /* Grille de sélection */
@@ -913,26 +931,77 @@ export default function ProfilPage() {
               {!selectedAvatar && (
                 <p className="text-xs text-gray-500">Sélectionnez une image qui vous représente sur la plateforme.</p>
               )}
-              <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
-                {AVATARS.map((avatar) => (
-                  <button
-                    key={avatar.id}
-                    type="button"
-                    onClick={() => { setSelectedAvatar(avatar.url); setShowAvatarPicker(false) }}
-                    className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
-                      selectedAvatar === avatar.url
-                        ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
-                        : 'border-transparent hover:border-gray-300'
-                    }`}
-                  >
-                    <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
-                    {selectedAvatar === avatar.url && (
-                      <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white drop-shadow" />
+
+              {avatars.some((a) => a.isPersonal) && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold text-navy uppercase tracking-wide">Mes avatars personnels</h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                    {avatars.filter((a) => a.isPersonal).map((avatar) => (
+                      <div key={avatar.id} className="relative group">
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedAvatar(avatar.id); setShowAvatarPicker(false) }}
+                          className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square bg-surface-light w-full ${
+                            selectedAvatar === avatar.id
+                              ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
+                              : 'border-transparent hover:border-gray-300'
+                          }`}
+                        >
+                          <img src={avatar.url} alt="" className="w-full h-full object-cover" />
+                          {selectedAvatar === avatar.id && (
+                            <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white drop-shadow" />
+                            </div>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm('Supprimer définitivement cet avatar personnel ?')) return
+                            await deletePersonalAvatar(avatar.id)
+                            if (selectedAvatar === avatar.id) {
+                              setSelectedAvatar(null)
+                              initialValuesRef.current.selectedAvatar = null
+                            }
+                            getAvatars().then(setAvatars).catch(() => {})
+                          }}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs leading-none shadow"
+                          title="Supprimer cet avatar"
+                          aria-label="Supprimer cet avatar"
+                        >
+                          ×
+                        </button>
                       </div>
-                    )}
-                  </button>
-                ))}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {avatars.some((a) => a.isPersonal) && (
+                  <h3 className="text-xs font-semibold text-navy uppercase tracking-wide">Catalogue</h3>
+                )}
+                <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                  {avatars.filter((a) => !a.isPersonal).map((avatar) => (
+                    <button
+                      key={avatar.id}
+                      type="button"
+                      onClick={() => { setSelectedAvatar(avatar.id); setShowAvatarPicker(false) }}
+                      className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square bg-surface-light ${
+                        selectedAvatar === avatar.id
+                          ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
+                          : 'border-transparent hover:border-gray-300'
+                      }`}
+                    >
+                      <img src={avatar.url} alt="" className="w-full h-full object-cover" />
+                      {selectedAvatar === avatar.id && (
+                        <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white drop-shadow" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
               {showAvatarPicker && (
                 <div className="flex justify-end">
@@ -945,6 +1014,17 @@ export default function ProfilPage() {
                   </button>
                 </div>
               )}
+
+              <div className="pt-2 border-t border-gray-100">
+                <RequestCustomAvatar
+                  onSelected={(avatarId) => {
+                    setSelectedAvatar(avatarId)
+                    setShowAvatarPicker(false)
+                    initialValuesRef.current.selectedAvatar = avatarId
+                    getAvatars().then(setAvatars).catch(() => {})
+                  }}
+                />
+              </div>
             </>
           )}
         </div>

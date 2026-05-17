@@ -6,14 +6,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## En attente / Idées
 
-### IMPORTANT
-
-#### ~~Vérifier le comportement d'un inscrit en tant qu'éditeur~~ ✅ Fait 2026-05-15
-- ~~Inscription via le parcours éditeur (revendication d'une fiche solution)~~
-- ~~Connexion éditeur, accès aux fiches revendiquées~~
-- ~~Édition des champs autorisés, modération éventuelle~~
-- ~~Cas limites : éditeur qui revendique une fiche déjà claim, suppression de compte éditeur~~
-
 ### Sécurité
 
 #### Passer DMARC de `quarantine 50%` à `quarantine 100%` puis `reject`
@@ -39,10 +31,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
-#### ~~Supprimer les anciens dossiers Frontend-V2-main~~ ✅ Laptop + desktop faits 2026-05-15/16
-- ~~Sur le **laptop** : supprimer uniquement le sous-dossier `Claude IA\Frontend-V2-main`~~ — fait via `robocopy /MIR` (contournement path-too-long Windows)
-- ~~**À confirmer côté desktop / NAS**~~ — confirmé par David
-
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
 - Désinstaller `firebase-admin` du `package.json`
@@ -52,35 +40,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Résilier le projet Firebase** côté console Google
 - Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
 
-### Bugs à corriger
-
-#### ~~Affichage avatar cassé sur une page solution~~ ✅ Fait 2026-05-16
-- ~~Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)~~
-- ~~Cause : 60 utilisateurs avaient `portrait = 'Avatars/avatar-XX.png'` (vestige Firebase) au lieu de `/images/portraits/avatar-XX.png`~~
-- ~~Fix data-only : `UPDATE users SET portrait = REPLACE(portrait, 'Avatars/', '/images/portraits/') WHERE portrait LIKE 'Avatars/%'` → 60 lignes corrigées~~
-
 ### UX / UI
-
-#### ~~Point rouge admin sur catégories parent (sidebar)~~ ✅ Fait 2026-05-14, étendu vidéos 2026-05-16
-- ~~Implémenté dans `src/lib/db/admin-badges.ts` (`getAdminBadges()`) + `src/components/admin/AdminSidebar.tsx` : badges pour `editeur_claims`, `etudes_cliniques` + `questionnaires_these` en attente, `emails_campagnes` à envoyer~~
-- ~~À enrichir avec « videos en attente » quand on ajoutera le parcours "Proposer une vidéo"~~ → fait avec Plan B "Proposer une vidéo"
-
-#### ~~Afficher la date de dernière connexion des utilisateurs en admin~~ ✅ Fait 2026-05-16
-- ~~Niveau 1 : colonne « Dernière connexion » triable dans `/admin/utilisateurs` (relatif "il y a Xj/sem./mois", titre = date complète)~~
-- ~~Niveau 2 : 3 cards Actifs 7/30/90 jours + LineChart "Dernière connexion par mois" (12 mois) + BarChart "Distribution de l'inactivité" (7 buckets) dans `/admin/statistiques`~~
-- ~~Source : `auth.users.last_sign_in_at` lu via `supabase.auth.admin.listUsers` paginé~~
-- Limite documentée : Supabase ne stocke que la **dernière** connexion → pas un vrai MAU. Pour avoir un MAU réel, il faudrait un cron quotidien snapshottant `last_sign_in_at` dans `user_login_history`. À planifier seulement si besoin avéré.
-
-#### ~~Permettre à un utilisateur inscrit de proposer (idée / correction / vidéo)~~ ✅ Fait 2026-05-16
-- ~~Espace `/mon-compte/proposer` avec 3 onglets : Idée → Correction → Vidéo~~
-- ~~Idée + Correction : nouvelle table `propositions_utilisateurs` (type `idee`/`correction`, statut `en_attente`/`traite`/`refuse`, RLS + GRANTs explicites). Champ `url_concernee` pré-rempli auto avec `document.referrer` same-origin (correction surtout)~~
-- ~~Vidéo : utilise la table `videos` étendue (cf. ci-dessous), formulaire spécifique (URL YouTube + preview embed)~~
-- ~~Email de notification admin envoyé à `contact@100000medecins.org` à chaque nouvelle proposition (best-effort, ne bloque pas si SendGrid down)~~
-- ~~Admin `/admin/propositions` (idée + correction) avec filtres statut/type, actions Traiter / Refuser / Remettre en attente / Supprimer. Badge sidebar admin `propositions`~~
-- ~~Admin `/admin/videos` : panel "Propositions à modérer" déjà en place (Plan B initial)~~
-- ~~Sidebar `/mon-compte` : item "Proposer" avec icône Sparkles, actif sur tout le sous-arbre `/proposer/*`~~
-
-
 
 #### Créer un design system pour le site
 - Définir les tokens de design (couleurs, typographie, espacement, ombres, border-radius) dans un fichier de référence
@@ -134,10 +94,29 @@ _(rien à faire pour l'instant)_
 ### Nouvelles catégories de solutions
 - Créer les catégories : Télétransmission, Téléconsultation, Téléexpertise
 
+#### Télétransmission — finitions après seeding initial (2026-05-17)
+- Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
+- **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
+- **Questionnaire d'évaluation — concevoir** : lister les critères pertinents pour évaluer une solution de télétransmission (ex. fiabilité de la télétransmission, qualité du rapprochement NOEMIE, gestion du tiers payant, support, ergonomie, intégration LGC…), les organiser en sections/sous-critères, rédiger les libellés des questions
+- **Questionnaire d'évaluation — implémenter en BDD** : créer les `criteres` (avec hiérarchie `parent_id`), remplir `categories.schema_evaluation` (JSONB) et `categories.criteres_recherche` (liste d'IDs critères mis en avant dans la page comparatif), tester le flow `/solution/noter/teletransmission/[idSolution]` de bout en bout — chantier principal restant
+- **Uploader les logos** des 20 solutions via l'admin
+- **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
+- **Activer** (`actif=true`) la catégorie et la classer dans la sur-catégorie "Logiciels médicaux" de la navbar quand tout est OK
+- **Tooltip téléservices** : ajouter un champ `description` sur `tags` (BDD) + tooltip/click mobile sur la sidebar comparatif pour expliquer ce que contient "Pack téléservices CNAM de base" (ADRi, AATi, ALDi, DMTi, IMTi, HRi, INSi)
+
 ### Avatars
-- Remplacer les avatars utilisateurs — **coupler obligatoirement avec la migration technique** (voir `docs/avatars_migration_plan.md`)
-- Actuellement : `users.portrait` stocke l'URL dénormalisée (copie) → changer les images sans migration = UPDATE massif sur 5800+ utilisateurs
-- Plan en 4 étapes : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images
+- ~~Remplacer les avatars utilisateurs — **coupler obligatoirement avec la migration technique** (voir `docs/avatars_migration_plan.md`)~~ [OK] Fait 2026-05-17
+- ~~Actuellement : `users.portrait` stocke l'URL dénormalisée (copie) → changer les images sans migration = UPDATE massif sur 5800+ utilisateurs~~ [OK] Fait 2026-05-17
+- ~~Plan en 4 étapes : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images~~ [OK] Fait 2026-05-17
+
+#### Page admin `/admin/utilisateurs/avatars` (CRUD catalogue)
+- Sous-menu/onglet accessible depuis la page `/admin/utilisateurs` actuelle
+- Liste les avatars catalogue (`user_id IS NULL`), grille drag & drop pour réordonner (`display_order`)
+- Actions : ajouter (upload PNG 256×256 → Supabase Storage `avatars/portraits/` + INSERT avec `display_order = MAX + 1`), supprimer (Storage + BDD, la FK `ON DELETE SET NULL` gère les users qui l'avaient choisi)
+- Stack : `@dnd-kit/sortable` pour le drag & drop
+- Server actions à créer dans `src/lib/actions/admin.ts` : `adminAddAvatar`, `adminDeleteAvatar`, `adminReorderAvatars`, `adminPurgeAvatarOrphans`
+- Section bonus en bas : "Avatars perso utilisateurs" avec count + bouton "Purger orphelins Storage" (déclenche `scripts/cleanup-avatar-storage.ts` côté server)
+- Estim : ~2-3h, non bloquant — le catalogue est en place, c'est pour faciliter les évolutions futures sans toucher au code/SQL/scripts
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales

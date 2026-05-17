@@ -5,12 +5,44 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-16**
+- [OK] 2026-05-16 : Affichage avatar cassé sur une page solution (Bugs à corriger)
+  - Bug d'affichage d'un avatar sur une page solution (constaté pendant les tests Next 16)
+  - Cause : 60 utilisateurs avaient `portrait = 'Avatars/avatar-XX.png'` (vestige Firebase) au lieu de `/images/portraits/avatar-XX.png`
+  - Fix data-only : `UPDATE users SET portrait = REPLACE(portrait, 'Avatars/', '/images/portraits/') WHERE portrait LIKE 'Avatars/%'` → 60 lignes corrigées
+- [OK] 2026-05-16 : Afficher la date de dernière connexion des utilisateurs en admin (UX / UI)
+  - Niveau 1 : colonne « Dernière connexion » triable dans `/admin/utilisateurs` (relatif "il y a Xj/sem./mois", titre = date complète)
+  - Niveau 2 : 3 cards Actifs 7/30/90 jours + LineChart "Dernière connexion par mois" (12 mois) + BarChart "Distribution de l'inactivité" (7 buckets) dans `/admin/statistiques`
+  - Source : `auth.users.last_sign_in_at` lu via `supabase.auth.admin.listUsers` paginé
+  - Limite documentée : Supabase ne stocke que la dernière connexion → pas un vrai MAU. Pour un MAU réel, il faudrait un cron quotidien snapshottant `last_sign_in_at` dans `user_login_history`. À planifier seulement si besoin avéré.
+- [OK] 2026-05-16 : Permettre à un utilisateur inscrit de proposer (idée / correction / vidéo) (UX / UI)
+  - Espace `/mon-compte/proposer` avec 3 onglets : Idée → Correction → Vidéo
+  - Idée + Correction : nouvelle table `propositions_utilisateurs` (type `idee`/`correction`, statut `en_attente`/`traite`/`refuse`, RLS + GRANTs explicites). Champ `url_concernee` pré-rempli auto avec `document.referrer` same-origin (correction surtout)
+  - Vidéo : utilise la table `videos` étendue, formulaire spécifique (URL YouTube + preview embed)
+  - Email de notification admin envoyé à `contact@100000medecins.org` à chaque nouvelle proposition (best-effort, ne bloque pas si SendGrid down)
+  - Admin `/admin/propositions` (idée + correction) avec filtres statut/type, actions Traiter / Refuser / Remettre en attente / Supprimer. Badge sidebar admin `propositions`
+  - Admin `/admin/videos` : panel "Propositions à modérer" déjà en place (Plan B initial)
+  - Sidebar `/mon-compte` : item "Proposer" avec icône Sparkles, actif sur tout le sous-arbre `/proposer/*`
+- [OK] 2026-05-16 : Supprimer les anciens dossiers Frontend-V2-main (Nettoyage)
+  - Laptop : sous-dossier `Claude IA\Frontend-V2-main` supprimé via `robocopy /MIR` (contournement path-too-long Windows) — 2026-05-15
+  - Desktop / NAS : confirmé par David — 2026-05-16
+
 **2026-05-15**
+- [OK] 2026-05-15 : Vérifier le comportement d'un inscrit en tant qu'éditeur (IMPORTANT)
+  - Inscription via le parcours éditeur (revendication d'une fiche solution)
+  - Connexion éditeur, accès aux fiches revendiquées
+  - Édition des champs autorisés, modération éventuelle
+  - Cas limites : éditeur qui revendique une fiche déjà claim, suppression de compte éditeur
 - [OK] 2026-05-15 : Fusion PSC sur compte email/MDP existant — doublon de compte (Bugs à corriger)
   - Scénario : compte email/MDP créé, déconnexion, connexion PSC fraîche → 2e compte `public.users` créé au lieu de fusionner
   - Root cause : PSC userInfo sans email → callback sans clé partagée (rpps absent du compte email, email PSC null) → création d'un compte séparé
   - Solution A implémentée : `/completer-profil` détecte le conflit email → déclenche le flux `/fusionner-compte` existant (token HMAC 15 min)
   - `mergeAccounts` enrichi : dedup `evaluations` sur UNIQUE(user_id, solution_id) en gardant la plus récente
+
+**2026-05-14**
+- [OK] 2026-05-14 : Point rouge admin sur catégories parent (sidebar) — étendu vidéos 2026-05-16 (UX / UI)
+  - Implémenté dans `src/lib/db/admin-badges.ts` (`getAdminBadges()`) + `src/components/admin/AdminSidebar.tsx` : badges pour `editeur_claims`, `etudes_cliniques` + `questionnaires_these` en attente, `emails_campagnes` à envoyer
+  - Étendu avec « videos en attente » + « propositions en attente » lors du parcours "Proposer une vidéo" (2026-05-16)
 
 **2026-05-12**
 - [OK] 2026-05-12 : Vérifier tous les comportements utilisateurs — tests end-to-end (IMPORTANT)

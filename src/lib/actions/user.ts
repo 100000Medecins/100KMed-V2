@@ -327,6 +327,323 @@ export async function updateProfile(userData: {
 }
 
 /**
+ * Données pour la bannière "Nouveaux avatars disponibles" :
+ * - shouldShow : true si l'user est connecté ET n'a pas encore choisi de portrait
+ * - avatars : catalogue trié (médicaux puis décalés)
+ * Le cookie de dismiss est géré côté client.
+ */
+export async function getNouveauxAvatarsBannerData(): Promise<{
+  shouldShow: boolean
+  avatars: Array<{ id: string; url: string; isPersonal: boolean }>
+}> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { shouldShow: false, avatars: [] }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('portrait')
+    .eq('id', user.id)
+    .single()
+
+  const shouldShow = !profile?.portrait
+  if (!shouldShow) return { shouldShow: false, avatars: [] }
+
+  const avatars = await getAvatars()
+  return { shouldShow: true, avatars }
+}
+
+/**
+ * Liste les avatars disponibles : catalogue public + avatars personnels de l'user connecté.
+ * Les avatars perso sont placés en tête de liste (priorité visuelle).
+ * Chaque item est annoté avec isPersonal pour permettre l'affichage par section côté UI.
+ */
+export async function getAvatars(): Promise<Array<{ id: string; url: string; isPersonal: boolean }>> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const admin = createServiceRoleClient()
+
+  // Catalogue (user_id IS NULL), trié par display_order
+  const cataloguePromise = admin
+    .from('avatars')
+    .select('id, url')
+    .is('user_id', null)
+    .order('display_order', { ascending: true, nullsFirst: false })
+
+  // Avatars perso de l'user (si connecté), triés par id desc (récents en premier)
+  const personalPromise = user
+    ? admin.from('avatars').select('id, url').eq('user_id', user.id).order('id', { ascending: false })
+    : Promise.resolve({ data: [], error: null })
+
+  const [catalogueRes, personalRes] = await Promise.all([cataloguePromise, personalPromise])
+  const catalogue = (catalogueRes.data ?? []) as Array<{ id: string; url: string }>
+  const personal = (personalRes.data ?? []) as Array<{ id: string; url: string }>
+
+  return [
+    ...personal.map((a) => ({ ...a, isPersonal: true })),
+    ...catalogue.map((a) => ({ ...a, isPersonal: false })),
+  ]
+}
+
+/**
+ * Supprime un avatar perso précis appartenant à l'user connecté.
+ * Si c'est son portrait actuel, le portrait passe à NULL.
+ */
+export async function deletePersonalAvatar(avatarId: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const admin = createServiceRoleClient()
+
+  // Vérifie que l'avatar existe ET appartient bien à l'user (sécurité)
+  const { data: avatar, error: fetchErr } = await admin
+    .from('avatars')
+    .select('id, url, user_id')
+    .eq('id', avatarId)
+    .single()
+  if (fetchErr || !avatar) throw new Error('Avatar introuvable')
+  if (avatar.user_id !== user.id) throw new Error('Cet avatar ne t\'appartient pas')
+
+  // Si c'est son portrait actuel, le reset à NULL
+  const { data: profile } = await admin
+    .from('users')
+    .select('portrait')
+    .eq('id', user.id)
+    .single()
+  if (profile?.portrait === avatarId) {
+    await admin.from('users').update({ portrait: null }).eq('id', user.id)
+  }
+
+  // Supprime le fichier Storage
+  const match = avatar.url.match(/\/avatars\/(personal\/[^/]+\/[^/]+\.png)$/)
+  if (match) {
+    await admin.storage.from('avatars').remove([match[1]])
+  }
+
+  // Supprime la ligne BDD
+  await admin.from('avatars').delete().eq('id', avatarId)
+
+  revalidatePath('/mon-compte')
+  return { status: 'SUCCESS' }
+}
+
+/**
+ * Retourne le quota restant + flag d'exemption pour l'user connecté.
+ * Quota max : 3 par 24h. Les emails listés dans AVATAR_QUOTA_UNLIMITED_EMAILS (env var, séparés par virgules)
+ * voient le décompte normal mais peuvent continuer à générer même après avoir atteint 0.
+ */
+const AVATAR_GENERATION_DAILY_QUOTA = 3
+
+function isQuotaExempt(email: string | null | undefined): boolean {
+  if (!email) return false
+  const list = (process.env.AVATAR_QUOTA_UNLIMITED_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  return list.includes(email.toLowerCase())
+}
+
+export async function getRemainingAvatarGenerations(): Promise<{
+  remaining: number
+  isExempt: boolean
+}> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { remaining: 0, isExempt: false }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { count } = await supabase
+    .from('avatar_generations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', since)
+
+  return {
+    remaining: Math.max(0, AVATAR_GENERATION_DAILY_QUOTA - (count ?? 0)),
+    isExempt: isQuotaExempt(user.email),
+  }
+}
+
+/**
+ * Génère un avatar personnalisé à partir d'une photo source via l'API Retro Diffusion (img2img).
+ * Quota : 3 par 24h. Le PNG résultat est stocké dans Supabase Storage et inséré dans la table avatars.
+ * La photo source N'EST PAS stockée (RGPD).
+ */
+export async function generatePersonalAvatar(formData: FormData): Promise<{
+  avatarId: string
+  url: string
+  remaining: number
+  isExempt: boolean
+}> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  // Quota check : bloquant seulement pour les non-exemptés
+  const { remaining, isExempt } = await getRemainingAvatarGenerations()
+  if (remaining <= 0 && !isExempt) {
+    throw new Error('Quota de générations atteint pour aujourd\'hui (3 par 24h)')
+  }
+
+  // Cleanup : supprime les anciens essais non choisis avant d'en générer un nouveau
+  await cleanupAbandonedPersonalAvatars(user.id)
+
+  // Validation du fichier
+  const file = formData.get('photo') as File | null
+  if (!file) throw new Error('Aucune photo fournie')
+  if (!file.type.startsWith('image/')) throw new Error('Le fichier doit être une image')
+  if (file.size > 5 * 1024 * 1024) throw new Error('La photo doit faire moins de 5 Mo')
+
+  // Encodage base64
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const base64 = buffer.toString('base64')
+
+  // Appel API Retro Diffusion (img2img) — strength bas + prompt neutre pour rester fidèle à la photo
+  const RD_API_KEY = process.env.RD_API_KEY
+  if (!RD_API_KEY) throw new Error('Configuration API manquante (RD_API_KEY)')
+
+  const prompt = [
+    'pixel art portrait of a person, stylized but recognizable',
+    'frontal bust portrait facing camera, keep facial features identifiable',
+    'transparent background',
+    'retro 16-bit pixel art game character',
+    'visible pixel grid, blocky pixels, clear outlines',
+    'natural expression',
+  ].join(', ')
+
+  const rdResponse = await fetch('https://api.retrodiffusion.ai/v1/inferences', {
+    method: 'POST',
+    headers: {
+      'X-RD-Token': RD_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+      width: 128,
+      height: 128,
+      prompt_style: 'rd_plus__classic',
+      num_images: 1,
+      remove_bg: true,
+      input_image: base64,
+      strength: 0.65,
+    }),
+  })
+
+  if (!rdResponse.ok) {
+    const err = await rdResponse.text()
+    console.error('Retro Diffusion API error:', rdResponse.status, err)
+    throw new Error('Échec de la génération. Réessaye dans un instant.')
+  }
+
+  const rdData = (await rdResponse.json()) as {
+    base64_images: string[]
+    balance_cost: number
+    remaining_balance: number
+  }
+  const pngBuffer = Buffer.from(rdData.base64_images[0], 'base64')
+
+  // Upload vers Supabase Storage : avatars/personal/<user_id>/<timestamp>.png
+  const admin = createServiceRoleClient()
+  const filename = `personal/${user.id}/${Date.now()}.png`
+  const { error: uploadErr } = await admin.storage
+    .from('avatars')
+    .upload(filename, pngBuffer, { contentType: 'image/png', upsert: false })
+  if (uploadErr) {
+    console.error('Storage upload error:', uploadErr)
+    throw new Error('Échec de l\'enregistrement du nouvel avatar')
+  }
+
+  const { data: pub } = admin.storage.from('avatars').getPublicUrl(filename)
+  const publicUrl = pub.publicUrl
+
+  // INSERT avatar (perso = user_id non NULL)
+  const { data: inserted, error: insertErr } = await admin
+    .from('avatars')
+    .insert({ url: publicUrl, user_id: user.id })
+    .select('id')
+    .single()
+  if (insertErr || !inserted) {
+    console.error('Avatar insert error:', insertErr)
+    throw new Error('Échec de l\'enregistrement de l\'avatar')
+  }
+
+  // Trace la génération pour le quota
+  await admin.from('avatar_generations').insert({ user_id: user.id })
+
+  revalidatePath('/mon-compte')
+  return {
+    avatarId: inserted.id,
+    url: publicUrl,
+    remaining: Math.max(0, remaining - 1),
+    isExempt,
+  }
+}
+
+/**
+ * Supprime les avatars personnels d'un user qui ne sont plus son portrait actuel.
+ * Supprime à la fois les lignes BDD et les fichiers dans Supabase Storage.
+ * À appeler après chaque updateAvatar / removeAvatar / avant chaque generatePersonalAvatar.
+ */
+async function cleanupAbandonedPersonalAvatars(userId: string): Promise<void> {
+  const admin = createServiceRoleClient()
+
+  // 1. Portrait actuel
+  const { data: profile } = await admin
+    .from('users')
+    .select('portrait')
+    .eq('id', userId)
+    .single()
+  const currentPortrait = profile?.portrait ?? null
+
+  // 2. Liste des avatars perso à supprimer (perso de l'user, hors portrait actuel)
+  let query = admin.from('avatars').select('id, url').eq('user_id', userId)
+  if (currentPortrait) query = query.neq('id', currentPortrait)
+  const { data: toDelete } = await query
+
+  if (!toDelete || toDelete.length === 0) return
+
+  // 3. Supprime les fichiers du Storage (extrait le chemin "personal/<uid>/<ts>.png" depuis l'URL publique)
+  const filenames = toDelete
+    .map((a) => {
+      const match = a.url.match(/\/avatars\/(personal\/[^/]+\/[^/]+\.png)$/)
+      return match ? match[1] : null
+    })
+    .filter((f): f is string => !!f)
+  if (filenames.length > 0) {
+    await admin.storage.from('avatars').remove(filenames)
+  }
+
+  // 4. Supprime les lignes BDD
+  await admin
+    .from('avatars')
+    .delete()
+    .in('id', toDelete.map((a) => a.id))
+}
+
+/**
+ * Supprime l'avatar de l'utilisateur (retour au fallback initiale).
+ * Nettoie aussi tous ses anciens avatars perso (qui ne servent plus).
+ */
+export async function removeAvatar() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const { error } = await supabase
+    .from('users')
+    .update({ portrait: null })
+    .eq('id', user.id)
+  if (error) throw error
+
+  // Portrait est maintenant NULL → cleanup va supprimer TOUS les perso
+  await cleanupAbandonedPersonalAvatars(user.id)
+
+  revalidatePath('/mon-compte')
+  return { status: 'SUCCESS' }
+}
+
+/**
  * Met à jour l'avatar de l'utilisateur.
  * Remplace : mutation updateAvatar
  */
@@ -338,21 +655,24 @@ export async function updateAvatar(avatarId: string) {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Non authentifié')
 
-  // Récupérer l'URL de l'avatar
-  const { data: avatar, error: avatarError } = await supabase
+  // Vérifier que l'avatar existe avant d'écrire (évite un UUID arbitraire)
+  const { error: checkError } = await supabase
     .from('avatars')
-    .select('url')
+    .select('id')
     .eq('id', avatarId)
     .single()
+  if (checkError) throw checkError
 
-  if (avatarError) throw avatarError
-
+  // users.portrait stocke désormais l'UUID, plus l'URL — l'affichage résout via jointure
   const { error } = await supabase
     .from('users')
-    .update({ portrait: avatar.url })
+    .update({ portrait: avatarId })
     .eq('id', user.id)
 
   if (error) throw error
+
+  // Cleanup : supprime les anciens avatars perso de cet user qui ne sont plus son portrait
+  await cleanupAbandonedPersonalAvatars(user.id)
 
   revalidatePath('/mon-compte')
   return { status: 'SUCCESS' }

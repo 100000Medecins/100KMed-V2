@@ -124,20 +124,60 @@ export type Database = {
         }
         Relationships: []
       }
-      avatars: {
+      avatar_generations: {
         Row: {
+          created_at: string
           id: string
-          url: string
+          user_id: string
         }
         Insert: {
+          created_at?: string
           id?: string
-          url: string
+          user_id: string
         }
         Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatar_generations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avatars: {
+        Row: {
+          display_order: number | null
+          id: string
+          url: string
+          user_id: string | null
+        }
+        Insert: {
+          display_order?: number | null
+          id?: string
+          url: string
+          user_id?: string | null
+        }
+        Update: {
+          display_order?: number | null
           id?: string
           url?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "avatars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -846,6 +886,45 @@ export type Database = {
         }
         Relationships: []
       }
+      propositions_utilisateurs: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          id: string
+          statut: string
+          titre: string
+          type: string
+          updated_at: string
+          url_concernee: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          statut?: string
+          titre: string
+          type: string
+          updated_at?: string
+          url_concernee?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          statut?: string
+          titre?: string
+          type?: string
+          updated_at?: string
+          url_concernee?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       questionnaire_questions: {
         Row: {
           critere_majeur: string
@@ -1515,6 +1594,13 @@ export type Database = {
             referencedRelation: "editeurs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "users_portrait_fkey"
+            columns: ["portrait"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
         ]
       }
       users_notification_preferences: {
@@ -1595,6 +1681,7 @@ export type Database = {
       videos: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string | null
           homepage_ordre: number | null
           homepage_pinned_at: string | null
@@ -1611,6 +1698,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           homepage_ordre?: number | null
           homepage_pinned_at?: string | null
@@ -1627,6 +1715,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           homepage_ordre?: number | null
           homepage_pinned_at?: string | null
@@ -1824,3 +1913,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />

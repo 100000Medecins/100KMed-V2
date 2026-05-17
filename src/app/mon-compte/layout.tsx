@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import NouveauxAvatarsBanner from '@/components/mon-compte/NouveauxAvatarsBanner'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useEffect, useState } from 'react'
 
@@ -91,7 +92,10 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Content */}
-            <div className="flex-1 min-w-0">{children}</div>
+            <div className="flex-1 min-w-0">
+              <NouveauxAvatarsBanner />
+              {children}
+            </div>
           </div>
         </div>
       </main>

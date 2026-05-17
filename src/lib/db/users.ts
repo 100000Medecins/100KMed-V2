@@ -38,12 +38,15 @@ export async function getUserById(id: string) {
 
   const { data, error } = await supabase
     .from('users')
-    .select('pseudo, nom, prenom, portrait, specialite, mode_exercice')
+    .select('pseudo, nom, prenom, avatar:avatars(url), specialite, mode_exercice')
     .eq('id', id)
     .single()
 
   if (error) throw error
-  return data
+  if (!data) return data
+  // Remap : exposer portrait comme URL résolue (compat avec les composants existants)
+  const d = data as unknown as { pseudo: string | null; nom: string | null; prenom: string | null; avatar: { url: string | null } | null; specialite: string | null; mode_exercice: string | null }
+  return { pseudo: d.pseudo, nom: d.nom, prenom: d.prenom, portrait: d.avatar?.url ?? null, specialite: d.specialite, mode_exercice: d.mode_exercice }
 }
 
 /**
