@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
-import { Lightbulb, Send, Check } from 'lucide-react'
-import { suggestAcronyme } from '@/lib/actions/admin'
+import { Video, Send, Check } from 'lucide-react'
+import { submitVideoProposal } from '@/lib/actions/videos'
 
-export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }: { userEmail?: string | null; defaultOpen?: boolean }) {
+export default function StoriesTutosSuggestForm({ userEmail, defaultOpen = false }: { userEmail?: string | null; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   const [notify, setNotify] = useState(true)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const sigleRef = useRef<HTMLInputElement>(null)
+  const titreRef = useRef<HTMLInputElement>(null)
 
   // Auto-ouvrir + focus si on arrive via l'ancre #proposer
   useEffect(() => {
@@ -22,17 +22,22 @@ export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }:
 
   // Focus le premier champ dès que le formulaire s'ouvre
   useEffect(() => {
-    if (open) setTimeout(() => sigleRef.current?.focus(), 50)
+    if (open) setTimeout(() => titreRef.current?.focus(), 50)
   }, [open])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     setError(null)
+    const titre = (fd.get('titre') as string) || ''
+    const url = (fd.get('url') as string) || ''
+    const description = (fd.get('description') as string) || ''
+    const type = ((fd.get('type') as string) || 'youtube') as 'youtube' | 'vimeo' | 'autre'
+    const proposerEmail = (fd.get('email') as string) || null
     startTransition(async () => {
-      const res = await suggestAcronyme(fd)
-      if (res?.error) {
-        setError(res.error)
+      const res = await submitVideoProposal({ titre, url, description, type, proposerEmail })
+      if (res.status === 'ERROR') {
+        setError(res.message)
       } else {
         setDone(true)
       }
@@ -55,38 +60,60 @@ export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }:
     <div className="mt-10 border-t border-gray-100 pt-8">
       {!open ? (
         <div className="text-center">
-          <p className="text-sm text-gray-400 mb-3">Un acronyme manque dans ce glossaire ?</p>
+          <p className="text-sm text-gray-400 mb-3">Une vidéo à partager avec la communauté ?</p>
           <button
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-accent-blue border border-accent-blue/30 rounded-xl hover:bg-accent-blue/5 transition-colors"
           >
-            <Lightbulb className="w-4 h-4" />
-            Proposer un acronyme
+            <Video className="w-4 h-4" />
+            Proposer une vidéo
           </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white rounded-2xl shadow-card p-6 space-y-4">
-          <h3 className="text-sm font-bold text-navy">Proposer un acronyme</h3>
+          <h3 className="text-sm font-bold text-navy">Proposer une vidéo</h3>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Titre *</label>
+            <input
+              ref={titreRef}
+              name="titre"
+              required
+              placeholder="ex. Comment utiliser DMP en 5 min"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Sigle *</label>
-              <input
-                ref={sigleRef}
-                name="sigle"
-                required
-                placeholder="ex. DMP"
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
-              />
-            </div>
             <div className="sm:col-span-2">
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Définition *</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">URL de la vidéo *</label>
               <input
-                name="definition"
+                name="url"
+                type="url"
                 required
-                placeholder="ex. Dossier Médical Partagé"
+                placeholder="https://youtube.com/watch?v=..."
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
               />
             </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Type *</label>
+              <select
+                name="type"
+                defaultValue="youtube"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
+              >
+                <option value="youtube">YouTube</option>
+                <option value="vimeo">Vimeo</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Description <span className="text-gray-400 font-normal">(facultatif)</span></label>
+            <textarea
+              name="description"
+              rows={3}
+              placeholder="En une phrase, de quoi parle la vidéo ?"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30 resize-none"
+            />
           </div>
           {userEmail ? (
             <>
@@ -105,11 +132,11 @@ export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }:
             </>
           ) : (
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Email (facultatif)</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Email <span className="text-gray-400 font-normal">(facultatif, pour être informé)</span></label>
               <input
                 name="email"
                 type="email"
-                placeholder="pour être informé de la publication"
+                placeholder="vous@exemple.fr"
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
               />
             </div>

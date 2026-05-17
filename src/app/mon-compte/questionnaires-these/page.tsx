@@ -17,6 +17,7 @@ export default function QuestionnairesThesePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [questionnaires, setQuestionnaires] = useState<QuestionnaireThese[]>([])
+  const [userSpecialite, setUserSpecialite] = useState<string | null>(null)
   const [fetching, setFetching] = useState(true)
   const [modalQ, setModalQ] = useState<QuestionnaireThese | null>(null)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
@@ -27,8 +28,23 @@ export default function QuestionnairesThesePage() {
 
     const load = async () => {
       try {
-        const { getQuestionnairesPublies } = await import('@/lib/actions/questionnaires-these')
-        setQuestionnaires(await getQuestionnairesPublies())
+        const [{ getQuestionnairesPublies }, { getCurrentUserProfile }] = await Promise.all([
+          import('@/lib/actions/questionnaires-these'),
+          import('@/lib/actions/user'),
+        ])
+        const [items, profile] = await Promise.all([
+          getQuestionnairesPublies(),
+          getCurrentUserProfile(),
+        ])
+        const specialite = profile?.specialite ?? null
+        setUserSpecialite(specialite)
+        // Tri : concernés d'abord, non-concernés ensuite
+        const sorted = [...items].sort((a, b) => {
+          const aOk = a.specialites_cibles.length === 0 || (specialite ? a.specialites_cibles.includes(specialite) : true)
+          const bOk = b.specialites_cibles.length === 0 || (specialite ? b.specialites_cibles.includes(specialite) : true)
+          return aOk === bOk ? 0 : aOk ? -1 : 1
+        })
+        setQuestionnaires(sorted)
       } finally {
         setFetching(false)
       }
@@ -66,7 +82,7 @@ export default function QuestionnairesThesePage() {
           </div>
         </div>
         <a
-          href="/mon-compte/mes-questionnaires-these"
+          href="/mon-compte/proposer/questionnaire-these"
           className="hidden sm:flex shrink-0 items-center gap-2 px-4 py-2.5 bg-accent-blue/10 text-accent-blue text-sm font-medium rounded-xl hover:bg-accent-blue/20 transition-colors"
         >
           <BookOpen className="w-4 h-4" />
@@ -81,15 +97,16 @@ export default function QuestionnairesThesePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {questionnaires.map((q) => (
-            <QuestionnaireCard key={q.id} q={q} onExpand={() => setModalQ(q)} />
-          ))}
+          {questionnaires.map((q) => {
+            const concerne = q.specialites_cibles.length === 0 || (userSpecialite ? q.specialites_cibles.includes(userSpecialite) : true)
+            return <QuestionnaireCard key={q.id} q={q} concerne={concerne} onExpand={() => setModalQ(q)} />
+          })}
         </div>
       )}
 
       {/* Bouton "Proposer" — mobile uniquement, en bas */}
       <a
-        href="/mon-compte/mes-questionnaires-these"
+        href="/mon-compte/proposer/questionnaire-these"
         className="sm:hidden mt-5 flex items-center justify-center gap-2 px-4 py-3 bg-accent-blue/10 text-accent-blue text-sm font-medium rounded-xl hover:bg-accent-blue/20 transition-colors"
       >
         <BookOpen className="w-4 h-4" />
@@ -191,14 +208,16 @@ export default function QuestionnairesThesePage() {
   )
 }
 
-function QuestionnaireCard({ q, onExpand }: { q: QuestionnaireThese; onExpand: () => void }) {
+function QuestionnaireCard({ q, concerne, onExpand }: { q: QuestionnaireThese; concerne: boolean; onExpand: () => void }) {
   const plainText = q.description ? stripHtml(q.description) : ''
   const isTruncated = plainText.length > DESCRIPTION_MAX_CHARS
   const truncated = isTruncated ? plainText.slice(0, DESCRIPTION_MAX_CHARS) + '…' : plainText
 
   return (
     <div
-      className="bg-white rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-shadow"
+      className={`bg-white rounded-card shadow-card overflow-hidden flex flex-col cursor-pointer transition-all ${
+        concerne ? 'hover:shadow-md' : 'opacity-50 grayscale hover:opacity-90 hover:grayscale-0 hover:shadow-md'
+      }`}
       onClick={onExpand}
     >
       <div className="p-5 flex flex-col gap-3 flex-1">

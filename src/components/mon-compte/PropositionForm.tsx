@@ -17,22 +17,22 @@ const COPY = {
       "Une idée pour améliorer la plateforme : nouvelle fonctionnalité, contenu manquant, partenariat… L'équipe lit toutes les suggestions.",
     titrePlaceholder: 'Ex: « Comparer les solutions par prix »',
     descriptionPlaceholder:
-      'Décris ton idée en quelques phrases : à quel problème ça répond, à qui ça serait utile, comment tu vois ça idéalement.',
+      'Décrivez votre idée en quelques phrases : à quel problème ça répond, à qui ça serait utile, comment vous voyez ça idéalement.',
     urlLabel: 'URL associée (si pertinent)',
     urlHelp: "Optionnel — si l'idée concerne une page précise du site.",
     submit: "Envoyer l'idée",
     successTitle: 'Idée envoyée',
-    successText: "Merci ! L'équipe va la lire. Tu peux en proposer d'autres.",
+    successText: "Merci ! L'équipe va la lire. Vous pouvez en proposer d'autres.",
   },
   correction: {
     icon: AlertTriangle,
     intro:
-      "Tu as repéré une coquille, un bug, une info erronée ? Signale-le ici, on corrige au plus vite.",
+      "Vous avez repéré une coquille, un bug, une info erronée ? Signalez-le ici, on corrige au plus vite.",
     titrePlaceholder: 'Ex: « Faute de frappe sur la page Doctolib »',
     descriptionPlaceholder:
-      "Décris ce qui ne va pas : ce que tu as vu vs. ce qui devrait s'afficher, comment reproduire si c'est un bug.",
+      "Décrivez ce qui ne va pas : ce que vous avez vu vs. ce qui devrait s'afficher, comment reproduire si c'est un bug.",
     urlLabel: 'URL concernée',
-    urlHelp: "Pré-remplie avec la page d'où tu viens. Modifie si besoin.",
+    urlHelp: "Pré-remplie avec la page d'où vous venez. Modifiez si besoin.",
     submit: 'Envoyer la correction',
     successTitle: 'Correction envoyée',
     successText: "Merci ! L'équipe va vérifier et corriger.",

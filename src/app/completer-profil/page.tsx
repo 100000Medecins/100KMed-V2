@@ -5,9 +5,9 @@ import Image from 'next/image'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
+import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, getAvatars } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
-import { AVATARS, SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
+import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
 import { Check, Lock, LogOut } from 'lucide-react'
 
@@ -24,6 +24,7 @@ export default function CompleterProfilPage() {
   const [contactEmail, setContactEmail] = useState('')
   const [pseudo, setPseudo] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [avatars, setAvatars] = useState<Array<{ id: string; url: string }>>([])
 
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -64,7 +65,8 @@ export default function CompleterProfilPage() {
     if (!user) return
 
     async function loadProfile() {
-      const profile = await getCurrentUserProfile()
+      const [profile, avatarList] = await Promise.all([getCurrentUserProfile(), getAvatars()])
+      setAvatars(avatarList)
 
       const hasPsc = !!(profile?.rpps || user?.user_metadata?.provider === 'psc')
       setIsFromPsc(hasPsc)
@@ -453,19 +455,19 @@ export default function CompleterProfilPage() {
                 </p>
               </div>
               <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
-                {AVATARS.map((avatar) => (
+                {avatars.map((avatar) => (
                   <button
                     key={avatar.id}
                     type="button"
-                    onClick={() => setSelectedAvatar(selectedAvatar === avatar.url ? null : avatar.url)}
+                    onClick={() => setSelectedAvatar(selectedAvatar === avatar.id ? null : avatar.id)}
                     className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
-                      selectedAvatar === avatar.url
+                      selectedAvatar === avatar.id
                         ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
                         : 'border-transparent hover:border-gray-300'
                     }`}
                   >
-                    <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
-                    {selectedAvatar === avatar.url && (
+                    <img src={avatar.url} alt="" className="w-full h-full object-cover" />
+                    {selectedAvatar === avatar.id && (
                       <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white drop-shadow" />
                       </div>

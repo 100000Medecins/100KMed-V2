@@ -35,11 +35,8 @@ function proposerLabel(p: AdminProposition['proposer']): string {
 
 function buildExternalUrl(url: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) return url
-  if (url.startsWith('/')) {
-    if (typeof window !== 'undefined') return window.location.origin + url
-    return url
-  }
-  return url
+  if (url.startsWith('/')) return url
+  return '/' + url
 }
 
 export default function PropositionsAdminClient({ propositions: initial }: { propositions: AdminProposition[] }) {
