@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Plus, Pencil, Trash2, Check, X, ExternalLink, Lightbulb } from 'lucide-react'
+import { useState, useTransition, useEffect, useRef } from 'react'
+import { Plus, Pencil, Trash2, Check, X, ExternalLink, Lightbulb, Sparkles, AlertTriangle, RefreshCw } from 'lucide-react'
 import { createAcronyme, updateAcronyme, deleteAcronyme, approveSuggestion, rejectSuggestion } from '@/lib/actions/admin'
+import { generateAcronymeInfo } from '@/lib/actions/generateAcronyme'
 
 type Acronyme = {
   id: string
@@ -10,6 +11,7 @@ type Acronyme = {
   definition: string
   description: string | null
   lien: string | null
+  disambiguation: string | null
   created_at: string
 }
 
@@ -27,24 +29,61 @@ type FormState = {
   definition: string
   description: string
   lien: string
+  disambiguation: string
 }
 
-const emptyForm: FormState = { sigle: '', definition: '', description: '', lien: '' }
+const emptyForm: FormState = { sigle: '', definition: '', description: '', lien: '', disambiguation: '' }
 
 function AcronymeForm({
   initial,
   onSave,
   onCancel,
   isPending,
+  autoGenerateOnMount = false,
 }: {
   initial: FormState
   onSave: (f: FormState) => void
   onCancel: () => void
   isPending: boolean
+  autoGenerateOnMount?: boolean
 }) {
   const [form, setForm] = useState(initial)
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState<string | null>(null)
+  const [aiPopulated, setAiPopulated] = useState(false)
+  const autoTriggered = useRef(false)
+
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }))
+
+  const handleGenerate = async () => {
+    const sigle = form.sigle.trim()
+    if (!sigle || generating) return
+    setGenerating(true)
+    setGenError(null)
+    const res = await generateAcronymeInfo(sigle)
+    setGenerating(false)
+    if (res.error || !res.data) {
+      setGenError(res.error ?? 'Erreur inconnue')
+      return
+    }
+    setForm(prev => ({
+      ...prev,
+      definition: res.data!.definition || prev.definition,
+      description: res.data!.description ?? prev.description,
+      lien: res.data!.lien ?? prev.lien,
+      disambiguation: res.data!.disambiguation ?? prev.disambiguation,
+    }))
+    setAiPopulated(true)
+  }
+
+  useEffect(() => {
+    if (autoGenerateOnMount && !autoTriggered.current && form.sigle.trim()) {
+      autoTriggered.current = true
+      handleGenerate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerateOnMount])
 
   return (
     <div className="grid grid-cols-1 gap-3 p-4 bg-accent-blue/5 rounded-xl border border-accent-blue/20">
@@ -68,6 +107,38 @@ function AcronymeForm({
           />
         </div>
       </div>
+      <div>
+        <label className="text-xs font-semibold text-gray-500 mb-1 block">
+          Précision <span className="text-gray-400 font-normal">(si plusieurs sens pour ce sigle)</span>
+        </label>
+        <input
+          value={form.disambiguation}
+          onChange={set('disambiguation')}
+          placeholder="ex. Bureau du ministère / Agent mobile CNAM"
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
+        />
+      </div>
+
+      {/* Bouton IA */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={!form.sigle.trim() || generating || isPending}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Sparkles className={`w-3.5 h-3.5 ${generating ? 'animate-pulse' : ''}`} />
+          {generating ? 'Génération…' : 'Auto-remplir avec IA'}
+        </button>
+        {genError && <span className="text-xs text-red-600">{genError}</span>}
+        {aiPopulated && !genError && !generating && (
+          <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Pré-rempli par IA — vérifier surtout l&apos;URL avant d&apos;enregistrer
+          </span>
+        )}
+      </div>
+
       <div>
         <label className="text-xs font-semibold text-gray-500 mb-1 block">Lien externe</label>
         <input
@@ -115,6 +186,7 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
   const [suggestions, setSuggestions] = useState(initialSuggestions)
   const [showAdd, setShowAdd] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [regenerateId, setRegenerateId] = useState<string | null>(null)
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [approveForm, setApproveForm] = useState<FormState>(emptyForm)
   const [search, setSearch] = useState('')
@@ -132,10 +204,11 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
       await createAcronyme(fd)
       setAcronymes(prev => [...prev, {
         id: 'tmp-' + Date.now(),
-        sigle: form.sigle.toUpperCase(),
+        sigle: form.sigle.trim(),
         definition: form.definition,
         description: form.description || null,
         lien: form.lien || null,
+        disambiguation: form.disambiguation || null,
         created_at: new Date().toISOString(),
       }].sort((a, b) => a.sigle.localeCompare(b.sigle)))
       setShowAdd(false)
@@ -149,10 +222,11 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
       await updateAcronyme(id, fd)
       setAcronymes(prev => prev.map(a => a.id === id ? {
         ...a,
-        sigle: form.sigle.toUpperCase(),
+        sigle: form.sigle.trim(),
         definition: form.definition,
         description: form.description || null,
         lien: form.lien || null,
+        disambiguation: form.disambiguation || null,
       } : a).sort((a, b) => a.sigle.localeCompare(b.sigle)))
       setEditId(null)
     })
@@ -168,7 +242,7 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
 
   function handleStartApprove(s: Suggestion) {
     setApprovingId(s.id)
-    setApproveForm({ sigle: s.sigle, definition: s.definition, description: s.description ?? '', lien: '' })
+    setApproveForm({ sigle: s.sigle, definition: s.definition, description: s.description ?? '', lien: '', disambiguation: '' })
   }
 
   function handleApprove(form: FormState) {
@@ -183,10 +257,11 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
       setSuggestions(prev => prev.filter(s => s.id !== id))
       setAcronymes(prev => [...prev, {
         id: 'tmp-' + Date.now(),
-        sigle: form.sigle.toUpperCase(),
+        sigle: form.sigle.trim(),
         definition: form.definition,
         description: form.description || null,
         lien: null,
+        disambiguation: null,
         created_at: new Date().toISOString(),
       }].sort((a, b) => a.sigle.localeCompare(b.sigle)))
       setApprovingId(null)
@@ -313,17 +388,25 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
               {editId === a.id ? (
                 <div className="px-5 py-3">
                   <AcronymeForm
-                    initial={{ sigle: a.sigle, definition: a.definition, description: a.description ?? '', lien: a.lien ?? '' }}
-                    onSave={(f) => handleUpdate(a.id, f)}
-                    onCancel={() => setEditId(null)}
+                    initial={{ sigle: a.sigle, definition: a.definition, description: a.description ?? '', lien: a.lien ?? '', disambiguation: a.disambiguation ?? '' }}
+                    onSave={(f) => { handleUpdate(a.id, f); setRegenerateId(null) }}
+                    onCancel={() => { setEditId(null); setRegenerateId(null) }}
                     isPending={isPending}
+                    autoGenerateOnMount={regenerateId === a.id}
                   />
                 </div>
               ) : (
                 <div className="flex items-start gap-4 px-5 py-3 hover:bg-surface-light transition-colors group">
                   <span className="text-sm font-bold text-navy w-24 shrink-0 pt-0.5">{a.sigle}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700">{a.definition}</p>
+                    <p className="text-sm text-gray-700">
+                      {a.definition}
+                      {a.disambiguation && (
+                        <span className="ml-2 text-xs font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                          {a.disambiguation}
+                        </span>
+                      )}
+                    </p>
                     {a.description && <p className="text-xs text-gray-400 mt-0.5">{a.description}</p>}
                     {a.lien && (
                       <a href={a.lien} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline mt-0.5">
@@ -332,10 +415,20 @@ export default function AcronymesAdminClient({ initialAcronymes, initialSuggesti
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditId(a.id); setShowAdd(false) }} className="p-1.5 text-gray-400 hover:text-accent-blue hover:bg-accent-blue/10 rounded-lg transition-colors">
+                    <button
+                      onClick={() => {
+                        if (!confirm(`Régénérer "${a.sigle}" avec l'IA ? Les valeurs actuelles seront pré-remplies dans le formulaire mais tu pourras valider/corriger avant d'enregistrer.`)) return
+                        setRegenerateId(a.id); setEditId(a.id); setShowAdd(false)
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      title="Régénérer avec IA"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => { setEditId(a.id); setRegenerateId(null); setShowAdd(false) }} className="p-1.5 text-gray-400 hover:text-accent-blue hover:bg-accent-blue/10 rounded-lg transition-colors" title="Éditer">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(a.id, a.sigle)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                    <button onClick={() => handleDelete(a.id, a.sigle)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

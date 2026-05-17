@@ -1267,10 +1267,11 @@ export async function createAcronyme(formData: FormData) {
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').insert({
     id: randomUUID(),
-    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    sigle: (formData.get('sigle') as string).trim(),
     definition: (formData.get('definition') as string).trim(),
     description: (formData.get('description') as string)?.trim() || null,
     lien: (formData.get('lien') as string)?.trim() || null,
+    disambiguation: (formData.get('disambiguation') as string)?.trim() || null,
   })
   if (error) return { error: error.message }
   revalidatePath('/admin/acronymes')
@@ -1282,10 +1283,11 @@ export async function updateAcronyme(id: string, formData: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').update({
-    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    sigle: (formData.get('sigle') as string).trim(),
     definition: (formData.get('definition') as string).trim(),
     description: (formData.get('description') as string)?.trim() || null,
     lien: (formData.get('lien') as string)?.trim() || null,
+    disambiguation: (formData.get('disambiguation') as string)?.trim() || null,
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/acronymes')

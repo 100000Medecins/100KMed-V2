@@ -19,7 +19,8 @@ export function getCache(): Acronyme[] | null {
 }
 
 export function buildRegex(acronymes: Acronyme[]): RegExp {
-  const escaped = acronymes.map(a => a.sigle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const uniqueSigles = Array.from(new Set(acronymes.map(a => a.sigle)))
+  const escaped = uniqueSigles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   return new RegExp(`\\b(${escaped.join('|')})\\b`, 'g')
 }
 
@@ -29,8 +30,11 @@ export function injectAcronymsInHtml(html: string, acronymes: Acronyme[]): strin
   return html.split(/(<[^>]*>)/g).map((part, i) => {
     if (i % 2 === 1) return part
     return part.replace(regex, (_, sigle) => {
-      const acro = acronymes.find(a => a.sigle === sigle)!
-      const title = acro.definition.replace(/"/g, '&quot;')
+      const matches = acronymes.filter(a => a.sigle === sigle)
+      const raw = matches.length === 1
+        ? matches[0].definition
+        : matches.map((m, idx) => `${idx + 1}) ${m.definition}`).join(' • ')
+      const title = raw.replace(/"/g, '&quot;')
       return `<abbr title="${title}" style="text-decoration:underline dotted #9ca3af;cursor:help">${sigle}</abbr>`
     })
   }).join('')

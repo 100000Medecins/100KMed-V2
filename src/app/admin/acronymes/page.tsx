@@ -9,6 +9,7 @@ type Acronyme = {
   definition: string
   description: string | null
   lien: string | null
+  disambiguation: string | null
   categorie: string | null
   created_at: string
 }
