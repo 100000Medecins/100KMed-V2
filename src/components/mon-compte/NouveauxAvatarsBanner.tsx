@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Mail, Sparkles, ChevronDown } from 'lucide-react'
+import { X, Sparkles, ChevronDown } from 'lucide-react'
 import { getNouveauxAvatarsBannerData, updateAvatar } from '@/lib/actions/user'
 
 interface Avatar {
@@ -43,12 +43,25 @@ export default function NouveauxAvatarsBanner() {
     })
   }, [])
 
+  // Re-check si l'user choisit un avatar via la page profil (sauve via le bouton du form)
+  useEffect(() => {
+    const handler = () => {
+      getNouveauxAvatarsBannerData().then(({ shouldShow }) => {
+        if (!shouldShow) setVisible(false)
+      })
+    }
+    window.addEventListener('avatar-changed', handler)
+    return () => window.removeEventListener('avatar-changed', handler)
+  }, [])
+
   if (!visible) return null
 
   const handleSelect = (avatarId: string) => {
     startTransition(async () => {
       await updateAvatar(avatarId)
       setVisible(false)
+      // Notifie la page profil (et tout autre composant) du nouvel avatar choisi
+      window.dispatchEvent(new CustomEvent('avatar-changed', { detail: { avatarId } }))
       router.refresh()
     })
   }
@@ -59,15 +72,6 @@ export default function NouveauxAvatarsBanner() {
   }
 
   const illustration = ILLUSTRATION_INDICES.map((i) => avatars[i]).filter(Boolean)
-
-  const mailtoHref =
-    'mailto:contact@100000medecins.org' +
-    '?subject=' +
-    encodeURIComponent('Mon avatar personnalisé') +
-    '&body=' +
-    encodeURIComponent(
-      'Bonjour,\n\nJe n\'ai pas trouvé d\'avatar qui me ressemble dans la galerie. Pouvez-vous pixelliser une photo de moi ? Je la joins à ce message.\n\nMerci !',
-    )
 
   return (
     <div className="relative bg-gradient-to-br from-accent-blue/10 to-accent-yellow/5 border border-accent-blue/20 rounded-card mb-6 overflow-hidden">
@@ -91,8 +95,8 @@ export default function NouveauxAvatarsBanner() {
           <h3 className="text-base font-semibold text-navy">Nouveaux avatars disponibles !</h3>
           <p className="text-sm text-gray-600 mt-0.5">
             {expanded
-              ? 'Clique sur celui qui te ressemble pour le choisir.'
-              : 'Découvre les nouveaux avatars pixel art et choisis le tien.'}
+              ? 'Cliquez sur celui qui vous ressemble pour le choisir.'
+              : 'Découvrez les nouveaux avatars pixel art et choisissez le vôtre.'}
           </p>
         </div>
 
@@ -134,14 +138,7 @@ export default function NouveauxAvatarsBanner() {
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
-            <a
-              href={mailtoHref}
-              className="inline-flex items-center gap-2 text-accent-blue hover:underline font-medium"
-            >
-              <Mail className="w-4 h-4" />
-              Aucun ne me ressemble — envoyer une photo
-            </a>
+          <div className="flex justify-end text-sm">
             <button
               onClick={handleDismiss}
               className="text-gray-400 hover:text-gray-600 transition-colors text-xs underline underline-offset-2"

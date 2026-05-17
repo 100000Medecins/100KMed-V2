@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           definition: string
           description: string | null
+          disambiguation: string | null
           id: string
           lien: string | null
           sigle: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string | null
           definition: string
           description?: string | null
+          disambiguation?: string | null
           id?: string
           lien?: string | null
           sigle: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string | null
           definition?: string
           description?: string | null
+          disambiguation?: string | null
           id?: string
           lien?: string | null
           sigle?: string
@@ -1112,6 +1115,48 @@ export type Database = {
         }
         Relationships: []
       }
+      solution_liens: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          solution_a_id: string
+          solution_b_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          solution_a_id: string
+          solution_b_id: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          solution_a_id?: string
+          solution_b_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_liens_solution_a_id_fkey"
+            columns: ["solution_a_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_liens_solution_b_id_fkey"
+            columns: ["solution_b_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solutions: {
         Row: {
           actif: boolean | null
@@ -1913,4 +1958,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />

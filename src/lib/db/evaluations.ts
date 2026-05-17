@@ -48,7 +48,7 @@ export async function getAvisUtilisateurs(
       scores,
       moyenne_utilisateur,
       last_date_note,
-      user:users(pseudo, nom, prenom, avatar:avatars(url), specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null) // Seulement les évaluations finalisées
@@ -111,7 +111,7 @@ export async function getLastAvisUtilisateurs(
       scores,
       moyenne_utilisateur,
       last_date_note,
-      user:users(pseudo, nom, prenom, avatar:avatars(url), specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
@@ -168,7 +168,7 @@ export async function getAvisUtilisateursPaginated(
       moyenne_utilisateur,
       last_date_note,
       temps_precedente_solution,
-      user:users(pseudo, nom, prenom, avatar:avatars(url), specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
     `, { count: 'exact' })
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)

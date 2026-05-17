@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import sgMail from '@sendgrid/mail'
+import sharp from 'sharp'
 
 /**
  * Envoie un email de réinitialisation de mot de passe via SendGrid
@@ -470,7 +471,7 @@ export async function getRemainingAvatarGenerations(): Promise<{
  * Quota : 3 par 24h. Le PNG résultat est stocké dans Supabase Storage et inséré dans la table avatars.
  * La photo source N'EST PAS stockée (RGPD).
  */
-export async function generatePersonalAvatar(formData: FormData): Promise<{
+export async function generatePersonalAvatar(description: string): Promise<{
   avatarId: string
   url: string
   remaining: number
@@ -486,30 +487,31 @@ export async function generatePersonalAvatar(formData: FormData): Promise<{
     throw new Error('Quota de générations atteint pour aujourd\'hui (3 par 24h)')
   }
 
-  // Cleanup : supprime les anciens essais non choisis avant d'en générer un nouveau
-  await cleanupAbandonedPersonalAvatars(user.id)
+  // Pas de cleanup auto ici : l'user peut conserver tous ses avatars perso (anciens choix + essais)
+  // et les supprimer manuellement via la ✕ rouge dans la grille "Mes avatars personnels".
 
-  // Validation du fichier
-  const file = formData.get('photo') as File | null
-  if (!file) throw new Error('Aucune photo fournie')
-  if (!file.type.startsWith('image/')) throw new Error('Le fichier doit être une image')
-  if (file.size > 5 * 1024 * 1024) throw new Error('La photo doit faire moins de 5 Mo')
+  // Validation de la description
+  const desc = description.trim()
+  if (desc.length < 10) {
+    throw new Error('Décrivez votre avatar avec un peu plus de détails (au moins 10 caractères).')
+  }
+  if (desc.length > 300) {
+    throw new Error('Description trop longue (max 300 caractères).')
+  }
 
-  // Encodage base64
-  const buffer = Buffer.from(await file.arrayBuffer())
-  const base64 = buffer.toString('base64')
-
-  // Appel API Retro Diffusion (img2img) — strength bas + prompt neutre pour rester fidèle à la photo
   const RD_API_KEY = process.env.RD_API_KEY
   if (!RD_API_KEY) throw new Error('Configuration API manquante (RD_API_KEY)')
 
+  // Wrap la description user dans notre prompt master — aligné sur le catalogue low_res 64
+  // (sans "Bullfrog" qui faisait littéralement apparaître des grenouilles quand RD filtre les IP)
   const prompt = [
-    'pixel art portrait of a person, stylized but recognizable',
-    'frontal bust portrait facing camera, keep facial features identifiable',
+    `pixel art portrait, ${desc}`,
+    'frontal bust portrait facing camera directly, looking straight at viewer',
     'transparent background',
-    'retro 16-bit pixel art game character',
-    'visible pixel grid, blocky pixels, clear outlines',
-    'natural expression',
+    'chunky pixels, blocky 8-bit retro style',
+    'flat solid colors, hard pixel edges, no anti-aliasing, no smooth shading',
+    '8-bit retro video game character sprite',
+    'friendly face',
   ].join(', ')
 
   const rdResponse = await fetch('https://api.retrodiffusion.ai/v1/inferences', {
@@ -520,20 +522,19 @@ export async function generatePersonalAvatar(formData: FormData): Promise<{
     },
     body: JSON.stringify({
       prompt,
-      width: 128,
-      height: 128,
-      prompt_style: 'rd_plus__classic',
+      width: 64,
+      height: 64,
+      prompt_style: 'rd_plus__low_res',
       num_images: 1,
       remove_bg: true,
-      input_image: base64,
-      strength: 0.65,
+      // text-to-image pur : pas d'input_image, pas de strength
     }),
   })
 
   if (!rdResponse.ok) {
     const err = await rdResponse.text()
     console.error('Retro Diffusion API error:', rdResponse.status, err)
-    throw new Error('Échec de la génération. Réessaye dans un instant.')
+    throw new Error('Échec de la génération. Réessayez dans un instant.')
   }
 
   const rdData = (await rdResponse.json()) as {
@@ -541,7 +542,13 @@ export async function generatePersonalAvatar(formData: FormData): Promise<{
     balance_cost: number
     remaining_balance: number
   }
-  const pngBuffer = Buffer.from(rdData.base64_images[0], 'base64')
+  const nativeBuffer = Buffer.from(rdData.base64_images[0], 'base64')
+
+  // Upscale x2 nearest neighbor (128 → 256) pour matcher la taille du catalogue
+  const pngBuffer = await sharp(nativeBuffer)
+    .resize(256, 256, { kernel: 'nearest' })
+    .png()
+    .toBuffer()
 
   // Upload vers Supabase Storage : avatars/personal/<user_id>/<timestamp>.png
   const admin = createServiceRoleClient()
@@ -671,8 +678,8 @@ export async function updateAvatar(avatarId: string) {
 
   if (error) throw error
 
-  // Cleanup : supprime les anciens avatars perso de cet user qui ne sont plus son portrait
-  await cleanupAbandonedPersonalAvatars(user.id)
+  // Pas de cleanup auto ici : l'user veut pouvoir conserver ses anciens avatars perso
+  // dans la grille "Mes avatars personnels" pour pouvoir y revenir. Suppression manuelle via ✕.
 
   revalidatePath('/mon-compte')
   return { status: 'SUCCESS' }

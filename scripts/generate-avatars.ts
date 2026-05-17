@@ -37,11 +37,19 @@ if (!RD_API_KEY) {
 const argVariants = process.argv.find((a) => a.startsWith('--variants='))?.split('=')[1]
 const argOnly = process.argv.find((a) => a.startsWith('--only='))?.split('=')[1]
 const argSet = process.argv.find((a) => a.startsWith('--set='))?.split('=')[1]
+const argStyle = process.argv.find((a) => a.startsWith('--style='))?.split('=')[1] ?? 'classic'
+const argSize = Number(process.argv.find((a) => a.startsWith('--size='))?.split('=')[1] ?? 128)
+const argOutdir = process.argv.find((a) => a.startsWith('--outdir='))?.split('=')[1]
 const VARIANTS = Number(argVariants ?? 2)
 const ONLY_ID = argOnly ? Number(argOnly) : null
 const SET_FILTER = argSet === 'med' || argSet === 'geek' ? argSet : null
+const PROMPT_STYLE = `rd_plus__${argStyle}`
+const IMAGE_SIZE = argSize
 
-const OUTPUT_DIR = path.join(process.cwd(), 'out', 'avatars')
+// Output : si --outdir spécifié, sous-dossier dédié. Sinon out/avatars/ (compat ancien comportement).
+const OUTPUT_DIR = argOutdir
+  ? path.join(process.cwd(), 'out', 'avatars', argOutdir)
+  : path.join(process.cwd(), 'out', 'avatars')
 const RD_ENDPOINT = 'https://api.retrodiffusion.ai/v1/inferences'
 
 // =============================================================================
@@ -120,10 +128,25 @@ const MEDICAL: MedicalVars[] = [
   /* 58 */ { age: 'young',       gender: 'female',       ethnicity: 'caucasian fair skin',           hair: 'bun red',                  facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white doctor coat with stethoscope',                expression: 'proud expression' },
   /* 59 */ { age: 'senior',      gender: 'female',       ethnicity: 'north african tan skin',        hair: 'short grey',               facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white doctor coat with stethoscope',                expression: 'tired but friendly' },
   /* 60 */ { age: 'middle-aged', gender: 'female',       ethnicity: 'caucasian pale skin',           hair: 'long dark brown',          facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white doctor coat with stethoscope',                expression: 'slight polite smile' },
+  /* 61 */ { age: 'senior',      gender: 'male',         ethnicity: 'caucasian fair skin',           hair: 'medium length grey',       facial: 'clean-shaven', glasses: 'round glasses',  outfit: 'white doctor coat with stethoscope',                expression: 'neutral confident look' },
+  /* 62 */ { age: 'senior',      gender: 'male',         ethnicity: 'caucasian fair skin',           hair: 'short white',              facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white coat with shirt and tie',                     expression: 'slight polite smile' },
+  /* 63 */ { age: 'middle-aged', gender: 'female',       ethnicity: 'mediterranean olive skin',      hair: 'headscarf hijab beige',    facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white doctor coat with stethoscope',                expression: 'neutral confident look' },
+  /* 64 */ { age: 'young',       gender: 'female',       ethnicity: 'sub-saharan african dark skin', hair: 'headscarf hijab burgundy', facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white doctor coat with stethoscope',                expression: 'slight polite smile' },
+  /* 65 */ { age: 'middle-aged', gender: 'male',         ethnicity: 'east asian',                    hair: 'medium length salt-and-pepper', facial: 'full beard', glasses: 'no glasses',  outfit: 'white doctor coat with stethoscope',                expression: 'proud expression' },
+  /* 66 */ { age: 'young',       gender: 'female',       ethnicity: 'east asian',                    hair: 'long black',               facial: 'clean-shaven', glasses: 'square glasses', outfit: 'nurse uniform',                                     expression: 'slight polite smile' },
+  /* 67 */ { age: 'senior',      gender: 'female',       ethnicity: 'east asian',                    hair: 'bun grey',                 facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'white doctor coat with stethoscope',                expression: 'neutral confident look' },
+  /* 68 */ { age: 'young',       gender: 'male',         ethnicity: 'south asian brown skin',        hair: 'medium length black wavy', facial: 'clean-shaven', glasses: 'no glasses',     outfit: 'green surgical scrubs',                             expression: 'neutral confident look' },
+  /* 69 */ { age: 'middle-aged', gender: 'female',       ethnicity: 'east asian',                    hair: 'ponytail black',           facial: 'clean-shaven', glasses: 'round glasses',  outfit: 'green surgical scrubs with surgical cap and mask',  expression: 'serious focused look' },
+  /* 70 */ { age: 'senior',      gender: 'male',         ethnicity: 'east asian',                    hair: 'short white',              facial: 'clean-shaven', glasses: 'square glasses', outfit: 'white doctor coat with stethoscope',                expression: 'tired but friendly' },
 ]
 
 function buildMedicalPrompt(v: MedicalVars): string {
-  const hairPart = v.hair === 'bald' ? 'bald' : `${v.hair} hair`
+  const hairPart =
+    v.hair === 'bald'
+      ? 'bald'
+      : v.hair.startsWith('headscarf')
+        ? `wearing ${v.hair}`
+        : `${v.hair} hair`
   return [
     `pixel art portrait, ${v.age} ${v.gender} ${v.ethnicity} medical doctor`,
     `${hairPart}, ${v.facial}, ${v.glasses}`,
@@ -168,6 +191,12 @@ const GEEK: GeekChar[] = [
   /* 18 */ { label: 'witch',         description: 'young witch face and shoulders, pointed black hat, wavy black hair, small green cat perched on shoulder, playful smirk' },
   /* 19 */ { label: 'cyborg',        description: 'futuristic cyborg with half human half metal robot face, glowing red eye implant, exposed wires on neck, calm steely expression' },
   /* 20 */ { label: 'mad-scientist', description: 'mad scientist with wild electric-shock white hair, round protective goggles pushed up on forehead, white lab coat, manic gleeful smile' },
+  /* 21 */ { label: 'luchador',       description: 'mexican luchador wrestler with colorful red and gold mask covering full face, only eyes and mouth visible, muscular shoulders, fierce stance' },
+  /* 22 */ { label: 'pharaoh',        description: 'ancient egyptian pharaoh with golden nemes headdress with blue stripes, ceremonial false beard, royal collar with turquoise and gold, regal expression' },
+  /* 23 */ { label: 'medieval-king',  description: 'medieval king with golden crown decorated with red gems, long grey beard, ermine fur cape over royal robes, dignified expression' },
+  /* 24 */ { label: 'renaissance-inventor', description: 'renaissance inventor in the style of leonardo da vinci, soft velvet renaissance cap, long grey curly beard, quill pen visible, thoughtful expression' },
+  /* 25 */ { label: 'yeti',           description: 'yeti abominable snowman creature with shaggy white fur, large round black eyes, gentle curious expression, snowflakes on fur' },
+  /* 26 */ { label: 'surfer',         description: 'cool young surfer with sun-bleached blonde wavy hair, mirrored aviator sunglasses, tanned skin, sleeveless hawaiian shirt with palm tree pattern, relaxed laid-back expression' },
 ]
 
 function buildGeekPrompt(c: GeekChar): string {
@@ -216,9 +245,9 @@ async function generate(
     },
     body: JSON.stringify({
       prompt,
-      width: 128,
-      height: 128,
-      prompt_style: 'rd_plus__classic',
+      width: IMAGE_SIZE,
+      height: IMAGE_SIZE,
+      prompt_style: PROMPT_STYLE,
       num_images: 1,
       remove_bg: true,
     }),
@@ -230,18 +259,29 @@ async function generate(
     return null
   }
 
-  const data = (await res.json()) as {
-    base64_images: string[]
-    balance_cost: number
-    remaining_balance: number
+  let data: {
+    base64_images?: string[]
+    balance_cost?: number
+    remaining_balance?: number
+  }
+  try {
+    data = await res.json()
+  } catch (e) {
+    console.error(`[${prefix} ${id}.${variant}] JSON parse error:`, e)
+    return null
+  }
+
+  if (!data?.base64_images?.[0]) {
+    console.error(`[${prefix} ${id}.${variant}] empty/invalid response from RD — skipping`)
+    return null
   }
 
   const buf = Buffer.from(data.base64_images[0], 'base64')
   await fs.writeFile(filename, buf)
   console.log(
-    `[${prefix} ${id}.${variant}] ok — cost ${data.balance_cost.toFixed(3)}, balance ${data.remaining_balance.toFixed(2)}`,
+    `[${prefix} ${id}.${variant}] ok — cost ${(data.balance_cost ?? 0).toFixed(3)}, balance ${(data.remaining_balance ?? 0).toFixed(2)}`,
   )
-  return { cost: data.balance_cost, balance: data.remaining_balance }
+  return { cost: data.balance_cost ?? 0, balance: data.remaining_balance ?? 0 }
 }
 
 async function main() {

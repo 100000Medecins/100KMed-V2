@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
 import RequestCustomAvatar from '@/components/mon-compte/RequestCustomAvatar'
-import { Check, Lock, Mail, Trash2, KeyRound, ShieldCheck } from 'lucide-react'
+import { Check, Lock, Mail, Trash2, KeyRound, ShieldCheck, Ban } from 'lucide-react'
 import { useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { connectWithPsc } from '@/lib/auth/psc'
@@ -27,6 +27,7 @@ export default function ProfilPage() {
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [hasNoAvatar, setHasNoAvatar] = useState(false)
   const [avatars, setAvatars] = useState<Array<{ id: string; url: string; isPersonal: boolean }>>([])
   const selectedAvatarUrl = selectedAvatar ? avatars.find(a => a.id === selectedAvatar)?.url ?? null : null
   const [isFromPsc, setIsFromPsc] = useState(false)
@@ -179,6 +180,21 @@ export default function ProfilPage() {
     }
   }, [user])
 
+  // Écoute les changements d'avatar effectués depuis d'autres composants (ex: bannière en haut de page)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ avatarId?: string }>).detail
+      if (detail?.avatarId) {
+        setSelectedAvatar(detail.avatarId)
+        setHasNoAvatar(false)
+        setShowAvatarPicker(false)
+        initialValuesRef.current.selectedAvatar = detail.avatarId
+      }
+    }
+    window.addEventListener('avatar-changed', handler)
+    return () => window.removeEventListener('avatar-changed', handler)
+  }, [])
+
   const handleInitPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (initPassword.length < 6) {
@@ -243,6 +259,10 @@ export default function ProfilPage() {
         const supabase = createClient()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('users').update({ portrait: selectedAvatar }).eq('id', user!.id)
+      }
+      // Notifie la bannière (et tout autre composant qui écoute) qu'un avatar vient d'être choisi
+      if (selectedAvatar !== initialValuesRef.current.selectedAvatar) {
+        window.dispatchEvent(new Event('avatar-changed'))
       }
       initialValuesRef.current = { nom: nom.trim(), prenom: prenom.trim(), pseudo: pseudo.trim(), specialite, modeExercice, selectedAvatar }
       setSuccess('Profil mis à jour avec succès.')
@@ -894,17 +914,28 @@ export default function ProfilPage() {
         <div className="bg-white rounded-card shadow-card p-6 space-y-4">
           <h2 className="text-sm font-semibold text-navy">Mon avatar</h2>
 
-          {selectedAvatar && !showAvatarPicker ? (
-            /* Avatar sélectionné — affichage compact */
+          {(selectedAvatar || hasNoAvatar) && !showAvatarPicker ? (
+            /* Mode compact — avatar choisi OU pas d'avatar explicite */
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowAvatarPicker(true)}
-                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity bg-surface-light"
-                title="Changer d'avatar"
-              >
-                {selectedAvatarUrl && <img src={selectedAvatarUrl} alt="Mon avatar" className="w-full h-full object-cover" />}
-              </button>
+              {selectedAvatar ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(true)}
+                  className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-accent-blue ring-2 ring-accent-blue/30 hover:opacity-80 transition-opacity bg-surface-light"
+                  title="Changer d'avatar"
+                >
+                  {selectedAvatarUrl && <img src={selectedAvatarUrl} alt="Mon avatar" className="w-full h-full object-cover" />}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(true)}
+                  className="relative w-16 h-16 rounded-full bg-accent-blue/10 flex items-center justify-center text-accent-blue text-xl font-bold border-2 border-gray-200 hover:border-accent-blue transition-colors"
+                  title="Choisir un avatar"
+                >
+                  {(pseudo?.[0] || prenom?.[0] || nom?.[0] || 'U').toUpperCase()}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setShowAvatarPicker(true)}
@@ -912,18 +943,21 @@ export default function ProfilPage() {
               >
                 Changer
               </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await removeAvatar()
-                  setSelectedAvatar(null)
-                  initialValuesRef.current.selectedAvatar = null
-                }}
-                className="text-xs font-medium text-gray-400 hover:text-red-500 hover:underline ml-2"
-                title="Supprimer mon avatar et revenir au cercle initiale"
-              >
-                Supprimer
-              </button>
+              {selectedAvatar && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await removeAvatar()
+                    setSelectedAvatar(null)
+                    setHasNoAvatar(true)
+                    initialValuesRef.current.selectedAvatar = null
+                  }}
+                  className="text-xs font-medium text-gray-400 hover:text-red-500 hover:underline ml-2"
+                  title="Supprimer mon avatar — afficher juste mon initiale à la place"
+                >
+                  Supprimer
+                </button>
+              )}
             </div>
           ) : (
             /* Grille de sélection */
@@ -940,7 +974,7 @@ export default function ProfilPage() {
                       <div key={avatar.id} className="relative group">
                         <button
                           type="button"
-                          onClick={() => { setSelectedAvatar(avatar.id); setShowAvatarPicker(false) }}
+                          onClick={() => { setSelectedAvatar(avatar.id); setHasNoAvatar(false); setShowAvatarPicker(false) }}
                           className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square bg-surface-light w-full ${
                             selectedAvatar === avatar.id
                               ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
@@ -982,11 +1016,35 @@ export default function ProfilPage() {
                   <h3 className="text-xs font-semibold text-navy uppercase tracking-wide">Catalogue</h3>
                 )}
                 <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                  {/* Médaillon "Aucun avatar" en première position */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await removeAvatar()
+                      setSelectedAvatar(null)
+                      setHasNoAvatar(true)
+                      setShowAvatarPicker(false)
+                      initialValuesRef.current.selectedAvatar = null
+                    }}
+                    className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square bg-gray-50 flex items-center justify-center ${
+                      !selectedAvatar && hasNoAvatar
+                        ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
+                        : 'border-gray-300 hover:border-red-300'
+                    }`}
+                    title="Aucun avatar — afficher juste mon initiale à la place"
+                  >
+                    <Ban className="w-1/2 h-1/2 text-gray-400" />
+                    {!selectedAvatar && hasNoAvatar && (
+                      <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white drop-shadow" />
+                      </div>
+                    )}
+                  </button>
                   {avatars.filter((a) => !a.isPersonal).map((avatar) => (
                     <button
                       key={avatar.id}
                       type="button"
-                      onClick={() => { setSelectedAvatar(avatar.id); setShowAvatarPicker(false) }}
+                      onClick={() => { setSelectedAvatar(avatar.id); setHasNoAvatar(false); setShowAvatarPicker(false) }}
                       className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square bg-surface-light ${
                         selectedAvatar === avatar.id
                           ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
@@ -1019,6 +1077,7 @@ export default function ProfilPage() {
                 <RequestCustomAvatar
                   onSelected={(avatarId) => {
                     setSelectedAvatar(avatarId)
+                    setHasNoAvatar(false)
                     setShowAvatarPicker(false)
                     initialValuesRef.current.selectedAvatar = avatarId
                     getAvatars().then(setAvatars).catch(() => {})

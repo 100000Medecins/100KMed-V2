@@ -28,7 +28,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE) {
 }
 
 const DRY_RUN = process.argv.includes('--dry-run')
-const SRC_DIR = path.join(process.cwd(), 'out', 'avatars', 'final')
+const argSrc = process.argv.find((a) => a.startsWith('--src='))?.split('=')[1] ?? 'final'
+const SRC_DIR = path.join(process.cwd(), 'out', 'avatars', argSrc)
 const BUCKET = 'avatars'
 const PREFIX = 'portraits'
 

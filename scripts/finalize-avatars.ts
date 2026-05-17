@@ -14,8 +14,10 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import sharp from 'sharp'
 
-const SRC = path.join(process.cwd(), 'out', 'avatars', 'selected')
-const DST = path.join(process.cwd(), 'out', 'avatars', 'final')
+const argSrc = process.argv.find((a) => a.startsWith('--src='))?.split('=')[1] ?? 'selected'
+const argDst = process.argv.find((a) => a.startsWith('--dst='))?.split('=')[1] ?? 'final'
+const SRC = path.join(process.cwd(), 'out', 'avatars', argSrc)
+const DST = path.join(process.cwd(), 'out', 'avatars', argDst)
 
 function extractId(filename: string, prefix: 'med' | 'geek'): number {
   const m = filename.match(new RegExp(`^${prefix}-(\\d+)-`))
