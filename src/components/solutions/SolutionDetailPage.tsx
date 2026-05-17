@@ -4,6 +4,8 @@ import SolutionGallery from './detail/SolutionGallery'
 import DetailedRatings from './detail/DetailedRatings'
 import MainFeatures from './detail/MainFeatures'
 import CategoryLink from './detail/CategoryLink'
+import SolutionLiensCard from './detail/SolutionLiensCard'
+import type { SolutionLienVoisin } from '@/lib/db/solution-liens'
 import UserReviewsSection from './detail/UserReviewsSection'
 import ConfrereTestimonials from './detail/ConfrereTestimonials'
 import ComparisonSection from './detail/ComparisonSection'
@@ -36,6 +38,7 @@ interface SolutionDetailPageProps {
     totalPages: number
   }
   autreSolutions?: { id: string; nom: string; logo_url: string | null }[]
+  solutionsLiees?: SolutionLienVoisin[]
 }
 
 export default function SolutionDetailPage({
@@ -45,6 +48,7 @@ export default function SolutionDetailPage({
   noteUtilisateursData,
   avisPagines,
   autreSolutions,
+  solutionsLiees,
 }: SolutionDetailPageProps) {
   const categorieSlug = solution.categorie?.slug || ''
   // Ne garder que les critères avec un nom_capital non null
@@ -139,6 +143,9 @@ export default function SolutionDetailPage({
             {/* Colonne droite (sidebar) */}
             <div className="space-y-6 min-w-0">
               <MainFeatures tags={solution.tags || []} />
+              {solutionsLiees && solutionsLiees.length > 0 && (
+                <SolutionLiensCard liens={solutionsLiees} />
+              )}
               <CategoryLink categorie={solution.categorie} />
             </div>
           </div>

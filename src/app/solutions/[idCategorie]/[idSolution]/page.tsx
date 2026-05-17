@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer'
 import { getSolutionBySlug, getSolutions, getNotesRedac } from '@/lib/db/solutions'
 import { getAllResultats } from '@/lib/db/resultats'
 import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNoteUtilisateurs } from '@/lib/db/evaluations'
+import { getSolutionsLiees } from '@/lib/db/solution-liens'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
 
@@ -38,12 +39,13 @@ export default async function SolutionPage(props: PageProps) {
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
   if (!solution) notFound()
 
-  // Fetch résultats, notes rédac, avis paginés et note utilisateurs en parallèle (par UUID)
-  let [resultats, notesRedac, avisPagines, noteUtilisateursData] = await Promise.all([
+  // Fetch résultats, notes rédac, avis paginés, note utilisateurs et solutions liées en parallèle (par UUID)
+  let [resultats, notesRedac, avisPagines, noteUtilisateursData, solutionsLiees] = await Promise.all([
     getAllResultats(solution.id),
     getNotesRedac(solution.id),
     getAvisUtilisateursPaginated(solution.id, { page: 1, limit: 10, tri: 'date' }),
     getAverageNoteUtilisateurs(solution.id),
+    getSolutionsLiees(solution.id),
   ])
 
   // Fallback : si la table resultats est vide, calculer depuis les évaluations
@@ -81,6 +83,7 @@ export default async function SolutionPage(props: PageProps) {
           avisPagines={avisPagines}
           autreSolutions={autreSolutions}
           noteUtilisateursData={noteUtilisateursData}
+          solutionsLiees={solutionsLiees}
         />
       </main>
       <Footer />
