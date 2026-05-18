@@ -1115,6 +1115,59 @@ export type Database = {
         }
         Relationships: []
       }
+      solution_communautes: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          note_admin: string | null
+          proposed_by: string | null
+          proposer_email: string | null
+          solution_id: string
+          statut: string
+          type: string
+          url: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          note_admin?: string | null
+          proposed_by?: string | null
+          proposer_email?: string | null
+          solution_id: string
+          statut?: string
+          type: string
+          url: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          note_admin?: string | null
+          proposed_by?: string | null
+          proposer_email?: string | null
+          solution_id?: string
+          statut?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_communautes_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solution_liens: {
         Row: {
           created_at: string
@@ -1958,3 +2011,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

@@ -5,6 +5,38 @@
 
 ---
 
+## [2026-05-19] — Module Communautés autour des solutions + bouton retour en haut + claim éditeur enrichi + fixes UI mobile
+
+### Feature — Module « Communautés autour des solutions »
+- **Migration SQL** : table `solution_communautes(id, solution_id, type, nom, url, description, statut, proposed_by, proposer_email, note_admin, created_at, approved_at)` avec CHECK sur `type` (whatsapp/telegram/discord/facebook/forum/autre) et `statut`. FK ON DELETE CASCADE sur solutions, FK ON DELETE SET NULL sur `auth.users`. GRANTs explicites (anticipation 2026-10-30), RLS lecture publique pour les `approuve` uniquement.
+- **UI publique** : composant `SolutionCommunautesCard` en bas de la fiche solution (colonne gauche, après `SupportSection`). Version compacte : barre fine d'une ligne quand vide, liste dense avec icônes colorées par type quand des liens existent. Modal `ProposeCommunauteModal` (sélecteur type + nom facultatif + URL + description + email pour anonymes).
+- **Soumission** : ouverte aux connectés ET anonymes (avec email facultatif pour notification). Seule l'URL est obligatoire — si nom non fourni, fallback automatique sur le hostname de l'URL (ex. `chat.whatsapp.com`).
+- **Server actions** : `src/lib/actions/solution-communautes.ts` (`submitSolutionCommunaute`, `listSolutionCommunautesAdmin`, `setStatutCommunaute`, `deleteSolutionCommunaute`).
+- **Notif email** : best-effort à `contact@100000medecins.org` à chaque nouvelle proposition. Notif au proposeur (si email fourni) lors du passage à `approuve` avec lien direct vers la fiche solution.
+- **Admin** : page `/admin/communautes` + `CommunautesAdminClient` (filtres statut/type, actions Approuver/Refuser/Remettre en attente/Supprimer). Nouvel item sidebar admin « Communautés » avec icône `MessageCircle` et badge en attente. Extension `getAdminBadges()` avec champ `communautes`.
+
+### Feature — Bouton « Retour en haut » contextuel
+- Nouveau composant `ScrollToTopButton` intégré dans `Footer.tsx` (présent sur toutes les pages publiques, absent du back-office admin).
+- Visible uniquement quand (a) on a scrollé d'au moins 1 viewport (page assez longue) ET (b) il reste moins de 800px avant le bas. Sur pages courtes ne s'affiche jamais.
+- Bouton flottant rond accent-blue bottom-right, smooth scroll au clic.
+
+### Feature — Claim éditeur : champ « Précisez votre rôle / fonction » facultatif
+- `completer-profil/page.tsx` + `mon-compte/profil/page.tsx` : nouveau state `roleMessage` + textarea redimensionnable (`resize-y`, min-h 72px ≈ 3 lignes) qui s'affiche quand un éditeur/solution est sélectionné dans le dropdown (et pas en mode « Autre »). Stocké dans la colonne existante `editeur_claims.libre_texte` (pas de migration).
+- `AdminEditeurClaims.tsx` : libellé « Texte libre » remplacé par « Message du demandeur » (cohérent avec les 2 sémantiques : rôle/fonction quand éditeur sélectionné, nom de solution proposée sinon). Ajout `whitespace-pre-wrap` pour respecter les retours à la ligne du textarea.
+
+### UX / UI — Plusieurs fixes mobile sur la fiche solution + catégorie + glossaire
+- **Fiche solution mobile** : carte `MainFeatures` (sidebar) masquée en `< lg` (cheveu sur la soupe quand la sidebar passe en dessous du contenu, et les données métier perdent leur contexte d'analyse).
+- **Hero catégorie mobile** : icône avant le titre masquée en `< md` (doublon avec l'illustration de droite). Suppression du `mb-2` mobile sur le `h1` pour aligner verticalement le titre avec l'image (le `mb-6` desktop est conservé pour espacer de l'intro).
+- **Glossaire** : fix espace manquant entre le nombre et le mot « acronymes » dans le sous-titre (« 65acronymes » → « 65 acronymes »). Cause : trimming JSX entre expression `{}` et texte par Next 16 Turbopack. Fix : template literal pour forcer l'espace dans la chaîne.
+
+### Infrastructure — Types Supabase régénérés
+- `src/types/database.ts` régénéré pour inclure `solution_communautes`. Nettoyage manuel de l'artefact plugin `<claude-code-hint>` (réinjecté à chaque génération — récurrent) et du message d'update CLI à la fin du fichier (mélange stdout/stderr lors de la redirection).
+
+### TODO — Mises à jour
+- Item « Favoriser l'entraide entre utilisateurs (« trucs et astuces ») » partiellement traité par le module Communautés (la piste « lien vers groupe WhatsApp/Telegram/forum » est livrée).
+
+---
+
 ## [2026-05-18] — Solutions liées + admin avatars catalogue + bascule génération perso text2image + acronymes disambiguation
 
 ### Feature — Solutions liées (table `solution_liens` + UI sidebar + admin + seed initial)

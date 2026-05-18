@@ -47,6 +47,7 @@ export default function ProfilPage() {
   const [claimOptions, setClaimOptions] = useState<EditeurClaimOption[]>([])
   const [claimValue, setClaimValue] = useState('')
   const [libreTexte, setLibreTexte] = useState('')
+  const [roleMessage, setRoleMessage] = useState('')
   const isEditeur = modeExercice === 'Éditeur'
   const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
   const claimFilled = showLibreTexte ? libreTexte.trim().length > 0 : claimValue.length > 0
@@ -248,10 +249,13 @@ export default function ProfilPage() {
         let solution_id: string | undefined
         if (claimValue.startsWith('editeur:')) editeur_id = claimValue.replace('editeur:', '')
         else if (claimValue.startsWith('solution:')) solution_id = claimValue.replace('solution:', '')
+        const finalLibreTexte = showLibreTexte
+          ? libreTexte.trim()
+          : (roleMessage.trim() || undefined)
         await createEditeurClaim({
           editeur_id,
           solution_id,
-          libre_texte: showLibreTexte ? libreTexte.trim() : undefined,
+          libre_texte: finalLibreTexte,
         })
       }
 
@@ -701,6 +705,20 @@ export default function ProfilPage() {
                         onChange={(e) => setLibreTexte(e.target.value)}
                         placeholder="Ex : MonLogiciel, Éditeur XYZ..."
                         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      />
+                    </div>
+                  )}
+                  {claimValue && !showLibreTexte && !hasLockedClaim && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Précisez votre rôle / fonction chez cet éditeur <span className="text-gray-400 font-normal">(facultatif)</span>
+                      </label>
+                      <textarea
+                        value={roleMessage}
+                        onChange={(e) => setRoleMessage(e.target.value)}
+                        placeholder="Ex : responsable produit, CTO, support utilisateur, etc."
+                        rows={3}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y overflow-y-auto min-h-[72px]"
                       />
                     </div>
                   )}

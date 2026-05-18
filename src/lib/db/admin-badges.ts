@@ -6,6 +6,7 @@ export type AdminBadges = {
   emails: number
   videos: number
   propositions: number
+  communautes: number
 }
 
 /**
@@ -16,12 +17,13 @@ export type AdminBadges = {
  * - emails_campagnes pending dont scheduled_at <= now() (envois en retard ou imminents)
  * - videos (statut = en_attente) — propositions vidéos utilisateurs à modérer
  * - propositions_utilisateurs (statut = en_attente) — idées + corrections utilisateurs
+ * - solution_communautes (statut = en_attente) — groupes WhatsApp/Discord/forum proposés
  */
 export async function getAdminBadges(): Promise<AdminBadges> {
   const supabase = createServiceRoleClient()
   const now = new Date().toISOString()
 
-  const [editeurClaims, etudes, questionnaires, emails, videos, propositions] = await Promise.all([
+  const [editeurClaims, etudes, questionnaires, emails, videos, propositions, communautes] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('editeur_claims')
@@ -53,6 +55,11 @@ export async function getAdminBadges(): Promise<AdminBadges> {
       .from('propositions_utilisateurs')
       .select('id', { count: 'exact', head: true })
       .eq('statut', 'en_attente'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('solution_communautes')
+      .select('id', { count: 'exact', head: true })
+      .eq('statut', 'en_attente'),
   ])
 
   return {
@@ -61,5 +68,6 @@ export async function getAdminBadges(): Promise<AdminBadges> {
     emails: emails.count ?? 0,
     videos: videos.count ?? 0,
     propositions: propositions.count ?? 0,
+    communautes: communautes.count ?? 0,
   }
 }

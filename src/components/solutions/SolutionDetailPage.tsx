@@ -5,7 +5,9 @@ import DetailedRatings from './detail/DetailedRatings'
 import MainFeatures from './detail/MainFeatures'
 import CategoryLink from './detail/CategoryLink'
 import SolutionLiensCard from './detail/SolutionLiensCard'
+import SolutionCommunautesCard from './detail/SolutionCommunautesCard'
 import type { SolutionLienVoisin } from '@/lib/db/solution-liens'
+import type { CommunautePublique } from '@/lib/db/solution-communautes'
 import UserReviewsSection from './detail/UserReviewsSection'
 import ConfrereTestimonials from './detail/ConfrereTestimonials'
 import ComparisonSection from './detail/ComparisonSection'
@@ -39,6 +41,7 @@ interface SolutionDetailPageProps {
   }
   autreSolutions?: { id: string; nom: string; logo_url: string | null }[]
   solutionsLiees?: SolutionLienVoisin[]
+  communautes?: CommunautePublique[]
 }
 
 export default function SolutionDetailPage({
@@ -49,6 +52,7 @@ export default function SolutionDetailPage({
   avisPagines,
   autreSolutions,
   solutionsLiees,
+  communautes,
 }: SolutionDetailPageProps) {
   const categorieSlug = solution.categorie?.slug || ''
   // Ne garder que les critères avec un nom_capital non null
@@ -138,11 +142,21 @@ export default function SolutionDetailPage({
               <div id="support" className="scroll-mt-[140px]">
                 <SupportSection solution={solution} />
               </div>
+
+              <div id="communautes" className="scroll-mt-[140px]">
+                <SolutionCommunautesCard
+                  solutionId={solution.id}
+                  solutionNom={solution.nom}
+                  communautes={communautes ?? []}
+                />
+              </div>
             </div>
 
             {/* Colonne droite (sidebar) */}
             <div className="space-y-6 min-w-0">
-              <MainFeatures tags={solution.tags || []} />
+              <div className="hidden lg:block">
+                <MainFeatures tags={solution.tags || []} />
+              </div>
               {solutionsLiees && solutionsLiees.length > 0 && (
                 <SolutionLiensCard liens={solutionsLiees} />
               )}

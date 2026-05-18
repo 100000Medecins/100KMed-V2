@@ -25,7 +25,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Compléter le support éditeur officiel par un canal communautaire où les médecins partagent leurs astuces concrètes sur chaque solution
 - Pistes à explorer :
   - Espace « trucs et astuces » par solution (commentaires courts, vote utile/pas utile)
-  - Lien vers groupe WhatsApp ou Telegram dédié à la catégorie / solution
+  - ~~Lien vers groupe WhatsApp ou Telegram dédié à la catégorie / solution~~ [OK] Fait 2026-05-19 (module Communautés livré)
   - Forum léger (Discourse / Discord) intégré au site
 - À cadrer : modération, prévention spam, articulation avec les avis existants
 

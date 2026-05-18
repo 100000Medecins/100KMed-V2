@@ -154,10 +154,12 @@ export default function AdminEditeurClaims({
                     </p>
                   )}
                   {claim.libre_texte && (
-                    <p className="flex items-center gap-2 text-navy">
-                      <AlertCircle className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="font-medium">Texte libre :</span>
-                      {claim.libre_texte}
+                    <p className="flex items-start gap-2 text-navy">
+                      <AlertCircle className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
+                      <span>
+                        <span className="font-medium">Message du demandeur :</span>{' '}
+                        <span className="whitespace-pre-wrap">{claim.libre_texte}</span>
+                      </span>
                     </p>
                   )}
                 </div>

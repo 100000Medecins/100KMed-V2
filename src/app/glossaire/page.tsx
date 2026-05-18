@@ -64,7 +64,7 @@ export default async function GlossairePage() {
           <div className="max-w-5xl mx-auto px-6 text-center mt-10">
             <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Glossaire e-Santé</h1>
             <p className="text-white/75 text-lg max-w-xl mx-auto">
-              {acronymes.length} acronymes de l&apos;e-santé expliqués simplement.
+              {`${acronymes.length} acronymes de l'e-santé expliqués simplement.`}
             </p>
           </div>
         </section>
