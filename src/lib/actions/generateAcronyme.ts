@@ -1,5 +1,20 @@
 'use server'
 
+import { cookies } from 'next/headers'
+import { createHmac } from 'crypto'
+
+function generateToken(): string {
+  return createHmac('sha256', process.env.ADMIN_PASSWORD!)
+    .update('admin-session')
+    .digest('hex')
+}
+
+async function assertAdmin() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('admin_token')?.value
+  if (token !== generateToken()) throw new Error('Non autorisé')
+}
+
 export interface AcronymeSuggestion {
   definition: string
   description: string | null
@@ -47,6 +62,7 @@ const KNOWN_CATEGORIES = [
 export async function generateAcronymeInfo(
   sigle: string
 ): Promise<{ data?: AcronymeSuggestion; error?: string }> {
+  await assertAdmin()
   if (!sigle.trim()) return { error: 'Sigle vide' }
 
   const tavilyKey = process.env.TAVILY_API_KEY
