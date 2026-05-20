@@ -20,8 +20,13 @@ export function getCache(): Acronyme[] | null {
 
 export function buildRegex(acronymes: Acronyme[]): RegExp {
   const uniqueSigles = Array.from(new Set(acronymes.map(a => a.sigle)))
+  // Tri par longueur décroissante : les expressions longues testées avant les courtes
+  // (ex. « Téléservices CNAM "de base" » doit primer sur « CNAM »)
+  uniqueSigles.sort((a, b) => b.length - a.length)
   const escaped = uniqueSigles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  return new RegExp(`\\b(${escaped.join('|')})\\b`, 'g')
+  // Frontières par lookaround « pas collé à un caractère de mot » plutôt que \b :
+  // \b casse quand le sigle commence/finit par un caractère non-mot (ex. un guillemet).
+  return new RegExp(`(?<!\\w)(${escaped.join('|')})(?!\\w)`, 'g')
 }
 
 export function injectAcronymsInHtml(html: string, acronymes: Acronyme[]): string {
