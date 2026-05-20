@@ -15,6 +15,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
+#### Durcir la server action `generateAcronyme`
+- Ajouter `assertAdmin()` en tête de `generateAcronymeInfo` (`src/lib/actions/generateAcronyme.ts`) — endpoint admin actuellement appelable sans auth. Non bloquant (impact : consommation d'API externe), identifié par la revue de sécurité du 2026-05-20.
+
 ### Communication
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos

@@ -131,7 +131,7 @@ export async function completeProfile(data: {
   pseudo?: string
   portrait?: string
   password?: string
-}): Promise<{ status: 'SUCCESS' } | { status: 'NEEDS_FUSION'; fusionToken: string }> {
+}): Promise<{ status: 'SUCCESS' } | { status: 'FUSION_EMAIL_SENT'; email: string }> {
   const authClient = await createServerClient()
   const {
     data: { user },
@@ -144,6 +144,9 @@ export async function completeProfile(data: {
   // adresse déjà utilisée par un autre compte (cas typique : compte PSC à email synthétique
   // qui saisit son vrai email, déjà porté par un compte email/MDP) → proposer une fusion
   // plutôt que d'échouer silencieusement sur le updateUserById plus bas.
+  // Le jeton de fusion n'est JAMAIS renvoyé au client : il est envoyé par email à l'adresse
+  // saisie. Recevoir le lien prouve la possession de la boîte — sans quoi n'importe qui
+  // pourrait initier la fusion du compte d'un tiers en tapant simplement son email.
   if (user.email !== data.contact_email) {
     const { data: conflicting } = await supabase
       .from('users')
@@ -154,7 +157,30 @@ export async function completeProfile(data: {
     const conflictId = conflicting?.[0]?.id
     if (conflictId) {
       const fusionToken = generateFusionToken(user.id, conflictId)
-      return { status: 'NEEDS_FUSION', fusionToken }
+
+      const headersList = await headers()
+      const host = headersList.get('host') || 'www.100000medecins.org'
+      const proto = headersList.get('x-forwarded-proto') || 'https'
+      const siteUrl = `${proto}://${host}`
+      const linkBase = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || siteUrl
+      const lienFusion = `${linkBase}/fusionner-compte?token=${encodeURIComponent(fusionToken)}`
+
+      const emailContent = await buildEmail('fusion_comptes', { lien_fusion: lienFusion }, siteUrl)
+      if (!emailContent) throw new Error('Template email "fusion_comptes" introuvable')
+
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+      try {
+        await sgMail.send({
+          to: data.contact_email,
+          from: 'contact@100000medecins.org',
+          subject: emailContent.sujet,
+          html: emailContent.html,
+        })
+      } catch {
+        throw new Error('Erreur lors de l\'envoi de l\'email de fusion.')
+      }
+
+      return { status: 'FUSION_EMAIL_SENT', email: data.contact_email }
     }
   }
 

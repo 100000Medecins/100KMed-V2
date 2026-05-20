@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-05-20] — Correctif sécurité : prise de contrôle de compte via la fusion + ajustements acronymes/admin
+
+### Sécurité — Faille de prise de contrôle de compte dans la fusion de comptes (`completeProfile`)
+- **Contexte** : revue de sécurité de la branche `dev` (en amont d'un test d'intrusion white hat). Une vulnérabilité critique a été identifiée dans le parcours de fusion de comptes.
+- **Faille** : `completeProfile` détectait qu'un `contact_email` saisi appartenait déjà à un autre compte et renvoyait directement au navigateur un jeton de fusion HMAC valide — sans jamais vérifier que l'appelant possède cette boîte mail. Un attaquant authentifié pouvait saisir l'email d'un confrère, obtenir le jeton, choisir le compte de la victime comme compte conservé dans `mergeAccounts`, et récupérer une session authentifiée sur ce compte. = prise de contrôle complète + destruction du compte victime.
+- **Fix** : le jeton de fusion n'est plus jamais renvoyé au client. En cas de conflit, `completeProfile` envoie le lien `/fusionner-compte?token=...` **par email** à l'adresse saisie et retourne `{ status: 'FUSION_EMAIL_SENT' }`. Recevoir le lien prouve la possession de la boîte. La page `/completer-profil` affiche un écran « Vérifiez votre boîte mail » au lieu de rediriger.
+- **Migration BDD** : nouveau template email `fusion_comptes` inséré dans `email_templates` (contenu encapsulé dans le `master_layout`, variable `{{lien_fusion}}`, éditable depuis `/admin/emails`).
+- `merge.ts` et le callback PSC : inchangés — le chemin PSC reste sûr car la fusion y est déclenchée après un match RPPS (identité vérifiée par l'État).
+- **Second point du rapport écarté** : la server action `generateAcronyme` sans `assertAdmin()` — impact limité à de la consommation d'API externe, hors périmètre vulnérabilité. Durcissement recommandé mais non bloquant (ajouté à la TODO).
+
+### Fix — Détection des acronymes : regex plus robuste
+- `buildRegex` (`acronymesCache.ts`) : tri des sigles par longueur décroissante (les expressions longues priment sur les courtes, ex. « Téléservices CNAM de base » avant « CNAM ») + frontières par lookaround `(?<!\w)…(?!\w)` au lieu de `\b` (qui cassait quand un sigle commence/finit par un caractère non-mot, ex. un guillemet).
+
+### Admin — Filtre catégories de la page solutions
+- `admin/solutions/page.tsx` : `getCategories()` → `getAllCategoriesAdmin()` pour le filtre par catégorie (inclut les catégories non visibles côté public, ex. catégories inactives).
+
+### TODO — Mises à jour
+- Ajout : durcir `generateAcronyme` avec `assertAdmin()` (recommandation revue sécurité, non bloquant).
+
+---
+
 ## [2026-05-19] — Module Communautés autour des solutions + bouton retour en haut + claim éditeur enrichi + fixes UI mobile
 
 ### Feature — Module « Communautés autour des solutions »

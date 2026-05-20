@@ -9,7 +9,7 @@ import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createE
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
-import { Check, Lock, LogOut } from 'lucide-react'
+import { Check, Lock, LogOut, Mail } from 'lucide-react'
 
 const LIBRE_TEXTE_VALUE = '__libre_texte__'
 
@@ -29,6 +29,7 @@ export default function CompleterProfilPage() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fusionEmailSent, setFusionEmailSent] = useState<string | null>(null)
   const [isFromPsc, setIsFromPsc] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
 
@@ -132,9 +133,11 @@ export default function CompleterProfilPage() {
         password: isFromPsc ? password : undefined,
       })
 
-      // L'email saisi appartient déjà à un autre compte → rediriger vers la fusion
-      if (result.status === 'NEEDS_FUSION') {
-        window.location.href = `/fusionner-compte?token=${encodeURIComponent(result.fusionToken)}`
+      // L'email saisi appartient déjà à un autre compte → un lien de fusion a été envoyé
+      // par email à cette adresse. On affiche un écran de confirmation, sans redirection :
+      // seul le propriétaire de la boîte peut poursuivre la fusion.
+      if (result.status === 'FUSION_EMAIL_SENT') {
+        setFusionEmailSent(result.email)
         return
       }
 
@@ -225,6 +228,29 @@ export default function CompleterProfilPage() {
   if (!user) {
     window.location.replace('/connexion')
     return null
+  }
+
+  if (fusionEmailSent) {
+    return (
+      <>
+        <MinimalHeader />
+        <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
+          <div className="max-w-md mx-auto px-6 text-center py-16">
+            <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-6 h-6 text-accent-blue" />
+            </div>
+            <h1 className="text-xl font-bold text-navy mb-2">Vérifiez votre boîte mail</h1>
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
+              L&apos;adresse <strong>{fusionEmailSent}</strong> est déjà associée à un compte existant.
+            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Nous venons d&apos;y envoyer un lien pour fusionner vos deux comptes en toute sécurité.
+              Cliquez sur ce lien pour finaliser — il est valable 15 minutes.
+            </p>
+          </div>
+        </main>
+      </>
+    )
   }
 
   return (
