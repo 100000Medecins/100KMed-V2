@@ -248,3 +248,107 @@ export async function deleteSolutionCommunaute(id: string) {
   revalidatePath('/admin/communautes')
   return { ok: true }
 }
+
+export type CommunauteForManager = {
+  id: string
+  type: string
+  nom: string
+  url: string
+  description: string | null
+  statut: 'en_attente' | 'approuve' | 'refuse'
+}
+
+/**
+ * Liste les communautés d'une solution donnée (pour le manager admin de la fiche solution).
+ */
+export async function listCommunautesBySolution(solutionId: string): Promise<CommunauteForManager[]> {
+  await assertAdmin()
+  const admin = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any)
+    .from('solution_communautes')
+    .select('id, type, nom, url, description, statut')
+    .eq('solution_id', solutionId)
+    .order('statut')
+    .order('created_at')
+  if (error) {
+    console.error('[listCommunautesBySolution]', JSON.stringify(error))
+    return []
+  }
+  return (data ?? []) as CommunauteForManager[]
+}
+
+/**
+ * Création d'une communauté directement par l'admin (statut 'approuve' d'emblée,
+ * pas de passage par la file de modération).
+ */
+export async function createCommunauteAdmin(input: {
+  solutionId: string
+  type: string
+  nom: string
+  url: string
+  description?: string | null
+}): Promise<{ ok: true } | { error: string }> {
+  await assertAdmin()
+
+  const type = input.type.trim().toLowerCase()
+  const nom = input.nom.trim()
+  const url = input.url.trim()
+  const description = input.description?.trim() || null
+
+  if (!VALID_TYPES.includes(type as TypeCommunaute)) return { error: 'Type invalide.' }
+  if (!url) return { error: "L'URL est requise." }
+  try { new URL(url) } catch { return { error: "L'URL n'est pas valide." } }
+  const nomFinal = nom || (() => { try { return new URL(url).hostname.replace(/^www\./, '') } catch { return 'Lien' } })()
+
+  const admin = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any).from('solution_communautes').insert({
+    solution_id: input.solutionId,
+    type,
+    nom: nomFinal,
+    url,
+    description,
+    statut: 'approuve',
+    approved_at: new Date().toISOString(),
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/communautes')
+  revalidatePath(`/admin/solutions/${input.solutionId}/modifier`)
+  return { ok: true }
+}
+
+/**
+ * Édition des champs d'une communauté (admin).
+ */
+export async function updateCommunaute(id: string, patch: {
+  type?: string
+  nom?: string
+  url?: string
+  description?: string | null
+}): Promise<{ ok: true } | { error: string }> {
+  await assertAdmin()
+
+  const updates: Record<string, unknown> = {}
+  if (patch.type !== undefined) {
+    const type = patch.type.trim().toLowerCase()
+    if (!VALID_TYPES.includes(type as TypeCommunaute)) return { error: 'Type invalide.' }
+    updates.type = type
+  }
+  if (patch.nom !== undefined) updates.nom = patch.nom.trim()
+  if (patch.url !== undefined) {
+    const url = patch.url.trim()
+    if (!url) return { error: "L'URL est requise." }
+    try { new URL(url) } catch { return { error: "L'URL n'est pas valide." } }
+    updates.url = url
+  }
+  if (patch.description !== undefined) updates.description = patch.description?.trim() || null
+  if (Object.keys(updates).length === 0) return { ok: true }
+
+  const admin = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any).from('solution_communautes').update(updates).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/communautes')
+  return { ok: true }
+}
