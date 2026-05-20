@@ -5,11 +5,11 @@ import Image from 'next/image'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
+import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, getAvatars } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
-import { AVATARS, SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
+import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
-import { Check, Lock, LogOut } from 'lucide-react'
+import { Check, Lock, LogOut, Mail } from 'lucide-react'
 
 const LIBRE_TEXTE_VALUE = '__libre_texte__'
 
@@ -24,10 +24,12 @@ export default function CompleterProfilPage() {
   const [contactEmail, setContactEmail] = useState('')
   const [pseudo, setPseudo] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
+  const [avatars, setAvatars] = useState<Array<{ id: string; url: string }>>([])
 
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fusionEmailSent, setFusionEmailSent] = useState<string | null>(null)
   const [isFromPsc, setIsFromPsc] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
 
@@ -35,6 +37,7 @@ export default function CompleterProfilPage() {
   const [claimOptions, setClaimOptions] = useState<EditeurClaimOption[]>([])
   const [claimValue, setClaimValue] = useState('')
   const [libreTexte, setLibreTexte] = useState('')
+  const [roleMessage, setRoleMessage] = useState('')
 
   const isEditeur = modeExercice === 'Éditeur'
   const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
@@ -64,7 +67,8 @@ export default function CompleterProfilPage() {
     if (!user) return
 
     async function loadProfile() {
-      const profile = await getCurrentUserProfile()
+      const [profile, avatarList] = await Promise.all([getCurrentUserProfile(), getAvatars()])
+      setAvatars(avatarList)
 
       const hasPsc = !!(profile?.rpps || user?.user_metadata?.provider === 'psc')
       setIsFromPsc(hasPsc)
@@ -118,7 +122,7 @@ export default function CompleterProfilPage() {
     setError(null)
 
     try {
-      await completeProfile({
+      const result = await completeProfile({
         nom: nom.trim(),
         prenom: prenom.trim(),
         specialite: isEditeur ? '' : specialite,
@@ -128,6 +132,14 @@ export default function CompleterProfilPage() {
         portrait: selectedAvatar || undefined,
         password: isFromPsc ? password : undefined,
       })
+
+      // L'email saisi appartient déjà à un autre compte → un lien de fusion a été envoyé
+      // par email à cette adresse. On affiche un écran de confirmation, sans redirection :
+      // seul le propriétaire de la boîte peut poursuivre la fusion.
+      if (result.status === 'FUSION_EMAIL_SENT') {
+        setFusionEmailSent(result.email)
+        return
+      }
 
       if (isEditeur) {
         let editeur_id: string | undefined
@@ -139,10 +151,13 @@ export default function CompleterProfilPage() {
           solution_id = claimValue.replace('solution:', '')
         }
 
+        const finalLibreTexte = showLibreTexte
+          ? libreTexte.trim()
+          : (roleMessage.trim() || undefined)
         await createEditeurClaim({
           editeur_id,
           solution_id,
-          libre_texte: showLibreTexte ? libreTexte.trim() : undefined,
+          libre_texte: finalLibreTexte,
         })
       }
 
@@ -213,6 +228,29 @@ export default function CompleterProfilPage() {
   if (!user) {
     window.location.replace('/connexion')
     return null
+  }
+
+  if (fusionEmailSent) {
+    return (
+      <>
+        <MinimalHeader />
+        <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
+          <div className="max-w-md mx-auto px-6 text-center py-16">
+            <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-6 h-6 text-accent-blue" />
+            </div>
+            <h1 className="text-xl font-bold text-navy mb-2">Vérifiez votre boîte mail</h1>
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
+              L&apos;adresse <strong>{fusionEmailSent}</strong> est déjà associée à un compte existant.
+            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Nous venons d&apos;y envoyer un lien pour fusionner vos deux comptes en toute sécurité.
+              Cliquez sur ce lien pour finaliser — il est valable 15 minutes.
+            </p>
+          </div>
+        </main>
+      </>
+    )
   }
 
   return (
@@ -367,6 +405,20 @@ export default function CompleterProfilPage() {
                       />
                     </div>
                   )}
+                  {claimValue && !showLibreTexte && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Précisez votre rôle / fonction chez cet éditeur <span className="text-gray-400 font-normal">(facultatif)</span>
+                      </label>
+                      <textarea
+                        value={roleMessage}
+                        onChange={(e) => setRoleMessage(e.target.value)}
+                        placeholder="Ex : responsable produit, CTO, support utilisateur, etc."
+                        rows={3}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y overflow-y-auto min-h-[72px]"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -447,19 +499,19 @@ export default function CompleterProfilPage() {
                 </p>
               </div>
               <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
-                {AVATARS.map((avatar) => (
+                {avatars.map((avatar) => (
                   <button
                     key={avatar.id}
                     type="button"
-                    onClick={() => setSelectedAvatar(selectedAvatar === avatar.url ? null : avatar.url)}
+                    onClick={() => setSelectedAvatar(selectedAvatar === avatar.id ? null : avatar.id)}
                     className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
-                      selectedAvatar === avatar.url
+                      selectedAvatar === avatar.id
                         ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
                         : 'border-transparent hover:border-gray-300'
                     }`}
                   >
-                    <img src={avatar.url} alt={avatar.id} className="w-full h-full object-cover" />
-                    {selectedAvatar === avatar.url && (
+                    <img src={avatar.url} alt="" className="w-full h-full object-cover" />
+                    {selectedAvatar === avatar.id && (
                       <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white drop-shadow" />
                       </div>

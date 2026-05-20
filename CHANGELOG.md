@@ -5,6 +5,236 @@
 
 ---
 
+## [2026-05-20] — Correctif sécurité : prise de contrôle de compte via la fusion + ajustements acronymes/admin
+
+### Sécurité — Faille de prise de contrôle de compte dans la fusion de comptes (`completeProfile`)
+- **Contexte** : revue de sécurité de la branche `dev` (en amont d'un test d'intrusion white hat). Une vulnérabilité critique a été identifiée dans le parcours de fusion de comptes.
+- **Faille** : `completeProfile` détectait qu'un `contact_email` saisi appartenait déjà à un autre compte et renvoyait directement au navigateur un jeton de fusion HMAC valide — sans jamais vérifier que l'appelant possède cette boîte mail. Un attaquant authentifié pouvait saisir l'email d'un confrère, obtenir le jeton, choisir le compte de la victime comme compte conservé dans `mergeAccounts`, et récupérer une session authentifiée sur ce compte. = prise de contrôle complète + destruction du compte victime.
+- **Fix** : le jeton de fusion n'est plus jamais renvoyé au client. En cas de conflit, `completeProfile` envoie le lien `/fusionner-compte?token=...` **par email** à l'adresse saisie et retourne `{ status: 'FUSION_EMAIL_SENT' }`. Recevoir le lien prouve la possession de la boîte. La page `/completer-profil` affiche un écran « Vérifiez votre boîte mail » au lieu de rediriger.
+- **Migration BDD** : nouveau template email `fusion_comptes` inséré dans `email_templates` (contenu encapsulé dans le `master_layout`, variable `{{lien_fusion}}`, éditable depuis `/admin/emails`).
+- `merge.ts` et le callback PSC : inchangés — le chemin PSC reste sûr car la fusion y est déclenchée après un match RPPS (identité vérifiée par l'État).
+- **Second point du rapport écarté** : la server action `generateAcronyme` sans `assertAdmin()` — impact limité à de la consommation d'API externe, hors périmètre vulnérabilité. Durcissement recommandé mais non bloquant (ajouté à la TODO).
+
+### Fix — Détection des acronymes : regex plus robuste
+- `buildRegex` (`acronymesCache.ts`) : tri des sigles par longueur décroissante (les expressions longues priment sur les courtes, ex. « Téléservices CNAM de base » avant « CNAM ») + frontières par lookaround `(?<!\w)…(?!\w)` au lieu de `\b` (qui cassait quand un sigle commence/finit par un caractère non-mot, ex. un guillemet).
+
+### Admin — Filtre catégories de la page solutions
+- `admin/solutions/page.tsx` : `getCategories()` → `getAllCategoriesAdmin()` pour le filtre par catégorie (inclut les catégories non visibles côté public, ex. catégories inactives).
+
+### TODO — Mises à jour
+- Ajout : durcir `generateAcronyme` avec `assertAdmin()` (recommandation revue sécurité, non bloquant).
+
+---
+
+## [2026-05-19] — Module Communautés autour des solutions + bouton retour en haut + claim éditeur enrichi + fixes UI mobile
+
+### Feature — Module « Communautés autour des solutions »
+- **Migration SQL** : table `solution_communautes(id, solution_id, type, nom, url, description, statut, proposed_by, proposer_email, note_admin, created_at, approved_at)` avec CHECK sur `type` (whatsapp/telegram/discord/facebook/forum/autre) et `statut`. FK ON DELETE CASCADE sur solutions, FK ON DELETE SET NULL sur `auth.users`. GRANTs explicites (anticipation 2026-10-30), RLS lecture publique pour les `approuve` uniquement.
+- **UI publique** : composant `SolutionCommunautesCard` en bas de la fiche solution (colonne gauche, après `SupportSection`). Version compacte : barre fine d'une ligne quand vide, liste dense avec icônes colorées par type quand des liens existent. Modal `ProposeCommunauteModal` (sélecteur type + nom facultatif + URL + description + email pour anonymes).
+- **Soumission** : ouverte aux connectés ET anonymes (avec email facultatif pour notification). Seule l'URL est obligatoire — si nom non fourni, fallback automatique sur le hostname de l'URL (ex. `chat.whatsapp.com`).
+- **Server actions** : `src/lib/actions/solution-communautes.ts` (`submitSolutionCommunaute`, `listSolutionCommunautesAdmin`, `setStatutCommunaute`, `deleteSolutionCommunaute`).
+- **Notif email** : best-effort à `contact@100000medecins.org` à chaque nouvelle proposition. Notif au proposeur (si email fourni) lors du passage à `approuve` avec lien direct vers la fiche solution.
+- **Admin** : page `/admin/communautes` + `CommunautesAdminClient` (filtres statut/type, actions Approuver/Refuser/Remettre en attente/Supprimer). Nouvel item sidebar admin « Communautés » avec icône `MessageCircle` et badge en attente. Extension `getAdminBadges()` avec champ `communautes`.
+
+### Feature — Bouton « Retour en haut » contextuel
+- Nouveau composant `ScrollToTopButton` intégré dans `Footer.tsx` (présent sur toutes les pages publiques, absent du back-office admin).
+- Visible uniquement quand (a) on a scrollé d'au moins 1 viewport (page assez longue) ET (b) il reste moins de 800px avant le bas. Sur pages courtes ne s'affiche jamais.
+- Bouton flottant rond accent-blue bottom-right, smooth scroll au clic.
+
+### Feature — Claim éditeur : champ « Précisez votre rôle / fonction » facultatif
+- `completer-profil/page.tsx` + `mon-compte/profil/page.tsx` : nouveau state `roleMessage` + textarea redimensionnable (`resize-y`, min-h 72px ≈ 3 lignes) qui s'affiche quand un éditeur/solution est sélectionné dans le dropdown (et pas en mode « Autre »). Stocké dans la colonne existante `editeur_claims.libre_texte` (pas de migration).
+- `AdminEditeurClaims.tsx` : libellé « Texte libre » remplacé par « Message du demandeur » (cohérent avec les 2 sémantiques : rôle/fonction quand éditeur sélectionné, nom de solution proposée sinon). Ajout `whitespace-pre-wrap` pour respecter les retours à la ligne du textarea.
+
+### UX / UI — Plusieurs fixes mobile sur la fiche solution + catégorie + glossaire
+- **Fiche solution mobile** : carte `MainFeatures` (sidebar) masquée en `< lg` (cheveu sur la soupe quand la sidebar passe en dessous du contenu, et les données métier perdent leur contexte d'analyse).
+- **Hero catégorie mobile** : icône avant le titre masquée en `< md` (doublon avec l'illustration de droite). Suppression du `mb-2` mobile sur le `h1` pour aligner verticalement le titre avec l'image (le `mb-6` desktop est conservé pour espacer de l'intro).
+- **Glossaire** : fix espace manquant entre le nombre et le mot « acronymes » dans le sous-titre (« 65acronymes » → « 65 acronymes »). Cause : trimming JSX entre expression `{}` et texte par Next 16 Turbopack. Fix : template literal pour forcer l'espace dans la chaîne.
+
+### Infrastructure — Types Supabase régénérés
+- `src/types/database.ts` régénéré pour inclure `solution_communautes`. Nettoyage manuel de l'artefact plugin `<claude-code-hint>` (réinjecté à chaque génération — récurrent) et du message d'update CLI à la fin du fichier (mélange stdout/stderr lors de la redirection).
+
+### TODO — Mises à jour
+- Item « Favoriser l'entraide entre utilisateurs (« trucs et astuces ») » partiellement traité par le module Communautés (la piste « lien vers groupe WhatsApp/Telegram/forum » est livrée).
+
+---
+
+## [2026-05-18] — Solutions liées + admin avatars catalogue + bascule génération perso text2image + acronymes disambiguation
+
+### Feature — Solutions liées (table `solution_liens` + UI sidebar + admin + seed initial)
+- Migration SQL : table `solution_liens(id, solution_a_id, solution_b_id, type, created_at)`, lien non-dirigé (CHECK `a_id < b_id` + UNIQUE sur `(a_id, b_id, type)`), FK ON DELETE CASCADE, GRANTs explicites (anticipation Supabase 2026-10-30), RLS lecture publique.
+- Types autorisés : `meme_suite`, `interoperable`, `embedded`, `partenariat`.
+- **UI publique** : composant `SolutionLiensCard` (sidebar de la fiche solution) — vignettes logo + nom + catégorie + libellé du type. Click → fiche de l'autre solution dans sa catégorie.
+- **Admin** : `SolutionLiensManager` dans le formulaire d'édition d'une solution (recherche + sélecteur type).
+- **Server actions** : `src/lib/actions/solution-liens.ts` (`createLien`, `deleteLien`).
+- **DB queries** : `src/lib/db/solution-liens.ts` (lecture publique des liens d'une solution avec jointure sur l'autre fiche).
+- **Seed initial — 22 liens créés via SQL Editor** :
+  - 11 liens Télétransmission↔LGC d'origine (`meme_suite`) — Doctolib Tt↔Médecin, VitalZen↔Weda, MLM Tt↔MLM, Crossway Tt↔Crossway, AxiSanté Tt↔AxiSanté 5, HelloDoc Tt↔HelloDoc, Libellia Tt↔Libellia, Hypermed Tt↔HyperMed, Desmos Médecins Tt↔Desmos Médecin, Odaiji Tt↔Odaiji, Acteur.fr Tt↔Acteur.fr
+  - 1 lien `embedded` : Stellair Intégral↔Odaiji Tt
+  - 2 liens `interoperable` : Simply Vitale↔MLM, Simply Vitale↔Crossway
+  - 3 liens `meme_suite` cross-éditeurs : HelloDoc Edition SESAM↔HelloDoc, ExpressVitale↔Medistory, AxiAM↔AxiSanté 5 (historique CGM)
+  - 5 liens suite Doctolib (`meme_suite`) : Médecin↔Agenda↔Tt + Doctolib Assistant relié aux 3 autres
+
+### Admin — Manager du catalogue d'avatars (`/admin/utilisateurs/avatars`)
+- CRUD complet du catalogue d'avatars (67 fiches) avec drag & drop pour l'ordre (`@dnd-kit/sortable`).
+- Création / suppression / réordonnement / upload de nouveaux PNG vers le bucket Storage `avatars/`.
+- Server actions dédiées (`src/lib/actions/admin-avatars.ts`).
+- Nouveau layout `src/app/admin/utilisateurs/layout.tsx` qui rassemble les sous-pages (gestion users + avatars).
+
+### Module — Bascule génération avatar perso : img2img → text2image
+- **Contexte** : la pipeline img2img Retro Diffusion (photo user → pixel art) livrée le 2026-05-17 ne donnait pas un rendu satisfaisant — fidélité à la photo trop élevée pour donner un vrai look catalogue (les essais ressemblaient à des photos pixelisées plutôt qu'à des avatars de style cohérent).
+- **Décision** : abandon img2img, bascule vers **text-to-image** avec description fournie par l'user (champ texte, 10-300 caractères). Prompt master appliqué côté serveur : `pixel art portrait, ${desc}, frontal bust, chunky pixels, 8-bit retro, transparent bg, friendly face`. Résolution native 64×64 puis upscale nearest ×4 → 256×256 via `sharp`.
+- **Style aligné** sur le catalogue low_res 64 (sans le mot "Bullfrog" qui faisait littéralement apparaître des grenouilles quand RD filtrait les IP).
+- **UX** (`<RequestCustomAvatar>` réécrit) : textarea + bouton Générer + display résultat + boutons "Choisir" / "Re-générer". Quota inchangé (3 par 24h, exemptions par env var).
+- **Cleanup auto désactivé** : `cleanupAbandonedPersonalAvatars` n'est plus appelé à chaque génération / sélection d'avatar — l'user veut pouvoir conserver tous ses avatars perso (anciens choix + essais) dans la grille "Mes avatars personnels" et les supprimer manuellement via ✕ rouge.
+
+### Feature — Acronymes : champ `disambiguation` + génération auto IA + intégration tags
+- **Champ `disambiguation`** : nouvelle colonne TEXT NULL sur `acronymes`, pour préciser entre plusieurs significations possibles d'un même sigle. Champ texte optionnel dans le form CRUD admin.
+- **Suppression du `.toUpperCase()` automatique** : certains sigles ont une casse mixte intentionnelle (ex. `ADRi`, `DMTi` — le `i` en minuscule signifie "intégré").
+- **Génération auto IA** (`src/lib/actions/generateAcronyme.ts`) : nouvelle server action qui, à partir d'un sigle, génère définition + description courte via l'API Anthropic. Bouton "Générer avec IA" dans le form admin — permet de pré-remplir rapidement les champs à valider / ajuster.
+- **Intégration sur les libellés de tags** : `<AcronymText>` désormais appliqué dans `SolutionFilters.tsx` — les sigles dans les filtres deviennent survolables avec tooltip définition (notamment les 7 téléservices CNAM `ADRi`, `AATi`, `ALDi`, `DMTi`, `IMTi`, `HRi`, `INSi`). Idem dans `GlossaireClient` et la page `/glossaire`.
+- **Cache** (`acronymesCache.ts`) : adaptation pour le nouveau champ disambiguation.
+
+### Fix — Hint FK explicite sur les jointures avatars
+- **Symptôme** : depuis la migration `users.portrait` `text` → `uuid` + FK (livrée 2026-05-17), certaines requêtes Supabase utilisant `avatar:avatars(url)` étaient ambigües côté PostgREST.
+- **Fix** : explicitation du nom de la contrainte FK dans les selects → `avatar:avatars!users_portrait_fkey(url)` dans `src/lib/db/users.ts` (`getUserById`) et `src/lib/db/evaluations.ts` (`getAvisUtilisateurs`, `getLastAvisUtilisateurs`, `getAvisUtilisateursPaginated`).
+
+### Docs — Refonte du brouillon questionnaire téletransmission
+- `docs/teletransmission-questionnaire.md` retravaillé en prévision du chantier "Questionnaire d'évaluation pour la catégorie Télétransmission" (TODO en attente).
+
+### Fix — Typing `Awaited<Props['searchParams']>` dans `/gerer-notifications` (Next.js 16)
+- Petit ajustement : `searchParams` est une Promise en Next 16, le helper `renderContent` doit le recevoir `Awaited` pour éviter l'erreur TypeScript.
+
+### TODO — Mises à jour
+- Marqué terminé : "Solutions liées (interopérabilités, suites produits)" — table + UI + seed initial 22 liens livrés.
+
+---
+
+## [2026-05-17] — Migration complète des avatars (catalogue + perso + bannière)
+
+### Module — Renouvellement du catalogue d'avatars (67 nouveaux)
+- 60 médicaux générés via API Retro Diffusion (RD Plus + Classic + prompt master Bullfrog v1) + 17 décalés "geek" (jedi, wookie, yoda, robot, sorcier, chevalier, pirate, ninja, samouraï, cowboy, vampire, astronaute, steampunk, princesse, viking, détective, boxer, sorcière, cyborg, savant fou) — archétypes génériques, pas de personnages identifiables nommément (choix IP).
+- Pipeline scripté de bout en bout : `scripts/generate-avatars.ts` (batch 80 prompts × 2 variantes = 160 PNG), `scripts/finalize-avatars.ts` (tri → renommage `avatar-1..67.png` + upscale x2 nearest neighbor 256×256), `scripts/upload-avatars-to-supabase.ts` (bucket Storage public + génération SQL d'insert).
+- Coût final : ~10 USD pour 160 images (estim initiale 30 USD largement surévaluée).
+- Doc complète du style + prompts + workflow dans `docs/avatars-prompts-theme-hospital.md` (historique des décisions plans A/B/C tracé).
+
+### Module — Migration BDD avatars (URL → UUID + FK)
+- `users.portrait` : type `text` → `uuid`, FK `users_portrait_fkey` vers `avatars(id)` avec `ON DELETE SET NULL`.
+- `avatars` : ajout colonnes `display_order INTEGER` (catalogue : 1-50 médicaux puis 51-67 décalés) et `user_id UUID NULL REFERENCES users(id) ON DELETE CASCADE` (catalogue : NULL ; perso : user_id).
+- Nouvelle table `avatar_generations` (id, user_id, created_at) pour le tracking du quota + RLS (self read).
+- Reset complet : `UPDATE users SET portrait = NULL` (révoque migration random de la veille qui assignait un avatar arbitraire à 5 908 utilisateurs sans considération de genre/ethnie) + `DELETE FROM avatars` (49 anciens supprimés).
+- GRANTs explicites sur `avatar_generations` (anticipation Supabase 2026-10-30).
+- Types TS régénérés.
+
+### Feature — Génération d'avatar personnel à partir d'une photo (img2img Retro Diffusion)
+- Server action `generatePersonalAvatar(formData)` : appel API RD avec `input_image` base64 + `prompt_style: rd_plus__classic` + `strength: 0.65` (équilibre fidélité photo / stylisation pixel art). PNG résultat uploadé dans `avatars/personal/<user_id>/<ts>.png` + ligne `avatars` avec `user_id` non-NULL.
+- Quota : 3 générations / 24h par user (table `avatar_generations` + helper `getRemainingAvatarGenerations`). Exemption via env var `AVATAR_QUOTA_UNLIMITED_EMAILS` (séparés par virgules) — affiche le décompte mais autorise au-delà de 0.
+- **RGPD** : la photo source n'est jamais stockée, juste envoyée à l'API RD. Seul le PNG résultat (stylisé pixel art) est conservé.
+- Cleanup automatique : à chaque génération / sélection / suppression d'avatar, les essais perso non choisis sont supprimés (BDD + fichier Storage) via `cleanupAbandonedPersonalAvatars()`. Au plus 1 avatar perso stocké à la fois par user (son portrait actuel).
+- Script de garbage collection des orphelins Storage : `scripts/cleanup-avatar-storage.ts` (compare fichiers `avatars/personal/**/*.png` vs lignes BDD, supprime les fichiers non référencés). À lancer ponctuellement.
+
+### UX / UI — Page profil + bannière
+- **Bannière `<NouveauxAvatarsBanner>`** : insérée dans `/mon-compte/layout.tsx`, affichée si `users.portrait IS NULL` ET cookie `avatars_banner_dismissed` pas set. Mode accordéon : ligne compacte avec icône Sparkles + 5 avatars chevauchés en illustration + chevron, déploie la grille complète + lien mailto "Aucun ne me ressemble — envoyer une photo" + lien "Ne plus jamais m'afficher". Cookie 1 an.
+- **Page profil `Mon avatar`** : 2 sections distinctes "Mes avatars personnels" (au-dessus si l'user en a) puis "Catalogue", médaillons ronds avec fond pastel `bg-surface-light` (PNG transparents préservés), grille 4 cols mobile / 8 sm / 10 md, bouton Supprimer à côté de Changer en mode compact, ✕ rouge en hover sur chaque avatar perso (avec confirmation).
+- Composant `<RequestCustomAvatar>` (replié par défaut, visible uniquement quand la grille de sélection est ouverte) : upload photo (max 5 Mo), preview, bouton Générer avec loader 5-15s, affichage du résultat + bouton "Le choisir comme avatar" + "Re-générer (utilise un crédit)", display du quota restant + mention "illimité pour ton compte" pour les exemptés.
+
+### Décisions assumées (choix éditoriaux / techniques)
+- Style final : compromis "pixel art cartoon moderne 16-bit propre" entre Bullfrog et Stardew Valley. Le Bullfrog Theme Hospital pur n'était pas reproductible de façon homogène avec RD Plus (biais "jeune femme → anime" trop fort, même bombardé d'anti-anime). Le rendu retenu privilégie la cohérence du set sur la pureté du style cible.
+- Pas de portraits voilés dans le set médical (choix éditorial assumé — la diversité passe par âges, ethnies, coupes de cheveux, tenues).
+- Archétypes geek génériques uniquement (pas de Yoda/Pikachu/Link nommément) pour éviter tout risque IP.
+- Fond transparent dans les PNG ; les "médaillons" pastels sont reproduits via `bg-surface-light` côté CSS (flexible, modifiable sans toucher aux images).
+
+### TODO — Mises à jour
+- Marqué terminé : "Remplacer les avatars utilisateurs" (entrée Avatars de la TODO).
+- À venir : page admin `/admin/avatars` (CRUD via Supabase Storage, drag & drop pour l'ordre, ~2-3h de dev, non bloquant).
+
+---
+
+## [2026-05-16] — Stats activité utilisateurs + parcours "Proposer une vidéo"
+
+### Feature — Colonne « Dernière connexion » dans `/admin/utilisateurs`
+- Source : `auth.users.last_sign_in_at` (natif Supabase, MAJ à chaque login email/MDP **et** PSC).
+- Lu côté serveur via `supabase.auth.admin.listUsers` paginé (1000/page) puis mergé par id avec les profils publics. Coût : ~6 appels paginés sur ~5 916 users → page un peu plus lente au premier hit (admin only, force-dynamic, acceptable).
+- UI : nouvelle colonne triable, format relatif (« il y a 3j », « il y a 2 mois », etc.), tooltip avec date+heure complète au survol. Affichage italique gris pour les comptes jamais connectés.
+
+### Feature — Stats d'activité dans `/admin/statistiques`
+- 3 nouvelles cards KPI : **Actifs 7 jours / 30 jours / 90 jours** (avec % du total).
+- LineChart « Dernière connexion par mois (12 derniers mois) » — note d'avertissement explicite sous le graphe : Supabase ne stocke que la dernière connexion → ce n'est pas un vrai MAU mais un proxy d'activité historique. Pour un vrai MAU, il faudrait un cron qui snapshotte quotidiennement.
+- BarChart horizontal « Distribution de l'inactivité » — 7 buckets exclusifs : <7j / 7-30j / 30-90j / 90-180j / 180-365j / >1 an / Jamais connecté. Utile pour identifier la cohorte fantôme à recibler.
+- Réutilise les composants `LineChart`, `BarChartHorizontal`, `KpiCard` et `Panel` déjà existants.
+
+### Feature — Parcours utilisateur « Proposer » (Idée / Correction / Vidéo) + modération admin
+- **Sidebar `/mon-compte`** : nouvel item "Proposer" (icône Sparkles), actif sur tout le sous-arbre `/proposer/*`, caché pour les éditeurs.
+- **Espace `/mon-compte/proposer`** avec 3 onglets dans cet ordre : **Idée** (par défaut) → **Correction** → **Vidéo**. Layout client avec tab nav (border-bottom, pas de page reload entre onglets).
+- **Migration SQL** : nouvelle table `propositions_utilisateurs` (id, user_id FK auth.users ON DELETE SET NULL, type CHECK('idee','correction'), titre, description, url_concernee, statut CHECK('en_attente','traite','refuse'), admin_notes, created_at, updated_at). GRANTs explicites (anticipation 2026-10-30) + RLS (utilisateur ne voit/crée que ses propres propositions). Index sur statut, user_id, type.
+- **Migration SQL videos** (déjà appliquée plus haut dans la journée) : `ALTER TABLE videos ADD COLUMN created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL` + `CREATE INDEX idx_videos_statut`. Statuts videos étendus : `publie`, `brouillon`, `en_attente`, `refuse`.
+- **Composant partagé** `src/components/mon-compte/PropositionForm.tsx` pour Idée et Correction (mêmes champs, copy distincte par type). Champ URL pré-rempli automatiquement avec `document.referrer` same-origin sauf si on vient déjà du sous-arbre `/proposer/` (évite que les changements d'onglet écrasent l'URL).
+- **Server actions** (`src/lib/actions/propositions.ts`) : `submitProposition({type, titre, description, urlConcernee})` (utilisateur connecté → INSERT statut='en_attente' + envoi email best-effort), `setPropositionStatut(id, statut)`, `deleteProposition(id)`. Garde `assertAdmin` pour les 2 dernières.
+- **Server actions vidéos** (`src/lib/actions/videos.ts`) : inchangées — `submitVideoProposal`, `approveVideoProposal`, `rejectVideoProposal`.
+- **Notification admin email** : à chaque nouvelle proposition (idée ou correction), envoi SendGrid à `contact@100000medecins.org` avec proposeur, titre, URL concernée, description, lien vers `/admin/propositions`. Best-effort : si SendGrid down ou clé absente, l'INSERT a déjà eu lieu — l'utilisateur ne voit pas l'erreur.
+- **Admin `/admin/propositions`** : page de modération avec filtres (statut : En attente / Toutes / Traitées / Refusées + type : Tous / Idée / Correction). Pour chaque proposition : icône+couleur par type, titre, description (whitespace-pre-wrap), proposeur (lien mailto si email), URL concernée (résolue en absolute pour `/...` paths), boutons Traiter / Refuser / Remettre en attente / Supprimer.
+- **Admin `/admin/videos`** : panel "Propositions à modérer" déjà en place depuis ce matin (mêmes patterns, table `videos`).
+- **Badges** : `getAdminBadges()` étend la signature avec `propositions: number` (en plus de `videos: number`). Sidebar admin : badge ajouté aux items "Vidéos & Tutos" et "Propositions" (nouvel item après Vidéos).
+- **VideoForm** : sélecteur de statut élargi (`publie`, `brouillon`, `en_attente`, `refuse`).
+- **Sécurité publique** : les requêtes `getHomepageVideos`, `getVideos`, `getStoriesTutos` filtrent déjà sur `statut='publie'` → propositions en attente et refus invisibles côté front. Les propositions idée/correction ne sont jamais exposées en public.
+- **Restructure UI** : la page provisoire `/mon-compte/proposer-video` créée plus tôt dans la journée a été supprimée (remplacée par `/mon-compte/proposer/video`).
+
+### Fix — `assertAdmin()` des nouvelles actions admin propositions / vidéos
+
+- **Symptôme** : « Non autorisé » au clic sur Traiter / Refuser / Supprimer dans `/admin/propositions`, et idem sur Publier / Refuser dans le panel pending de `/admin/videos`.
+- **Cause** : `assertAdmin()` (dupliqué dans `propositions.ts` et `videos.ts`) cherchait un user Supabase avec `role='admin'`. Or l'admin du site est cookie-based HMAC (`admin_token` dérivé de `ADMIN_PASSWORD`), pas Supabase Auth — l'admin n'a donc pas de session Supabase avec ce rôle.
+- **Fix** : alignement sur le pattern déjà dupliqué dans `admin.ts`, `groupes.ts`, `questionnaires.ts` — `generateToken()` + vérif cookie `admin_token`. `submitProposition` et `submitVideoProposal` (côté utilisateur connecté) restent inchangées.
+
+### Fix — Vidéo approuvée invisible dans `/admin/videos` jusqu'au reload
+
+- **Symptôme** : après acceptation d'une proposition vidéo, la vidéo passait bien à `statut='publie'` en base mais n'apparaissait pas dans la liste principale sans F5.
+- **Cause** : `VideosAdminList` est un client component qui initialise son state via `useState(() => buildItems(initialVideos, rubriques))` — appelé une seule fois au mount. `revalidatePath('/admin/videos')` côté serveur n'a aucun effet visible tant que le client ne refetch pas ses props.
+- **Fix** : `router.refresh()` ajouté dans `VideosPendingPanel.tsx` après approve/reject réussi (force le refetch). `useEffect` ajouté dans `VideosAdminList.tsx` qui re-synchronise `items` quand l'ensemble des IDs côté serveur change. Clef stable basée sur les IDs uniquement (séparateur `'|'` entre vidéos et rubriques) → un drag & drop local en cours n'est pas écrasé tant qu'aucun ajout/suppression n'arrive en parallèle.
+
+---
+
+## [2026-05-16] — Fix avatars : format legacy `Avatars/` + uniformisation avatar-28 (bug source Firebase)
+
+### Fix #1 — `users.portrait` au format relatif `Avatars/avatar-XX.png`
+- **Symptôme** : sur la page solution `/solutions/.../weda`, l'avatar de l'utilisateur "Ahc" (CESAR ANCELLE-HANSEN) s'affichait cassé (icône image brisée).
+- **Cause** : `users.portrait` contenait `Avatars/avatar-28.png` (chemin relatif sans `/` initial). Le navigateur tentait de résoudre depuis l'URL courante → 404. Format attendu côté code : `/images/portraits/avatar-XX.png` (servi depuis `public/images/portraits/`).
+- **Périmètre** : 60 utilisateurs sur 5 916 (le reste avait déjà le bon format).
+- **Fix** : `UPDATE users SET portrait = REPLACE(portrait, 'Avatars/', '/images/portraits/') WHERE portrait LIKE 'Avatars/%'` → 60 lignes corrigées.
+
+### Investigation — distribution anormale `avatar-28` partagée par 99,8 % des comptes
+- **Constat post-fix #1** : 5 898 / 5 916 utilisateurs (99,8 %) avaient `/images/portraits/avatar-28.png`. Pas un effet du fix #1 (5 838 l'avaient déjà avant), mais le fix l'a rendu visuellement plus flagrant sur la page Weda.
+- **Vérifications côté code Supabase** : DEFAULT de la colonne `portrait` = NULL (confirmé par test d'insertion). Aucun INSERT applicatif ne force avatar-28 (parcours `/completer-profil` initialise `selectedAvatar = null`, scripts d'inscription `createUserProfile`, callbacks PSC, `auth/confirm`, `evaluation.ts` — tous laissent `portrait` absent ou recopient la valeur source).
+- **Vraie cause — bug natif Firebase (ancien site)** : query sur Firestore production via `firebase-admin` (JSON conservé sur le laptop) → sur 6 437 docs `users`, **6 421 avaient `Avatars/avatar-28.png`** (99,8 %), 7 avaient un avatar personnalisé, 1 NULL, 8 sans champ portrait. L'ancien site forçait `avatar-28` comme valeur par défaut. Le script de migration `migrate-firebase-to-supabase.ts` (ligne 429) a fidèlement recopié via `portrait: d.portrait || null` — pas de bug de migration, pas de bug Supabase, **uniquement Firebase amont**.
+- **Conséquence** : pas de patch code à faire — les nouvelles inscriptions web ne récidivent pas (vérifié : sur les inscriptions récentes avec heure précise, Julienne 2026-05-15 → avatar-3, Joris 2026-04-25 → avatar-41).
+
+### Fix #2 — Redistribution aléatoire des `avatar-28` sur les 48 avatars du catalogue
+- `UPDATE users SET portrait = '/images/portraits/avatar-' || (floor(random() * 48) + 1)::int || '.png' WHERE portrait = '/images/portraits/avatar-28.png'` → 5 898 lignes redistribuées.
+- Vérif : top 10 entre 132 et 148 par avatar, attendu ~123 (variance conforme à un tirage uniforme sur 48 valeurs).
+- **Effet de bord négligeable** : statistiquement 1 utilisateur sur 5 898 avait peut-être réellement choisi `avatar-28` — il sera re-randomisé. Tolérable.
+- 9 utilisateurs au portrait NULL laissés intacts.
+
+### Reste à faire (non bloquant)
+- La vraie migration vers UUID décrite dans `docs/avatars_migration_plan.md` permettrait de changer les images sans `UPDATE` massif. Non urgent — l'avatar du site est maintenant cohérent.
+
+---
+
+## [2026-05-15] — DMARC `pct=10` → `pct=50` + nettoyage legacy
+
+### Ops — DMARC `pct=10` → `pct=50` sur `100000medecins.org`
+- Analyse des 4 rapports DMARC reçus depuis le passage à `pct=10` (2026-05-03) : 1 rapport Outlook (2026-04-25, encore en `p=none`) + 3 rapports Google (2026-05-10, 11, 13).
+- 24 mails observés au total, 2 sources identifiées et 100 % alignées :
+  - **Gandi** (217.70.183.x, IPv6 `2001:4b98:dc4:8::`) — DKIM selector `gm1`, SPF `100000medecins.org` — 5 mails.
+  - **SendGrid** (149.72.x, 159.183.x) — DKIM selector `s1` + `sendgrid.info/smtpapi`, SPF `em1895.100000medecins.org` — 19 mails.
+- 0 record en échec, 0 source inconnue, 0 disposition quarantine appliquée. Volume faible (essentiellement des tests pré-launch vers Gmail/Outlook) mais signal propre.
+- Record DNS `_dmarc.100000medecins.org` mis à jour : `v=DMARC1; p=quarantine; pct=50; rua=mailto:david.azerad@100000medecins.org` (les tags `sp`, `adkim`, `aspf`, `np`, `fo` omis reprennent les défauts qui matchent la config précédente).
+- Prochaine étape prévue ~2026-05-29 à 2026-06-05 : passage à `pct=100` après 2 semaines de stabilité et idéalement un envoi groupé légitime entre-temps. Puis `p=reject` 2-3 semaines plus tard si tout reste clean.
+
+### Chore — Suppression des anciens dossiers `Frontend-V2-main` (post-migration Synology)
+- Laptop : `C:\Users\david\Documents\100 000 Médecins\Claude IA\Frontend-V2-main` supprimé. Le `node_modules` résiduel (10 paquets) plantait l'Explorer Windows à cause de la limite 260 chars sur les chemins profonds — contourné via `robocopy /MIR` depuis un dossier vide temporaire.
+- Desktop : commande équivalente fournie à exécuter via Synology Drive ou en local. À confirmer si la synchro Synology bidirectionnelle a déjà propagé la suppression côté NAS.
+- Item TODO "Supprimer les anciens dossiers Frontend-V2-main" barré côté laptop (date 2026-05-15). Repo migré hors Synology depuis le 2026-04-25 → 3 semaines de stabilité, largement au-delà du délai prévu de 1-2 semaines.
+
+---
+
 ## [2026-05-14] — Refonte pseudo (vide par défaut) + fix build database.ts
 
 ### Fix — Ligne artefact de plugin dans `src/types/database.ts` (cassait le build)

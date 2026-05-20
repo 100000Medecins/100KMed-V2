@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import NouveauxAvatarsBanner from '@/components/mon-compte/NouveauxAvatarsBanner'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useEffect, useState } from 'react'
 
@@ -28,7 +29,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
       : [{ href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck }]),
     { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
     ...(isEditeur
-      ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Mon espace éditeur', icon: Building2 }]
+      ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Espace éditeur', icon: Building2 }]
       : []),
     ...(isEditeur
       ? []
@@ -39,6 +40,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
     ...(!isEditeur && (hasQuestionnaires || pathname.startsWith('/mon-compte/mes-questionnaires-these'))
       ? [{ href: '/mon-compte/mes-questionnaires-these', label: 'Mes questionnaires de thèse', icon: GraduationCap }]
       : []),
+    ...(isEditeur ? [] : [{ href: '/mon-compte/proposer', label: 'Proposer', icon: Sparkles }]),
   ]
 
   if (loading) {
@@ -63,7 +65,7 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
               <nav className="bg-white rounded-card shadow-card p-4 space-y-1">
                 {navItems.map((item) => {
                   const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                   return (
                     <Link
                       key={item.href}
@@ -90,7 +92,10 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Content */}
-            <div className="flex-1 min-w-0">{children}</div>
+            <div className="flex-1 min-w-0">
+              <NouveauxAvatarsBanner />
+              {children}
+            </div>
           </div>
         </div>
       </main>

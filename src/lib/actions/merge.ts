@@ -57,19 +57,45 @@ export async function mergeAccounts(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = supabase as any
 
-  // Récupérer les solution_ids des évals migrées pour recalc après fusion
+  // Récupérer les évals du compte supprimé (pour migration + recalc)
+  type EvalRow = { id: string; solution_id: string; last_date_note: string | null; created_at: string | null }
   const { data: evalsToMigrate } = await s
     .from('evaluations')
-    .select('solution_id')
+    .select('id, solution_id, last_date_note, created_at')
     .eq('user_id', deleteId)
+  const deleteEvals = (evalsToMigrate as EvalRow[]) || []
   const migratedSolutionIds = [...new Set(
-    ((evalsToMigrate as Array<{ solution_id: string }>) || [])
-      .map((e) => e.solution_id)
-      .filter(Boolean)
+    deleteEvals.map((e) => e.solution_id).filter(Boolean)
   )] as string[]
 
-  // Migrer les évaluations
-  await s.from('evaluations').update({ user_id: keepId }).eq('user_id', deleteId)
+  // Migrer les évaluations en dédoublonnant par solution.
+  // La table evaluations a UNIQUE(user_id, solution_id) : un UPDATE en aveugle
+  // échouerait si les 2 comptes ont évalué la même solution. Dans ce cas, on
+  // conserve l'évaluation la plus récente (last_date_note, sinon created_at).
+  const { data: keptEvalsRaw } = await s
+    .from('evaluations')
+    .select('id, solution_id, last_date_note, created_at')
+    .eq('user_id', keepId)
+  const keptEvalBySolution = new Map<string, EvalRow>(
+    ((keptEvalsRaw as EvalRow[]) || []).map((e) => [e.solution_id, e])
+  )
+  for (const ev of deleteEvals) {
+    const kept = keptEvalBySolution.get(ev.solution_id)
+    if (!kept) {
+      // Pas de doublon → simple réassignation
+      await s.from('evaluations').update({ user_id: keepId }).eq('id', ev.id)
+    } else {
+      // Doublon sur la même solution → garder la plus récente
+      const evDate = ev.last_date_note || ev.created_at || ''
+      const keptDate = kept.last_date_note || kept.created_at || ''
+      if (evDate > keptDate) {
+        await s.from('evaluations').delete().eq('id', kept.id)
+        await s.from('evaluations').update({ user_id: keepId }).eq('id', ev.id)
+      } else {
+        await s.from('evaluations').delete().eq('id', ev.id)
+      }
+    }
+  }
 
   // Migrer solutions_utilisees (éviter les doublons)
   const { data: keptSU } = await s.from('solutions_utilisees').select('solution_id').eq('user_id', keepId)

@@ -82,12 +82,12 @@ function FusionnerCompteContent() {
             </div>
             <div>
               <h1 className="text-xl font-extrabold text-navy">Fusionner vos comptes</h1>
-              <p className="text-xs text-gray-500">Deux comptes sont associés à votre RPPS</p>
+              <p className="text-xs text-gray-500">Deux comptes distincts vous appartiennent</p>
             </div>
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-8 text-sm text-amber-800 leading-relaxed">
-            Nous avons trouvé deux comptes distincts liés à votre numéro RPPS. Choisissez l&apos;adresse email que vous souhaitez conserver pour vous connecter à l&apos;avenir.
+            Nous avons trouvé deux comptes distincts qui vous appartiennent. Choisissez l&apos;adresse email que vous souhaitez conserver pour vous connecter à l&apos;avenir — toutes vos données seront regroupées sur ce compte.
           </div>
 
           <div className="space-y-4 mb-8">

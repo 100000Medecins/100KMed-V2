@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import type { Tag } from '@/types/models'
+import AcronymText from '@/components/AcronymText'
 
 type TagWithParent = Tag & { parent_ids?: string[]; is_separator?: boolean }
 
@@ -159,7 +160,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
                         : 'bg-white text-gray-600 border-gray-200 hover:border-navy hover:text-navy'
                     }`}
                   >
-                    {tag.libelle}
+                    <AcronymText text={tag.libelle ?? ''} />
                     {isImplied && <span className="ml-1 text-xs opacity-60">✓</span>}
                   </button>
                 )

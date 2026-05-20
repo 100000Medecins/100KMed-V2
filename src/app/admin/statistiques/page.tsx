@@ -14,6 +14,8 @@ import {
   Stethoscope,
   Briefcase,
   UserX,
+  Zap,
+  CalendarClock,
 } from 'lucide-react'
 
 /* ================================================================== */
@@ -155,6 +157,60 @@ async function getStats() {
     signupMonths.push({ label, count })
   }
 
+  // ── Activité utilisateurs (auth.users.last_sign_in_at) ──
+  // listUsers est paginé (1000 max par page)
+  const lastSignInMap = new Map<string, string | null>()
+  let authPage = 1
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page: authPage, perPage: 1000 })
+    if (error || !data?.users || data.users.length === 0) break
+    for (const u of data.users) lastSignInMap.set(u.id, u.last_sign_in_at ?? null)
+    if (data.users.length < 1000) break
+    authPage++
+  }
+
+  const lastSignIns: (string | null)[] = allUsers.map((u) => lastSignInMap.get(u.id) ?? null)
+
+  const within = (iso: string | null, days: number): boolean => {
+    if (!iso) return false
+    return new Date(iso).getTime() >= now.getTime() - days * 86400 * 1000
+  }
+  const actifs7j = lastSignIns.filter((d) => within(d, 7)).length
+  const actifs30j = lastSignIns.filter((d) => within(d, 30)).length
+  const actifs90j = lastSignIns.filter((d) => within(d, 90)).length
+
+  // Connexions par mois (basé sur la dernière connexion connue — pas un vrai MAU,
+  // mais reflète le pic d'activité historique sur 12 mois)
+  const lastSigninMonths: { label: string; count: number }[] = []
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
+    const count = lastSignIns.filter((iso) => iso && iso.startsWith(monthKey)).length
+    lastSigninMonths.push({ label, count })
+  }
+
+  // Distribution de l'inactivité (7 buckets, exclusifs et exhaustifs)
+  const inactivityBuckets: { label: string; count: number }[] = [
+    { label: '< 7 jours', count: 0 },
+    { label: '7 à 30 jours', count: 0 },
+    { label: '30 à 90 jours', count: 0 },
+    { label: '90 à 180 jours', count: 0 },
+    { label: '180 jours à 1 an', count: 0 },
+    { label: '> 1 an', count: 0 },
+    { label: 'Jamais connecté', count: 0 },
+  ]
+  for (const iso of lastSignIns) {
+    if (!iso) { inactivityBuckets[6].count++; continue }
+    const days = Math.floor((now.getTime() - new Date(iso).getTime()) / (86400 * 1000))
+    if (days < 7) inactivityBuckets[0].count++
+    else if (days < 30) inactivityBuckets[1].count++
+    else if (days < 90) inactivityBuckets[2].count++
+    else if (days < 180) inactivityBuckets[3].count++
+    else if (days < 365) inactivityBuckets[4].count++
+    else inactivityBuckets[5].count++
+  }
+
   // ── Distribution des notes (1-5) ──
   const ratingDistribution = [0, 0, 0, 0, 0]
   for (const r of ratings) {
@@ -254,6 +310,11 @@ async function getStats() {
     pctRecentes,
     totalSuppressions,
     suppressionsCeMois,
+    actifs7j,
+    actifs30j,
+    actifs90j,
+    lastSigninMonths,
+    inactivityBuckets,
   }
 }
 
@@ -586,6 +647,53 @@ export default async function AdminStatistiquesPage() {
           value={String(stats.totalSuppressions)}
           sub={`+${stats.suppressionsCeMois} ce mois-ci`}
         />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/*  ACTIVITÉ — Utilisateurs actifs (auth.users.last_sign_in_at)  */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KpiCard
+          icon={<Zap className="w-5 h-5 text-green-500" />}
+          label="Actifs 7 jours"
+          value={stats.actifs7j.toLocaleString('fr-FR')}
+          sub={`${stats.totalUsers > 0 ? Math.round((stats.actifs7j / stats.totalUsers) * 100) : 0}% des utilisateurs`}
+        />
+        <KpiCard
+          icon={<Zap className="w-5 h-5 text-amber-500" />}
+          label="Actifs 30 jours"
+          value={stats.actifs30j.toLocaleString('fr-FR')}
+          sub={`${stats.totalUsers > 0 ? Math.round((stats.actifs30j / stats.totalUsers) * 100) : 0}% des utilisateurs`}
+        />
+        <KpiCard
+          icon={<Zap className="w-5 h-5 text-gray-400" />}
+          label="Actifs 90 jours"
+          value={stats.actifs90j.toLocaleString('fr-FR')}
+          sub={`${stats.totalUsers > 0 ? Math.round((stats.actifs90j / stats.totalUsers) * 100) : 0}% des utilisateurs`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Panel
+          icon={<CalendarClock className="w-5 h-5 text-navy" />}
+          title="Dernière connexion par mois (12 derniers mois)"
+          className="lg:col-span-2"
+        >
+          <LineChart data={stats.lastSigninMonths} color="#22C55E" />
+          <p className="text-[11px] text-gray-400 mt-3 italic">
+            Compte les utilisateurs dont la <em>dernière</em> connexion connue tombe dans le mois.
+            Reflète l&apos;activité récente, pas le MAU réel (Supabase ne stocke que la dernière connexion).
+          </p>
+        </Panel>
+
+        <Panel
+          icon={<Activity className="w-5 h-5 text-navy" />}
+          title="Distribution de l'inactivité"
+        >
+          <BarChartHorizontal
+            data={stats.inactivityBuckets.map((b) => ({ label: b.label, value: b.count }))}
+          />
+        </Panel>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════ */}

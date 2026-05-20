@@ -15,6 +15,7 @@ const SAMPLE_VARS: Record<string, string> = {
   lien_reevaluation: '#',
   lien_desabonnement: '#',
   lien_reinitialisation: '#',
+  lien_fusion: '#',
   lien_reprise: '#',
   psc_link: '#',
   lien_etude: '#',

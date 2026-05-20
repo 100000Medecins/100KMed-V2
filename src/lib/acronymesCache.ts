@@ -19,8 +19,14 @@ export function getCache(): Acronyme[] | null {
 }
 
 export function buildRegex(acronymes: Acronyme[]): RegExp {
-  const escaped = acronymes.map(a => a.sigle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  return new RegExp(`\\b(${escaped.join('|')})\\b`, 'g')
+  const uniqueSigles = Array.from(new Set(acronymes.map(a => a.sigle)))
+  // Tri par longueur décroissante : les expressions longues testées avant les courtes
+  // (ex. « Téléservices CNAM "de base" » doit primer sur « CNAM »)
+  uniqueSigles.sort((a, b) => b.length - a.length)
+  const escaped = uniqueSigles.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  // Frontières par lookaround « pas collé à un caractère de mot » plutôt que \b :
+  // \b casse quand le sigle commence/finit par un caractère non-mot (ex. un guillemet).
+  return new RegExp(`(?<!\\w)(${escaped.join('|')})(?!\\w)`, 'g')
 }
 
 export function injectAcronymsInHtml(html: string, acronymes: Acronyme[]): string {
@@ -29,8 +35,11 @@ export function injectAcronymsInHtml(html: string, acronymes: Acronyme[]): strin
   return html.split(/(<[^>]*>)/g).map((part, i) => {
     if (i % 2 === 1) return part
     return part.replace(regex, (_, sigle) => {
-      const acro = acronymes.find(a => a.sigle === sigle)!
-      const title = acro.definition.replace(/"/g, '&quot;')
+      const matches = acronymes.filter(a => a.sigle === sigle)
+      const raw = matches.length === 1
+        ? matches[0].definition
+        : matches.map((m, idx) => `${idx + 1}) ${m.definition}`).join(' • ')
+      const title = raw.replace(/"/g, '&quot;')
       return `<abbr title="${title}" style="text-decoration:underline dotted #9ca3af;cursor:help">${sigle}</abbr>`
     })
   }).join('')

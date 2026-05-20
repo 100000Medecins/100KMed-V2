@@ -8,11 +8,12 @@ import { getAvisUtilisateurs } from '@/lib/db/evaluations'
 import AvisUtilisateurs from '@/components/evaluation/AvisUtilisateurs'
 
 interface PageProps {
-  params: { idCategorie: string; idSolution: string }
-  searchParams: { tri?: string; page?: string }
+  params: Promise<{ idCategorie: string; idSolution: string }>
+  searchParams: Promise<{ tri?: string; page?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   try {
     const solution = await getSolutionBySlug(params.idSolution)
     return {
@@ -24,7 +25,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function EvaluationsPage({ params, searchParams }: PageProps) {
+export default async function EvaluationsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const [solution, categorie] = await Promise.all([
     getSolutionBySlug(params.idSolution).catch(() => null),
     getCategorieBySlug(params.idCategorie).catch(() => null),

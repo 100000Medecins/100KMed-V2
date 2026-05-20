@@ -1,7 +1,10 @@
 import Image from 'next/image'
+import ScrollToTopButton from './ScrollToTopButton'
 
 export default function Footer() {
   return (
+    <>
+    <ScrollToTopButton />
     <footer className="bg-navy-dark text-gray-400">
       <div className="max-w-7xl mx-auto px-6 pt-10 pb-6">
         <div className="flex flex-col items-center gap-6">
@@ -39,5 +42,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    </>
   );
 }

@@ -4,20 +4,21 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { getAllSolutionsAdmin } from '@/lib/db/admin-solutions'
-import { getCategories } from '@/lib/db/categories'
+import { getAllCategoriesAdmin } from '@/lib/db/categories'
 import AdminCategoryFilter from '@/components/admin/AdminCategoryFilter'
 import AdminSolutionsTable from '@/components/admin/AdminSolutionsTable'
 import ScrollToSolution from '@/components/admin/ScrollToSolution'
 import RecalcAllSolutionsButton from '@/components/admin/RecalcAllSolutionsButton'
 
 interface PageProps {
-  searchParams: { categorie?: string }
+  searchParams: Promise<{ categorie?: string }>
 }
 
-export default async function AdminSolutionsPage({ searchParams }: PageProps) {
+export default async function AdminSolutionsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const [solutions, categories] = await Promise.all([
     getAllSolutionsAdmin(),
-    getCategories(),
+    getAllCategoriesAdmin(),
   ])
 
   const selectedCategoryId = searchParams.categorie || null

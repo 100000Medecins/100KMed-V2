@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { getEditeurDataForUser, updateEditeurByUser, updateSolutionByEditeur, syncGalerieByEditeur } from '@/lib/actions/admin-users'
-import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase } from 'lucide-react'
 import Link from 'next/link'
 
 type GalerieItem = { id?: number; url: string; titre: string | null; ordre: number | null; type?: string | null }
@@ -12,12 +12,19 @@ type Solution = {
   nom: string
   slug: string | null
   logo_url: string | null
-  image_url: string | null
   actif: boolean | null
+  mot_editeur: string | null
   prix_ttc: number | null
+  prix_ttc_min: number | null
+  prix_ttc_max: number | null
   prix_devise: string | null
   prix_frequence: string | null
   prix_duree_engagement_mois: number | null
+  contact_email: string | null
+  contact_telephone: string | null
+  support_email: string | null
+  support_telephone: string | null
+  support_website: string | null
   galerie: GalerieItem[]
 }
 type Editeur = {
@@ -28,12 +35,9 @@ type Editeur = {
   logo_titre: string | null
   website: string | null
   mot_editeur: string | null
-  contact_email: string | null
-  contact_telephone: string | null
-  contact_adresse: string | null
-  contact_cp: string | null
   contact_ville: string | null
   contact_pays: string | null
+  nb_employes: number | null
 }
 
 function isVideoUrl(url: string): boolean {
@@ -47,16 +51,29 @@ function getYoutubeThumbnail(url: string): string | null {
 
 const inputClass = 'w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
 
+type Tab = 'editeur' | 'solutions'
+
 export default function MonEspaceEditeurPage() {
   const { user, userRole, loading } = useAuth()
   const [data, setData] = useState<{ editeur: Editeur; solutions: Solution[] } | null>(null)
   const [fetching, setFetching] = useState(true)
   const [openSolutionId, setOpenSolutionId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<Tab>('editeur')
 
   useEffect(() => {
-    if (!user || userRole !== 'editeur') return
+    if (!user) return
+    if (userRole === null) return
+    if (userRole !== 'editeur') {
+      setFetching(false)
+      return
+    }
     getEditeurDataForUser(user.id).then((d) => {
-      setData(d as { editeur: Editeur; solutions: Solution[] } | null)
+      const typed = d as { editeur: Editeur; solutions: Solution[] } | null
+      setData(typed)
+      // Si l'éditeur n'a qu'une seule solution, on la déplie automatiquement
+      if (typed && typed.solutions.length === 1) {
+        setOpenSolutionId(typed.solutions[0].id)
+      }
       setFetching(false)
     })
   }, [user, userRole])
@@ -68,8 +85,16 @@ export default function MonEspaceEditeurPage() {
   if (userRole !== 'editeur') {
     return (
       <div className="bg-white rounded-card shadow-card p-8 text-center">
-        <p className="text-gray-600 text-sm">Votre demande d&apos;accès éditeur est en cours de validation par l&apos;administrateur.</p>
-        <p className="text-xs text-gray-400 mt-2">Vous recevrez l&apos;accès à votre espace dès qu&apos;elle sera approuvée.</p>
+        <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+          <Clock className="w-6 h-6 text-amber-500" />
+        </div>
+        <h2 className="text-base font-semibold text-navy mb-1">Demande d&apos;accès éditeur en cours</h2>
+        <p className="text-sm text-gray-500 max-w-md mx-auto">
+          Votre demande de rattachement à un éditeur a bien été enregistrée. Elle est en attente de validation par l&apos;équipe 100&nbsp;000 Médecins.
+        </p>
+        <p className="text-sm text-gray-500 max-w-md mx-auto mt-3">
+          Vous aurez accès à votre espace éditeur dès qu&apos;elle sera approuvée.
+        </p>
       </div>
     )
   }
@@ -87,48 +112,79 @@ export default function MonEspaceEditeurPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-navy">Mon espace éditeur</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {editeur.nom_commercial || editeur.nom} — {solutions.length} solution{solutions.length > 1 ? 's' : ''}
-        </p>
+      <h1 className="text-2xl font-bold text-navy">Espace éditeur</h1>
+
+      {/* Onglets */}
+      <div className="flex gap-2 border-b border-gray-200">
+        <TabButton active={activeTab === 'editeur'} onClick={() => setActiveTab('editeur')} icon={Building2} label="Page éditeur" />
+        <TabButton active={activeTab === 'solutions'} onClick={() => setActiveTab('solutions')} icon={Layers} label={`Pages solutions (${solutions.length})`} />
       </div>
 
-      {/* Bloc unique : champs éditeur partagés */}
-      <EditeurInfoCard
-        editeur={editeur}
-        userId={user!.id}
-        onSaved={(updated) => setData((prev) => (prev ? { ...prev, editeur: { ...prev.editeur, ...updated } } : prev))}
-      />
-
-      {solutions.length === 0 ? (
+      {activeTab === 'editeur' ? (
+        <EditeurInfoCard
+          editeur={editeur}
+          userId={user!.id}
+          onSaved={(updated) => setData((prev) => (prev ? { ...prev, editeur: { ...prev.editeur, ...updated } } : prev))}
+        />
+      ) : solutions.length === 0 ? (
         <div className="bg-white rounded-card shadow-card p-8 text-center text-gray-400 text-sm">
           Aucune solution associée à votre éditeur.
         </div>
       ) : (
-        solutions.map((sol) => (
-          <SolutionEditeurCard
-            key={sol.id}
-            solution={sol}
-            userId={user!.id}
-            isOpen={openSolutionId === sol.id}
-            onToggle={() => setOpenSolutionId(openSolutionId === sol.id ? null : sol.id)}
-            onSaved={(updatedSol) =>
-              setData((prev) =>
-                prev
-                  ? { ...prev, solutions: prev.solutions.map((s) => (s.id === updatedSol.id ? updatedSol : s)) }
-                  : prev
-              )
-            }
-          />
-        ))
+        <div className="space-y-4">
+          {solutions.map((sol) => (
+            <SolutionEditeurCard
+              key={sol.id}
+              solution={sol}
+              userId={user!.id}
+              isOpen={openSolutionId === sol.id}
+              onToggle={() => setOpenSolutionId(openSolutionId === sol.id ? null : sol.id)}
+              onSaved={(updatedSol) =>
+                setData((prev) =>
+                  prev
+                    ? { ...prev, solutions: prev.solutions.map((s) => (s.id === updatedSol.id ? updatedSol : s)) }
+                    : prev
+                )
+              }
+            />
+          ))}
+        </div>
       )}
     </div>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Bloc 1 — Informations éditeur (partagées entre toutes les solutions)
+   TabButton
+   ───────────────────────────────────────────────────────────────────────── */
+function TabButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: typeof Building2
+  label: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-colors ${
+        active
+          ? 'border-accent-blue text-accent-blue'
+          : 'border-transparent text-gray-500 hover:text-navy hover:border-gray-300'
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {label}
+    </button>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Page éditeur — champs partagés entre toutes les solutions
    ───────────────────────────────────────────────────────────────────────── */
 function EditeurInfoCard({
   editeur,
@@ -144,13 +200,9 @@ function EditeurInfoCard({
   const [logoTitre, setLogoTitre] = useState(editeur.logo_titre ?? '')
   const [website, setWebsite] = useState(editeur.website ?? '')
   const [motEditeur, setMotEditeur] = useState(editeur.mot_editeur ?? '')
-  const [email, setEmail] = useState(editeur.contact_email ?? '')
-  const [tel, setTel] = useState(editeur.contact_telephone ?? '')
-  const [adresse, setAdresse] = useState(editeur.contact_adresse ?? '')
-  const [cp, setCp] = useState(editeur.contact_cp ?? '')
   const [ville, setVille] = useState(editeur.contact_ville ?? '')
   const [pays, setPays] = useState(editeur.contact_pays ?? '')
-  const [open, setOpen] = useState(true)
+  const [nbEmployes, setNbEmployes] = useState(editeur.nb_employes?.toString() ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -163,12 +215,9 @@ function EditeurInfoCard({
         logo_titre: logoTitre,
         website,
         mot_editeur: motEditeur,
-        contact_email: email,
-        contact_telephone: tel,
-        contact_adresse: adresse,
-        contact_cp: cp,
         contact_ville: ville,
         contact_pays: pays,
+        nb_employes: nbEmployes === '' ? null : Number(nbEmployes),
       }
       await updateEditeurByUser(userId, fields)
       onSaved(fields)
@@ -180,118 +229,111 @@ function EditeurInfoCard({
   }
 
   return (
-    <div className="bg-white rounded-card shadow-card overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors text-left"
-      >
-        <div className="flex items-center gap-3">
-          <Building2 className="w-5 h-5 text-accent-blue" />
-          <span className="font-semibold text-navy">Mon entreprise</span>
+    <div className="bg-white rounded-card shadow-card p-6 space-y-5">
+      <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+        <Building2 className="w-5 h-5 text-accent-blue" />
+        <span className="font-semibold text-navy">{editeur.nom_commercial || editeur.nom || 'Mon entreprise'}</span>
+      </div>
+
+      {/* Nom commercial */}
+      <div>
+        <label className="block text-sm font-semibold text-navy mb-1.5">Nom commercial</label>
+        <input type="text" value={nomCommercial} onChange={(e) => setNomCommercial(e.target.value)} className={inputClass} />
+      </div>
+
+      {/* Logo + titre */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-navy mb-1.5">Logo entreprise (URL)</label>
+          <div className="flex gap-3 items-start">
+            {logoUrl && (
+              <img src={logoUrl} alt="" className="w-16 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
+            )}
+            <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
+          </div>
         </div>
-        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-      </button>
+        <div>
+          <label className="block text-sm font-semibold text-navy mb-1.5">Titre du logo</label>
+          <input type="text" value={logoTitre} onChange={(e) => setLogoTitre(e.target.value)} className={inputClass} />
+        </div>
+      </div>
 
-      {open && (
-        <div className="border-t border-gray-100 px-6 pb-6 pt-5 space-y-5">
-          {/* Nom commercial */}
+      {/* Site web */}
+      <div>
+        <label className="block text-sm font-semibold text-navy mb-1.5">Site web</label>
+        <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.votre-site.fr" className={inputClass} />
+      </div>
+
+      {/* Localisation */}
+      <div className="pt-3 border-t border-gray-100">
+        <p className="text-sm font-semibold text-navy mb-3">Localisation</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-navy mb-1.5">Nom commercial</label>
-            <input type="text" value={nomCommercial} onChange={(e) => setNomCommercial(e.target.value)} className={inputClass} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Ville</label>
+            <input type="text" value={ville} onChange={(e) => setVille(e.target.value)} className={inputClass} />
           </div>
-
-          {/* Logo + titre */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-navy mb-1.5">Logo entreprise (URL)</label>
-              <div className="flex gap-3 items-start">
-                {logoUrl && (
-                  <img src={logoUrl} alt="" className="w-16 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
-                )}
-                <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-navy mb-1.5">Titre du logo</label>
-              <input type="text" value={logoTitre} onChange={(e) => setLogoTitre(e.target.value)} className={inputClass} />
-            </div>
-          </div>
-
-          {/* Site web */}
           <div>
-            <label className="block text-sm font-semibold text-navy mb-1.5">Site web</label>
-            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.votre-site.fr" className={inputClass} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Pays</label>
+            <input type="text" value={pays} onChange={(e) => setPays(e.target.value)} className={inputClass} />
           </div>
-
-          {/* Mot de l'éditeur */}
           <div>
-            <label className="block text-sm font-semibold text-navy mb-1.5">Mot de l&apos;éditeur</label>
-            <p className="text-xs text-gray-400 mb-2">Texte libre. Utilisez **texte** pour mettre en gras. Les liens ne sont pas autorisés.</p>
-            <textarea
-              value={motEditeur}
-              onChange={(e) => setMotEditeur(e.target.value)}
-              rows={5}
-              className={`${inputClass} resize-y`}
-              placeholder="Présentez votre solution en quelques mots..."
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nombre d&apos;employés</label>
+            <input
+              type="number"
+              min={0}
+              value={nbEmployes}
+              onChange={(e) => setNbEmployes(e.target.value)}
+              className={inputClass}
+              placeholder="—"
             />
           </div>
-
-          {/* Contact */}
-          <div className="pt-3 border-t border-gray-100">
-            <p className="text-sm font-semibold text-navy mb-3">Contact</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone</label>
-                <input type="tel" value={tel} onChange={(e) => setTel(e.target.value)} className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Adresse</label>
-                <input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Code postal</label>
-                <input type="text" value={cp} onChange={(e) => setCp(e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Ville</label>
-                <input type="text" value={ville} onChange={(e) => setVille(e.target.value)} className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Pays</label>
-                <input type="text" value={pays} onChange={(e) => setPays(e.target.value)} className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Bouton enregistrer */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-            {saved && <span className="text-xs text-green-600 font-medium">Enregistré ✓</span>}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-navy text-white hover:bg-navy/90 transition-colors disabled:opacity-50"
-            >
-              {saving ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              Enregistrer
-            </button>
-          </div>
         </div>
-      )}
+      </div>
+
+      <p className="text-xs text-gray-400 italic">
+        Les contacts commerciaux et support sont propres à chaque produit : retrouvez-les dans l&apos;onglet « Pages solutions », sur la fiche de la solution concernée.
+      </p>
+
+      {/* Mot de l'éditeur (page éditeur globale) */}
+      <div className="pt-3 border-t border-gray-100">
+        <label className="block text-sm font-semibold text-navy mb-1.5">Mot de l&apos;éditeur (page éditeur globale)</label>
+        <p className="text-xs text-gray-400 mb-2">
+          Texte affiché sur votre page éditeur. Pour le mot affiché en bas de chaque page solution, utilisez l&apos;onglet « Pages solutions ».
+        </p>
+        <textarea
+          value={motEditeur}
+          onChange={(e) => setMotEditeur(e.target.value)}
+          rows={5}
+          className={`${inputClass} resize-y`}
+          placeholder="Présentez votre entreprise en quelques mots..."
+        />
+      </div>
+
+      {/* Bouton enregistrer */}
+      <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+        {saved && <span className="text-xs text-green-600 font-medium">Enregistré ✓</span>}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-navy text-white hover:bg-navy/90 transition-colors disabled:opacity-50"
+        >
+          {saving ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          Enregistrer
+        </button>
+      </div>
     </div>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Bloc 2 — Solution (1 par solution)
+   Page solution (1 par solution)
    ───────────────────────────────────────────────────────────────────────── */
+type PrixMode = 'unique' | 'plage'
+
 function SolutionEditeurCard({
   solution,
   userId,
@@ -306,11 +348,20 @@ function SolutionEditeurCard({
   onSaved: (s: Solution) => void
 }) {
   const [logoUrl, setLogoUrl] = useState(solution.logo_url ?? '')
-  const [imageUrl, setImageUrl] = useState(solution.image_url ?? '')
+  const [motEditeur, setMotEditeur] = useState(solution.mot_editeur ?? '')
+  const initialPrixMode: PrixMode = solution.prix_ttc_min != null || solution.prix_ttc_max != null ? 'plage' : 'unique'
+  const [prixMode, setPrixMode] = useState<PrixMode>(initialPrixMode)
   const [prixTtc, setPrixTtc] = useState(solution.prix_ttc?.toString() ?? '')
+  const [prixMin, setPrixMin] = useState(solution.prix_ttc_min?.toString() ?? '')
+  const [prixMax, setPrixMax] = useState(solution.prix_ttc_max?.toString() ?? '')
   const [prixDevise, setPrixDevise] = useState(solution.prix_devise ?? 'EUR')
   const [prixFrequence, setPrixFrequence] = useState(solution.prix_frequence ?? '')
   const [prixDuree, setPrixDuree] = useState(solution.prix_duree_engagement_mois?.toString() ?? '')
+  const [contactEmail, setContactEmail] = useState(solution.contact_email ?? '')
+  const [contactTel, setContactTel] = useState(solution.contact_telephone ?? '')
+  const [supportEmail, setSupportEmail] = useState(solution.support_email ?? '')
+  const [supportTel, setSupportTel] = useState(solution.support_telephone ?? '')
+  const [supportSite, setSupportSite] = useState(solution.support_website ?? '')
   const [galerie, setGalerie] = useState<GalerieItem[]>(solution.galerie ?? [])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -321,11 +372,18 @@ function SolutionEditeurCard({
     try {
       const fields = {
         logo_url: logoUrl,
-        image_url: imageUrl,
-        prix_ttc: prixTtc === '' ? null : Number(prixTtc),
+        mot_editeur: motEditeur,
+        prix_ttc: prixMode === 'unique' && prixTtc !== '' ? Number(prixTtc) : null,
+        prix_ttc_min: prixMode === 'plage' && prixMin !== '' ? Number(prixMin) : null,
+        prix_ttc_max: prixMode === 'plage' && prixMax !== '' ? Number(prixMax) : null,
         prix_devise: prixDevise,
         prix_frequence: prixFrequence,
         prix_duree_engagement_mois: prixDuree === '' ? null : Number(prixDuree),
+        contact_email: contactEmail,
+        contact_telephone: contactTel,
+        support_email: supportEmail,
+        support_telephone: supportTel,
+        support_website: supportSite,
       }
       await Promise.all([
         updateSolutionByEditeur(userId, solution.id, fields),
@@ -334,11 +392,18 @@ function SolutionEditeurCard({
       onSaved({
         ...solution,
         logo_url: logoUrl,
-        image_url: imageUrl,
+        mot_editeur: motEditeur,
         prix_ttc: fields.prix_ttc,
+        prix_ttc_min: fields.prix_ttc_min,
+        prix_ttc_max: fields.prix_ttc_max,
         prix_devise: prixDevise,
         prix_frequence: prixFrequence,
         prix_duree_engagement_mois: fields.prix_duree_engagement_mois,
+        contact_email: contactEmail || null,
+        contact_telephone: contactTel || null,
+        support_email: supportEmail || null,
+        support_telephone: supportTel || null,
+        support_website: supportSite || null,
         galerie,
       })
       setSaved(true)
@@ -390,43 +455,106 @@ function SolutionEditeurCard({
       {isOpen && (
         <div className="border-t border-gray-100 px-6 pb-6 pt-5 space-y-6">
 
-          {/* Logo + image principale */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-navy mb-1.5">Logo solution (URL)</label>
-              <div className="flex gap-3 items-start">
-                {logoUrl && (
-                  <img src={logoUrl} alt="" className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
-                )}
-                <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
+          {/* Logo solution */}
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1.5">Logo solution (URL)</label>
+            <div className="flex gap-3 items-start">
+              {logoUrl && (
+                <img src={logoUrl} alt="" className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
+              )}
+              <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-navy mb-1.5">Image principale (URL)</label>
-              <div className="flex gap-3 items-start">
-                {imageUrl && (
-                  <img src={imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0" />
-                )}
-                <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
+          </div>
+
+          {/* Mot de l'éditeur (page solution) */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-1.5">
+              <FileText className="w-4 h-4 text-accent-blue" />
+              <label className="text-sm font-semibold text-navy">Mot de l&apos;éditeur (page solution)</label>
             </div>
+            <p className="text-xs text-gray-400 mb-2">
+              Texte affiché en bas de cette page solution. Utilisez **texte** pour mettre en gras.
+            </p>
+            <textarea
+              value={motEditeur}
+              onChange={(e) => setMotEditeur(e.target.value)}
+              rows={5}
+              className={`${inputClass} resize-y`}
+              placeholder="Présentez votre solution en quelques mots..."
+            />
           </div>
 
           {/* Tarification */}
           <div className="pt-3 border-t border-gray-100">
-            <p className="text-sm font-semibold text-navy mb-3">Tarification</p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Prix TTC</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={prixTtc}
-                  onChange={(e) => setPrixTtc(e.target.value)}
-                  placeholder="0.00"
-                  className={inputClass}
-                />
-              </div>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <p className="text-sm font-semibold text-navy">Tarification</p>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full">
+                <Clock className="w-3 h-3" />
+                Bientôt affiché sur le site
+              </span>
+            </div>
+
+            {/* Toggle mode prix */}
+            <div className="inline-flex bg-gray-100 rounded-xl p-1 mb-4">
+              <button
+                type="button"
+                onClick={() => setPrixMode('unique')}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  prixMode === 'unique' ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-navy'
+                }`}
+              >
+                Prix unique
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrixMode('plage')}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  prixMode === 'plage' ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-navy'
+                }`}
+              >
+                Plage de prix
+              </button>
+            </div>
+
+            <div className={`grid grid-cols-1 ${prixMode === 'plage' ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3`}>
+              {prixMode === 'unique' ? (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Prix TTC</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={prixTtc}
+                    onChange={(e) => setPrixTtc(e.target.value)}
+                    placeholder="0.00"
+                    className={inputClass}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Min TTC</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={prixMin}
+                      onChange={(e) => setPrixMin(e.target.value)}
+                      placeholder="0.00"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Max TTC</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={prixMax}
+                      onChange={(e) => setPrixMax(e.target.value)}
+                      placeholder="0.00"
+                      className={inputClass}
+                    />
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Devise</label>
                 <select value={prixDevise} onChange={(e) => setPrixDevise(e.target.value)} className={inputClass}>
@@ -453,6 +581,52 @@ function SolutionEditeurCard({
                   placeholder="0"
                   className={inputClass}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Contacts commerciaux (par solution) */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Briefcase className="w-4 h-4 text-accent-blue" />
+              <p className="text-sm font-semibold text-navy">Contacts commerciaux <span className="text-gray-400 font-normal">(demande de démo, devis&hellip;)</span></p>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts commerciaux ».
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email commercial</label>
+                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contact@..." className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone commercial</label>
+                <input type="tel" value={contactTel} onChange={(e) => setContactTel(e.target.value)} className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          {/* Contacts support (par solution) */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Headphones className="w-4 h-4 text-accent-blue" />
+              <p className="text-sm font-semibold text-navy">Contacts support <span className="text-gray-400 font-normal">(SAV, assistance technique)</span></p>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts support ».
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email support</label>
+                <input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} placeholder="support@..." className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone support</label>
+                <input type="tel" value={supportTel} onChange={(e) => setSupportTel(e.target.value)} className={inputClass} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Site / page de support</label>
+                <input type="url" value={supportSite} onChange={(e) => setSupportSite(e.target.value)} placeholder="https://..." className={inputClass} />
               </div>
             </div>
           </div>

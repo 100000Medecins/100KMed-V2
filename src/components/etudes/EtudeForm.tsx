@@ -21,11 +21,21 @@ export default function EtudeForm({ etude, onSave, onCancel }: Props) {
   const [dateDebut, setDateDebut] = useState(etude?.date_debut ?? '')
   const [dateFin, setDateFin] = useState(etude?.date_fin ?? '')
   const [images, setImages] = useState<string[]>(etude?.images ?? [])
+  const [imageUrlDraft, setImageUrlDraft] = useState('')
   const [specialites_cibles, setSpecialitesCibles] = useState<string[]>(etude?.specialites_cibles ?? [])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  function handleAddUrlImage() {
+    const url = imageUrlDraft.trim()
+    if (!url) return
+    try { new URL(url) } catch { setError("URL invalide"); return }
+    setError(null)
+    setImages((prev) => [...prev, url])
+    setImageUrlDraft('')
+  }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -118,15 +128,34 @@ export default function EtudeForm({ etude, onSave, onCancel }: Props) {
             </div>
           )}
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors disabled:opacity-50"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-            {uploading ? 'Upload en cours…' : 'Ajouter une image'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2 text-sm border border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-accent-blue hover:text-accent-blue transition-colors disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+              {uploading ? 'Upload en cours…' : 'Ajouter une image'}
+            </button>
+            <span className="text-xs text-gray-400">ou</span>
+            <input
+              type="url"
+              value={imageUrlDraft}
+              onChange={(e) => setImageUrlDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddUrlImage() } }}
+              placeholder="Coller une URL d'image"
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+            />
+            <button
+              type="button"
+              onClick={handleAddUrlImage}
+              disabled={!imageUrlDraft.trim()}
+              className="px-3 py-2 text-xs font-semibold text-accent-blue border border-accent-blue/30 rounded-xl hover:bg-accent-blue/5 transition-colors disabled:opacity-40"
+            >
+              Ajouter
+            </button>
+          </div>
         </div>
       </div>
 

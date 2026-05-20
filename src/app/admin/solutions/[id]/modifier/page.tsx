@@ -5,6 +5,8 @@ import { getAllCategoriesAdmin } from '@/lib/db/categories'
 import { getEditeurs } from '@/lib/db/editeurs'
 import { getSolutionByIdAdmin, getResultatsRedacAdmin, getTagsForSolutionAdmin } from '@/lib/db/admin-solutions'
 import SolutionWithSearch from '@/components/admin/SolutionWithSearch'
+import SolutionLiensManager from '@/components/admin/SolutionLiensManager'
+import SolutionCommunautesManager from '@/components/admin/SolutionCommunautesManager'
 import RecalcSolutionButton from '@/components/admin/RecalcSolutionButton'
 import { updateSolution } from '@/lib/actions/admin'
 
@@ -43,6 +45,15 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
           action={boundAction}
         />
       </div>
+
+      <div className="mt-6">
+        <SolutionLiensManager solutionId={id} />
+      </div>
+
+      <div className="mt-6">
+        <SolutionCommunautesManager solutionId={id} />
+      </div>
+
       <div className="mt-4 flex justify-end">
         <RecalcSolutionButton solutionId={id} />
       </div>

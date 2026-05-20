@@ -7,14 +7,17 @@ import Footer from '@/components/layout/Footer'
 import { getSolutionBySlug, getSolutions, getNotesRedac } from '@/lib/db/solutions'
 import { getAllResultats } from '@/lib/db/resultats'
 import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNoteUtilisateurs } from '@/lib/db/evaluations'
+import { getSolutionsLiees } from '@/lib/db/solution-liens'
+import { getCommunautesPubliques } from '@/lib/db/solution-communautes'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
 
 interface PageProps {
-  params: { idCategorie: string; idSolution: string }
+  params: Promise<{ idCategorie: string; idSolution: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   try {
     const solution = await getSolutionBySlug(params.idSolution)
     const meta = solution.meta as Record<string, string | null> | null
@@ -32,16 +35,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function SolutionPage({ params }: PageProps) {
+export default async function SolutionPage(props: PageProps) {
+  const params = await props.params;
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
   if (!solution) notFound()
 
-  // Fetch résultats, notes rédac, avis paginés et note utilisateurs en parallèle (par UUID)
-  let [resultats, notesRedac, avisPagines, noteUtilisateursData] = await Promise.all([
+  // Fetch résultats, notes rédac, avis paginés, note utilisateurs, solutions liées et communautés en parallèle (par UUID)
+  let [resultats, notesRedac, avisPagines, noteUtilisateursData, solutionsLiees, communautes] = await Promise.all([
     getAllResultats(solution.id),
     getNotesRedac(solution.id),
     getAvisUtilisateursPaginated(solution.id, { page: 1, limit: 10, tri: 'date' }),
     getAverageNoteUtilisateurs(solution.id),
+    getSolutionsLiees(solution.id),
+    getCommunautesPubliques(solution.id),
   ])
 
   // Fallback : si la table resultats est vide, calculer depuis les évaluations
@@ -79,6 +85,8 @@ export default async function SolutionPage({ params }: PageProps) {
           avisPagines={avisPagines}
           autreSolutions={autreSolutions}
           noteUtilisateursData={noteUtilisateursData}
+          solutionsLiees={solutionsLiees}
+          communautes={communautes}
         />
       </main>
       <Footer />

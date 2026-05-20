@@ -9,6 +9,7 @@ type Acronyme = {
   definition: string
   description: string | null
   lien: string | null
+  disambiguation: string | null
 }
 
 function linkifyText(text: string, siglesCourant: string, regex: RegExp): React.ReactNode[] {
@@ -117,6 +118,11 @@ function AcronymeRow({ a, siglesRegex }: { a: Acronyme; siglesRegex: RegExp }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-800">
           {linkifyText(a.definition, a.sigle, new RegExp(siglesRegex.source, 'g'))}
+          {a.disambiguation && (
+            <span className="ml-2 text-xs font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
+              {a.disambiguation}
+            </span>
+          )}
         </p>
         {a.description && (
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">

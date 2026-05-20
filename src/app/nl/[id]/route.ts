@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 
 const S = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { id } = params
 
   const supabase = createClient(

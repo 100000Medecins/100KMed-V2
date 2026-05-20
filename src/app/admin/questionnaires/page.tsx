@@ -1,11 +1,12 @@
 import { getSectionsForSlug, getAllSlugs } from '@/lib/actions/questionnaires'
 import QuestionnaireEditor from '@/components/admin/QuestionnaireEditor'
 
-export default async function QuestionnairesAdminPage({
-  searchParams,
-}: {
-  searchParams: { slug?: string }
-}) {
+export default async function QuestionnairesAdminPage(
+  props: {
+    searchParams: Promise<{ slug?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const allSlugs = await getAllSlugs()
   const activeSlug = searchParams.slug || allSlugs[0] || 'default'
   const sections = await getSectionsForSlug(activeSlug)

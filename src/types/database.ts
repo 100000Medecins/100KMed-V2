@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           definition: string
           description: string | null
+          disambiguation: string | null
           id: string
           lien: string | null
           sigle: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string | null
           definition: string
           description?: string | null
+          disambiguation?: string | null
           id?: string
           lien?: string | null
           sigle: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string | null
           definition?: string
           description?: string | null
+          disambiguation?: string | null
           id?: string
           lien?: string | null
           sigle?: string
@@ -124,20 +127,60 @@ export type Database = {
         }
         Relationships: []
       }
-      avatars: {
+      avatar_generations: {
         Row: {
+          created_at: string
           id: string
-          url: string
+          user_id: string
         }
         Insert: {
+          created_at?: string
           id?: string
-          url: string
+          user_id: string
         }
         Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatar_generations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      avatars: {
+        Row: {
+          display_order: number | null
+          id: string
+          url: string
+          user_id: string | null
+        }
+        Insert: {
+          display_order?: number | null
+          id?: string
+          url: string
+          user_id?: string | null
+        }
+        Update: {
+          display_order?: number | null
           id?: string
           url?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "avatars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -359,9 +402,7 @@ export type Database = {
         Row: {
           contact_adresse: string | null
           contact_cp: string | null
-          contact_email: string | null
           contact_pays: string | null
-          contact_telephone: string | null
           contact_ville: string | null
           created_at: string | null
           description: string | null
@@ -379,9 +420,7 @@ export type Database = {
         Insert: {
           contact_adresse?: string | null
           contact_cp?: string | null
-          contact_email?: string | null
           contact_pays?: string | null
-          contact_telephone?: string | null
           contact_ville?: string | null
           created_at?: string | null
           description?: string | null
@@ -399,9 +438,7 @@ export type Database = {
         Update: {
           contact_adresse?: string | null
           contact_cp?: string | null
-          contact_email?: string | null
           contact_pays?: string | null
-          contact_telephone?: string | null
           contact_ville?: string | null
           created_at?: string | null
           description?: string | null
@@ -852,6 +889,45 @@ export type Database = {
         }
         Relationships: []
       }
+      propositions_utilisateurs: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          id: string
+          statut: string
+          titre: string
+          type: string
+          updated_at: string
+          url_concernee: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          statut?: string
+          titre: string
+          type: string
+          updated_at?: string
+          url_concernee?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          statut?: string
+          titre?: string
+          type?: string
+          updated_at?: string
+          url_concernee?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       questionnaire_questions: {
         Row: {
           critere_majeur: string
@@ -1039,9 +1115,106 @@ export type Database = {
         }
         Relationships: []
       }
+      solution_communautes: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          note_admin: string | null
+          proposed_by: string | null
+          proposer_email: string | null
+          solution_id: string
+          statut: string
+          type: string
+          url: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          note_admin?: string | null
+          proposed_by?: string | null
+          proposer_email?: string | null
+          solution_id: string
+          statut?: string
+          type: string
+          url: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          note_admin?: string | null
+          proposed_by?: string | null
+          proposer_email?: string | null
+          solution_id?: string
+          statut?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_communautes_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solution_liens: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          solution_a_id: string
+          solution_b_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          solution_a_id: string
+          solution_b_id: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          solution_a_id?: string
+          solution_b_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_liens_solution_a_id_fkey"
+            columns: ["solution_a_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_liens_solution_b_id_fkey"
+            columns: ["solution_b_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solutions: {
         Row: {
           actif: boolean | null
+          contact_email: string | null
+          contact_telephone: string | null
           created_at: string | null
           date_maj: string | null
           description: string | null
@@ -1063,12 +1236,19 @@ export type Database = {
           prix_duree_engagement_mois: number | null
           prix_frequence: string | null
           prix_ttc: number | null
+          prix_ttc_max: number | null
+          prix_ttc_min: number | null
           slug: string | null
+          support_email: string | null
+          support_telephone: string | null
+          support_website: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
           actif?: boolean | null
+          contact_email?: string | null
+          contact_telephone?: string | null
           created_at?: string | null
           date_maj?: string | null
           description?: string | null
@@ -1090,12 +1270,19 @@ export type Database = {
           prix_duree_engagement_mois?: number | null
           prix_frequence?: string | null
           prix_ttc?: number | null
+          prix_ttc_max?: number | null
+          prix_ttc_min?: number | null
           slug?: string | null
+          support_email?: string | null
+          support_telephone?: string | null
+          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
           actif?: boolean | null
+          contact_email?: string | null
+          contact_telephone?: string | null
           created_at?: string | null
           date_maj?: string | null
           description?: string | null
@@ -1117,7 +1304,12 @@ export type Database = {
           prix_duree_engagement_mois?: number | null
           prix_frequence?: string | null
           prix_ttc?: number | null
+          prix_ttc_max?: number | null
+          prix_ttc_min?: number | null
           slug?: string | null
+          support_email?: string | null
+          support_telephone?: string | null
+          support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -1500,6 +1692,13 @@ export type Database = {
             referencedRelation: "editeurs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "users_portrait_fkey"
+            columns: ["portrait"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
         ]
       }
       users_notification_preferences: {
@@ -1580,6 +1779,7 @@ export type Database = {
       videos: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string | null
           homepage_ordre: number | null
           homepage_pinned_at: string | null
@@ -1596,6 +1796,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           homepage_ordre?: number | null
           homepage_pinned_at?: string | null
@@ -1612,6 +1813,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           homepage_ordre?: number | null
           homepage_pinned_at?: string | null
@@ -1809,3 +2011,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

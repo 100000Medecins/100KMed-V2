@@ -48,7 +48,7 @@ export async function getAvisUtilisateurs(
       scores,
       moyenne_utilisateur,
       last_date_note,
-      user:users(pseudo, nom, prenom, portrait, specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null) // Seulement les évaluations finalisées
@@ -76,12 +76,15 @@ export async function getAvisUtilisateurs(
 
   if (error) throw error
 
-  const avis = (data || []).map((row: Record<string, unknown>) => ({
-    idEvaluation: row.id as string,
-    idUser: row.user_id as string,
-    user: row.user as { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null ?? undefined,
-    lastDateNote: row.last_date_note as string | null,
-  }))
+  const avis = (data || []).map((row: Record<string, unknown>) => {
+    const u = row.user as ({ pseudo: string | null; nom: string | null; prenom: string | null; avatar: { url: string | null } | null; specialite: string | null; mode_exercice: string | null }) | null
+    return {
+      idEvaluation: row.id as string,
+      idUser: row.user_id as string,
+      user: u ? { pseudo: u.pseudo, nom: u.nom, prenom: u.prenom, portrait: u.avatar?.url ?? null, specialite: u.specialite, mode_exercice: u.mode_exercice } : undefined,
+      lastDateNote: row.last_date_note as string | null,
+    }
+  })
 
   return {
     avis,
@@ -108,7 +111,7 @@ export async function getLastAvisUtilisateurs(
       scores,
       moyenne_utilisateur,
       last_date_note,
-      user:users(pseudo, nom, prenom, portrait, specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
     `)
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
@@ -117,7 +120,17 @@ export async function getLastAvisUtilisateurs(
     .limit(limit)
 
   if (error) throw error
-  return data as unknown as Array<{
+  return (data || []).map((row: Record<string, unknown>) => {
+    const u = row.user as ({ pseudo: string | null; nom: string | null; prenom: string | null; avatar: { url: string | null } | null; specialite: string | null; mode_exercice: string | null }) | null
+    return {
+      id: row.id as string,
+      user_id: row.user_id as string | null,
+      scores: row.scores,
+      moyenne_utilisateur: row.moyenne_utilisateur as number | null,
+      last_date_note: row.last_date_note as string | null,
+      user: u ? { pseudo: u.pseudo, nom: u.nom, prenom: u.prenom, portrait: u.avatar?.url ?? null, specialite: u.specialite, mode_exercice: u.mode_exercice } : null,
+    }
+  }) as Array<{
     id: string
     user_id: string | null
     scores: unknown
@@ -155,7 +168,7 @@ export async function getAvisUtilisateursPaginated(
       moyenne_utilisateur,
       last_date_note,
       temps_precedente_solution,
-      user:users(pseudo, nom, prenom, portrait, specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
     `, { count: 'exact' })
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
@@ -193,16 +206,21 @@ export async function getAvisUtilisateursPaginated(
   }
 
   type UserRow = { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null }
+  type UserRowRaw = { pseudo: string | null; nom: string | null; prenom: string | null; avatar: { url: string | null } | null; specialite: string | null; mode_exercice: string | null }
 
   const avis = (data || []).map((row: Record<string, unknown>) => {
     const scores = (row.scores || {}) as Record<string, unknown>
     const commentaire = typeof scores.commentaire === 'string' ? scores.commentaire : null
     const userId = row.user_id as string
+    const uRaw = row.user as UserRowRaw | null
+    const user: UserRow | null = uRaw
+      ? { pseudo: uRaw.pseudo, nom: uRaw.nom, prenom: uRaw.prenom, portrait: uRaw.avatar?.url ?? null, specialite: uRaw.specialite, mode_exercice: uRaw.mode_exercice }
+      : null
 
     return {
       id: row.id as string,
       userId,
-      user: row.user as UserRow | null,
+      user,
       moyenne: (() => {
         const m = row.moyenne_utilisateur as number | null
         if (m == null) return null

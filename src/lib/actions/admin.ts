@@ -94,6 +94,17 @@ function extractSolutionFromFormData(formData: FormData) {
       ? (formData.get('evaluation_redac_points_faibles') as string).split('\n').filter(Boolean)
       : null,
     mot_editeur: (formData.get('mot_editeur') as string) || null,
+    contact_email: (formData.get('contact_email') as string) || null,
+    contact_telephone: (formData.get('contact_telephone') as string) || null,
+    support_email: (formData.get('support_email') as string) || null,
+    support_telephone: (formData.get('support_telephone') as string) || null,
+    support_website: (formData.get('support_website') as string) || null,
+    prix_ttc: formData.get('prix_ttc') ? Number(formData.get('prix_ttc')) : null,
+    prix_ttc_min: formData.get('prix_ttc_min') ? Number(formData.get('prix_ttc_min')) : null,
+    prix_ttc_max: formData.get('prix_ttc_max') ? Number(formData.get('prix_ttc_max')) : null,
+    prix_devise: (formData.get('prix_devise') as string) || null,
+    prix_frequence: (formData.get('prix_frequence') as string) || null,
+    prix_duree_engagement_mois: formData.get('prix_duree_engagement_mois') ? Number(formData.get('prix_duree_engagement_mois')) : null,
     meta: (() => {
       const t = (formData.get('meta_title') as string) || null
       const d = (formData.get('meta_description') as string) || null
@@ -634,10 +645,6 @@ export async function createEditeur(formData: FormData) {
     logo_url: (formData.get('logo_url') as string) || null,
     logo_titre: (formData.get('logo_titre') as string) || null,
     website: (formData.get('website') as string) || null,
-    contact_email: (formData.get('contact_email') as string) || null,
-    contact_telephone: (formData.get('contact_telephone') as string) || null,
-    contact_adresse: (formData.get('contact_adresse') as string) || null,
-    contact_cp: (formData.get('contact_cp') as string) || null,
     contact_ville: (formData.get('contact_ville') as string) || null,
     contact_pays: (formData.get('contact_pays') as string) || null,
     nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
@@ -646,6 +653,10 @@ export async function createEditeur(formData: FormData) {
   }).select('id').single()
   if (error) return { error: error.message }
   revalidatePath('/admin/editeurs')
+  const fromClaim = (formData.get('fromClaim') as string) || ''
+  if (fromClaim) {
+    redirect(`/admin/editeurs?tab=demandes&approveClaim=${encodeURIComponent(fromClaim)}&withEditeur=${encodeURIComponent(data.id)}`)
+  }
   redirect(`/admin/editeurs/${data.id}/modifier`)
 }
 
@@ -659,10 +670,6 @@ export async function updateEditeur(id: string, formData: FormData) {
     logo_url: (formData.get('logo_url') as string) || null,
     logo_titre: (formData.get('logo_titre') as string) || null,
     website: (formData.get('website') as string) || null,
-    contact_email: (formData.get('contact_email') as string) || null,
-    contact_telephone: (formData.get('contact_telephone') as string) || null,
-    contact_adresse: (formData.get('contact_adresse') as string) || null,
-    contact_cp: (formData.get('contact_cp') as string) || null,
     contact_ville: (formData.get('contact_ville') as string) || null,
     contact_pays: (formData.get('contact_pays') as string) || null,
     nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
@@ -682,6 +689,28 @@ export async function deleteEditeur(id: string) {
   revalidatePath('/admin/editeurs')
 }
 
+/**
+ * Lie une solution sans éditeur à un éditeur depuis la page admin de l'éditeur.
+ */
+export async function attachSolutionToEditeur(solutionId: string, editeurId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('solutions').update({ id_editeur: editeurId }).eq('id', solutionId)
+  revalidatePath(`/admin/editeurs/${editeurId}/modifier`)
+  revalidatePath(`/editeur/${editeurId}`)
+}
+
+/**
+ * Détache une solution de son éditeur (réinitialise id_editeur à NULL).
+ */
+export async function detachSolutionFromEditeur(solutionId: string, editeurId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  await supabase.from('solutions').update({ id_editeur: null }).eq('id', solutionId)
+  revalidatePath(`/admin/editeurs/${editeurId}/modifier`)
+  revalidatePath(`/editeur/${editeurId}`)
+}
+
 // ────────────────────────────────────────────
 // Editeur claims — validation des demandes
 // ────────────────────────────────────────────
@@ -693,7 +722,7 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: claim, error: claimError } = await (supabase as any)
     .from('editeur_claims')
-    .select('user_id')
+    .select('user_id, solution_id')
     .eq('id', claimId)
     .single()
 
@@ -704,6 +733,15 @@ export async function approuverEditeurClaim(claimId: string, editeurId: string) 
     .from('users')
     .update({ editeur_id: editeurId, role: 'editeur' })
     .eq('id', claim.user_id)
+
+  // Si la demande portait sur une solution (sans éditeur), la rattacher à l'éditeur validé —
+  // sinon la solution revendiquée n'apparaîtrait jamais dans l'espace éditeur du user
+  if (claim.solution_id) {
+    await supabase
+      .from('solutions')
+      .update({ id_editeur: editeurId })
+      .eq('id', claim.solution_id)
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
@@ -1229,10 +1267,11 @@ export async function createAcronyme(formData: FormData) {
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').insert({
     id: randomUUID(),
-    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    sigle: (formData.get('sigle') as string).trim(),
     definition: (formData.get('definition') as string).trim(),
     description: (formData.get('description') as string)?.trim() || null,
     lien: (formData.get('lien') as string)?.trim() || null,
+    disambiguation: (formData.get('disambiguation') as string)?.trim() || null,
   })
   if (error) return { error: error.message }
   revalidatePath('/admin/acronymes')
@@ -1244,10 +1283,11 @@ export async function updateAcronyme(id: string, formData: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('acronymes').update({
-    sigle: (formData.get('sigle') as string).trim().toUpperCase(),
+    sigle: (formData.get('sigle') as string).trim(),
     definition: (formData.get('definition') as string).trim(),
     description: (formData.get('description') as string)?.trim() || null,
     lien: (formData.get('lien') as string)?.trim() || null,
+    disambiguation: (formData.get('disambiguation') as string)?.trim() || null,
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/acronymes')

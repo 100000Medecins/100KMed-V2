@@ -4,8 +4,8 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { Lightbulb, Send, Check } from 'lucide-react'
 import { suggestAcronyme } from '@/lib/actions/admin'
 
-export default function GlossaireSuggestForm({ userEmail }: { userEmail?: string | null }) {
-  const [open, setOpen] = useState(false)
+export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }: { userEmail?: string | null; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
   const [notify, setNotify] = useState(true)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)

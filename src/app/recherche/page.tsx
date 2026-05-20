@@ -6,10 +6,11 @@ import Link from 'next/link'
 import { Search } from 'lucide-react'
 
 interface PageProps {
-  searchParams: { q?: string }
+  searchParams: Promise<{ q?: string }>
 }
 
-export function generateMetadata({ searchParams }: PageProps): Metadata {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const searchParams = await props.searchParams;
   const q = searchParams.q
   return {
     title: q ? `Recherche "${q}" — 100000médecins.org` : 'Recherche — 100000médecins.org',
@@ -31,7 +32,8 @@ async function searchAll(query: string) {
   }
 }
 
-export default async function RecherchePage({ searchParams }: PageProps) {
+export default async function RecherchePage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const q = searchParams.q?.trim() ?? ''
   const results = q.length >= 2 ? await searchAll(q) : null
   const total = results ? results.solutions.length + results.articles.length + results.categories.length : 0

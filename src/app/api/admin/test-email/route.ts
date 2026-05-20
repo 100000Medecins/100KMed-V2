@@ -39,6 +39,7 @@ const SAMPLE_VARS: Record<string, Record<string, string>> = {
   verification_psc: { psc_link: '#' },
   suppression_compte: { nom: 'DUPONT', prenom: 'Marie' },
   reinitialisation_mot_de_passe: { lien_reinitialisation: '#' },
+  fusion_comptes: { lien_fusion: '#' },
   lancement: {
     nom: 'Dr. DUPONT', prenom: 'Dr. DUPONT', solution_nom: 'MonLogiciel Pro',
     lien_1clic: '#', lien_reevaluation: '#', lien_desabonnement: '#',

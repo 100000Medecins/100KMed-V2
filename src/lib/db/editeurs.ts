@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import type { Editeur } from '@/types/models'
 
 /**
@@ -36,9 +36,11 @@ export async function getEditeurById(id: string) {
 
 /**
  * Récupère un éditeur avec toutes ses solutions.
+ * Utilise le service role car la page éditeur est publique + ISR :
+ * createServerClient lit cookies() ce qui est incompatible avec revalidate sur Next 16.
  */
 export async function getEditeurWithSolutions(id: string) {
-  const supabase = await createServerClient()
+  const supabase = createServiceRoleClient()
 
   const [editeurResult, solutionsResult] = await Promise.all([
     supabase.from('editeurs').select('*').eq('id', id).single(),

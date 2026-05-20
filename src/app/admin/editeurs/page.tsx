@@ -34,11 +34,12 @@ async function getEditeurClaims(): Promise<ClaimRow[]> {
   return (data || []) as unknown as ClaimRow[]
 }
 
-export default async function AdminEditeursPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string }
-}) {
+export default async function AdminEditeursPage(
+  props: {
+    searchParams: Promise<{ tab?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const tab = searchParams.tab === 'demandes' ? 'demandes' : 'editeurs'
   const [editeurs, claims] = await Promise.all([getAllEditeurs(), getEditeurClaims()])
 

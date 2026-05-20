@@ -22,7 +22,8 @@ async function getRubriques(): Promise<VideoRubrique[]> {
   return data ?? []
 }
 
-export default async function ModifierVideoPage({ params }: { params: { id: string } }) {
+export default async function ModifierVideoPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const [video, rubriques] = await Promise.all([getVideoById(params.id), getRubriques()])
   if (!video) notFound()
 
