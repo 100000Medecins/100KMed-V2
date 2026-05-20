@@ -44,7 +44,7 @@ export default async function AdminEmailsPage() {
 
   const [
     templatePsc, template1an, template3mois, templateLancement,
-    templateSuppression, templateReset, templateEtude, templateQuestionnaire,
+    templateSuppression, templateReset, templateFusion, templateEtude, templateQuestionnaire,
     templateMasterLayout,
     emailsEtudes, emailsQuestionnaires,
     countEtudes, countQuestionnaires,
@@ -61,6 +61,7 @@ export default async function AdminEmailsPage() {
     getEmailTemplate('lancement'),
     getEmailTemplate('suppression_compte'),
     getEmailTemplate('reinitialisation_mot_de_passe'),
+    getEmailTemplate('fusion_comptes'),
     getEmailTemplate('etude_clinique'),
     getEmailTemplate('questionnaire_recherche'),
     getEmailTemplate('master_layout'),
@@ -125,6 +126,14 @@ export default async function AdminEmailsPage() {
           variables: ['{{lien_reinitialisation}}'],
           data: templateReset,
           defaultSujet: 'Réinitialisez votre mot de passe — 100 000 Médecins',
+        },
+        {
+          id: 'fusion_comptes',
+          title: 'Fusion de comptes',
+          description: "Envoyé quand un utilisateur saisit une adresse email déjà associée à un autre compte — contient le lien sécurisé de fusion.",
+          variables: ['{{lien_fusion}}'],
+          data: templateFusion,
+          defaultSujet: 'Fusionnez vos comptes 100 000 Médecins',
         },
       ],
     },
