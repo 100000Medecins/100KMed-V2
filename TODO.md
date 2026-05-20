@@ -15,8 +15,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
-#### Durcir la server action `generateAcronyme`
-- Ajouter `assertAdmin()` en tête de `generateAcronymeInfo` (`src/lib/actions/generateAcronyme.ts`) — endpoint admin actuellement appelable sans auth. Non bloquant (impact : consommation d'API externe), identifié par la revue de sécurité du 2026-05-20.
+#### ~~Durcir la server action `generateAcronyme`~~ [OK] Fait 2026-05-21
+- `assertAdmin()` ajouté en tête de `generateAcronymeInfo`.
 
 ### Communication
 
@@ -57,22 +57,18 @@ _(rien à faire pour l'instant)_
 
 ### Mises à jour techniques
 
-#### Passer en main avec Next.js 16
-- ✅ Migration Next 16 en cours sur `dev`, site de test live, comportement OK partout
-- **Restant** : merger `dev` → `main` (la branche `main` est encore en Next 14.2.35)
-- Avant merge : vérifier la liste des changements depuis dernier push `main` (`git log main..dev`), faire une preview Vercel finale sur main avant déploiement prod
-- Voir `docs/migration-nextjs-16.md` pour le détail des points migrés
+#### ~~Passer en main avec Next.js 16~~ [OK] Fait 2026-05-20
+- Migration livrée et mergée `dev` → `main` (merge commit `e0cbd38`). Détail dans `docs/migration-nextjs-16.md`.
 
 #### Régler les vulnérabilités npm (`npm audit`)
-- 26 vulnérabilités : 2 low, 13 moderate, 10 high, 1 critical
-- Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
-- ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
+- État 2026-05-20 (post-migration Next 16) : 15 vulnérabilités — 8 low, 5 moderate, 2 high, 0 critical
+- `npm audit fix` (sans `--force`) règle `protobufjs` + `ws` sans risque ; relancer `npm run build` après
+- `postcss` (moderate) : NE PAS forcer — le fix `--force` downgraderait Next 16 → 9 ; partira avec un futur patch Next
+- `xlsx` / SheetJS (high) : « no fix » sur npm (l'éditeur ne publie plus sur le registre) — réinstaller depuis le CDN SheetJS si on veut le corriger
+- ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux
 
-#### Refacto questionnaires d'évaluation — sortir du fallback ambigu `default`
-- **Constat** : le slug `default` joue 2 rôles incompatibles → (1) le vrai questionnaire "Logiciels métier" (labellisé "Logiciels métier (défaut)" dans l'admin), (2) le filet de secours pour toute catégorie sans entrée BDD. Résultat : les utilisateurs des catégories non-migrées (aujourd'hui `objetsconnectes`, `teleconsultation`) voient le questionnaire Logiciels métier au lieu d'un message adapté.
-- **Étape 1** : créer un slug `logiciels-metiers` en BDD avec le contenu actuel de `default` (copie des 10 sections + ~40 questions), puis vider `default` ou le remplacer par un questionnaire neutre court. Adapter `slugLabels` dans `src/app/admin/questionnaires/page.tsx`.
-- **Étape 2** : modifier `getSectionsForSlug` (`src/lib/actions/questionnaires.ts`) pour ne plus tomber silencieusement sur `default` quand la catégorie n'a pas de questionnaire — afficher plutôt un message UX "Questionnaire en cours d'élaboration pour cette catégorie" côté front.
-- **Étape 3** : supprimer le code mort `SECTIONS_DETAILLEES` (~120 lignes) et `SECTIONS_PAR_CATEGORIE` (~70 lignes) dans `src/app/solution/noter/[...slug]/page.tsx` une fois que toutes les catégories ont leur questionnaire BDD et que le filet de secours hardcodé n'est plus utile.
+#### ~~Refacto questionnaires d'évaluation — sortir du fallback ambigu `default`~~ [OK] Fait 2026-05-21
+- Slug `default` renommé `logiciels-metiers`, fallback silencieux supprimé, message UX « Questionnaire en cours d'élaboration », ~190 lignes de code mort supprimées (voir CHANGELOG 2026-05-21).
 
 ### Déploiement final
 
@@ -106,8 +102,7 @@ _(rien à faire pour l'instant)_
 #### Télétransmission — finitions après seeding initial (2026-05-17)
 - Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
-- **Questionnaire d'évaluation — concevoir** : lister les critères pertinents pour évaluer une solution de télétransmission (ex. fiabilité de la télétransmission, qualité du rapprochement NOEMIE, gestion du tiers payant, support, ergonomie, intégration LGC…), les organiser en sections/sous-critères, rédiger les libellés des questions
-- **Questionnaire d'évaluation — implémenter en BDD** : créer les `criteres` (avec hiérarchie `parent_id`), remplir `categories.schema_evaluation` (JSONB) et `categories.criteres_recherche` (liste d'IDs critères mis en avant dans la page comparatif), tester le flow `/solution/noter/teletransmission/[idSolution]` de bout en bout — chantier principal restant
+- ~~Questionnaire d'évaluation — concevoir + implémenter en BDD~~ [OK] Fait 2026-05-17 (3 sections, 20 questions mappées sur les 5 critères majeurs — voir `docs/teletransmission-questionnaire.md`)
 - **Uploader les logos** des 20 solutions via l'admin
 - **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
 - ~~Classer dans la sur-catégorie "Logiciels médicaux"~~ [OK] Fait 2026-05-18 (groupe correct en BDD)
@@ -122,11 +117,6 @@ _(rien à faire pour l'instant)_
 
 - ~~Page admin `/admin/utilisateurs/avatars` (CRUD catalogue avec drag & drop `@dnd-kit/sortable`)~~ [OK] Fait 2026-05-18
 - ~~Génération d'avatar perso (photo → pixel art) — abandonnée~~ [OK] Décision finale 2026-05-18 : remplacée par génération text-to-image basée sur description user (composant `<RequestCustomAvatar>` réécrit, `generatePersonalAvatar(description)` wrap dans le prompt master low_res 64)
-
-#### Pistes futures pour génération avatar perso depuis photo (si réenvie un jour)
-- Pipeline 2 étapes : img2img RD (strength modéré) + post-traitement `sharp` côté server (downscale 64×64 nearest + quantize palette + re-upscale 256×256). ~1h de dev. Probabilité succès ~60-70 %.
-- Service dédié photo→pixel art (Pixel Me, Replicate avec modèle entraîné spécifiquement). Probabilité plus élevée mais migration API.
-- ControlNet (face detection + style transfer) avec un modèle pixel art dédié.
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales

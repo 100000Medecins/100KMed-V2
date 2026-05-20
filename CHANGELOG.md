@@ -5,6 +5,36 @@
 
 ---
 
+## [2026-05-21] — Next 16 en production + template email fusion + manager Communautés + refacto questionnaires
+
+### Infrastructure — Migration Next 16 mergée en production
+- `dev` → `main` mergé (merge commit `e0cbd38`, `--no-ff`) : `main` passe de Next 14.2.35 à Next 16, build de la production Vercel déclenché. Le domaine `dev.100000medecins.org` a été rebasculé sur la branche `main` côté Vercel.
+
+### Admin — Template email `fusion_comptes` branché dans /admin/emails
+- Le template `fusion_comptes` (créé en base le 2026-05-20) n'apparaissait pas dans l'interface (liste codée en dur). Ajout dans « Notifications système » + variable `lien_fusion` dans les variables fictives de l'aperçu et de l'envoi de test.
+- Fix rendu : le contenu était en `<h1>/<p>` nus → éjecté hors de la carte blanche du `master_layout` (qui injecte `{{contenu}}` dans un `<table>`). Reformaté en fragment `<tr><td>` calqué sur `reinitialisation_mot_de_passe`.
+
+### Feature — Manager admin des communautés par solution
+- Nouveau bloc `SolutionCommunautesManager` dans `/admin/solutions/[id]/modifier` : ajout direct (statut `approuve`), édition, suppression — sans passer par la file de modération. Lien vers `/admin/communautes` pour les propositions en attente.
+- 3 server actions dans `solution-communautes.ts` : `listCommunautesBySolution`, `createCommunauteAdmin`, `updateCommunaute` (gardées par `assertAdmin()`).
+- Carte publique `SolutionCommunautesCard` : état rempli aligné sur la typo de « Contacts utiles » (titre `text-lg`, contenu aéré). État vide (barre compacte) inchangé.
+
+### Sécurité — Durcissement de la server action `generateAcronyme`
+- `generateAcronymeInfo` était exportée sans contrôle d'accès → appelable par n'importe qui (consommation possible du budget API Tavily + Anthropic). Ajout de `assertAdmin()`. Identifié par la revue de sécurité du 2026-05-20.
+
+### Refacto — Questionnaires d'évaluation : sortie du fallback ambigu `default`
+- **Contexte** : le slug `default` jouait 2 rôles incompatibles — questionnaire réel de « Logiciels métier » + filet de secours pour toute catégorie sans questionnaire (qui affichait alors le questionnaire Logiciels métier au lieu d'un message adapté).
+- **Étape 1** : questionnaire renommé `default` → `logiciels-metiers` (`UPDATE questionnaire_sections`, 10 sections). La catégorie ayant déjà ce slug, un simple renommage a suffi. `slugLabels` ajusté.
+- **Étape 2** : `getSectionsForSlug` ne retombe plus sur `default` → renvoie `[]`. La page `/solution/noter/[...slug]` affiche « Questionnaire en cours d'élaboration » si la catégorie n'a pas de questionnaire ; le fallback hardcodé n'est plus utilisé.
+- **Étape 3** : suppression de ~190 lignes de code mort (`SECTIONS_DETAILLEES`, `SECTIONS_PAR_CATEGORIE`, `getSectionsForCategorie`, `getTotalQuestions`).
+
+### TODO — Mises à jour
+- Marqué terminé : « Passer en main avec Next.js 16 », « Refacto questionnaires d'évaluation », « Durcir generateAcronyme », questionnaire d'évaluation télétransmission (déjà livré le 2026-05-17).
+- Actualisé : « Régler les vulnérabilités npm » (15 vulnérabilités, plus 26).
+- Supprimé : « Pistes futures génération avatar perso depuis photo ».
+
+---
+
 ## [2026-05-20] — Correctif sécurité : prise de contrôle de compte via la fusion + ajustements acronymes/admin
 
 ### Sécurité — Faille de prise de contrôle de compte dans la fusion de comptes (`completeProfile`)
