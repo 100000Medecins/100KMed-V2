@@ -41,21 +41,20 @@ export type QuestionnaireSection = {
 // ── Lecture ───────────────────────────────────────────────────────────────────
 
 export async function getSectionsForSlug(categorieSlug: string): Promise<QuestionnaireSection[]> {
-  const supabase: DB = createServiceRoleClient()
+  if (!categorieSlug) return []
 
-  const slug = categorieSlug || 'default'
+  const supabase: DB = createServiceRoleClient()
 
   const { data: sections } = await supabase
     .from('questionnaire_sections')
     .select('id, categorie_slug, titre, introduction, ordre')
-    .eq('categorie_slug', slug)
+    .eq('categorie_slug', categorieSlug)
     .order('ordre', { ascending: true })
 
-  if (!sections || sections.length === 0) {
-    // Fallback sur le questionnaire par défaut
-    if (slug !== 'default') return getSectionsForSlug('default')
-    return []
-  }
+  // Pas de questionnaire pour cette catégorie → tableau vide. Plus de fallback
+  // silencieux sur 'default' : une catégorie sans questionnaire doit afficher
+  // un message dédié côté front, pas un questionnaire inadapté.
+  if (!sections || sections.length === 0) return []
 
   const sectionIds = sections.map((s: QuestionnaireSection) => s.id)
 

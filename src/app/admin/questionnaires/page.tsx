@@ -8,14 +8,15 @@ export default async function QuestionnairesAdminPage(
 ) {
   const searchParams = await props.searchParams;
   const allSlugs = await getAllSlugs()
-  const activeSlug = searchParams.slug || allSlugs[0] || 'default'
+  const activeSlug = searchParams.slug || allSlugs[0] || 'logiciels-metiers'
   const sections = await getSectionsForSlug(activeSlug)
 
   const slugLabels: Record<string, string> = {
-    default: 'Logiciels métier (défaut)',
+    'logiciels-metiers': 'Logiciels métier',
     'agendas-medicaux': 'Agenda médical',
     'intelligence-artificielle-medecine': 'IA Scribes',
     'ia-documentaires': 'IA Documentaires',
+    teletransmission: 'Télétransmission',
   }
 
   return (

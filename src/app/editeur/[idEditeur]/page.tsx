@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer'
 import { getEditeurWithSolutions } from '@/lib/db/editeurs'
 import { generateOrganizationJsonLd } from '@/lib/seo/jsonld'
 import SolutionList from '@/components/solutions/SolutionList'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 export const revalidate = 3600 // ISR : 1 heure
 
@@ -104,7 +105,7 @@ export default async function EditeurPage(props: PageProps) {
             <div className="bg-white rounded-card shadow-card p-6">
               <div
                 className="prose-custom text-gray-600"
-                dangerouslySetInnerHTML={{ __html: editeur.mot_editeur! }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(editeur.mot_editeur) }}
               />
             </div>
           </section>

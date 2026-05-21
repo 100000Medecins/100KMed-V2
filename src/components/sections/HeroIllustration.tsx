@@ -7,6 +7,7 @@ const FLOATS = {
   badgeSolutions: { y: [ -8, 10], r: 1.9,  dur: 2.9, delay: 1.7, baseR: -2 },
   badgeAvis:      { y: [-10,  6], r: 2.2,  dur: 2.7, delay: 0.9, baseR: -4 },
   badgeInscrits:  { y: [ -6, 10], r: 1.5,  dur: 3.6, delay: 0.1, baseR: -3 },
+  badgeAcronymes: { y: [ -9,  7], r: 1.9,  dur: 3.1, delay: 1.4, baseR:  3 },
   citation:       { y: [ -8,  8], r: 1.7,  dur: 3.2, delay: 1.5, baseR:  2 },
   segur:          { y: [ -6,  6], r: 0.8,  dur: 4.0, delay: 0.4, baseR: -2 },
   rpps:           { y: [ -8,  4], r: 1.0,  dur: 3.8, delay: 2.0, baseR:  2 },
@@ -29,9 +30,10 @@ interface Props {
   nbSolutionsLabel:   string | null
   nbEvaluationsLabel: string | null
   nbInscritsLabel:    string | null
+  nbAcronymesLabel:   string | null
 }
 
-export default function HeroIllustration({ nbSolutionsLabel, nbEvaluationsLabel, nbInscritsLabel }: Props) {
+export default function HeroIllustration({ nbSolutionsLabel, nbEvaluationsLabel, nbInscritsLabel, nbAcronymesLabel }: Props) {
   return (
     <div className="relative w-[420px] h-[320px]">
 
@@ -136,6 +138,18 @@ export default function HeroIllustration({ nbSolutionsLabel, nbEvaluationsLabel,
           >
             <span className="text-teal-300 text-sm">👥</span>
             <span className="text-white/90 text-xs font-medium">{nbInscritsLabel}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Badge acronymes */}
+      {nbAcronymesLabel && (
+        <div className="absolute bottom-[150px] left-[10px] z-30">
+          <div style={floatStyle('badgeAcronymes')}
+            className="bg-indigo-500/25 backdrop-blur border border-indigo-400/35 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-lg"
+          >
+            <span className="text-indigo-300 text-sm">🔤</span>
+            <span className="text-white/90 text-xs font-medium">{nbAcronymesLabel}</span>
           </div>
         </div>
       )}

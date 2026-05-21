@@ -5,6 +5,80 @@
 
 ---
 
+## [2026-05-21] — Next 16 en production + template email fusion + manager Communautés + refacto questionnaires + reset mdp HMAC
+
+### Fix — Reset mot de passe : lien HMAC idempotent
+- **Problème** : le lien de reset mdp reposait encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription : les clients mail / antivirus consomment le token avant le clic réel de l'utilisateur, qui tombe alors sur un lien mort.
+- **Fix** : abandon du token Supabase, remplacé par un lien HMAC maison **idempotent** (rejouable).
+  - `src/lib/email/reset-token.ts` (nouveau) — HMAC `sha256(EMAIL_SECRET, "reset:uid:iat")`, TTL 1 heure.
+  - `sendPasswordReset` (`user.ts`) réécrit : résout l'uid depuis la table `users`, génère un lien `/reinitialiser-mot-de-passe?uid&iat&token`, envoie via SendGrid (template `reinitialisation_mot_de_passe`). Silencieux si l'email est inconnu (ne révèle pas l'existence d'un compte).
+  - Nouvelle action `resetPasswordWithToken(uid, iat, token, newPassword)` : re-vérifie le HMAC côté serveur (jamais confiance au client) puis `admin.updateUserById`.
+  - Page `/reinitialiser-mot-de-passe` réécrite en **Server Component** : vérifie le HMAC au rendu, n'affiche le formulaire que si le token est valide. Supprime tout le bricolage session / `access_token` / `sessionStorage` / bypass-lock de l'ancienne version (253 lignes → ~66). Le formulaire de saisie est isolé dans un client component `ResetPasswordForm.tsx`.
+  - Idempotence : le GET du lien n'affiche que le formulaire, c'est le POST (`resetPasswordWithToken`) qui agit → le pré-scan ne consomme rien. Validé en test (idempotence OK).
+- `PasswordInput` : ajout de `suppressHydrationWarning` (les gestionnaires de mots de passe des extensions navigateur injectent des attributs après le rendu SSR → mismatch d'hydratation inoffensif).
+
+### Fix — Templates email : double logo sur `confirmation_inscription`
+- Le template `confirmation_inscription` avait été créé sans accès au `master_layout` (MCP Supabase cassé) → il embarquait ses propres `<img>` logo (+ tables TipTap imbriquées), alors que le `master_layout` injecte déjà un logo. Une fois encapsulé : triple logo.
+- Refait en fragment `<tr><td>` propre calqué sur `fusion_comptes` : suréglet « Bienvenue », titre, texte, bouton `{{lien_confirmation}}`, mention validité 7 jours + lien en clair, mention « si vous n'êtes pas à l'origine ». Plus aucun logo embarqué.
+- `reinitialisation_mot_de_passe` : c'était un document HTML complet auto-suffisant (donc non encapsulé, pas de double logo immédiat) mais qui embarquait ses propres logos → bug latent et incohérent avec les autres templates. Repassé en fragment `<tr><td>` sans logo. Texte corrigé : « valable 24 heures » → « 1 heure » (TTL réel du nouveau lien HMAC).
+- Couleurs thème appliquées : navy `#1B2A4A`, accent-blue `#4A90D9`, texte `#374151`.
+- UPDATE en BDD via service role + test d'envoi OK (MCP Supabase de nouveau cassé — erreur interne `-32603`).
+
+### Infrastructure — Migration Next 16 mergée en production
+- `dev` → `main` mergé (merge commit `e0cbd38`, `--no-ff`) : `main` passe de Next 14.2.35 à Next 16, build de la production Vercel déclenché. Le domaine `dev.100000medecins.org` a été rebasculé sur la branche `main` côté Vercel.
+
+### Admin — Template email `fusion_comptes` branché dans /admin/emails
+- Le template `fusion_comptes` (créé en base le 2026-05-20) n'apparaissait pas dans l'interface (liste codée en dur). Ajout dans « Notifications système » + variable `lien_fusion` dans les variables fictives de l'aperçu et de l'envoi de test.
+- Fix rendu : le contenu était en `<h1>/<p>` nus → éjecté hors de la carte blanche du `master_layout` (qui injecte `{{contenu}}` dans un `<table>`). Reformaté en fragment `<tr><td>` calqué sur `reinitialisation_mot_de_passe`.
+
+### Feature — Manager admin des communautés par solution
+- Nouveau bloc `SolutionCommunautesManager` dans `/admin/solutions/[id]/modifier` : ajout direct (statut `approuve`), édition, suppression — sans passer par la file de modération. Lien vers `/admin/communautes` pour les propositions en attente.
+- 3 server actions dans `solution-communautes.ts` : `listCommunautesBySolution`, `createCommunauteAdmin`, `updateCommunaute` (gardées par `assertAdmin()`).
+- Carte publique `SolutionCommunautesCard` : état rempli aligné sur la typo de « Contacts utiles » (titre `text-lg`, contenu aéré). État vide (barre compacte) inchangé.
+
+### Sécurité — Durcissement de la server action `generateAcronyme`
+- `generateAcronymeInfo` était exportée sans contrôle d'accès → appelable par n'importe qui (consommation possible du budget API Tavily + Anthropic). Ajout de `assertAdmin()`. Identifié par la revue de sécurité du 2026-05-20.
+
+### Refacto — Questionnaires d'évaluation : sortie du fallback ambigu `default`
+- **Contexte** : le slug `default` jouait 2 rôles incompatibles — questionnaire réel de « Logiciels métier » + filet de secours pour toute catégorie sans questionnaire (qui affichait alors le questionnaire Logiciels métier au lieu d'un message adapté).
+- **Étape 1** : questionnaire renommé `default` → `logiciels-metiers` (`UPDATE questionnaire_sections`, 10 sections). La catégorie ayant déjà ce slug, un simple renommage a suffi. `slugLabels` ajusté.
+- **Étape 2** : `getSectionsForSlug` ne retombe plus sur `default` → renvoie `[]`. La page `/solution/noter/[...slug]` affiche « Questionnaire en cours d'élaboration » si la catégorie n'a pas de questionnaire ; le fallback hardcodé n'est plus utilisé.
+- **Étape 3** : suppression de ~190 lignes de code mort (`SECTIONS_DETAILLEES`, `SECTIONS_PAR_CATEGORIE`, `getSectionsForCategorie`, `getTotalQuestions`).
+
+### Fix — Confirmation d'inscription : lien HMAC idempotent (anti pré-scan)
+- **Symptôme** (retour bêta testeur éditeur) : « Une erreur est survenue lors de la connexion » après clic sur le lien de confirmation, alors que le compte était bel et bien validé (connexion possible ensuite).
+- **Cause** : le token OTP natif de Supabase est à usage unique. Les clients mail / antivirus pré-scannent les liens → ils « consomment » le token avant le clic réel de l'utilisateur. Le compte est confirmé (par le scanner) mais l'utilisateur tombe sur un token mort.
+- **Fix** : abandon du token Supabase pour la confirmation d'inscription, remplacé par un lien HMAC maison **idempotent** (rejouable), sur le modèle du lien de désabonnement.
+  - `src/lib/email/confirm-token.ts` — HMAC `sha256(EMAIL_SECRET, "confirm:uid:iat")`, TTL 7 jours.
+  - Server action `registerWithEmail` (`user.ts`) : crée le compte via `admin.createUser({ email_confirm: false })` (donc **aucun email natif Supabase**), crée le profil `public.users`, envoie notre email via SendGrid (template `confirmation_inscription`).
+  - Route `/auth/confirm-email` : vérifie le HMAC → `updateUserById({ email_confirm: true })` (idempotent) → auto-login best-effort via magiclink frais généré/consommé côté serveur → `/completer-profil`. Dégradé gracieux si l'auto-login échoue (`/connexion?confirmed=1`).
+  - `AuthProvider.signUpWithEmail` branché sur `registerWithEmail` (plus de `supabase.auth.signUp`).
+  - Le `?type=editeur` est préservé (transite par le lien de confirmation → `/completer-profil?type=editeur`).
+- **Garde-fou anti-bot** : contrôle temporel dans `registerWithEmail` (soumission < 2,5 s = bot, faux succès silencieux). Un honeypot avait d'abord été posé puis retiré — les password managers le remplissaient à tort.
+- **Template email** : nouveau `confirmation_inscription` en BDD, structure calquée sur `reinitialisation_mot_de_passe`.
+- `/connexion` : messages explicites pour `?error=confirm_invalid` / `confirm_expired` et succès `?confirmed=1`.
+- Le flux PSC n'est pas touché.
+
+### UX / UI — Badge « acronymes » dans le hero d'accueil
+- 6e badge flottant dans l'illustration animée du hero : nombre d'acronymes du glossaire. `getSiteStats` compte désormais la table `acronymes`.
+
+### Feature — Enrichissement éditorial : listes, liens, éditeur riche du mot éditeur
+- `sanitizeHtml` étendu : autorise les listes (`ul/ol/li`) et les liens (`<a href>` sécurisés — schémas `http(s)`/`mailto` uniquement, `target`/`rel` forcés). Filet : un contenu en texte brut voit ses retours à la ligne convertis en `<br>`.
+- `RichTextEditor` : nouveau mode `minimal` (toolbar gras/italique/souligné/listes/lien) — branché sur les 2 champs « mot de l'éditeur » de l'espace éditeur (auparavant de simples textareas).
+- Sécurité : le « mot de l'éditeur » (page éditeur + page solution via `PublisherWord`) est désormais rendu via `sanitizeHtml` → ferme le risque XSS (champs éditables par les éditeurs).
+- Fix affichage : les modales étude clinique / questionnaire-thèse utilisaient `prose prose-sm` (classes inexistantes — plugin Typography non installé) → paragraphes collés. Remplacé par la classe maison `.prose-custom`.
+- Images des études : cadrage `object-top` (évite de rogner le haut du visuel).
+
+### TODO — Mises à jour
+- Marqué terminé : « Passer en main avec Next.js 16 », « Refacto questionnaires d'évaluation », « Durcir generateAcronyme », questionnaire d'évaluation télétransmission (déjà livré le 2026-05-17).
+- Actualisé : « Régler les vulnérabilités npm » (15 vulnérabilités, plus 26).
+- Supprimé : « Pistes futures génération avatar perso depuis photo ».
+- Ajout : « Captcha anti-bots Cloudflare Turnstile sur l'inscription » (le garde-fou actuel est temporel).
+- Ajout : « Reset mot de passe — passer au lien HMAC idempotent » (même bug de pré-scan latent que la confirmation d'inscription).
+- Archivage `/todo-clean` : 10 items terminés déplacés vers `TODO-archive.md`.
+
+---
+
 ## [2026-05-20] — Correctif sécurité : prise de contrôle de compte via la fusion + ajustements acronymes/admin
 
 ### Sécurité — Faille de prise de contrôle de compte dans la fusion de comptes (`completeProfile`)

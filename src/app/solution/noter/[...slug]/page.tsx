@@ -74,206 +74,6 @@ function getSubsteps(sections: DetailSection[]): SubstepGroup[] {
   ].filter(g => g.sections.length > 0)
 }
 
-const SECTIONS_DETAILLEES: DetailSection[] = [
-  {
-    titre: 'Avant la consultation',
-    introduction: 'Quand vous arrivez le matin (ou plus tard) au cabinet :',
-    questions: [
-      { key: 'detail_connexion', question: 'Est-ce que la connexion à votre logiciel est facile ?', critereMajeur: 'interface' },
-      { key: 'detail_interface_generale', question: 'Est-ce que vous jugez son interface lisible et visuellement agréable de façon générale ?', critereMajeur: 'interface' },
-      { key: 'detail_reactif', question: 'Est-ce que vous diriez qu\'il est rapide, "réactif" ?', critereMajeur: 'interface' },
-      { key: 'detail_agenda', question: 'Si votre agenda est intégré ou interfacé à votre logiciel, trouvez-vous cela pratique et bien fait ?', critereMajeur: 'fonctionnalites' },
-    ],
-  },
-  {
-    titre: 'Pendant la consultation — Nouveau patient',
-    introduction: 'Comment évaluez-vous la création d\'un nouveau dossier patient, avec :',
-    questions: [
-      { key: 'detail_ins', question: 'Qualification de l\'INS (Identifiant National de Santé) ?', critereMajeur: 'interface' },
-      { key: 'detail_dmp_recuperation', question: 'La récupération des données de son Espace Santé (ex-DMP) ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_atcd', question: 'La création de nouveaux antécédents au sein de votre logiciel ?', critereMajeur: 'interface' },
-      { key: 'detail_classement_docs', question: 'La numérisation et/ou le classement des documents (courriers, résultats…) au bon endroit ?', critereMajeur: 'fonctionnalites' },
-    ],
-  },
-  {
-    titre: 'Pendant la consultation — Examen',
-    introduction: 'Vous l\'avez évidemment interrogé, observé, examiné. Comment jugez-vous :',
-    questions: [
-      { key: 'detail_notes_consultation', question: 'La saisie de vos notes de consultation ?', critereMajeur: 'interface' },
-      { key: 'detail_modeles_consultation', question: 'L\'usage des « modèles de consultation » s\'ils existent ?', critereMajeur: 'interface' },
-      { key: 'detail_ia_scribe', question: 'Votre « IA Scribe » (le fameux « assistant virtuel » qui prend les notes à votre place) si vous en avez un ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_examens_integration', question: 'La facilité d\'intégration de vos éventuels examens complémentaires en consultation ? (ECG, audiométrie…)', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_examens_visualisation', question: 'La visualisation des examens complémentaires réalisés précédemment ? (biologie, imageries…)', critereMajeur: 'interface' },
-    ],
-  },
-  {
-    titre: 'Pendant la consultation — Prescription',
-    introduction: 'Vous devez lui faire une prescription. Comment jugez-vous :',
-    questions: [
-      { key: 'detail_ordonnance_pharmacie', question: 'La création d\'une nouvelle ordonnance de pharmacie, avec les posologies spécifiques à sa situation ?', critereMajeur: 'interface' },
-      { key: 'detail_modeles_ordonnance', question: 'Les modèles d\'ordonnances, s\'ils existent ?', critereMajeur: 'interface' },
-      { key: 'detail_ordonnance_numerique', question: 'La facilité de faire une ordonnance numérique ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_signature_numerique', question: 'La facilité de signer numériquement cette ordonnance ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_envoi_dmp', question: 'L\'envoi dans le DMP/ENS du patient ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_donnees_utiles_prescription', question: 'L\'accès à des données utiles (antécédents, allergies, DFG par ex) pendant votre prescription ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_alertes_ldap', question: 'Les alertes de votre logiciel d\'aide à la prescription ? (Vidal, BCB, Synapse…) ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_modeles_certificats', question: 'Les modèles de certificats, d\'attestations ou de courriers-types ?', critereMajeur: 'interface' },
-      { key: 'detail_prescription_autres', question: 'La prescription d\'examens complémentaires ou de soins paramédicaux ?', critereMajeur: 'interface' },
-    ],
-  },
-  {
-    titre: 'Pendant la consultation — Avis complémentaire',
-    introduction: 'Vous souhaitez demander un avis complémentaire. Comment évalueriez-vous :',
-    questions: [
-      { key: 'detail_messagerie_interne', question: 'L\'envoi d\'un message à votre collègue au sein du cabinet via le logiciel ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_pluripro', question: 'Le partage (ou masquage) certains éléments de votre dossier avec votre collègue ou en pluriprofessionnalité ?', critereMajeur: 'interface' },
-      { key: 'detail_staffs', question: 'L\'organisation d\'une réunion/staff mono ou pluridisciplinaire et la réintégration de ses conclusions ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_courrier_adressage', question: 'La rédaction d\'un courrier d\'adressage pour un avis extérieur ?', critereMajeur: 'interface' },
-      { key: 'detail_messagerie_securisee', question: 'Son envoi via une messagerie sécurisée (Mailiz, Apicrypt…), si besoin après recherche du correspondant dans l\'annuaire ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_carnet_adresse', question: 'La gestion du carnet d\'adresse, s\'il existe au sein de votre logiciel ?', critereMajeur: 'interface' },
-      { key: 'detail_teleexpertise', question: 'La demande et/ou réintégration d\'une téléexpertise via votre logiciel, si vous en faites ?', critereMajeur: 'fonctionnalites' },
-    ],
-  },
-  {
-    titre: 'Arrêt de travail et facturation',
-    introduction: 'Vous devez faire un arrêt de travail, et facturer la consultation. Est-ce facile :',
-    questions: [
-      { key: 'detail_aati', question: 'D\'utiliser le téléservice « arrêt de travail » (AATi) de l\'Assurance-Maladie intégré dans votre logiciel, s\'il existe ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_teleservices', question: 'D\'utiliser les autres téléservices le cas échéant ? (déclaration médecin traitant (DMTi), déclaration d\'ALD (ALDi)…)', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_fse', question: 'De faire une feuille de soins électronique de façon générale ? (en dégradé, en tiers payant, en AT…)', critereMajeur: 'interface' },
-      { key: 'detail_mobilite', question: 'Si vous faites des visites à domicile : est-ce que votre logiciel est agréable et facile à utiliser en mobilité ?', critereMajeur: 'interface' },
-    ],
-  },
-  {
-    titre: 'Après la consultation',
-    introduction: 'C\'est la fin de la journée de consultations. Comment évalueriez-vous :',
-    questions: [
-      { key: 'detail_comptabilite', question: 'Le module de comptabilité, si votre logiciel le permet ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_teletransmission', question: 'Le module de télétransmission et de vérification / relance des retours « Noémie » ?', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_resultats_bio', question: 'La récupération et le classement des résultats biologiques et/ou radiologiques (Hprim, CDA…) ?', critereMajeur: 'interface' },
-    ],
-  },
-  {
-    titre: 'Et si cela vous concerne…',
-    introduction: 'Comment jugeriez-vous la facilité :',
-    questions: [
-      { key: 'detail_profil_remplacant', question: 'De créer un profil utilisateur pour votre remplaçant / interne ?', critereMajeur: 'interface' },
-      { key: 'detail_prise_en_main', question: 'Pour votre remplaçant / interne de prendre en main votre logiciel ?', critereMajeur: 'interface' },
-      { key: 'detail_recherche_multicriteres', question: 'D\'aller chercher quels patients sont possiblement concernés par une nouvelle recommandation ? (recherche de type « lister les diabétiques de moins de 65 ans n\'ayant pas eu de bilan depuis 1 an »)', critereMajeur: 'fonctionnalites' },
-      { key: 'detail_droits_acces', question: 'Pour votre secrétaire, interne ou remplaçant d\'avoir accès à vos courriers et résultats en cas de besoin ?', critereMajeur: 'interface' },
-    ],
-  },
-  {
-    titre: 'Fiabilité et relations avec l\'éditeur',
-    introduction: 'Évoquons la qualité de vos relations avec l\'éditeur de votre logiciel.',
-    questions: [
-      { key: 'detail_pratiques_commerciales', question: 'Êtes-vous satisfait des pratiques commerciales de votre éditeur ? (avant-vente, sollicitations, compensations par ex.)', critereMajeur: 'editeur' },
-      { key: 'detail_import_donnees', question: 'Si vous avez été concerné, avez-vous pu récupérer les données de votre ancien logiciel de façon acceptable ?', critereMajeur: 'editeur' },
-      { key: 'detail_stabilite', question: 'Est-ce que votre logiciel plante souvent ?', critereMajeur: 'fiabilite' },
-      { key: 'detail_sav', question: 'Quand vous avez un problème, pouvez-vous compter sur le SAV ?', critereMajeur: 'editeur' },
-      { key: 'detail_communication', question: 'Trouvez-vous la stratégie de communication de votre éditeur adaptée ? (en cas de nouveauté, de panne, etc.)', critereMajeur: 'editeur' },
-      { key: 'detail_hebergement', question: 'Comment évalueriez-vous les modalités de conservation et de sécurisation de vos données ? (0 si vous ne savez pas)', critereMajeur: 'editeur' },
-      { key: 'detail_maj', question: 'Comment évalueriez-vous la stratégie de mise à jour de votre logiciel ?', critereMajeur: 'editeur' },
-      { key: 'detail_formation', question: 'Comment évalueriez-vous la formation initiale et continue sur l\'utilisation de votre logiciel, et l\'accessibilité de sa documentation le cas échéant ?', critereMajeur: 'editeur' },
-      { key: 'detail_ecoute_besoins', question: 'Avez-vous l\'impression que vos besoins sont pris en considération, ou que l\'éditeur avance de son côté sans tenir compte de l\'avis de ses utilisateurs ?', critereMajeur: 'editeur' },
-      { key: 'detail_resiliation', question: 'Est-il facile de savoir quand et comment résilier votre logiciel en cas de besoin ?', critereMajeur: 'editeur' },
-    ],
-  },
-  {
-    titre: 'Et le meilleur pour la fin',
-    questions: [
-      { key: 'detail_politique_tarifaire', question: 'Comment évaluez-vous la politique tarifaire ? (abonnements, packs, options, licences, MAJ…)', critereMajeur: 'qualite_prix' },
-      { key: 'detail_rapport_qualite_prix', question: 'Comment évalueriez-vous le rapport qualité/prix de votre logiciel ?', critereMajeur: 'qualite_prix' },
-      { key: 'detail_efficience', question: 'Estimez-vous que votre logiciel vous fait globalement perdre ou gagner du temps (de 0 à 10) ?', critereMajeur: 'fiabilite' },
-      { key: 'detail_nps', question: 'Recommanderiez-vous ce logiciel à vos collègues ?', critereMajeur: 'fiabilite' },
-    ],
-  },
-]
-
-// ─── Questionnaires spécifiques par catégorie ────────────────────────────────
-
-const SECTIONS_PAR_CATEGORIE: Record<string, DetailSection[]> = {
-  'agendas-medicaux': [
-    {
-      titre: 'Prise de rendez-vous',
-      introduction: 'Comment évalueriez-vous les fonctionnalités de prise de rendez-vous :',
-      questions: [
-        { key: 'agenda_rdv_en_ligne', question: 'La prise de rendez-vous en ligne par vos patients est-elle simple et intuitive ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_rdv_types', question: 'Pouvez-vous facilement configurer différents types de rendez-vous (consultation, téléconsultation, urgence…) ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_rdv_recurrence', question: 'La gestion des rendez-vous récurrents ou des plages horaires est-elle pratique ?', critereMajeur: 'interface' },
-        { key: 'agenda_rdv_multisite', question: 'Si vous exercez sur plusieurs sites, la gestion multi-cabinet est-elle bien faite ?', critereMajeur: 'fonctionnalites' },
-      ],
-    },
-    {
-      titre: 'Rappels et communication patients',
-      introduction: 'Concernant la communication avec vos patients :',
-      questions: [
-        { key: 'agenda_rappel_sms', question: 'Le rappel de rendez-vous par SMS fonctionne-t-il bien ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_rappel_email', question: 'Les rappels par e-mail sont-ils efficaces et personnalisables ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_confirmation', question: 'La confirmation de rendez-vous par le patient (SMS ou en ligne) est-elle bien gérée ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_liste_attente', question: 'Y a-t-il une liste d\'attente automatique en cas d\'annulation ?', critereMajeur: 'fonctionnalites' },
-      ],
-    },
-    {
-      titre: 'Téléconsultation',
-      introduction: 'Si votre agenda propose la téléconsultation :',
-      questions: [
-        { key: 'agenda_teleconsultation_integree', question: 'La téléconsultation est-elle intégrée directement dans l\'agenda ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_teleconsultation_qualite', question: 'La qualité audio/vidéo de la téléconsultation est-elle satisfaisante ?', critereMajeur: 'fiabilite' },
-        { key: 'agenda_teleconsultation_facilite', question: 'Est-ce facile pour vos patients de rejoindre la téléconsultation (lien, application…) ?', critereMajeur: 'interface' },
-      ],
-    },
-    {
-      titre: 'Secrétariat et assistance',
-      introduction: 'Concernant la gestion du secrétariat :',
-      questions: [
-        { key: 'agenda_secretariat_tel', question: 'Disposez-vous d\'un secrétariat téléphonique intelligent (IA ou automatisé) et est-il efficace ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_secretariat_filtrage', question: 'Le filtrage et la qualification des appels sont-ils bien gérés ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_secretariat_messages', question: 'La prise de messages et leur transmission sont-elles fiables ?', critereMajeur: 'fiabilite' },
-      ],
-    },
-    {
-      titre: 'Interface et ergonomie',
-      introduction: 'Au quotidien, comment jugez-vous :',
-      questions: [
-        { key: 'agenda_vue_planning', question: 'La vue planning (jour, semaine, mois) est-elle claire et lisible ?', critereMajeur: 'interface' },
-        { key: 'agenda_code_couleurs', question: 'Le système de codes couleurs ou d\'étiquettes est-il pratique ?', critereMajeur: 'interface' },
-        { key: 'agenda_mobile', question: 'L\'accès à votre agenda sur mobile est-il agréable et fonctionnel ?', critereMajeur: 'interface' },
-        { key: 'agenda_rapidite', question: 'L\'agenda est-il rapide et réactif, même avec beaucoup de rendez-vous ?', critereMajeur: 'fiabilite' },
-      ],
-    },
-    {
-      titre: 'Intégration et interopérabilité',
-      introduction: 'Concernant les connexions avec vos autres outils :',
-      questions: [
-        { key: 'agenda_synchro_logiciel', question: 'La synchronisation avec votre logiciel métier est-elle bien faite ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_synchro_calendrier', question: 'La synchronisation avec vos calendriers personnels (Google, iCal…) fonctionne-t-elle bien ?', critereMajeur: 'fonctionnalites' },
-        { key: 'agenda_import_patients', question: 'L\'import de votre base de patients existante s\'est-il bien passé ?', critereMajeur: 'editeur' },
-      ],
-    },
-    {
-      titre: 'Éditeur et tarification',
-      questions: [
-        { key: 'agenda_sav', question: 'Le support client est-il réactif et compétent en cas de problème ?', critereMajeur: 'editeur' },
-        { key: 'agenda_tarif', question: 'Le modèle tarifaire est-il clair et adapté à votre pratique ?', critereMajeur: 'qualite_prix' },
-        { key: 'agenda_rapport_qualite_prix', question: 'Le rapport qualité/prix global de cet agenda est-il satisfaisant ?', critereMajeur: 'qualite_prix' },
-        { key: 'agenda_nps', question: 'Recommanderiez-vous cet agenda à vos collègues ?', critereMajeur: 'fiabilite' },
-      ],
-    },
-  ],
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Retourne les sections détaillées adaptées à la catégorie, ou les sections par défaut */
-function getSectionsForCategorie(categorieSlug: string): DetailSection[] {
-  return SECTIONS_PAR_CATEGORIE[categorieSlug] || SECTIONS_DETAILLEES
-}
-
-function getTotalQuestions(sections: DetailSection[]): number {
-  return sections.reduce((sum, s) => sum + s.questions.length, 0)
-}
-
 // ─── Composants ──────────────────────────────────────────────────────────────
 
 function StarSelector({
@@ -498,6 +298,7 @@ export default function NoterPage(props: PageProps) {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [sectionsDB, setSectionsDB] = useState<DetailSection[]>([])
+  const [questionnaireLoaded, setQuestionnaireLoaded] = useState(false)
   const saveDraftRef = useRef<() => void>(() => {})
 
   // Charger les sections depuis la DB
@@ -516,6 +317,7 @@ export default function NoterPage(props: PageProps) {
         })))
       })
       .catch(() => {})
+      .finally(() => setQuestionnaireLoaded(true))
   }, [categorieSlug])
 
   useEffect(() => {
@@ -598,7 +400,7 @@ export default function NoterPage(props: PageProps) {
   // Un critère est "répondu" s'il a une note (> 0) OU s'il est marqué NC (null)
   const allRated = CRITERES.every((c) => scores[c.key] === null || (typeof scores[c.key] === 'number' && scores[c.key]! > 0))
 
-  const sectionsDetail = sectionsDB.length > 0 ? sectionsDB : getSectionsForCategorie(categorieSlug)
+  const sectionsDetail = sectionsDB
   const substeps = getSubsteps(sectionsDetail)
   // Pour les anonymes, une étape email est ajoutée en fin de parcours
   const totalSteps = 1 + substeps.length + (!user ? 1 : 0)
@@ -791,7 +593,7 @@ export default function NoterPage(props: PageProps) {
     }
   }
 
-  if (loading || authLoading) {
+  if (loading || authLoading || !questionnaireLoaded) {
     return (
       <>
         <Navbar />
@@ -808,6 +610,30 @@ export default function NoterPage(props: PageProps) {
         <Navbar />
         <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
           <div className="text-gray-500">Solution introuvable.</div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  if (sectionsDB.length === 0) {
+    return (
+      <>
+        <Navbar />
+        <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
+          <div className="max-w-md mx-auto px-6 text-center py-16">
+            <h1 className="text-lg font-bold text-navy mb-2">Questionnaire en cours d&apos;élaboration</h1>
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              Le questionnaire d&apos;évaluation pour cette catégorie n&apos;est pas encore disponible.
+              Il sera publié prochainement — revenez bientôt.
+            </p>
+            <button
+              onClick={() => router.push(`/solutions/${categorieSlug}/${solutionSlug}`)}
+              className="text-sm text-accent-blue hover:underline"
+            >
+              Retour à la fiche solution
+            </button>
+          </div>
         </main>
         <Footer />
       </>

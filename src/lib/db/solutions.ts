@@ -379,17 +379,20 @@ export async function getNbNotesUtilisateurs(solutionIds: string[]): Promise<Rec
 /**
  * Stats globales du site : nb solutions actives, nb évaluations utilisateurs.
  */
-export async function getSiteStats(): Promise<{ nbSolutions: number; nbEvaluations: number; nbInscrits: number }> {
+export async function getSiteStats(): Promise<{ nbSolutions: number; nbEvaluations: number; nbInscrits: number; nbAcronymes: number }> {
   const supabase = createServiceRoleClient()
-  const [{ count: nbSolutions }, { count: nbEvaluations }, { count: nbInscrits }] = await Promise.all([
+  const [{ count: nbSolutions }, { count: nbEvaluations }, { count: nbInscrits }, { count: nbAcronymes }] = await Promise.all([
     supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('actif', true),
     supabase.from('evaluations').select('*', { count: 'exact', head: true }).not('last_date_note', 'is', null),
     supabase.from('users').select('*', { count: 'exact', head: true }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).from('acronymes').select('*', { count: 'exact', head: true }),
   ])
   return {
     nbSolutions: nbSolutions ?? 0,
     nbEvaluations: nbEvaluations ?? 0,
     nbInscrits: nbInscrits ?? 0,
+    nbAcronymes: nbAcronymes ?? 0,
   }
 }
 

@@ -1,6 +1,6 @@
 # Architecture emails — 100 000 Médecins
 
-*Dernière mise à jour : 2026-05-13*
+*Dernière mise à jour : 2026-05-21*
 
 ---
 
@@ -12,11 +12,11 @@ Ces emails sont envoyés automatiquement par Supabase via ses propres serveurs. 
 
 | Déclencheur code | Type Supabase | Template à éditer |
 |---|---|---|
-| `supabase.auth.signUp()` | Confirm signup | "Confirm signup" |
 | `supabase.auth.updateUser({ email })` | Change email | "Change Email Address" |
-| `supabase.auth.resetPasswordForEmail()` | Reset password | "Reset Password" |
 
 > Ces emails ne passent **pas** par SendGrid et ne sont **pas** liés aux templates en base de données. Pour les modifier, aller dans le dashboard Supabase.
+
+> **Confirmation d'inscription et reset mot de passe ne sont plus natifs** (depuis 2026-05-21). Les tokens OTP Supabase étant à usage unique, ils étaient « consommés » par le pré-scan des clients mail / antivirus avant le clic réel de l'utilisateur. Les deux flux utilisent désormais des liens HMAC maison idempotents envoyés via SendGrid (voir plus bas) — `supabase.auth.signUp()` et `admin.generateLink({ type: 'recovery' })` ne sont plus appelés. Seul le changement d'email reste un email natif Supabase.
 
 ---
 
@@ -26,7 +26,9 @@ Ces emails sont envoyés par le code, via SendGrid, avec des templates stockés 
 
 | Template `id` | Déclencheur | Fichier |
 |---|---|---|
+| `confirmation_inscription` | Inscription email/mot de passe | `src/lib/actions/user.ts` → `registerWithEmail()` |
 | `reinitialisation_mot_de_passe` | Demande reset mdp | `src/lib/actions/user.ts` → `sendPasswordReset()` |
+| `fusion_comptes` | Conflit d'email à la complétion de profil | `src/lib/actions/user.ts` → `completeProfile()` |
 | `relance_1an` | Cron automatique | `src/app/api/cron/relance-evaluations/route.ts` |
 | `relance_3mois` | Cron automatique | `src/app/api/cron/relance-evaluations/route.ts` |
 | `relance_incomplet` | Cron automatique | `src/app/api/cron/relance-incomplets/route.ts` |
@@ -55,7 +57,11 @@ La fonction centrale `buildEmail()` (`src/lib/actions/emailTemplates.ts`) :
 
 ### Migration progressive des templates
 
-Les 8 templates existants contiennent encore le HTML complet (avec `<!DOCTYPE html>`). Ils continuent de fonctionner sans modification grâce à la détection `isFullDocument`.
+Chaque template est soit un **fragment** (contenu seul, encapsulé dans le `master_layout`), soit un **document complet** (commence par `<!DOCTYPE html>`, utilisé tel quel). La détection `isFullDocument` permet aux deux de coexister.
+
+Templates déjà migrés en fragment `<tr><td>` : `fusion_comptes`, `confirmation_inscription`, `reinitialisation_mot_de_passe`. Les templates de relance / étude / questionnaire / infos mensuels sont encore en document complet (ils embarquent leur propre layout) — leur migration est optionnelle.
+
+⚠️ Un fragment ne doit **jamais** embarquer son propre `<img>` logo ni sa barre accent : le `master_layout` les fournit déjà. Sinon → double logo (bug rencontré sur `confirmation_inscription`, corrigé le 2026-05-21).
 
 Pour "migrer" un template vers le nouveau système (optionnel) :
 1. Ouvrir le template dans Admin → Emails
@@ -133,52 +139,43 @@ Le `master_layout` **ne contient pas** ce footer automatiquement — chaque temp
 
 ---
 
-## Flux de réinitialisation de mot de passe (custom SendGrid)
+## Flux de réinitialisation de mot de passe (lien HMAC idempotent)
 
-> Ce flux **n'utilise pas** `supabase.auth.resetPasswordForEmail()`. Il utilise `admin.generateLink()` pour générer le lien, puis envoie lui-même l'email via SendGrid avec le template `reinitialisation_mot_de_passe`.
+> Réécrit le 2026-05-21. Ce flux **n'utilise plus** ni `supabase.auth.resetPasswordForEmail()` ni `admin.generateLink({ type: 'recovery' })`. Le token OTP Supabase est à usage unique : les clients mail / antivirus qui pré-scannent les liens le consommaient avant le clic réel de l'utilisateur (→ lien mort). Il est remplacé par un lien HMAC maison **idempotent** (rejouable), sur le même modèle que la confirmation d'inscription.
 
 ### Étapes
 
-1. Utilisateur saisit son email sur `/mot-de-passe-oublie`
-2. `sendPasswordReset(email)` est appelée (`src/lib/actions/user.ts`)
-3. `supabase.auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo } })` génère un `action_link` Supabase
-4. `buildEmail('reinitialisation_mot_de_passe', { lien_reinitialisation: action_link }, siteUrl)` compose l'email
-5. SendGrid envoie l'email
-6. L'utilisateur clique → passe par `supabase.co/auth/v1/verify` (vérification token)
-7. Supabase redirige vers `redirect_to` → `/reinitialiser-mot-de-passe?code=xxx`
-8. La page détecte le `?code=`, appelle `exchangeCodeForSession()`, ouvre la session, affiche le formulaire
+1. L'utilisateur saisit son email sur `/mot-de-passe-oublie`.
+2. `sendPasswordReset(email)` (`src/lib/actions/user.ts`) résout l'`uid` depuis la table `users`. Si l'email est inconnu : retour silencieux (on ne révèle pas l'existence d'un compte).
+3. `generateResetToken(uid)` (`src/lib/email/reset-token.ts`) produit un HMAC `sha256(EMAIL_SECRET, "reset:uid:iat")`, TTL **1 heure**.
+4. `buildEmail('reinitialisation_mot_de_passe', { lien_reinitialisation }, siteUrl)` compose l'email — le lien pointe directement sur `/reinitialiser-mot-de-passe?uid&iat&token` (plus de passage par `supabase.co/auth/v1/verify`).
+5. SendGrid envoie l'email.
+6. L'utilisateur clique → la page `/reinitialiser-mot-de-passe` (Server Component) re-vérifie le HMAC et n'affiche le formulaire que si le token est valide.
+7. À la soumission, l'action `resetPasswordWithToken(uid, iat, token, newPassword)` re-vérifie le HMAC côté serveur puis appelle `admin.updateUserById`.
 
-### Points de défaillance connus
+### Idempotence (résistance au pré-scan)
 
-**Bug historique (corrigé 2026-04-27) :** Le `redirectTo` était construit depuis les headers HTTP (`host`), ce qui pouvait produire des URLs différentes selon l'environnement (avec/sans `www`, preview vs prod). Supabase rejetait alors le `redirect_to` et renvoyait l'utilisateur vers la Site URL racine (= index du site).
+Le **GET** du lien n'affiche que le formulaire — il ne modifie rien. C'est le **POST** (`resetPasswordWithToken`) qui agit. Un scanner anti-phishing qui ouvre le lien ne consomme donc rien, et le HMAC reste rejouable jusqu'à expiration. Plus de « lien mort ».
 
-**Fix appliqué :** `redirectTo` utilise maintenant `process.env.NEXT_PUBLIC_SITE_URL` (fixe par environnement Vercel).
+### Configuration requise
 
-### Checklist si le bug réapparaît
+1. `EMAIL_SECRET` (ou `ADMIN_PASSWORD` en fallback) défini — clé de signature HMAC.
+2. `NEXT_PUBLIC_SITE_URL` dans Vercel → `https://www.100000medecins.org` (sans slash final) en production : sert à construire le lien absolu.
+3. Le template BDD `email_templates` où `id = 'reinitialisation_mot_de_passe'` doit contenir `{{lien_reinitialisation}}`.
+4. `SENDGRID_API_KEY` dans les variables d'environnement Vercel.
 
-1. Vérifier `NEXT_PUBLIC_SITE_URL` dans Vercel → doit être `https://www.100000medecins.org` (sans slash final) en production
-2. Vérifier **Supabase → Authentication → URL Configuration → Redirect URLs** → doit contenir :
-   - `https://www.100000medecins.org/reinitialiser-mot-de-passe`
-   - `https://dev.100000medecins.org/reinitialiser-mot-de-passe`
-   - `http://localhost:3000/reinitialiser-mot-de-passe`
-3. Vérifier le template BDD → `email_templates` où `id = 'reinitialisation_mot_de_passe'` doit contenir `{{lien_reinitialisation}}`
-4. Vérifier `SENDGRID_API_KEY` dans les variables d'environnement Vercel
-
-### Configuration Supabase requise
-
-- **Site URL** : `https://www.100000medecins.org` (fallback si redirect_to refusé — ne pas laisser à `localhost`)
-- **Redirect URLs** : voir checklist ci-dessus
+> **Plus besoin** de déclarer `/reinitialiser-mot-de-passe` dans les Redirect URLs Supabase : le lien ne transite plus par `supabase.co/auth/v1/verify`.
 
 ---
 
 ## Page de réinitialisation (`/reinitialiser-mot-de-passe`)
 
-La page gère deux flows de retour Supabase :
+Server Component (`force-dynamic`). Lit `uid`, `iat`, `token` dans les `searchParams` et appelle `verifyResetToken` :
 
-- **PKCE** (recommandé) : paramètre `?code=xxx` → `supabase.auth.exchangeCodeForSession(code)`
-- **Implicit** (legacy) : fragment `#access_token=...&type=recovery` → `supabase.auth.setSession()`
+- token **valide** → rend `ResetPasswordForm` (client component) ;
+- token **expiré** / **invalide** → écran d'erreur + lien vers `/connexion`.
 
-Après ouverture de session, appel direct à `PUT /auth/v1/user` (bypass SDK) pour éviter les problèmes de ré-authentification côté client.
+Aucune session n'est ouverte, aucun `code` / `access_token` n'est échangé : la page ne fait que vérifier le HMAC et afficher un formulaire. La mise à jour réelle du mot de passe passe par l'action serveur `resetPasswordWithToken`.
 
 ---
 

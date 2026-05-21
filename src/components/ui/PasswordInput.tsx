@@ -18,6 +18,9 @@ const PasswordInput = forwardRef<HTMLInputElement, Props>(
           ref={ref}
           type={show ? 'text' : 'password'}
           className={`pr-10 ${className}`}
+          // Les gestionnaires de mots de passe (extensions navigateur) injectent des
+          // attributs (aria-autocomplete…) après le rendu SSR → mismatch d'hydratation inoffensif.
+          suppressHydrationWarning
         />
         <button
           type="button"

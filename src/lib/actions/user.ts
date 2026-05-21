@@ -5,36 +5,38 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
+import { generateConfirmToken } from '@/lib/email/confirm-token'
+import { generateResetToken, verifyResetToken } from '@/lib/email/reset-token'
 import sgMail from '@sendgrid/mail'
 import sharp from 'sharp'
 
 /**
- * Envoie un email de réinitialisation de mot de passe via SendGrid
- * avec le template éditable en admin.
+ * Envoie un email de réinitialisation de mot de passe via SendGrid.
+ *
+ * Le lien est un HMAC maison idempotent (rejouable) — pas le token OTP Supabase
+ * à usage unique : le pré-scan du lien par les clients mail / antivirus ne le
+ * « consomme » plus. Le GET du lien n'affiche que le formulaire ; c'est le POST
+ * (resetPasswordWithToken) qui modifie réellement le mot de passe.
  */
 export async function sendPasswordReset(email: string): Promise<{ error: string | null }> {
   const supabase = createServiceRoleClient()
 
-  // Générer le lien de récupération via le SDK admin
-  // IMPORTANT : redirectTo doit être une URL fixe correspondant exactement à la liste blanche
-  // Supabase Auth → URL Configuration → Redirect URLs.
-  // Ne pas utiliser les headers HTTP (host peut varier selon preview/www/apex) car Supabase
-  // refuserait le redirect_to et renverrait l'utilisateur vers la racine du site.
+  // Résoudre l'uid depuis l'email. Silencieux si inconnu (on ne révèle pas l'existence d'un compte).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabase as any)
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle()
+  if (!profile?.id) return { error: null }
+
   const headersList = await headers()
   const host = headersList.get('host') || 'www.100000medecins.org'
   const proto = headersList.get('x-forwarded-proto') || 'https'
-  const siteUrl = `${proto}://${host}`
-  const redirectBase = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || siteUrl
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-    options: { redirectTo: `${redirectBase}/reinitialiser-mot-de-passe` },
-  })
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${proto}://${host}`
 
-  if (error) return { error: error.message }
-
-  const resetLink = data.properties?.action_link
-  if (!resetLink) return { error: 'Lien de réinitialisation indisponible' }
+  const { iat, token } = generateResetToken(profile.id as string)
+  const resetLink = `${siteUrl}/reinitialiser-mot-de-passe?uid=${profile.id}&iat=${iat}&token=${token}`
 
   const emailContent = await buildEmail(
     'reinitialisation_mot_de_passe',
@@ -55,6 +57,38 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
     return { error: 'Erreur lors de l\'envoi de l\'email.' }
   }
 
+  return { error: null }
+}
+
+/**
+ * Réinitialise le mot de passe à partir d'un lien HMAC valide.
+ * Re-vérifie le HMAC côté serveur (on ne fait jamais confiance au client).
+ */
+export async function resetPasswordWithToken(
+  uid: string,
+  iat: number,
+  token: string,
+  newPassword: string
+): Promise<{ error: string | null }> {
+  if (!newPassword || newPassword.length < 6) {
+    return { error: 'Le mot de passe doit contenir au moins 6 caractères.' }
+  }
+  const verdict = verifyResetToken(uid, iat, token)
+  if (verdict === 'expired') {
+    return { error: 'Le lien a expiré. Demandez un nouveau lien de réinitialisation.' }
+  }
+  if (verdict === 'invalid') {
+    return { error: 'Lien invalide. Demandez un nouveau lien de réinitialisation.' }
+  }
+
+  const admin = createServiceRoleClient()
+  const { error } = await admin.auth.admin.updateUserById(uid, { password: newPassword })
+  if (error) {
+    if (error.message?.toLowerCase().includes('different from the old')) {
+      return { error: 'Le nouveau mot de passe doit être différent de l\'ancien.' }
+    }
+    return { error: 'Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.' }
+  }
   return { error: null }
 }
 
@@ -113,6 +147,96 @@ export async function createUserProfile(userId: string, email: string) {
       email,
       ...(email?.endsWith('@digitalmedicalhub.com') ? { role: 'digital_medical_hub' } : {}),
     })
+  }
+
+  return { status: 'SUCCESS' }
+}
+
+/**
+ * Inscription email/mot de passe avec confirmation par lien HMAC idempotent.
+ *
+ * Remplace `supabase.auth.signUp()` : on crée le compte via l'API admin
+ * (email_confirm: false, donc PAS d'email natif Supabase), puis on envoie
+ * notre propre email avec un lien de confirmation rejouable à l'infini.
+ * Ainsi le pré-scan du lien par les clients mail / antivirus ne « consomme »
+ * plus rien — fini le faux message d'erreur de confirmation.
+ */
+export async function registerWithEmail(input: {
+  email: string
+  password: string
+  elapsedMs?: number
+  signupType?: string
+}): Promise<{ status: 'SUCCESS' } | { status: 'EMAIL_EXISTS' } | { status: 'ERROR'; message: string }> {
+  // Garde-fou anti-bot : un humain met plusieurs secondes à saisir email + mot de passe.
+  // Une soumission quasi instantanée = bot → faux succès silencieux (on ne crée rien).
+  // Pas de faux positif possible (contrairement au honeypot déclenché par les password managers).
+  if (typeof input.elapsedMs === 'number' && input.elapsedMs < 2500) {
+    return { status: 'SUCCESS' }
+  }
+
+  const email = input.email.trim().toLowerCase()
+  const password = input.password
+  if (!email || !email.includes('@')) return { status: 'ERROR', message: 'Adresse email invalide.' }
+  if (!password || password.length < 6) {
+    return { status: 'ERROR', message: 'Le mot de passe doit contenir au moins 6 caractères.' }
+  }
+
+  const supabase = createServiceRoleClient()
+
+  // Création du compte SANS email natif (email_confirm: false)
+  const { data: created, error: createError } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: false,
+  })
+
+  if (createError) {
+    const msg = createError.message?.toLowerCase() ?? ''
+    if (msg.includes('already') || msg.includes('registered') || createError.status === 422) {
+      return { status: 'EMAIL_EXISTS' }
+    }
+    return { status: 'ERROR', message: createError.message }
+  }
+
+  const userId = created.user?.id
+  if (!userId) return { status: 'ERROR', message: 'La création du compte a échoué. Veuillez réessayer.' }
+
+  // Profil public.users (gère le rôle digital_medical_hub si email @digitalmedicalhub.com)
+  try {
+    await createUserProfile(userId, email)
+  } catch (e) {
+    console.error('[registerWithEmail] createUserProfile failed:', e)
+  }
+
+  // Lien de confirmation HMAC idempotent
+  const headersList = await headers()
+  const host = headersList.get('host') || 'www.100000medecins.org'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${proto}://${host}`
+  const { iat, token } = generateConfirmToken(userId)
+  const typeSuffix = input.signupType === 'editeur' ? '&type=editeur' : ''
+  const lienConfirmation = `${siteUrl}/auth/confirm-email?uid=${userId}&iat=${iat}&token=${token}${typeSuffix}`
+
+  // Envoi de l'email de confirmation (best-effort)
+  try {
+    const emailContent = await buildEmail('confirmation_inscription', { lien_confirmation: lienConfirmation }, siteUrl)
+    if (!emailContent) {
+      console.error('[registerWithEmail] template "confirmation_inscription" introuvable en BDD — email NON envoyé')
+    } else if (!process.env.SENDGRID_API_KEY) {
+      console.error('[registerWithEmail] SENDGRID_API_KEY absente — email NON envoyé')
+    } else {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+      await sgMail.send({
+        to: email,
+        from: 'contact@100000medecins.org',
+        subject: emailContent.sujet,
+        html: emailContent.html,
+      })
+      console.log('[registerWithEmail] email de confirmation envoyé à', email)
+    }
+  } catch (e) {
+    console.error('[registerWithEmail] email send failed:', e)
+    // Le compte est créé ; si l'email échoue, l'utilisateur pourra demander un renvoi.
   }
 
   return { status: 'SUCCESS' }

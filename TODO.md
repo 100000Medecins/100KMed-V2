@@ -15,8 +15,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
-#### Durcir la server action `generateAcronyme`
-- Ajouter `assertAdmin()` en tête de `generateAcronymeInfo` (`src/lib/actions/generateAcronyme.ts`) — endpoint admin actuellement appelable sans auth. Non bloquant (impact : consommation d'API externe), identifié par la revue de sécurité du 2026-05-20.
+#### ~~Reset mot de passe — passer au lien HMAC idempotent (comme la confirmation d'inscription)~~ ✅ (fait le 2026-05-21)
+- ~~**Problème** : le lien de reset mdp repose encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription (le « lien mort » signalé le 2026-05-13 était sans doute déjà ça).~~
+- ~~**Plan** : module `src/lib/email/reset-token.ts` (HMAC `reset:uid:iat`, TTL 1h) ; `sendPasswordReset` génère un lien HMAC `/reinitialiser-mot-de-passe?uid&iat&token` (résout l'uid via la table `users`) ; réécriture simplificatrice de la page `/reinitialiser-mot-de-passe` (supprime le bricolage session/`access_token`/`sessionStorage`/bypass-lock) ; server action `resetPasswordWithToken(uid, iat, token, newPassword)` → `admin.updateUserById`.~~
+- ~~Idempotence naturelle : le GET du lien n'affiche que le formulaire, c'est le POST qui agit → le scanner ne consomme rien.~~
 
 ### Communication
 
@@ -28,9 +30,19 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Compléter le support éditeur officiel par un canal communautaire où les médecins partagent leurs astuces concrètes sur chaque solution
 - Pistes à explorer :
   - Espace « trucs et astuces » par solution (commentaires courts, vote utile/pas utile)
-  - ~~Lien vers groupe WhatsApp ou Telegram dédié à la catégorie / solution~~ [OK] Fait 2026-05-19 (module Communautés livré)
   - Forum léger (Discourse / Discord) intégré au site
 - À cadrer : modération, prévention spam, articulation avec les avis existants
+
+#### Email de lancement par syndicat — finaliser le wording
+- **Concept** : un email de lancement du nouveau site, envoyé par chaque syndicat membre à sa propre base de sympathisants / liste de diffusion. Modèle « clé en main » : un fichier HTML par syndicat, que le syndicat envoie depuis son propre outil d'emailing.
+- **Base livrée (2026-05-21)** — visuel validé, wording à finaliser plus tard :
+  - Générateur : [scripts/generate-lancement-syndicats.mjs](scripts/generate-lancement-syndicats.mjs) — lancer `node scripts/generate-lancement-syndicats.mjs`
+  - Rendus générés : [tmp/lancement-syndicats/_index.html](tmp/lancement-syndicats/_index.html) (aperçu des 7 côte à côte) + un fichier par syndicat ([csmf](tmp/lancement-syndicats/csmf.html) · [avenir-spe](tmp/lancement-syndicats/avenir-spe.html) · [sml](tmp/lancement-syndicats/sml.html) · [fmf](tmp/lancement-syndicats/fmf.html) · [le-bloc](tmp/lancement-syndicats/le-bloc.html) · [jeunes-medecins](tmp/lancement-syndicats/jeunes-medecins.html) · [snjmg](tmp/lancement-syndicats/snjmg.html)). Dossier `tmp/` non versionné → relancer le script pour régénérer.
+  - Template : reprend formellement `master_layout` (logo officiel en-tête + pied, carte blanche, barre accent). Mot du président tiré de `pages_statiques` (slug `qui-sommes-nous`), logos servis depuis le storage Supabase.
+- **Restant à faire** :
+  - Finaliser le wording de l'annonce (titre + 2 paragraphes) ; trancher le « Nous avons repensé… » alors que l'expéditeur est le syndicat.
+  - Brancher une sous-section d'aperçu/export dans `/admin/emails` (sélecteur de syndicat → aperçu iframe → téléchargement du HTML).
+  - Décider du sort de MG France (membre fondateur, mais `actif=false` dans `partenaires` — exclu pour l'instant).
 
 ### Nettoyage
 
@@ -55,24 +67,19 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 _(rien à faire pour l'instant)_
 
+### Sécurité — captcha anti-bots sur l'inscription
+- Intégrer **Cloudflare Turnstile** (gratuit, invisible — aucune action utilisateur dans la quasi-totalité des cas) sur le formulaire `/inscription`.
+- Garde-fou actuel : contrôle temporel dans `registerWithEmail` (soumission < 2,5 s = bot, faux succès silencieux) — suffisant pour le pré-lancement, mais Turnstile est le vrai rempart anti-bots. Le honeypot a été abandonné : les password managers le déclenchaient à tort (faux positif).
+- À faire le jour où on constate du spam d'inscription réel : clé API Cloudflare + widget côté formulaire + vérification du token côté server action `registerWithEmail`.
+
 ### Mises à jour techniques
 
-#### Passer en main avec Next.js 16
-- ✅ Migration Next 16 en cours sur `dev`, site de test live, comportement OK partout
-- **Restant** : merger `dev` → `main` (la branche `main` est encore en Next 14.2.35)
-- Avant merge : vérifier la liste des changements depuis dernier push `main` (`git log main..dev`), faire une preview Vercel finale sur main avant déploiement prod
-- Voir `docs/migration-nextjs-16.md` pour le détail des points migrés
-
 #### Régler les vulnérabilités npm (`npm audit`)
-- 26 vulnérabilités : 2 low, 13 moderate, 10 high, 1 critical
-- Procéder paquet par paquet : `npm audit` pour identifier, tester après chaque correctif
-- ⚠️ **NE PAS utiliser `npm audit fix --force`** — peut introduire des breaking changes silencieux
-
-#### Refacto questionnaires d'évaluation — sortir du fallback ambigu `default`
-- **Constat** : le slug `default` joue 2 rôles incompatibles → (1) le vrai questionnaire "Logiciels métier" (labellisé "Logiciels métier (défaut)" dans l'admin), (2) le filet de secours pour toute catégorie sans entrée BDD. Résultat : les utilisateurs des catégories non-migrées (aujourd'hui `objetsconnectes`, `teleconsultation`) voient le questionnaire Logiciels métier au lieu d'un message adapté.
-- **Étape 1** : créer un slug `logiciels-metiers` en BDD avec le contenu actuel de `default` (copie des 10 sections + ~40 questions), puis vider `default` ou le remplacer par un questionnaire neutre court. Adapter `slugLabels` dans `src/app/admin/questionnaires/page.tsx`.
-- **Étape 2** : modifier `getSectionsForSlug` (`src/lib/actions/questionnaires.ts`) pour ne plus tomber silencieusement sur `default` quand la catégorie n'a pas de questionnaire — afficher plutôt un message UX "Questionnaire en cours d'élaboration pour cette catégorie" côté front.
-- **Étape 3** : supprimer le code mort `SECTIONS_DETAILLEES` (~120 lignes) et `SECTIONS_PAR_CATEGORIE` (~70 lignes) dans `src/app/solution/noter/[...slug]/page.tsx` une fois que toutes les catégories ont leur questionnaire BDD et que le filet de secours hardcodé n'est plus utile.
+- État 2026-05-20 (post-migration Next 16) : 15 vulnérabilités — 8 low, 5 moderate, 2 high, 0 critical
+- `npm audit fix` (sans `--force`) règle `protobufjs` + `ws` sans risque ; relancer `npm run build` après
+- `postcss` (moderate) : NE PAS forcer — le fix `--force` downgraderait Next 16 → 9 ; partira avec un futur patch Next
+- `xlsx` / SheetJS (high) : « no fix » sur npm (l'éditeur ne publie plus sur le registre) — réinstaller depuis le CDN SheetJS si on veut le corriger
+- ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux
 
 ### Déploiement final
 
@@ -106,27 +113,12 @@ _(rien à faire pour l'instant)_
 #### Télétransmission — finitions après seeding initial (2026-05-17)
 - Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
-- **Questionnaire d'évaluation — concevoir** : lister les critères pertinents pour évaluer une solution de télétransmission (ex. fiabilité de la télétransmission, qualité du rapprochement NOEMIE, gestion du tiers payant, support, ergonomie, intégration LGC…), les organiser en sections/sous-critères, rédiger les libellés des questions
-- **Questionnaire d'évaluation — implémenter en BDD** : créer les `criteres` (avec hiérarchie `parent_id`), remplir `categories.schema_evaluation` (JSONB) et `categories.criteres_recherche` (liste d'IDs critères mis en avant dans la page comparatif), tester le flow `/solution/noter/teletransmission/[idSolution]` de bout en bout — chantier principal restant
 - **Uploader les logos** des 20 solutions via l'admin
 - **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
-- ~~Classer dans la sur-catégorie "Logiciels médicaux"~~ [OK] Fait 2026-05-18 (groupe correct en BDD)
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
-- ~~Tooltip téléservices CNAM~~ [OK] Fait 2026-05-18 — `<AcronymText>` déjà appliqué sur les libellés de tags dans `SolutionFilters.tsx`, et les 7 sigles `ADRi`, `AATi`, `ALDi`, `DMTi`, `IMTi`, `HRi`, `INSi` sont en BDD `acronymes` avec leurs définitions complètes
 
-### ~~Solutions liées (interopérabilités, suites produits)~~ [OK] Fait 2026-05-18
-- Table `solution_liens` + UI sidebar `SolutionLiensCard` + admin `SolutionLiensManager` + seed initial 22 liens (voir CHANGELOG 2026-05-18).
-- **Évolution future possible** : permettre aux éditeurs de proposer un lien depuis `/mon-compte/mon-espace-editeur` (avec validation admin).
-
-### Avatars
-
-- ~~Page admin `/admin/utilisateurs/avatars` (CRUD catalogue avec drag & drop `@dnd-kit/sortable`)~~ [OK] Fait 2026-05-18
-- ~~Génération d'avatar perso (photo → pixel art) — abandonnée~~ [OK] Décision finale 2026-05-18 : remplacée par génération text-to-image basée sur description user (composant `<RequestCustomAvatar>` réécrit, `generatePersonalAvatar(description)` wrap dans le prompt master low_res 64)
-
-#### Pistes futures pour génération avatar perso depuis photo (si réenvie un jour)
-- Pipeline 2 étapes : img2img RD (strength modéré) + post-traitement `sharp` côté server (downscale 64×64 nearest + quantize palette + re-upscale 256×256). ~1h de dev. Probabilité succès ~60-70 %.
-- Service dédié photo→pixel art (Pixel Me, Replicate avec modèle entraîné spécifiquement). Probabilité plus élevée mais migration API.
-- ControlNet (face detection + style transfer) avec un modèle pixel art dédié.
+### Liens entre solutions — évolution future
+- Permettre aux éditeurs de proposer un lien entre solutions depuis `/mon-compte/mon-espace-editeur` (avec validation admin). La base — table `solution_liens`, UI sidebar, manager admin — est livrée (voir archive 2026-05-18).
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales
