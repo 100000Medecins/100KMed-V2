@@ -61,6 +61,8 @@ interface Props {
   initialContent: string
   onChange: (html: string) => void
   minHeight?: number
+  /** Mode allégé : toolbar limitée à gras / italique / souligné / listes / lien. */
+  minimal?: boolean
 }
 
 function ToolbarButton({
@@ -95,7 +97,7 @@ function Divider() {
   return <div className="w-px h-5 bg-gray-300 mx-1 self-center" />
 }
 
-export default function RichTextEditor({ initialContent, onChange, minHeight = 400 }: Props) {
+export default function RichTextEditor({ initialContent, onChange, minHeight = 400, minimal = false }: Props) {
   const [showLinkBar, setShowLinkBar] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [showTableBar, setShowTableBar] = useState(false)
@@ -111,17 +113,19 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      minimal ? StarterKit.configure({ heading: false }) : StarterKit,
       Underline,
-      TextStyle,
-      Color,
-      FontSize,
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-accent-blue underline cursor-pointer' } }),
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableCell,
-      TableHeader,
-      Image.configure({ HTMLAttributes: { class: 'max-w-full rounded-lg my-2' } }),
+      ...(minimal ? [] : [
+        TextStyle,
+        Color,
+        FontSize,
+        Table.configure({ resizable: false }),
+        TableRow,
+        TableCell,
+        TableHeader,
+        Image.configure({ HTMLAttributes: { class: 'max-w-full rounded-lg my-2' } }),
+      ]),
     ],
     content: initialContent,
     editorProps: {
@@ -282,6 +286,8 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
           <ToolbarButton onClick={() => ed.chain().focus().toggleUnderline().run()} active={ed.isActive('underline')} title="Souligné">
             <span style={{ textDecoration: 'underline' }}>S</span>
           </ToolbarButton>
+          {!minimal && (
+          <>
           <ToolbarButton onClick={() => ed.chain().focus().toggleStrike().run()} active={ed.isActive('strike')} title="Barré">
             <span style={{ textDecoration: 'line-through' }}>B</span>
           </ToolbarButton>
@@ -343,6 +349,8 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
           <ToolbarButton onClick={() => ed.chain().focus().toggleHeading({ level: 1 }).run()} active={ed.isActive('heading', { level: 1 })} title="Titre H1">H1</ToolbarButton>
           <ToolbarButton onClick={() => ed.chain().focus().toggleHeading({ level: 2 }).run()} active={ed.isActive('heading', { level: 2 })} title="Titre H2">H2</ToolbarButton>
           <ToolbarButton onClick={() => ed.chain().focus().toggleHeading({ level: 3 }).run()} active={ed.isActive('heading', { level: 3 })} title="Titre H3">H3</ToolbarButton>
+          </>
+          )}
 
           <Divider />
 
@@ -357,6 +365,8 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
             🔗 {ed.isActive('link') ? 'Supprimer lien' : 'Lien'}
           </ToolbarButton>
 
+          {!minimal && (
+          <>
           {/* Tableau */}
           <ToolbarButton onClick={handleTableButton} title="Insérer un tableau">⊞ Tableau</ToolbarButton>
 
@@ -373,6 +383,8 @@ export default function RichTextEditor({ initialContent, onChange, minHeight = 4
           >
             {uploading ? '⏳ Upload...' : '🖼 Image'}
           </ToolbarButton>
+          </>
+          )}
         </div>
 
         {/* Barre d'insertion de lien */}

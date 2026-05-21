@@ -160,7 +160,7 @@ export default function EtudesCliniquesPublic() {
 
               {modalEtude.description && (
                 <div
-                  className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none"
+                  className="prose-custom"
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(modalEtude.description) }}
                 />
               )}
@@ -217,7 +217,7 @@ function ModalImageCarousel({ images, titre, onZoom }: { images: string[]; titre
         onClick={() => onZoom(images[imgIndex])}
         title="Agrandir l'image"
       >
-        <img src={images[imgIndex]} alt={titre} className="w-full h-full object-cover" />
+        <img src={images[imgIndex]} alt={titre} className="w-full h-full object-cover object-top" />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
           <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 drop-shadow transition-opacity" />
         </div>
@@ -331,7 +331,7 @@ function EtudeCard({
             <img
               src={etude.images[imgIndex]}
               alt={etude.titre}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
             {etude.images.length > 1 && (
               <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">

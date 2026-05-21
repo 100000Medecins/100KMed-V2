@@ -5,6 +5,9 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { getEditeurDataForUser, updateEditeurByUser, updateSolutionByEditeur, syncGalerieByEditeur } from '@/lib/actions/admin-users'
 import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+
+const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
 type GalerieItem = { id?: number; url: string; titre: string | null; ordre: number | null; type?: string | null }
 type Solution = {
@@ -300,12 +303,11 @@ function EditeurInfoCard({
         <p className="text-xs text-gray-400 mb-2">
           Texte affiché sur votre page éditeur. Pour le mot affiché en bas de chaque page solution, utilisez l&apos;onglet « Pages solutions ».
         </p>
-        <textarea
-          value={motEditeur}
-          onChange={(e) => setMotEditeur(e.target.value)}
-          rows={5}
-          className={`${inputClass} resize-y`}
-          placeholder="Présentez votre entreprise en quelques mots..."
+        <RichTextEditor
+          minimal
+          initialContent={motEditeur}
+          onChange={setMotEditeur}
+          minHeight={140}
         />
       </div>
 
@@ -473,14 +475,13 @@ function SolutionEditeurCard({
               <label className="text-sm font-semibold text-navy">Mot de l&apos;éditeur (page solution)</label>
             </div>
             <p className="text-xs text-gray-400 mb-2">
-              Texte affiché en bas de cette page solution. Utilisez **texte** pour mettre en gras.
+              Texte affiché en bas de cette page solution. Mise en forme : gras, italique, souligné, listes, lien.
             </p>
-            <textarea
-              value={motEditeur}
-              onChange={(e) => setMotEditeur(e.target.value)}
-              rows={5}
-              className={`${inputClass} resize-y`}
-              placeholder="Présentez votre solution en quelques mots..."
+            <RichTextEditor
+              minimal
+              initialContent={motEditeur}
+              onChange={setMotEditeur}
+              minHeight={140}
             />
           </div>
 

@@ -138,7 +138,7 @@ export default function QuestionnairesThesePage() {
               {/* Description complète */}
               {modalQ.description && (
                 <div
-                  className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none"
+                  className="prose-custom"
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(modalQ.description) }}
                 />
               )}
