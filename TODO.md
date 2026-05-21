@@ -15,11 +15,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
-#### Reset mot de passe — passer au lien HMAC idempotent (comme la confirmation d'inscription)
-- **Problème** : le lien de reset mdp repose encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription (le « lien mort » signalé le 2026-05-13 était sans doute déjà ça).
-- **Plan** : module `src/lib/email/reset-token.ts` (HMAC `reset:uid:iat`, TTL 1h) ; `sendPasswordReset` génère un lien HMAC `/reinitialiser-mot-de-passe?uid&iat&token` (résout l'uid via la table `users`) ; réécriture simplificatrice de la page `/reinitialiser-mot-de-passe` (supprime le bricolage session/`access_token`/`sessionStorage`/bypass-lock) ; server action `resetPasswordWithToken(uid, iat, token, newPassword)` → `admin.updateUserById`.
-- Idempotence naturelle : le GET du lien n'affiche que le formulaire, c'est le POST qui agit → le scanner ne consomme rien.
-- ~1h-1h30. Bonus : supprime du code fragile.
+#### ~~Reset mot de passe — passer au lien HMAC idempotent (comme la confirmation d'inscription)~~ ✅ (fait le 2026-05-21)
+- ~~**Problème** : le lien de reset mdp repose encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription (le « lien mort » signalé le 2026-05-13 était sans doute déjà ça).~~
+- ~~**Plan** : module `src/lib/email/reset-token.ts` (HMAC `reset:uid:iat`, TTL 1h) ; `sendPasswordReset` génère un lien HMAC `/reinitialiser-mot-de-passe?uid&iat&token` (résout l'uid via la table `users`) ; réécriture simplificatrice de la page `/reinitialiser-mot-de-passe` (supprime le bricolage session/`access_token`/`sessionStorage`/bypass-lock) ; server action `resetPasswordWithToken(uid, iat, token, newPassword)` → `admin.updateUserById`.~~
+- ~~Idempotence naturelle : le GET du lien n'affiche que le formulaire, c'est le POST qui agit → le scanner ne consomme rien.~~
 
 ### Communication
 

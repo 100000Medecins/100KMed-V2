@@ -5,7 +5,24 @@
 
 ---
 
-## [2026-05-21] — Next 16 en production + template email fusion + manager Communautés + refacto questionnaires
+## [2026-05-21] — Next 16 en production + template email fusion + manager Communautés + refacto questionnaires + reset mdp HMAC
+
+### Fix — Reset mot de passe : lien HMAC idempotent
+- **Problème** : le lien de reset mdp reposait encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription : les clients mail / antivirus consomment le token avant le clic réel de l'utilisateur, qui tombe alors sur un lien mort.
+- **Fix** : abandon du token Supabase, remplacé par un lien HMAC maison **idempotent** (rejouable).
+  - `src/lib/email/reset-token.ts` (nouveau) — HMAC `sha256(EMAIL_SECRET, "reset:uid:iat")`, TTL 1 heure.
+  - `sendPasswordReset` (`user.ts`) réécrit : résout l'uid depuis la table `users`, génère un lien `/reinitialiser-mot-de-passe?uid&iat&token`, envoie via SendGrid (template `reinitialisation_mot_de_passe`). Silencieux si l'email est inconnu (ne révèle pas l'existence d'un compte).
+  - Nouvelle action `resetPasswordWithToken(uid, iat, token, newPassword)` : re-vérifie le HMAC côté serveur (jamais confiance au client) puis `admin.updateUserById`.
+  - Page `/reinitialiser-mot-de-passe` réécrite en **Server Component** : vérifie le HMAC au rendu, n'affiche le formulaire que si le token est valide. Supprime tout le bricolage session / `access_token` / `sessionStorage` / bypass-lock de l'ancienne version (253 lignes → ~66). Le formulaire de saisie est isolé dans un client component `ResetPasswordForm.tsx`.
+  - Idempotence : le GET du lien n'affiche que le formulaire, c'est le POST (`resetPasswordWithToken`) qui agit → le pré-scan ne consomme rien. Validé en test (idempotence OK).
+- `PasswordInput` : ajout de `suppressHydrationWarning` (les gestionnaires de mots de passe des extensions navigateur injectent des attributs après le rendu SSR → mismatch d'hydratation inoffensif).
+
+### Fix — Templates email : double logo sur `confirmation_inscription`
+- Le template `confirmation_inscription` avait été créé sans accès au `master_layout` (MCP Supabase cassé) → il embarquait ses propres `<img>` logo (+ tables TipTap imbriquées), alors que le `master_layout` injecte déjà un logo. Une fois encapsulé : triple logo.
+- Refait en fragment `<tr><td>` propre calqué sur `fusion_comptes` : suréglet « Bienvenue », titre, texte, bouton `{{lien_confirmation}}`, mention validité 7 jours + lien en clair, mention « si vous n'êtes pas à l'origine ». Plus aucun logo embarqué.
+- `reinitialisation_mot_de_passe` : c'était un document HTML complet auto-suffisant (donc non encapsulé, pas de double logo immédiat) mais qui embarquait ses propres logos → bug latent et incohérent avec les autres templates. Repassé en fragment `<tr><td>` sans logo. Texte corrigé : « valable 24 heures » → « 1 heure » (TTL réel du nouveau lien HMAC).
+- Couleurs thème appliquées : navy `#1B2A4A`, accent-blue `#4A90D9`, texte `#374151`.
+- UPDATE en BDD via service role + test d'envoi OK (MCP Supabase de nouveau cassé — erreur interne `-32603`).
 
 ### Infrastructure — Migration Next 16 mergée en production
 - `dev` → `main` mergé (merge commit `e0cbd38`, `--no-ff`) : `main` passe de Next 14.2.35 à Next 16, build de la production Vercel déclenché. Le domaine `dev.100000medecins.org` a été rebasculé sur la branche `main` côté Vercel.
