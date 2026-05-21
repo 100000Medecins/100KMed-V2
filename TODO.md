@@ -33,6 +33,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
   - Forum léger (Discourse / Discord) intégré au site
 - À cadrer : modération, prévention spam, articulation avec les avis existants
 
+#### Email de lancement par syndicat — finaliser le wording
+- **Concept** : un email de lancement du nouveau site, envoyé par chaque syndicat membre à sa propre base de sympathisants / liste de diffusion. Modèle « clé en main » : un fichier HTML par syndicat, que le syndicat envoie depuis son propre outil d'emailing.
+- **Base livrée (2026-05-21)** — visuel validé, wording à finaliser plus tard :
+  - Générateur : [scripts/generate-lancement-syndicats.mjs](scripts/generate-lancement-syndicats.mjs) — lancer `node scripts/generate-lancement-syndicats.mjs`
+  - Rendus générés : [tmp/lancement-syndicats/_index.html](tmp/lancement-syndicats/_index.html) (aperçu des 7 côte à côte) + un fichier par syndicat ([csmf](tmp/lancement-syndicats/csmf.html) · [avenir-spe](tmp/lancement-syndicats/avenir-spe.html) · [sml](tmp/lancement-syndicats/sml.html) · [fmf](tmp/lancement-syndicats/fmf.html) · [le-bloc](tmp/lancement-syndicats/le-bloc.html) · [jeunes-medecins](tmp/lancement-syndicats/jeunes-medecins.html) · [snjmg](tmp/lancement-syndicats/snjmg.html)). Dossier `tmp/` non versionné → relancer le script pour régénérer.
+  - Template : reprend formellement `master_layout` (logo officiel en-tête + pied, carte blanche, barre accent). Mot du président tiré de `pages_statiques` (slug `qui-sommes-nous`), logos servis depuis le storage Supabase.
+- **Restant à faire** :
+  - Finaliser le wording de l'annonce (titre + 2 paragraphes) ; trancher le « Nous avons repensé… » alors que l'expéditeur est le syndicat.
+  - Brancher une sous-section d'aperçu/export dans `/admin/emails` (sélecteur de syndicat → aperçu iframe → téléchargement du HTML).
+  - Décider du sort de MG France (membre fondateur, mais `actif=false` dans `partenaires` — exclu pour l'instant).
+
 ### Nettoyage
 
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
