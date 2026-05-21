@@ -42,12 +42,23 @@
 - `/connexion` : messages explicites pour `?error=confirm_invalid` / `confirm_expired` et succès `?confirmed=1`.
 - Le flux PSC n'est pas touché.
 
+### UX / UI — Badge « acronymes » dans le hero d'accueil
+- 6e badge flottant dans l'illustration animée du hero : nombre d'acronymes du glossaire. `getSiteStats` compte désormais la table `acronymes`.
+
+### Feature — Enrichissement éditorial : listes, liens, éditeur riche du mot éditeur
+- `sanitizeHtml` étendu : autorise les listes (`ul/ol/li`) et les liens (`<a href>` sécurisés — schémas `http(s)`/`mailto` uniquement, `target`/`rel` forcés). Filet : un contenu en texte brut voit ses retours à la ligne convertis en `<br>`.
+- `RichTextEditor` : nouveau mode `minimal` (toolbar gras/italique/souligné/listes/lien) — branché sur les 2 champs « mot de l'éditeur » de l'espace éditeur (auparavant de simples textareas).
+- Sécurité : le « mot de l'éditeur » (page éditeur + page solution via `PublisherWord`) est désormais rendu via `sanitizeHtml` → ferme le risque XSS (champs éditables par les éditeurs).
+- Fix affichage : les modales étude clinique / questionnaire-thèse utilisaient `prose prose-sm` (classes inexistantes — plugin Typography non installé) → paragraphes collés. Remplacé par la classe maison `.prose-custom`.
+- Images des études : cadrage `object-top` (évite de rogner le haut du visuel).
+
 ### TODO — Mises à jour
 - Marqué terminé : « Passer en main avec Next.js 16 », « Refacto questionnaires d'évaluation », « Durcir generateAcronyme », questionnaire d'évaluation télétransmission (déjà livré le 2026-05-17).
 - Actualisé : « Régler les vulnérabilités npm » (15 vulnérabilités, plus 26).
 - Supprimé : « Pistes futures génération avatar perso depuis photo ».
 - Ajout : « Captcha anti-bots Cloudflare Turnstile sur l'inscription » (le garde-fou actuel est temporel).
 - Ajout : « Reset mot de passe — passer au lien HMAC idempotent » (même bug de pré-scan latent que la confirmation d'inscription).
+- Archivage `/todo-clean` : 10 items terminés déplacés vers `TODO-archive.md`.
 
 ---
 

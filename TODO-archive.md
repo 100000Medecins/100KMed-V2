@@ -5,6 +5,31 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-21**
+- [OK] 2026-05-21 : Durcir la server action `generateAcronyme` (Sécurité)
+  - `assertAdmin()` ajouté en tête de `generateAcronymeInfo` — l'endpoint n'est plus appelable sans cookie admin
+- [OK] 2026-05-21 : Refacto questionnaires d'évaluation — sortir du fallback ambigu `default` (Mises à jour techniques)
+  - Slug `default` renommé `logiciels-metiers`, fallback silencieux supprimé dans `getSectionsForSlug`, message UX « Questionnaire en cours d'élaboration », ~190 lignes de code mort supprimées (voir CHANGELOG 2026-05-21)
+
+**2026-05-20**
+- [OK] 2026-05-20 : Passer en main avec Next.js 16 (Mises à jour techniques)
+  - Migration livrée et mergée `dev` → `main` (merge commit `e0cbd38`). Détail dans `docs/migration-nextjs-16.md`
+
+**2026-05-19**
+- [OK] 2026-05-19 : Lien vers groupe WhatsApp/Telegram par solution (Communication, sous « Favoriser l'entraide »)
+  - Couvert par le module Communautés livré le 2026-05-19
+
+**2026-05-18**
+- [OK] 2026-05-18 : Solutions liées — interopérabilités, suites produits (Idées)
+  - Table `solution_liens` + UI sidebar `SolutionLiensCard` + admin `SolutionLiensManager` + seed initial 22 liens (voir CHANGELOG 2026-05-18)
+  - Évolution future encore ouverte (conservée dans TODO.md) : permettre aux éditeurs de proposer un lien
+- [OK] 2026-05-18 : Classer la catégorie Télétransmission dans la sur-catégorie « Logiciels médicaux » (Télétransmission)
+- [OK] 2026-05-18 : Tooltip téléservices CNAM sur les libellés de tags (Télétransmission)
+  - `<AcronymText>` appliqué sur les libellés de tags dans `SolutionFilters.tsx` ; 7 sigles ADRi/AATi/ALDi/DMTi/IMTi/HRi/INSi en BDD `acronymes`
+- [OK] 2026-05-18 : Page admin `/admin/utilisateurs/avatars` — CRUD catalogue avec drag & drop (Avatars)
+- [OK] 2026-05-18 : Génération d'avatar perso — bascule vers text-to-image (Avatars)
+  - Génération photo→pixel art abandonnée ; remplacée par text-to-image basée sur description user (`RequestCustomAvatar` réécrit, `generatePersonalAvatar(description)`)
+
 **2026-05-17**
 - [OK] 2026-05-17 : Remplacer les avatars utilisateurs — couplé avec la migration technique (Avatars)
   - Voir `docs/avatars_migration_plan.md`
@@ -12,6 +37,8 @@ Les items sont organisés par date (du plus récent au plus ancien).
   - Plan en 4 étapes réalisé : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images
   - Pipeline scripté : `generate-avatars.ts` + `finalize-avatars.ts` + `upload-avatars-to-supabase.ts` (~10 USD pour 160 PNG via Retro Diffusion)
   - Plus de risque de UPDATE massif sur 5800+ utilisateurs pour changer les images (le portrait est maintenant une référence par UUID, plus une URL dénormalisée)
+- [OK] 2026-05-17 : Questionnaire d'évaluation Télétransmission — conception + implémentation BDD (Télétransmission)
+  - 3 sections, 20 questions mappées sur les 5 critères majeurs — voir `docs/teletransmission-questionnaire.md`
 
 **2026-05-16**
 - [OK] 2026-05-16 : Affichage avatar cassé sur une page solution (Bugs à corriger)
