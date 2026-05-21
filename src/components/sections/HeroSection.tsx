@@ -34,9 +34,10 @@ interface HeroSectionProps {
   nbSolutions?: number
   nbEvaluations?: number
   nbInscrits?: number
+  nbAcronymes?: number
 }
 
-export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, nbInscrits = 0 }: HeroSectionProps) {
+export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, nbInscrits = 0, nbAcronymes = 0 }: HeroSectionProps) {
   const [partenaires, config] = await Promise.all([
     getPartenaires(),
     getSiteConfig(['hero_titre', 'hero_sous_titre', 'label_partenaires', 'hero_image']),
@@ -55,6 +56,9 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
     : null
   const nbInscritsLabel = nbInscrits > 0
     ? `${nbInscrits.toLocaleString('fr-FR')} inscrits`
+    : null
+  const nbAcronymesLabel = nbAcronymes > 0
+    ? `${nbAcronymes} acronymes`
     : null
 
   return (
@@ -95,6 +99,7 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
                 nbSolutionsLabel={nbSolutionsLabel}
                 nbEvaluationsLabel={nbEvaluationsLabel}
                 nbInscritsLabel={nbInscritsLabel}
+                nbAcronymesLabel={nbAcronymesLabel}
               />
             )}
           </div>
@@ -110,6 +115,7 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
                 nbSolutionsLabel={nbSolutionsLabel}
                 nbEvaluationsLabel={nbEvaluationsLabel}
                 nbInscritsLabel={nbInscritsLabel}
+                nbAcronymesLabel={nbAcronymesLabel}
               />
             </div>
           )}
