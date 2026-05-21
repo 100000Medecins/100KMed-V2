@@ -25,18 +25,25 @@ function ConnexionContent() {
   const [email, setEmail] = useState(emailParam ?? '')
   const [password, setPassword] = useState('')
   const resetSuccess = searchParams.get('reset') === 'success'
-  const PSC_ERROR_MESSAGES: Record<string, string> = {
+  const confirmedParam = searchParams.get('confirmed') === '1'
+  const ERROR_MESSAGES: Record<string, string> = {
     psc_non_medecin: 'Ce compte Pro Santé Connect n\'est pas celui d\'un médecin. 100 000 Médecins est réservé aux médecins.',
     psc_auth_error: 'La connexion via Pro Santé Connect a échoué. Veuillez réessayer.',
     psc_no_identity: 'Impossible d\'identifier votre compte PSC. Veuillez réessayer.',
     psc_create_error: 'Impossible de créer votre compte. Contactez le support.',
     psc_session_error: 'Erreur lors de l\'établissement de la session. Veuillez réessayer.',
+    confirm_invalid: 'Ce lien de confirmation est invalide. Si vous avez déjà confirmé votre adresse, connectez-vous directement ci-dessous.',
+    confirm_expired: 'Ce lien de confirmation a expiré. Connectez-vous ci-dessous — si votre adresse n\'est pas encore confirmée, contactez le support.',
   }
   const [error, setError] = useState<string | null>(
-    errorParam ? (PSC_ERROR_MESSAGES[errorParam] ?? 'Une erreur est survenue lors de la connexion.') : null
+    errorParam ? (ERROR_MESSAGES[errorParam] ?? 'Une erreur est survenue lors de la connexion.') : null
   )
   const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState<string | null>(resetSuccess ? 'Mot de passe mis à jour. Vous pouvez vous connecter.' : null)
+  const [success, setSuccess] = useState<string | null>(
+    resetSuccess ? 'Mot de passe mis à jour. Vous pouvez vous connecter.'
+    : confirmedParam ? 'Votre adresse email est confirmée. Vous pouvez vous connecter.'
+    : null
+  )
 
   // ?mode=register → rediriger vers /inscription
   useEffect(() => {

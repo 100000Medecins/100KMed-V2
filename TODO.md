@@ -15,8 +15,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
-#### ~~Durcir la server action `generateAcronyme`~~ [OK] Fait 2026-05-21
-- `assertAdmin()` ajouté en tête de `generateAcronymeInfo`.
+#### Reset mot de passe — passer au lien HMAC idempotent (comme la confirmation d'inscription)
+- **Problème** : le lien de reset mdp repose encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription (le « lien mort » signalé le 2026-05-13 était sans doute déjà ça).
+- **Plan** : module `src/lib/email/reset-token.ts` (HMAC `reset:uid:iat`, TTL 1h) ; `sendPasswordReset` génère un lien HMAC `/reinitialiser-mot-de-passe?uid&iat&token` (résout l'uid via la table `users`) ; réécriture simplificatrice de la page `/reinitialiser-mot-de-passe` (supprime le bricolage session/`access_token`/`sessionStorage`/bypass-lock) ; server action `resetPasswordWithToken(uid, iat, token, newPassword)` → `admin.updateUserById`.
+- Idempotence naturelle : le GET du lien n'affiche que le formulaire, c'est le POST qui agit → le scanner ne consomme rien.
+- ~1h-1h30. Bonus : supprime du code fragile.
 
 ### Communication
 
@@ -28,7 +31,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Compléter le support éditeur officiel par un canal communautaire où les médecins partagent leurs astuces concrètes sur chaque solution
 - Pistes à explorer :
   - Espace « trucs et astuces » par solution (commentaires courts, vote utile/pas utile)
-  - ~~Lien vers groupe WhatsApp ou Telegram dédié à la catégorie / solution~~ [OK] Fait 2026-05-19 (module Communautés livré)
   - Forum léger (Discourse / Discord) intégré au site
 - À cadrer : modération, prévention spam, articulation avec les avis existants
 
@@ -55,10 +57,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 _(rien à faire pour l'instant)_
 
-### Mises à jour techniques
+### Sécurité — captcha anti-bots sur l'inscription
+- Intégrer **Cloudflare Turnstile** (gratuit, invisible — aucune action utilisateur dans la quasi-totalité des cas) sur le formulaire `/inscription`.
+- Garde-fou actuel : contrôle temporel dans `registerWithEmail` (soumission < 2,5 s = bot, faux succès silencieux) — suffisant pour le pré-lancement, mais Turnstile est le vrai rempart anti-bots. Le honeypot a été abandonné : les password managers le déclenchaient à tort (faux positif).
+- À faire le jour où on constate du spam d'inscription réel : clé API Cloudflare + widget côté formulaire + vérification du token côté server action `registerWithEmail`.
 
-#### ~~Passer en main avec Next.js 16~~ [OK] Fait 2026-05-20
-- Migration livrée et mergée `dev` → `main` (merge commit `e0cbd38`). Détail dans `docs/migration-nextjs-16.md`.
+### Mises à jour techniques
 
 #### Régler les vulnérabilités npm (`npm audit`)
 - État 2026-05-20 (post-migration Next 16) : 15 vulnérabilités — 8 low, 5 moderate, 2 high, 0 critical
@@ -66,9 +70,6 @@ _(rien à faire pour l'instant)_
 - `postcss` (moderate) : NE PAS forcer — le fix `--force` downgraderait Next 16 → 9 ; partira avec un futur patch Next
 - `xlsx` / SheetJS (high) : « no fix » sur npm (l'éditeur ne publie plus sur le registre) — réinstaller depuis le CDN SheetJS si on veut le corriger
 - ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux
-
-#### ~~Refacto questionnaires d'évaluation — sortir du fallback ambigu `default`~~ [OK] Fait 2026-05-21
-- Slug `default` renommé `logiciels-metiers`, fallback silencieux supprimé, message UX « Questionnaire en cours d'élaboration », ~190 lignes de code mort supprimées (voir CHANGELOG 2026-05-21).
 
 ### Déploiement final
 
@@ -102,21 +103,12 @@ _(rien à faire pour l'instant)_
 #### Télétransmission — finitions après seeding initial (2026-05-17)
 - Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
-- ~~Questionnaire d'évaluation — concevoir + implémenter en BDD~~ [OK] Fait 2026-05-17 (3 sections, 20 questions mappées sur les 5 critères majeurs — voir `docs/teletransmission-questionnaire.md`)
 - **Uploader les logos** des 20 solutions via l'admin
 - **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
-- ~~Classer dans la sur-catégorie "Logiciels médicaux"~~ [OK] Fait 2026-05-18 (groupe correct en BDD)
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
-- ~~Tooltip téléservices CNAM~~ [OK] Fait 2026-05-18 — `<AcronymText>` déjà appliqué sur les libellés de tags dans `SolutionFilters.tsx`, et les 7 sigles `ADRi`, `AATi`, `ALDi`, `DMTi`, `IMTi`, `HRi`, `INSi` sont en BDD `acronymes` avec leurs définitions complètes
 
-### ~~Solutions liées (interopérabilités, suites produits)~~ [OK] Fait 2026-05-18
-- Table `solution_liens` + UI sidebar `SolutionLiensCard` + admin `SolutionLiensManager` + seed initial 22 liens (voir CHANGELOG 2026-05-18).
-- **Évolution future possible** : permettre aux éditeurs de proposer un lien depuis `/mon-compte/mon-espace-editeur` (avec validation admin).
-
-### Avatars
-
-- ~~Page admin `/admin/utilisateurs/avatars` (CRUD catalogue avec drag & drop `@dnd-kit/sortable`)~~ [OK] Fait 2026-05-18
-- ~~Génération d'avatar perso (photo → pixel art) — abandonnée~~ [OK] Décision finale 2026-05-18 : remplacée par génération text-to-image basée sur description user (composant `<RequestCustomAvatar>` réécrit, `generatePersonalAvatar(description)` wrap dans le prompt master low_res 64)
+### Liens entre solutions — évolution future
+- Permettre aux éditeurs de proposer un lien entre solutions depuis `/mon-compte/mon-espace-editeur` (avec validation admin). La base — table `solution_liens`, UI sidebar, manager admin — est livrée (voir archive 2026-05-18).
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales

@@ -28,10 +28,26 @@
 - **Étape 2** : `getSectionsForSlug` ne retombe plus sur `default` → renvoie `[]`. La page `/solution/noter/[...slug]` affiche « Questionnaire en cours d'élaboration » si la catégorie n'a pas de questionnaire ; le fallback hardcodé n'est plus utilisé.
 - **Étape 3** : suppression de ~190 lignes de code mort (`SECTIONS_DETAILLEES`, `SECTIONS_PAR_CATEGORIE`, `getSectionsForCategorie`, `getTotalQuestions`).
 
+### Fix — Confirmation d'inscription : lien HMAC idempotent (anti pré-scan)
+- **Symptôme** (retour bêta testeur éditeur) : « Une erreur est survenue lors de la connexion » après clic sur le lien de confirmation, alors que le compte était bel et bien validé (connexion possible ensuite).
+- **Cause** : le token OTP natif de Supabase est à usage unique. Les clients mail / antivirus pré-scannent les liens → ils « consomment » le token avant le clic réel de l'utilisateur. Le compte est confirmé (par le scanner) mais l'utilisateur tombe sur un token mort.
+- **Fix** : abandon du token Supabase pour la confirmation d'inscription, remplacé par un lien HMAC maison **idempotent** (rejouable), sur le modèle du lien de désabonnement.
+  - `src/lib/email/confirm-token.ts` — HMAC `sha256(EMAIL_SECRET, "confirm:uid:iat")`, TTL 7 jours.
+  - Server action `registerWithEmail` (`user.ts`) : crée le compte via `admin.createUser({ email_confirm: false })` (donc **aucun email natif Supabase**), crée le profil `public.users`, envoie notre email via SendGrid (template `confirmation_inscription`).
+  - Route `/auth/confirm-email` : vérifie le HMAC → `updateUserById({ email_confirm: true })` (idempotent) → auto-login best-effort via magiclink frais généré/consommé côté serveur → `/completer-profil`. Dégradé gracieux si l'auto-login échoue (`/connexion?confirmed=1`).
+  - `AuthProvider.signUpWithEmail` branché sur `registerWithEmail` (plus de `supabase.auth.signUp`).
+  - Le `?type=editeur` est préservé (transite par le lien de confirmation → `/completer-profil?type=editeur`).
+- **Garde-fou anti-bot** : contrôle temporel dans `registerWithEmail` (soumission < 2,5 s = bot, faux succès silencieux). Un honeypot avait d'abord été posé puis retiré — les password managers le remplissaient à tort.
+- **Template email** : nouveau `confirmation_inscription` en BDD, structure calquée sur `reinitialisation_mot_de_passe`.
+- `/connexion` : messages explicites pour `?error=confirm_invalid` / `confirm_expired` et succès `?confirmed=1`.
+- Le flux PSC n'est pas touché.
+
 ### TODO — Mises à jour
 - Marqué terminé : « Passer en main avec Next.js 16 », « Refacto questionnaires d'évaluation », « Durcir generateAcronyme », questionnaire d'évaluation télétransmission (déjà livré le 2026-05-17).
 - Actualisé : « Régler les vulnérabilités npm » (15 vulnérabilités, plus 26).
 - Supprimé : « Pistes futures génération avatar perso depuis photo ».
+- Ajout : « Captcha anti-bots Cloudflare Turnstile sur l'inscription » (le garde-fou actuel est temporel).
+- Ajout : « Reset mot de passe — passer au lien HMAC idempotent » (même bug de pré-scan latent que la confirmation d'inscription).
 
 ---
 

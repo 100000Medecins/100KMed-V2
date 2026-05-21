@@ -20,6 +20,8 @@ function InscriptionContent() {
 
   const [email, setEmail] = useState(emailParam ?? '')
   const [password, setPassword] = useState('')
+  // Horodatage du chargement du formulaire — garde-fou anti-bot (cf. registerWithEmail)
+  const [formLoadedAt] = useState(() => Date.now())
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -32,14 +34,10 @@ function InscriptionContent() {
     setSuccess(null)
     setSubmitting(true)
 
-    const result = await signUpWithEmail(email, password)
+    const result = await signUpWithEmail(email, password, Date.now() - formLoadedAt, typeParam ?? undefined)
     if (result.error) {
       setError(result.error)
       setSubmitting(false)
-    } else if (result.redirectTo) {
-      // Session immédiate (confirmation email désactivée) → redirection directe
-      const redirectUrl = typeParam ? `${result.redirectTo}?type=${typeParam}` : result.redirectTo
-      window.location.href = redirectUrl
     } else {
       // Confirmation email requise → afficher le message
       setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')

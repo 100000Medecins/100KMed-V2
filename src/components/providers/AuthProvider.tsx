@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useMemo, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { createUserProfile, sendPasswordReset } from '@/lib/actions/user'
+import { registerWithEmail, sendPasswordReset } from '@/lib/actions/user'
 import { connectWithPsc } from '@/lib/auth/psc'
 import type { User } from '@supabase/supabase-js'
 
@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
-  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null; redirectTo?: string }>
+  signUpWithEmail: (email: string, password: string, elapsedMs?: number, signupType?: string) => Promise<{ error: string | null }>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   updatePassword: (password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: false,
   signInWithPSC: async () => {},
   signInWithEmail: async () => ({ error: null }),
-  signUpWithEmail: async () => ({ error: null, redirectTo: undefined }),
+  signUpWithEmail: async () => ({ error: null }),
   resetPassword: async () => ({ error: null }),
   updatePassword: async () => ({ error: null }),
   signOut: async () => {},
@@ -138,42 +138,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
-  const signUpWithEmail = async (email: string, password: string) => {
-    if (!supabase) return { error: 'Supabase non configuré' }
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    })
-    if (error) {
-      if (error.message === 'User already registered')
-        return { error: 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.' }
-      return { error: error.message }
-    }
-
-    // Supabase ne retourne pas d'erreur si l'email existe déjà (il envoie juste un mail silencieux)
-    // mais l'utilisateur retourné a un tableau identities vide dans ce cas
-    if (data.user?.identities?.length === 0) {
+  const signUpWithEmail = async (email: string, password: string, elapsedMs?: number, signupType?: string) => {
+    // Inscription via server action : création admin (email_confirm: false) + envoi
+    // d'un email de confirmation à lien HMAC idempotent (résistant au pré-scan des
+    // clients mail). Plus de session immédiate — l'utilisateur confirme puis se connecte.
+    const res = await registerWithEmail({ email, password, elapsedMs, signupType })
+    if (res.status === 'EMAIL_EXISTS') {
       return { error: 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.' }
     }
-
-    // Créer le profil public.users immédiatement après l'inscription
-    if (data.user) {
-      try {
-        await createUserProfile(data.user.id, email)
-      } catch (e) {
-        console.error('Erreur création profil:', e)
-      }
+    if (res.status === 'ERROR') {
+      return { error: res.message }
     }
-
-    // Si Supabase a retourné une session immédiate (confirmation email désactivée),
-    // signaler à la page d'inscription de rediriger plutôt que d'afficher le message
-    if (data.session) {
-      return { error: null, redirectTo: '/mon-compte/profil' }
-    }
-
     return { error: null }
   }
 
