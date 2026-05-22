@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -8,7 +8,8 @@ import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { UserPlus, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
-import { createClient } from '@/lib/supabase/client'
+import { resendConfirmationEmail } from '@/lib/actions/user'
+import TurnstileWidget, { type TurnstileHandle } from '@/components/ui/TurnstileWidget'
 
 function InscriptionContent() {
   const { signInWithPSC, signUpWithEmail, signInWithEmail } = useAuth()
@@ -27,17 +28,27 @@ function InscriptionContent() {
   const [submitting, setSubmitting] = useState(false)
   const [resendSent, setResendSent] = useState(false)
   const [resending, setResending] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileRef = useRef<TurnstileHandle>(null)
+  const turnstileEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+
+    if (turnstileEnabled && !turnstileToken) {
+      setError('Vérification anti-robot en cours, réessayez dans un instant.')
+      return
+    }
+
     setSubmitting(true)
 
-    const result = await signUpWithEmail(email, password, Date.now() - formLoadedAt, typeParam ?? undefined)
+    const result = await signUpWithEmail(email, password, Date.now() - formLoadedAt, typeParam ?? undefined, turnstileToken)
     if (result.error) {
       setError(result.error)
       setSubmitting(false)
+      turnstileRef.current?.reset() // token Turnstile à usage unique → réarmer pour un nouvel essai
     } else {
       // Confirmation email requise → afficher le message
       setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre inscription.')
@@ -84,12 +95,7 @@ function InscriptionContent() {
                     disabled={resending}
                     onClick={async () => {
                       setResending(true)
-                      const supabase = createClient()
-                      await supabase.auth.resend({
-                        type: 'signup',
-                        email,
-                        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
-                      })
+                      await resendConfirmationEmail(email, typeParam ?? undefined)
                       setResending(false)
                       setResendSent(true)
                     }}
@@ -153,6 +159,8 @@ function InscriptionContent() {
                 />
               </div>
 
+              <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
+
               {error?.startsWith('Un compte existe déjà') ? (
                 <button
                   type="button"
@@ -174,7 +182,7 @@ function InscriptionContent() {
               ) : (
                 <Button
                   variant="primary"
-                  className={`w-full justify-center ${submitting ? 'opacity-50 pointer-events-none' : ''}`}
+                  className={`w-full justify-center ${submitting || (turnstileEnabled && !turnstileToken) ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   Créer mon compte
                 </Button>

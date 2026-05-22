@@ -7,6 +7,7 @@ import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { generateConfirmToken } from '@/lib/email/confirm-token'
 import { generateResetToken, verifyResetToken } from '@/lib/email/reset-token'
+import { verifyTurnstileToken } from '@/lib/turnstile'
 import sgMail from '@sendgrid/mail'
 import sharp from 'sharp'
 
@@ -153,6 +154,45 @@ export async function createUserProfile(userId: string, email: string) {
 }
 
 /**
+ * Construit le lien de confirmation HMAC et envoie l'email `confirmation_inscription`
+ * via SendGrid. Partagé entre l'inscription initiale (`registerWithEmail`) et le
+ * renvoi manuel (`resendConfirmationEmail`).
+ * Lève si l'envoi SendGrid échoue ; renvoie `false` si le template ou la clé manque.
+ */
+async function sendConfirmationEmail(
+  userId: string,
+  email: string,
+  signupType?: string
+): Promise<boolean> {
+  const headersList = await headers()
+  const host = headersList.get('host') || 'www.100000medecins.org'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${proto}://${host}`
+
+  const { iat, token } = generateConfirmToken(userId)
+  const typeSuffix = signupType === 'editeur' ? '&type=editeur' : ''
+  const lienConfirmation = `${siteUrl}/auth/confirm-email?uid=${userId}&iat=${iat}&token=${token}${typeSuffix}`
+
+  const emailContent = await buildEmail('confirmation_inscription', { lien_confirmation: lienConfirmation }, siteUrl)
+  if (!emailContent) {
+    console.error('[sendConfirmationEmail] template "confirmation_inscription" introuvable en BDD — email NON envoyé')
+    return false
+  }
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('[sendConfirmationEmail] SENDGRID_API_KEY absente — email NON envoyé')
+    return false
+  }
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+  await sgMail.send({
+    to: email,
+    from: 'contact@100000medecins.org',
+    subject: emailContent.sujet,
+    html: emailContent.html,
+  })
+  return true
+}
+
+/**
  * Inscription email/mot de passe avec confirmation par lien HMAC idempotent.
  *
  * Remplace `supabase.auth.signUp()` : on crée le compte via l'API admin
@@ -166,6 +206,7 @@ export async function registerWithEmail(input: {
   password: string
   elapsedMs?: number
   signupType?: string
+  turnstileToken?: string
 }): Promise<{ status: 'SUCCESS' } | { status: 'EMAIL_EXISTS' } | { status: 'ERROR'; message: string }> {
   // Garde-fou anti-bot : un humain met plusieurs secondes à saisir email + mot de passe.
   // Une soumission quasi instantanée = bot → faux succès silencieux (on ne crée rien).
@@ -179,6 +220,12 @@ export async function registerWithEmail(input: {
   if (!email || !email.includes('@')) return { status: 'ERROR', message: 'Adresse email invalide.' }
   if (!password || password.length < 6) {
     return { status: 'ERROR', message: 'Le mot de passe doit contenir au moins 6 caractères.' }
+  }
+
+  // Vérification anti-bot Cloudflare Turnstile.
+  // No-op si TURNSTILE_SECRET_KEY n'est pas configurée (dégradation gracieuse).
+  if (!(await verifyTurnstileToken(input.turnstileToken))) {
+    return { status: 'ERROR', message: 'Vérification anti-robot échouée. Merci de réessayer.' }
   }
 
   const supabase = createServiceRoleClient()
@@ -208,38 +255,46 @@ export async function registerWithEmail(input: {
     console.error('[registerWithEmail] createUserProfile failed:', e)
   }
 
-  // Lien de confirmation HMAC idempotent
-  const headersList = await headers()
-  const host = headersList.get('host') || 'www.100000medecins.org'
-  const proto = headersList.get('x-forwarded-proto') || 'https'
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${proto}://${host}`
-  const { iat, token } = generateConfirmToken(userId)
-  const typeSuffix = input.signupType === 'editeur' ? '&type=editeur' : ''
-  const lienConfirmation = `${siteUrl}/auth/confirm-email?uid=${userId}&iat=${iat}&token=${token}${typeSuffix}`
-
-  // Envoi de l'email de confirmation (best-effort)
+  // Envoi de l'email de confirmation HMAC idempotent (best-effort)
   try {
-    const emailContent = await buildEmail('confirmation_inscription', { lien_confirmation: lienConfirmation }, siteUrl)
-    if (!emailContent) {
-      console.error('[registerWithEmail] template "confirmation_inscription" introuvable en BDD — email NON envoyé')
-    } else if (!process.env.SENDGRID_API_KEY) {
-      console.error('[registerWithEmail] SENDGRID_API_KEY absente — email NON envoyé')
-    } else {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-      await sgMail.send({
-        to: email,
-        from: 'contact@100000medecins.org',
-        subject: emailContent.sujet,
-        html: emailContent.html,
-      })
-      console.log('[registerWithEmail] email de confirmation envoyé à', email)
-    }
+    const sent = await sendConfirmationEmail(userId, email, input.signupType)
+    if (sent) console.log('[registerWithEmail] email de confirmation envoyé à', email)
   } catch (e) {
     console.error('[registerWithEmail] email send failed:', e)
     // Le compte est créé ; si l'email échoue, l'utilisateur pourra demander un renvoi.
   }
 
   return { status: 'SUCCESS' }
+}
+
+/**
+ * Renvoie l'email de confirmation d'inscription (lien HMAC idempotent).
+ * Déclenché par le bouton « Renvoyer » de l'écran de succès d'inscription.
+ * Silencieux si l'email est inconnu (on ne révèle pas l'existence d'un compte).
+ */
+export async function resendConfirmationEmail(
+  email: string,
+  signupType?: string
+): Promise<{ ok: boolean }> {
+  const cleanEmail = email.trim().toLowerCase()
+  if (!cleanEmail.includes('@')) return { ok: false }
+
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabase as any)
+    .from('users')
+    .select('id')
+    .eq('email', cleanEmail)
+    .maybeSingle()
+  if (!profile?.id) return { ok: true } // silencieux : on ne révèle pas l'existence d'un compte
+
+  try {
+    await sendConfirmationEmail(profile.id as string, cleanEmail, signupType)
+  } catch (e) {
+    console.error('[resendConfirmationEmail] send failed:', e)
+    return { ok: false }
+  }
+  return { ok: true }
 }
 
 /**

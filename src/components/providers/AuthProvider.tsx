@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean
   signInWithPSC: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
-  signUpWithEmail: (email: string, password: string, elapsedMs?: number, signupType?: string) => Promise<{ error: string | null }>
+  signUpWithEmail: (email: string, password: string, elapsedMs?: number, signupType?: string, turnstileToken?: string) => Promise<{ error: string | null }>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   updatePassword: (password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
@@ -138,11 +138,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
-  const signUpWithEmail = async (email: string, password: string, elapsedMs?: number, signupType?: string) => {
+  const signUpWithEmail = async (email: string, password: string, elapsedMs?: number, signupType?: string, turnstileToken?: string) => {
     // Inscription via server action : création admin (email_confirm: false) + envoi
     // d'un email de confirmation à lien HMAC idempotent (résistant au pré-scan des
     // clients mail). Plus de session immédiate — l'utilisateur confirme puis se connecte.
-    const res = await registerWithEmail({ email, password, elapsedMs, signupType })
+    const res = await registerWithEmail({ email, password, elapsedMs, signupType, turnstileToken })
     if (res.status === 'EMAIL_EXISTS') {
       return { error: 'Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.' }
     }
