@@ -39,6 +39,31 @@ async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_th
   }
 }
 
+// Syndicats émetteurs du mail de lancement (mots des présidents = métadonnées de la page « Qui sommes-nous »).
+async function getSyndicatsLancement() {
+  try {
+    const supabase = createServiceRoleClient()
+    const { data } = await (supabase as any)
+      .from('pages_statiques')
+      .select('metadata')
+      .eq('slug', 'qui-sommes-nous')
+      .single()
+    const arr = Array.isArray(data?.metadata) ? data.metadata : []
+    return arr
+      .filter((s: any) => s?.id && s.id !== 'mg-france')
+      .map((s: any) => ({
+        id: s.id,
+        nom: s.nom,
+        nom_complet: s.nom_complet ?? null,
+        citation: s.citation ?? '',
+        presidents: s.presidents ?? '',
+        titre: s.titre ?? '',
+      }))
+  } catch {
+    return []
+  }
+}
+
 export default async function AdminEmailsPage() {
   const supabase = createServiceRoleClient()
 
@@ -54,6 +79,8 @@ export default async function AdminEmailsPage() {
     excuseDraftHtml,
     excuseDraftSujet,
     campagnes,
+    templateLancementSyndicat,
+    syndicatsLancement,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -79,6 +106,8 @@ export default async function AdminEmailsPage() {
     getSiteConfig('excuse_draft_html'),
     getSiteConfig('excuse_draft_sujet'),
     getEmailsCampagnes(),
+    getEmailTemplate('lancement_syndicat'),
+    getSyndicatsLancement(),
   ])
 
   const sections = [
@@ -211,6 +240,8 @@ export default async function AdminEmailsPage() {
         masterLayoutTemplate={templateMasterLayout}
         campagnesEtudes={campagnes.etudes}
         campagnesQuestionnaires={campagnes.questionnaires}
+        lancementSyndicatTemplate={templateLancementSyndicat}
+        syndicatsLancement={syndicatsLancement}
       />
     </div>
   )

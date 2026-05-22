@@ -26,23 +26,14 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
-#### Favoriser l'entraide entre utilisateurs (« trucs et astuces »)
-- Compléter le support éditeur officiel par un canal communautaire où les médecins partagent leurs astuces concrètes sur chaque solution
-- Pistes à explorer :
-  - Espace « trucs et astuces » par solution (commentaires courts, vote utile/pas utile)
-  - Forum léger (Discourse / Discord) intégré au site
-- À cadrer : modération, prévention spam, articulation avec les avis existants
-
 #### Email de lancement par syndicat — finaliser le wording
 - **Concept** : un email de lancement du nouveau site, envoyé par chaque syndicat membre à sa propre base de sympathisants / liste de diffusion. Modèle « clé en main » : un fichier HTML par syndicat, que le syndicat envoie depuis son propre outil d'emailing.
 - **Base livrée (2026-05-21)** — visuel validé, wording à finaliser plus tard :
-  - Générateur : [scripts/generate-lancement-syndicats.mjs](scripts/generate-lancement-syndicats.mjs) — lancer `node scripts/generate-lancement-syndicats.mjs`
-  - Rendus générés : [tmp/lancement-syndicats/_index.html](tmp/lancement-syndicats/_index.html) (aperçu des 7 côte à côte) + un fichier par syndicat ([csmf](tmp/lancement-syndicats/csmf.html) · [avenir-spe](tmp/lancement-syndicats/avenir-spe.html) · [sml](tmp/lancement-syndicats/sml.html) · [fmf](tmp/lancement-syndicats/fmf.html) · [le-bloc](tmp/lancement-syndicats/le-bloc.html) · [jeunes-medecins](tmp/lancement-syndicats/jeunes-medecins.html) · [snjmg](tmp/lancement-syndicats/snjmg.html)). Dossier `tmp/` non versionné → relancer le script pour régénérer.
-  - Template : reprend formellement `master_layout` (logo officiel en-tête + pied, carte blanche, barre accent). Mot du président tiré de `pages_statiques` (slug `qui-sommes-nous`), logos servis depuis le storage Supabase.
+  - Édition en ligne : **Admin → Emails → onglet « Lancement syndicats »** (sélecteur de syndicat, aperçu, édition du wording, téléchargement du HTML par syndicat). Accessible depuis n'importe quel poste, sans script.
+  - Template : `lancement_syndicat` dans `email_templates` (source de vérité, éditable dans l'admin). Reprend formellement `master_layout` (logo officiel en-tête + pied, carte blanche, barre accent). Mot du président tiré de `pages_statiques` (slug `qui-sommes-nous`), logos servis depuis le storage Supabase.
+  - Rendus versionnés : [docs/lancement-syndicats/_index.html](docs/lancement-syndicats/_index.html) (aperçu des 7 côte à côte) + un fichier par syndicat ([csmf](docs/lancement-syndicats/csmf.html) · [avenir-spe](docs/lancement-syndicats/avenir-spe.html) · [sml](docs/lancement-syndicats/sml.html) · [fmf](docs/lancement-syndicats/fmf.html) · [le-bloc](docs/lancement-syndicats/le-bloc.html) · [jeunes-medecins](docs/lancement-syndicats/jeunes-medecins.html) · [snjmg](docs/lancement-syndicats/snjmg.html)). Régénérables via [scripts/generate-lancement-syndicats.mjs](scripts/generate-lancement-syndicats.mjs) (`node scripts/generate-lancement-syndicats.mjs`) — à relancer après modification du wording dans l'admin.
 - **Restant à faire** :
   - Finaliser le wording de l'annonce (titre + 2 paragraphes) ; trancher le « Nous avons repensé… » alors que l'expéditeur est le syndicat.
-  - Brancher une sous-section d'aperçu/export dans `/admin/emails` (sélecteur de syndicat → aperçu iframe → téléchargement du HTML).
-  - Décider du sort de MG France (membre fondateur, mais `actif=false` dans `partenaires` — exclu pour l'instant).
 
 ### Nettoyage
 
@@ -67,10 +58,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 _(rien à faire pour l'instant)_
 
-### Sécurité — captcha anti-bots sur l'inscription
-- Intégrer **Cloudflare Turnstile** (gratuit, invisible — aucune action utilisateur dans la quasi-totalité des cas) sur le formulaire `/inscription`.
-- Garde-fou actuel : contrôle temporel dans `registerWithEmail` (soumission < 2,5 s = bot, faux succès silencieux) — suffisant pour le pré-lancement, mais Turnstile est le vrai rempart anti-bots. Le honeypot a été abandonné : les password managers le déclenchaient à tort (faux positif).
-- À faire le jour où on constate du spam d'inscription réel : clé API Cloudflare + widget côté formulaire + vérification du token côté server action `registerWithEmail`.
+### ~~Sécurité — captcha anti-bots sur l'inscription~~ ✅ (fait le 2026-05-22)
+- ~~Intégré : **Cloudflare Turnstile** (invisible) sur `/inscription` — widget `TurnstileWidget`, vérification serveur `verifyTurnstileToken` dans `registerWithEmail`. Dégradation gracieuse sans clés (`TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY`).~~
+- ~~Le garde-fou temporel (soumission < 2,5 s = bot) reste en place en complément. Le honeypot avait été abandonné (faux positifs password managers).~~
+- À faire à la mise en prod : créer les clés Turnstile côté Cloudflare et les renseigner dans Vercel (`TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`).
 
 ### Mises à jour techniques
 
@@ -147,3 +138,10 @@ _(rien à faire pour l'instant)_
 ### La météo de l'e-santé
 - Concept d'indicateur synthétique de l'état du secteur e-santé (logiciels médicaux, adoption, satisfaction)
 - À cadrer : indicateurs retenus, mode de calcul, fréquence de mise à jour, format d'affichage
+
+### Favoriser l'entraide entre utilisateurs (« trucs et astuces »)
+- Compléter le support éditeur officiel par un canal communautaire où les médecins partagent leurs astuces concrètes sur chaque solution
+- Pistes à explorer :
+  - Espace « trucs et astuces » par solution (commentaires courts, vote utile/pas utile)
+  - Forum léger (Discourse / Discord) intégré au site
+- À cadrer : modération, prévention spam, articulation avec les avis existants

@@ -5,6 +5,30 @@
 
 ---
 
+## [2026-05-22] — Emails de lancement par syndicat + captcha Turnstile à l'inscription
+
+### Email — Mail de lancement « clé en main » diffusable par chaque syndicat membre
+- Objectif : un email annonçant le nouveau site, envoyé par chaque syndicat membre à sa propre base de sympathisants. Modèle « clé en main » — un fichier HTML par syndicat, envoyé depuis l'outil d'emailing du syndicat (pas d'envoi via notre SendGrid).
+- Nouveau template `lancement_syndicat` dans `email_templates` (source de vérité, éditable en admin) : reprend formellement le `master_layout` (logo officiel en-tête + pied, carte blanche, barre accent). Placeholders par syndicat : `{{nom_syndicat}}`, `{{logo_syndicat}}`, `{{citation}}`, `{{president_nom}}`, `{{president_fonction}}`, `{{utm_source}}`.
+- Le « mot du président » est repris des métadonnées de la page « Qui sommes-nous » (`pages_statiques`, slug `qui-sommes-nous`). Logos servis depuis le storage Supabase — le domaine du site renvoyait un 404 HTML sur `/images/syndicats/*.png`.
+- Admin : nouvel onglet « Lancement syndicats » dans `/admin/emails` (`LancementSyndicatsManager`) — sélecteur de syndicat émetteur, aperçu iframe, édition du wording, téléchargement du HTML par syndicat (ou les 7 d'un coup) + copie. MG France exclu (`actif=false`).
+- Scripts : `save-lancement-syndicat-template.mjs` initialise le template en base ; `generate-lancement-syndicats.mjs` (refondu — lit le template en BDD) génère les 7 rendus versionnés dans `docs/lancement-syndicats/` + un `_index.html` d'aperçu.
+
+### Sécurité — Captcha Cloudflare Turnstile sur le formulaire d'inscription
+- Intégration de Turnstile (invisible) sur `/inscription` : widget `TurnstileWidget`, vérification serveur `verifyTurnstileToken` (`src/lib/turnstile.ts`) appelée dans `registerWithEmail`.
+- Dégradation gracieuse : sans `TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, widget et vérification sont no-op (dev local, déploiement avant pose des clés).
+- Token à usage unique : réarmé (`turnstileRef.reset()`) en cas d'erreur de soumission.
+
+### Refacto — Renvoi de l'email de confirmation d'inscription
+- Extraction de `sendConfirmationEmail`, partagée par `registerWithEmail` et le nouveau `resendConfirmationEmail`.
+- Le bouton « Renvoyer » de l'écran de succès utilise désormais le lien HMAC idempotent maison au lieu de `supabase.auth.resend()` — cohérent avec l'abandon des tokens OTP Supabase. Réponse silencieuse si l'email est inconnu.
+
+### TODO — Mises à jour
+- Marqué terminé : « captcha anti-bots Cloudflare Turnstile sur l'inscription ».
+- Ajout : « Email de lancement par syndicat — finaliser le wording » (base livrée, reste le texte de l'annonce).
+
+---
+
 ## [2026-05-21] — Next 16 en production + template email fusion + manager Communautés + refacto questionnaires + reset mdp HMAC
 
 ### Fix — Reset mot de passe : lien HMAC idempotent

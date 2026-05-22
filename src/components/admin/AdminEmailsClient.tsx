@@ -7,6 +7,7 @@ import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
 import type { Newsletter } from '@/app/admin/newsletters/page'
 import { setSiteConfig } from '@/lib/actions/siteConfig'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import LancementSyndicatsManager, { type SyndicatLancement } from '@/components/admin/LancementSyndicatsManager'
 import { Eye, Code, ChevronDown, ChevronUp, Calendar, X, Mail, CheckCircle, Clock, XCircle, GraduationCap, FlaskConical } from 'lucide-react'
 import type { EmailTemplate } from '@/lib/actions/emailTemplates'
 import type { EmailCampagne } from '@/lib/actions/emails-campagnes'
@@ -46,6 +47,8 @@ interface Props {
   masterLayoutTemplate?: EmailTemplate | null
   campagnesEtudes?: EmailCampagne[]
   campagnesQuestionnaires?: EmailCampagne[]
+  lancementSyndicatTemplate?: EmailTemplate | null
+  syndicatsLancement?: SyndicatLancement[]
 }
 
 export default function AdminEmailsClient({
@@ -59,6 +62,8 @@ export default function AdminEmailsClient({
   masterLayoutTemplate = null,
   campagnesEtudes = [],
   campagnesQuestionnaires = [],
+  lancementSyndicatTemplate = null,
+  syndicatsLancement = [],
 }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
   const masterLayoutHtml = masterLayoutTemplate?.contenu_html ?? undefined
@@ -269,6 +274,16 @@ export default function AdminEmailsClient({
           </button>
         ))}
         <button
+          onClick={() => setActiveTab('lancement-syndicats')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'lancement-syndicats'
+              ? 'bg-navy text-white shadow-sm'
+              : 'text-gray-500 hover:text-navy hover:bg-surface-light'
+          }`}
+        >
+          Lancement syndicats
+        </button>
+        <button
           onClick={() => setActiveTab('template')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'template'
@@ -279,6 +294,14 @@ export default function AdminEmailsClient({
           Template email
         </button>
       </div>
+
+      {/* Onglet Lancement syndicats */}
+      {activeTab === 'lancement-syndicats' && (
+        <LancementSyndicatsManager
+          template={lancementSyndicatTemplate}
+          syndicats={syndicatsLancement}
+        />
+      )}
 
       {/* Onglet Template email — master layout */}
       {activeTab === 'template' && (
