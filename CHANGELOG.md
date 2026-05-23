@@ -62,9 +62,14 @@ Restantes :
 - **11 moderate** : chaîne `uuid` / `@google-cloud/*` / `firebase-admin`. Disparaîtra avec la suppression de `firebase-admin` (cf. TODO « Couper le cordon Firebase », prévu ~2 mois post-prod).
 - **1 high** : `xlsx` (Prototype Pollution + ReDoS), no fix npm. Utilisé uniquement dans 3 scripts de seed admin (`import-agendas`, `import-ia-documentaires`, `import-ia-scribes`), pas dans le code du site. Migration vers `exceljs` prévue après l'import des 2 catégories en attente.
 
+### Déploiement — Clés Cloudflare Turnstile actives en production
+
+Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Production) : `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (préfixe `0x4A...`). Également renseignées en `.env.local` pour dev. Le captcha sur `/inscription` n'est plus en mode no-op : les soumissions sont effectivement vérifiées. Item correspondant retiré de la section « Déploiement final » du TODO.
+
 ### TODO — Mises à jour
 - Ajout : « Vider la table `evaluations_vides_supprimees` après ~90 jours sans regret » (rétention de backup).
 - Mise à jour : item « Régler les vulnérabilités npm » → « Vulnérabilités npm restantes » avec le détail xlsx (3 scripts seed) et plan de migration vers exceljs.
+- Retiré : « Clés Cloudflare Turnstile en production » (fait le 2026-05-23, archivé).
 
 ---
 
