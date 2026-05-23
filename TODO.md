@@ -66,12 +66,11 @@ _(rien à faire pour l'instant)_
 
 ### Mises à jour techniques
 
-#### Régler les vulnérabilités npm (`npm audit`)
-- État 2026-05-20 (post-migration Next 16) : 15 vulnérabilités — 8 low, 5 moderate, 2 high, 0 critical
-- `npm audit fix` (sans `--force`) règle `protobufjs` + `ws` sans risque ; relancer `npm run build` après
-- `postcss` (moderate) : NE PAS forcer — le fix `--force` downgraderait Next 16 → 9 ; partira avec un futur patch Next
-- `xlsx` / SheetJS (high) : « no fix » sur npm (l'éditeur ne publie plus sur le registre) — réinstaller depuis le CDN SheetJS si on veut le corriger
-- ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux
+#### Vulnérabilités npm restantes
+- **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
+- **11 moderate** : toute la chaîne `uuid` / `@google-cloud/storage` / `@google-cloud/firestore` / `gaxios` / `google-gax` / `teeny-request` / `retry-request` / `firebase-admin`. **Partira automatiquement** quand on désinstallera `firebase-admin` (cf. item Nettoyage « Couper le cordon Firebase », prévu ~2 mois post-prod).
+- **1 high — `xlsx`** (Prototype Pollution + ReDoS) : no fix sur npm. **Utilisé uniquement dans 3 scripts de seed admin** (`import-agendas.ts`, `import-ia-documentaires.ts`, `import-ia-scribes.ts`), pas dans le code du site. **Plan** : remplacer par `exceljs` après l'import des 2 catégories encore en attente (Téléconsultation, Téléexpertise). API très proche, ~10 lignes à adapter par script.
+- ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux (downgraderait Next 16 → 9).
 
 ### Déploiement final
 

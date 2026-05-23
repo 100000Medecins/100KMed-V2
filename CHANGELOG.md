@@ -54,8 +54,17 @@ Les libellés de spécialité utilisés côté PSC et côté liste admin diffèr
 - Nouveau mapping `PSC_TO_SPECIALITE` + helper `specialiteConcernee()` : rapproche un libellé PSC d'un ou plusieurs libellés de la liste admin. Valeurs PSC absentes du mapping → rattachées à « Autre » par défaut.
 - Bascule du filtrage côté code dans `send-etude`, `send-questionnaire`, `envoyer-campagnes-email` (le `.in()` SQL ne suffit plus). UI `mon-compte/etudes-cliniques` et `questionnaires-these` alignée sur la même comparaison.
 
+### Chore — `npm audit fix` (sans `--force`)
+
+Avant la mise en prod : passage de 15 vulnérabilités à 12. Trois deps résolues (`ws`, `protobufjs`, et 1 transitive), aucun breaking change — seul `package-lock.json` modifié. Build complet vérifié OK (`tsc --noEmit` et `next build`).
+
+Restantes :
+- **11 moderate** : chaîne `uuid` / `@google-cloud/*` / `firebase-admin`. Disparaîtra avec la suppression de `firebase-admin` (cf. TODO « Couper le cordon Firebase », prévu ~2 mois post-prod).
+- **1 high** : `xlsx` (Prototype Pollution + ReDoS), no fix npm. Utilisé uniquement dans 3 scripts de seed admin (`import-agendas`, `import-ia-documentaires`, `import-ia-scribes`), pas dans le code du site. Migration vers `exceljs` prévue après l'import des 2 catégories en attente.
+
 ### TODO — Mises à jour
 - Ajout : « Vider la table `evaluations_vides_supprimees` après ~90 jours sans regret » (rétention de backup).
+- Mise à jour : item « Régler les vulnérabilités npm » → « Vulnérabilités npm restantes » avec le détail xlsx (3 scripts seed) et plan de migration vers exceljs.
 
 ---
 
