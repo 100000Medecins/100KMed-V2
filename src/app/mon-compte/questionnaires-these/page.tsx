@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ExternalLink, GraduationCap, CalendarDays, X, ZoomIn, BookOpen } from 'lucide-react'
 import type { QuestionnaireThese } from '@/lib/actions/questionnaires-these'
 import { sanitizeHtml } from '@/lib/sanitize'
+import { specialiteConcernee } from '@/lib/constants/profil'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim()
@@ -40,8 +41,8 @@ export default function QuestionnairesThesePage() {
         setUserSpecialite(specialite)
         // Tri : concernés d'abord, non-concernés ensuite
         const sorted = [...items].sort((a, b) => {
-          const aOk = a.specialites_cibles.length === 0 || (specialite ? a.specialites_cibles.includes(specialite) : true)
-          const bOk = b.specialites_cibles.length === 0 || (specialite ? b.specialites_cibles.includes(specialite) : true)
+          const aOk = specialiteConcernee(specialite, a.specialites_cibles)
+          const bOk = specialiteConcernee(specialite, b.specialites_cibles)
           return aOk === bOk ? 0 : aOk ? -1 : 1
         })
         setQuestionnaires(sorted)
@@ -98,7 +99,7 @@ export default function QuestionnairesThesePage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {questionnaires.map((q) => {
-            const concerne = q.specialites_cibles.length === 0 || (userSpecialite ? q.specialites_cibles.includes(userSpecialite) : true)
+            const concerne = specialiteConcernee(userSpecialite, q.specialites_cibles)
             return <QuestionnaireCard key={q.id} q={q} concerne={concerne} onExpand={() => setModalQ(q)} />
           })}
         </div>
@@ -221,6 +222,14 @@ function QuestionnaireCard({ q, concerne, onExpand }: { q: QuestionnaireThese; c
       onClick={onExpand}
     >
       <div className="p-5 flex flex-col gap-3 flex-1">
+        {!concerne && (
+          <div>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-700 text-white whitespace-nowrap">
+              Hors spécialité
+            </span>
+          </div>
+        )}
+        <SpecialitesPills specialites={q.specialites_cibles} />
         {/* Titre */}
         <h2 className="font-bold text-navy text-sm leading-snug">{q.titre}</h2>
 
@@ -266,6 +275,22 @@ function QuestionnaireCard({ q, concerne, onExpand }: { q: QuestionnaireThese; c
           </a>
         </div>
       </div>
+    </div>
+  )
+}
+
+function SpecialitesPills({ specialites }: { specialites: string[] }) {
+  const items = specialites.length === 0 ? ['Toutes spécialités'] : specialites
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((s) => (
+        <span
+          key={s}
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-100"
+        >
+          {s}
+        </span>
+      ))}
     </div>
   )
 }
