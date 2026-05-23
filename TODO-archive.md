@@ -5,11 +5,16 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-23**
+- [OK] 2026-05-23 : Clés Cloudflare Turnstile posées en production (Déploiement final)
+  - `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` créées côté Cloudflare et renseignées dans Vercel (env Production). Clés au format `0x4A...` (préfixe Cloudflare standard) également présentes dans `.env.local` pour dev.
+  - Conséquence : le captcha Turnstile est maintenant **actif en production**, plus en mode no-op. Le formulaire `/inscription` vérifie réellement les soumissions humaines.
+
 **2026-05-22**
 - [OK] 2026-05-22 : Captcha anti-bots Cloudflare Turnstile à l'inscription (Sécurité)
   - Cloudflare Turnstile (invisible) intégré sur `/inscription` — widget `TurnstileWidget`, vérification serveur `verifyTurnstileToken` dans `registerWithEmail`. Dégradation gracieuse sans clés (`TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY`).
   - Garde-fou temporel (soumission < 2,5 s = bot) maintenu en complément. Honeypot abandonné (faux positifs password managers).
-  - Reste à faire à la mise en prod : créer les clés Turnstile côté Cloudflare et les renseigner dans Vercel (déplacé dans section « Déploiement final » de TODO.md).
+  - Suite : clés Cloudflare créées et renseignées dans Vercel le 2026-05-23 (entrée du jour ci-dessus).
 
 **2026-05-21**
 - [OK] 2026-05-21 : Reset mot de passe via lien HMAC idempotent (Sécurité)

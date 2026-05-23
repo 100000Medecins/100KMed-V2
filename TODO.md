@@ -74,10 +74,6 @@ _(rien à faire pour l'instant)_
 
 ### Déploiement final
 
-#### Clés Cloudflare Turnstile en production
-- Créer les clés Turnstile côté Cloudflare (site widget invisible) et les renseigner dans Vercel : `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
-- Sans les clés, le widget et la vérification serveur sont no-op (dégradation gracieuse déjà en place). À ne pas oublier le jour J — sinon le formulaire d'inscription tourne sans captcha en production.
-
 #### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
 - Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
