@@ -106,28 +106,60 @@ export async function ensureSolutionUtilisee(userId: string, solutionId: string)
 }
 
 /**
+ * Date de mise en ligne du nouveau site Supabase.
+ * Les évaluations créées avant cette date sont considérées comme migrées Firebase
+ * et sont déjà incluses dans l'ancrage (`resultats.firebase_moyenne_base5`).
+ * Les évaluations créées après contribuent incrémentalement au calcul.
+ */
+const DATE_MISE_EN_LIGNE = '2026-04-12T00:00:00Z'
+
+/**
  * Recalcule les résultats agrégés d'une solution depuis les évaluations publiées.
- * Seules les évaluations statut='publiee' sont prises en compte (Option B — full recalc).
- * Appelé à chaque nouvelle évaluation publiée et à chaque finalisation PSC.
+ * Seules les évaluations statut='publiee' sont prises en compte.
+ *
+ * Deux modes selon `solutions.is_firebase_legacy` :
+ *
+ * - Solutions Firebase legacy : mode incrémental. La référence figée est dans
+ *   `resultats.firebase_moyenne_base5` (× `firebase_nb_notes`). Seules les évaluations
+ *   post-mise en ligne (`created_at >= DATE_MISE_EN_LIGNE`) s'agrègent par-dessus.
+ *   Garantit que la note historique Firebase reste l'ancrage et qu'une nouvelle
+ *   évaluation déplace doucement la moyenne sans tout recalculer.
+ *
+ * - Autres solutions : full recalc depuis toutes les évaluations publiées
+ *   (le comportement d'origine).
  */
 export async function recalcResultatsPourSolution(solutionId: string) {
   const supabase = createServiceRoleClient()
+
+  // Mode legacy ?
+  const { data: solRow } = await supabase
+    .from('solutions')
+    .select('is_firebase_legacy')
+    .eq('id', solutionId)
+    .maybeSingle()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isLegacy = (solRow as any)?.is_firebase_legacy === true
 
   const { data: criteres } = await supabase
     .from('criteres')
     .select('id, identifiant_tech')
     .not('identifiant_tech', 'is', null)
-
   if (!criteres || criteres.length === 0) return
 
-  const { data: evaluations } = await supabase
+  // En mode legacy, on ne prend que les évaluations post-mise en ligne.
+  // En mode non-legacy, on prend toutes les évaluations publiées (comportement d'origine).
+  let evalQuery = supabase
     .from('evaluations')
-    .select('scores, user_id')
+    .select('scores, user_id, created_at, moyenne_utilisateur')
     .eq('solution_id', solutionId)
     .eq('statut', 'publiee')
+  if (isLegacy) {
+    evalQuery = evalQuery.gte('created_at', DATE_MISE_EN_LIGNE)
+  }
+  const { data: evaluations } = await evalQuery
 
-  if (!evaluations || evaluations.length === 0) {
-    // Remettre à zéro les données utilisateurs dans resultats (plus aucune éval publiée)
+  if (!isLegacy && (!evaluations || evaluations.length === 0)) {
+    // Solution non-legacy sans évaluation : remise à zéro classique
     await supabase
       .from('resultats')
       .update({ notes: {}, nb_notes: 0, moyenne_utilisateurs: null, moyenne_utilisateurs_base5: null })
@@ -140,39 +172,152 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     const key = critere.identifiant_tech as string
     const notes: Record<string, number> = {}
 
-    for (const evRow of evaluations) {
+    for (const evRow of evaluations ?? []) {
       const raw = (evRow.scores as Record<string, unknown> | null)?.[key]
       const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
       if (!isNaN(num) && evRow.user_id) notes[evRow.user_id] = num
     }
 
-    const nbNotes = Object.keys(notes).length
-    if (nbNotes === 0) continue
+    if (isLegacy) {
+      // Mode legacy : moyenne pondérée ancrage Firebase + notes post-lancement
+      const { data: existing } = await supabase
+        .from('resultats')
+        .select('id, firebase_moyenne_base5, firebase_nb_notes')
+        .eq('solution_id', solutionId)
+        .eq('critere_id', critere.id)
+        .maybeSingle()
+      if (!existing) continue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fbMoy = (existing as any).firebase_moyenne_base5 as number | null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fbNb = (existing as any).firebase_nb_notes as number | null
 
-    const moyenne = Math.round(
-      (Object.values(notes).reduce((s, v) => s + v, 0) / nbNotes) * 100
-    ) / 100
+      const nbPost = Object.keys(notes).length
+      const sommePost = Object.values(notes).reduce((s, v) => s + v, 0)
 
-    const payload = {
-      solution_id: solutionId,
-      critere_id: critere.id,
-      notes,
-      nb_notes: nbNotes,
-      moyenne_utilisateurs: moyenne,
-      moyenne_utilisateurs_base5: moyenne,
+      // Si pas d'ancrage Firebase pour ce critère (cas rare : critère sans données Firebase),
+      // on retombe sur le calcul classique des notes post-lancement uniquement.
+      let nouvelleMoyenne: number | null
+      let nouveauNbNotes: number
+      if (fbMoy != null && fbNb != null && fbNb > 0) {
+        nouveauNbNotes = fbNb + nbPost
+        nouvelleMoyenne = nouveauNbNotes > 0
+          ? Math.round(((fbMoy * fbNb + sommePost) / nouveauNbNotes) * 100) / 100
+          : null
+      } else if (nbPost > 0) {
+        nouveauNbNotes = nbPost
+        nouvelleMoyenne = Math.round((sommePost / nbPost) * 100) / 100
+      } else {
+        continue
+      }
+
+      await supabase
+        .from('resultats')
+        .update({
+          notes,
+          nb_notes: nouveauNbNotes,
+          moyenne_utilisateurs: nouvelleMoyenne,
+          moyenne_utilisateurs_base5: nouvelleMoyenne,
+        })
+        .eq('id', existing.id)
+    } else {
+      // Mode classique (non-legacy) : moyenne directe depuis evaluations
+      const nbNotes = Object.keys(notes).length
+      if (nbNotes === 0) continue
+      const moyenne = Math.round(
+        (Object.values(notes).reduce((s, v) => s + v, 0) / nbNotes) * 100
+      ) / 100
+
+      const payload = {
+        solution_id: solutionId,
+        critere_id: critere.id,
+        notes,
+        nb_notes: nbNotes,
+        moyenne_utilisateurs: moyenne,
+        moyenne_utilisateurs_base5: moyenne,
+      }
+
+      const { data: existing } = await supabase
+        .from('resultats')
+        .select('id')
+        .eq('solution_id', solutionId)
+        .eq('critere_id', critere.id)
+        .maybeSingle()
+
+      if (existing) {
+        await supabase.from('resultats').update(payload).eq('id', existing.id)
+      } else {
+        await supabase.from('resultats').insert(payload)
+      }
     }
+  }
 
-    const { data: existing } = await supabase
+  // ─── Mise à jour de la ligne `type='moyenne'` (note globale) ───
+  // Pas couverte par la boucle ci-dessus car identifiant_tech IS NULL pour cette ligne.
+  const { data: critereMoyenne } = await supabase
+    .from('criteres')
+    .select('id')
+    .eq('type', 'moyenne')
+    .maybeSingle()
+
+  if (critereMoyenne?.id) {
+    const { data: ligneMoyenne } = await supabase
       .from('resultats')
-      .select('id')
+      .select('id, firebase_moyenne_base5, firebase_nb_notes')
       .eq('solution_id', solutionId)
-      .eq('critere_id', critere.id)
+      .eq('critere_id', critereMoyenne.id)
       .maybeSingle()
 
-    if (existing) {
-      await supabase.from('resultats').update(payload).eq('id', existing.id)
-    } else {
-      await supabase.from('resultats').insert(payload)
+    // moyenne_utilisateur des évaluations post-lancement (legacy) ou de toutes (non-legacy)
+    const moyennesPost: number[] = (evaluations ?? [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((e) => (e as any).moyenne_utilisateur as number | null | undefined)
+      .filter((v): v is number => typeof v === 'number' && v > 0)
+    const sommePost = moyennesPost.reduce((s, v) => s + v, 0)
+    const nbPost = moyennesPost.length
+
+    let nouvelleMoyenne: number | null = null
+    let nouveauNb = 0
+
+    if (isLegacy && ligneMoyenne) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fbMoy = (ligneMoyenne as any).firebase_moyenne_base5 as number | null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fbNb = (ligneMoyenne as any).firebase_nb_notes as number | null
+      if (fbMoy != null && fbNb != null && fbNb > 0) {
+        nouveauNb = fbNb + nbPost
+        nouvelleMoyenne = nouveauNb > 0
+          ? Math.round(((fbMoy * fbNb + sommePost) / nouveauNb) * 100) / 100
+          : null
+      } else if (nbPost > 0) {
+        nouveauNb = nbPost
+        nouvelleMoyenne = Math.round((sommePost / nbPost) * 100) / 100
+      }
+    } else if (!isLegacy && nbPost > 0) {
+      nouveauNb = nbPost
+      nouvelleMoyenne = Math.round((sommePost / nbPost) * 100) / 100
+    }
+
+    if (nouvelleMoyenne != null) {
+      if (ligneMoyenne) {
+        await supabase
+          .from('resultats')
+          .update({
+            moyenne_utilisateurs: nouvelleMoyenne,
+            moyenne_utilisateurs_base5: nouvelleMoyenne,
+            nb_notes: nouveauNb,
+          })
+          .eq('id', ligneMoyenne.id)
+      } else if (!isLegacy) {
+        // Pour une solution non-legacy sans ligne moyenne préexistante, on la crée
+        await supabase.from('resultats').insert({
+          solution_id: solutionId,
+          critere_id: critereMoyenne.id,
+          moyenne_utilisateurs: nouvelleMoyenne,
+          moyenne_utilisateurs_base5: nouvelleMoyenne,
+          nb_notes: nouveauNb,
+        })
+      }
     }
   }
 

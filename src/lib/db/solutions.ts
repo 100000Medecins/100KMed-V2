@@ -272,32 +272,62 @@ export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Reco
 /**
  * Récupère la note moyenne utilisateurs pour une liste de solutions.
  * Retourne un map solutionId -> moyenne_utilisateurs_base5.
+ *
+ * Source de vérité : la ligne `resultats` du critère `type='moyenne'`.
+ * Cette ligne est maintenue par `recalcResultatsPourSolution` (mode incrémental
+ * pour les solutions Firebase legacy, full recalc sinon).
+ *
+ * Fallback : pour les rares solutions sans ligne `moyenne` (solutions ajoutées
+ * post-migration sans encore d'évaluations agrégées), on calcule la moyenne
+ * des 5 critères majeurs comme avant.
  */
 export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
   const supabase = await createServerClient()
 
-  // Étape 1 : IDs des 5 critères de notation (nom_capital IS NOT NULL exclut nps/synthese/sous-critères)
+  // Étape 1 : essayer de lire la ligne `type='moyenne'` pour chaque solution
+  const { data: critereMoyenne } = await supabase
+    .from('criteres')
+    .select('id')
+    .eq('type', 'moyenne')
+    .maybeSingle()
+
+  const map: Record<string, number> = {}
+
+  if (critereMoyenne?.id) {
+    const { data: lignesMoyenne } = await supabase
+      .from('resultats')
+      .select('solution_id, moyenne_utilisateurs_base5')
+      .in('solution_id', solutionIds)
+      .eq('critere_id', critereMoyenne.id)
+      .not('moyenne_utilisateurs_base5', 'is', null)
+    for (const row of lignesMoyenne ?? []) {
+      const note = row.moyenne_utilisateurs_base5 as number | null
+      if (note != null) map[row.solution_id as string] = Math.round(note * 10) / 10
+    }
+  }
+
+  // Étape 2 — Fallback : pour les solutions sans ligne `moyenne`, moyenne des 5 critères majeurs
+  const missingIds = solutionIds.filter((id) => !(id in map))
+  if (missingIds.length === 0) return map
+
   const { data: criteresMajeurs } = await supabase
     .from('criteres')
     .select('id')
     .not('nom_capital', 'is', null)
-
   const critereIds = (criteresMajeurs || []).map((c) => c.id)
-  if (critereIds.length === 0) return {}
+  if (critereIds.length === 0) return map
 
-  // Étape 2 : filtrer resultats sur ces IDs uniquement
   const { data, error } = await supabase
     .from('resultats')
     .select('solution_id, moyenne_utilisateurs_base5')
-    .in('solution_id', solutionIds)
+    .in('solution_id', missingIds)
     .in('critere_id', critereIds)
     .not('moyenne_utilisateurs_base5', 'is', null)
 
-  if (error || !data) return {}
+  if (error || !data) return map
 
-  // Moyenne des 5 critères majeurs par solution
   const sums: Record<string, { total: number; count: number }> = {}
   for (const row of data) {
     const id = row.solution_id as string
@@ -306,8 +336,6 @@ export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promi
     sums[id].total += note
     sums[id].count += 1
   }
-
-  const map: Record<string, number> = {}
   for (const [id, { total, count }] of Object.entries(sums)) {
     map[id] = Math.round((total / count) * 10) / 10
   }

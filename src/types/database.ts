@@ -745,6 +745,33 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluations_vides_supprimees: {
+        Row: {
+          deleted_at: string
+          id: string
+          id_origine: string
+          snapshot: Json
+          solution_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          deleted_at?: string
+          id?: string
+          id_origine: string
+          snapshot: Json
+          solution_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          deleted_at?: string
+          id?: string
+          id_origine?: string
+          snapshot?: Json
+          solution_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       groupes_categories: {
         Row: {
           id: string
@@ -1041,6 +1068,8 @@ export type Database = {
         Row: {
           avis_redac: string | null
           critere_id: string | null
+          firebase_moyenne_base5: number | null
+          firebase_nb_notes: number | null
           id: string
           moyenne_utilisateurs: number | null
           moyenne_utilisateurs_base5: number | null
@@ -1056,6 +1085,8 @@ export type Database = {
         Insert: {
           avis_redac?: string | null
           critere_id?: string | null
+          firebase_moyenne_base5?: number | null
+          firebase_nb_notes?: number | null
           id?: string
           moyenne_utilisateurs?: number | null
           moyenne_utilisateurs_base5?: number | null
@@ -1071,6 +1102,8 @@ export type Database = {
         Update: {
           avis_redac?: string | null
           critere_id?: string | null
+          firebase_moyenne_base5?: number | null
+          firebase_nb_notes?: number | null
           id?: string
           moyenne_utilisateurs?: number | null
           moyenne_utilisateurs_base5?: number | null
@@ -1225,6 +1258,7 @@ export type Database = {
           id: string
           id_categorie: string | null
           id_editeur: string | null
+          is_firebase_legacy: boolean
           logo_titre: string | null
           logo_url: string | null
           meta: Json | null
@@ -1259,6 +1293,7 @@ export type Database = {
           id?: string
           id_categorie?: string | null
           id_editeur?: string | null
+          is_firebase_legacy?: boolean
           logo_titre?: string | null
           logo_url?: string | null
           meta?: Json | null
@@ -1293,6 +1328,7 @@ export type Database = {
           id?: string
           id_categorie?: string | null
           id_editeur?: string | null
+          is_firebase_legacy?: boolean
           logo_titre?: string | null
           logo_url?: string | null
           meta?: Json | null
@@ -2011,4 +2047,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

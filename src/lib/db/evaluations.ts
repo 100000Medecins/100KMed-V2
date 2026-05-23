@@ -344,45 +344,59 @@ export async function getAverageNoteUtilisateurs(
 
   const supabase = createServiceRoleClient()
 
-  // Étape 1 : IDs des 5 critères de notation — même filtre que getNotesUtilisateursGlobales
-  // nom_capital IS NOT NULL identifie exactement les 5 critères majeurs, en excluant nps/synthese
-  const { data: criteresMajeurs } = await supabase
+  // ─── Source de la note globale : la ligne `resultats` du critère `type='moyenne'` ───
+  // Fallback sur la moyenne des 5 critères majeurs si la ligne moyenne n'existe pas
+  // (cas des solutions ajoutées post-migration sans agrégation encore enregistrée).
+  const { data: critereMoyenne } = await supabase
     .from('criteres')
     .select('id')
-    .not('nom_capital', 'is', null)
-  const critereIds = (criteresMajeurs || []).map((c) => c.id)
+    .eq('type', 'moyenne')
+    .maybeSingle()
 
-  // Étape 2 : deux sources parallèles
-  // - resultats (5 critères majeurs) → note globale (identique au listing/homepage)
-  // - evaluations.moyenne_utilisateur → total + distribution par étoile
-  const [evalsResult, resultatsResult] = await Promise.all([
-    supabase
-      .from('evaluations')
-      .select('moyenne_utilisateur')
+  let note: number | null = null
+  if (critereMoyenne?.id) {
+    const { data: ligneMoyenne } = await supabase
+      .from('resultats')
+      .select('moyenne_utilisateurs_base5')
       .eq('solution_id', solutionId)
-      .not('last_date_note', 'is', null)
-      .or('statut.eq.publiee,statut.is.null')
-      .not('moyenne_utilisateur', 'is', null),
-    critereIds.length > 0
-      ? supabase
-          .from('resultats')
-          .select('moyenne_utilisateurs_base5')
-          .eq('solution_id', solutionId)
-          .in('critere_id', critereIds)
-          .not('moyenne_utilisateurs_base5', 'is', null)
-      : Promise.resolve({ data: [] }),
-  ])
+      .eq('critere_id', critereMoyenne.id)
+      .maybeSingle()
+    const moyVal = ligneMoyenne?.moyenne_utilisateurs_base5 as number | null | undefined
+    if (typeof moyVal === 'number') note = Math.round(moyVal * 10) / 10
+  }
 
-  const evalData = evalsResult.data
-  if (!evalData || evalData.length === 0) return { note: null, total: 0, distribution: {} }
+  if (note == null) {
+    // Fallback : moyenne des 5 critères majeurs
+    const { data: criteresMajeurs } = await supabase
+      .from('criteres')
+      .select('id')
+      .not('nom_capital', 'is', null)
+    const critereIds = (criteresMajeurs || []).map((c) => c.id)
+    if (critereIds.length > 0) {
+      const { data: lignes } = await supabase
+        .from('resultats')
+        .select('moyenne_utilisateurs_base5')
+        .eq('solution_id', solutionId)
+        .in('critere_id', critereIds)
+        .not('moyenne_utilisateurs_base5', 'is', null)
+      const vals = (lignes ?? []).map((r) => r.moyenne_utilisateurs_base5 as number)
+      if (vals.length > 0) {
+        note = Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10
+      }
+    }
+  }
 
-  // Note = moyenne des 5 critères majeurs depuis resultats (même calcul que listing/homepage)
-  const critereNotes = (resultatsResult.data || []).map((r) => r.moyenne_utilisateurs_base5 as number)
-  const note = critereNotes.length > 0
-    ? Math.round((critereNotes.reduce((s, v) => s + v, 0) / critereNotes.length) * 10) / 10
-    : null
+  // ─── Total + distribution par étoile : depuis les évaluations individuelles ───
+  const { data: evalData } = await supabase
+    .from('evaluations')
+    .select('moyenne_utilisateur')
+    .eq('solution_id', solutionId)
+    .not('last_date_note', 'is', null)
+    .or('statut.eq.publiee,statut.is.null')
+    .not('moyenne_utilisateur', 'is', null)
 
-  // Distribution par étoile calculée depuis les moyennes individuelles
+  if (!evalData || evalData.length === 0) return { note, total: 0, distribution: {} }
+
   const total = evalData.length
   const distribution: Record<string, number> = {}
   for (const e of evalData) {
