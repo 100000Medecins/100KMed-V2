@@ -38,7 +38,13 @@ Vérification — Premiocare repasse à 4.3 (= 4.34 base5). Simulation : une nou
 
 ### Nettoyage — Suppression des 48 évaluations vides
 
-Diagnostic en passant : sur 699 évaluations en base, 48 ont `scores` complètement vide ou tous les critères principaux à `undefined`. Probablement des brouillons publiés (clic « Soumettre » sans rien remplir, ou évaluations cassées importées de Firebase). Toutes supprimées de `evaluations` ; backup intégral dans `evaluations_vides_supprimees` (RLS bloque tout sauf service_role). Impact : `nb_notes` reflète désormais le nombre réel d'évaluations utilisables (Premiocare : 6 au lieu de 7). Reste 16 évaluations « ancien format » Firebase (clés `"1"`-`"5"`, échelle 0-10) — non bloquantes, ajoutées au TODO pour conversion ultérieure.
+Diagnostic en passant : sur 699 évaluations en base, 48 ont `scores` complètement vide ou tous les critères principaux à `undefined`. Probablement des brouillons publiés (clic « Soumettre » sans rien remplir, ou évaluations cassées importées de Firebase). Toutes supprimées de `evaluations` ; backup intégral dans `evaluations_vides_supprimees` (RLS bloque tout sauf service_role). Impact : `nb_notes` reflète désormais le nombre réel d'évaluations utilisables (Premiocare : 6 au lieu de 7).
+
+### Nettoyage — Conversion des 16 évaluations Firebase encore en ancien format
+
+Diagnostic complémentaire : 16 évaluations stockaient leurs scores sous l'ancien format Firebase (clés `"1"`-`"5"` au lieu de `interface`, `fonctionnalites`..., et valeurs en 0-10 au lieu de 0-5). Le code actuel ne savait pas les lire → invisibles dans la carte « avis des confrères ». Solutions concernées : Doctolib Médecin (4), Medistory (2), Crossway (2), Alma Pro (2), Odaiji (2), MLM, TAMM, Follow, AxiSanté 5.
+
+Script ponctuel (non versionné) : mapping `"1"→interface`, `"2"→fonctionnalites`, `"3"→fiabilite`, `"4"→editeur`, `"5"→qualite_prix`, valeurs divisées par 2, `moyenne_utilisateur` recalculée en base 5. Anciennes clés numériques supprimées. **Pas de recalcul `resultats`** nécessaire : ces évaluations concernent des solutions Firebase legacy ancrées sur la valeur Firebase d'origine, qui les incluait déjà dans son calcul agrégé.
 
 ### Feat — Ciblage par spécialité aligné PSC vs admin
 
@@ -49,7 +55,6 @@ Les libellés de spécialité utilisés côté PSC et côté liste admin diffèr
 - Bascule du filtrage côté code dans `send-etude`, `send-questionnaire`, `envoyer-campagnes-email` (le `.in()` SQL ne suffit plus). UI `mon-compte/etudes-cliniques` et `questionnaires-these` alignée sur la même comparaison.
 
 ### TODO — Mises à jour
-- Ajout : « Convertir les 16 évaluations Firebase encore en ancien format » (clés `"1"`-`"5"`, échelle 0-10). Non bloquant, mais elles restent invisibles aux requêtes du nouveau site.
 - Ajout : « Vider la table `evaluations_vides_supprimees` après ~90 jours sans regret » (rétention de backup).
 
 ---
