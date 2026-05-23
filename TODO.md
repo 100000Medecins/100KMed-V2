@@ -15,11 +15,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
 - Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
 
-#### ~~Reset mot de passe — passer au lien HMAC idempotent (comme la confirmation d'inscription)~~ ✅ (fait le 2026-05-21)
-- ~~**Problème** : le lien de reset mdp repose encore sur un token OTP Supabase à usage unique (`admin.generateLink({ type: 'recovery' })`) → même bug de pré-scan que la confirmation d'inscription (le « lien mort » signalé le 2026-05-13 était sans doute déjà ça).~~
-- ~~**Plan** : module `src/lib/email/reset-token.ts` (HMAC `reset:uid:iat`, TTL 1h) ; `sendPasswordReset` génère un lien HMAC `/reinitialiser-mot-de-passe?uid&iat&token` (résout l'uid via la table `users`) ; réécriture simplificatrice de la page `/reinitialiser-mot-de-passe` (supprime le bricolage session/`access_token`/`sessionStorage`/bypass-lock) ; server action `resetPasswordWithToken(uid, iat, token, newPassword)` → `admin.updateUserById`.~~
-- ~~Idempotence naturelle : le GET du lien n'affiche que le formulaire, c'est le POST qui agit → le scanner ne consomme rien.~~
-
 ### Communication
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
@@ -69,11 +64,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 _(rien à faire pour l'instant)_
 
-### ~~Sécurité — captcha anti-bots sur l'inscription~~ ✅ (fait le 2026-05-22)
-- ~~Intégré : **Cloudflare Turnstile** (invisible) sur `/inscription` — widget `TurnstileWidget`, vérification serveur `verifyTurnstileToken` dans `registerWithEmail`. Dégradation gracieuse sans clés (`TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY`).~~
-- ~~Le garde-fou temporel (soumission < 2,5 s = bot) reste en place en complément. Le honeypot avait été abandonné (faux positifs password managers).~~
-- À faire à la mise en prod : créer les clés Turnstile côté Cloudflare et les renseigner dans Vercel (`TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`).
-
 ### Mises à jour techniques
 
 #### Régler les vulnérabilités npm (`npm audit`)
@@ -84,6 +74,10 @@ _(rien à faire pour l'instant)_
 - ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux
 
 ### Déploiement final
+
+#### Clés Cloudflare Turnstile en production
+- Créer les clés Turnstile côté Cloudflare (site widget invisible) et les renseigner dans Vercel : `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
+- Sans les clés, le widget et la vérification serveur sont no-op (dégradation gracieuse déjà en place). À ne pas oublier le jour J — sinon le formulaire d'inscription tourne sans captcha en production.
 
 #### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
 - Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
