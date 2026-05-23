@@ -5,6 +5,55 @@
 
 ---
 
+## [2026-05-23] — Correction des notes globales Firebase legacy + ciblage spécialités PSC
+
+### Fix — Notes globales Firebase : restauration des valeurs d'origine + mode incrémental
+
+Cause signalée par un utilisateur : Premiocare affichait 4.8 sur le nouveau site contre 4.3 sur l'ancien. Investigation Firebase + Supabase : la divergence ne venait ni d'une perte de données ni d'un bug isolé, mais d'un **changement silencieux de définition** entre les deux sites.
+
+Origine — Firebase calculait les notes de critères majeurs à partir des notes directes saisies par les médecins (`scores.interface = 4` ou `5`). Le nouveau site applique `buildRefinedCritereScores` qui **remplace** la note brute par la moyenne des sous-critères dès que > 50 % sont remplis ; valeurs typiquement plus hautes (4.5-5.0). Cumulé au recalcul du 2026-05-07 (qui a propagé ces moyennes raffinées dans `resultats`), les notes affichées dérivaient sans qu'aucune nouvelle évaluation ne soit arrivée. Impact mesuré : 6 solutions avec écart > 0.3 (TAMM +0.79, éO Médecin +0.47, Premiocare +0.45, Shaman +0.39 ; Medimust −0.49, MedicaWin −0.48, Mediclick −0.36).
+
+Décision produit (avec David) — figer les notes Firebase historiques pour la continuité avec les éditeurs partenaires qui surveillent leur note publique. Les nouvelles évaluations sur le nouveau site continuent d'utiliser la logique de raffinement par sous-critères, mais glissent doucement la moyenne via un calcul incrémental ancré sur la valeur Firebase.
+
+Schéma — Trois migrations SQL :
+- `solutions.is_firebase_legacy` (boolean) marque les 24 solutions importées de Firebase.
+- `resultats.firebase_moyenne_base5` + `firebase_nb_notes` figent la valeur Firebase comme ancrage immuable. Calcul incrémental : `(firebase_moy × firebase_nb + Σ notes_post_lancement) / (firebase_nb + nb_post)`.
+- `evaluations_vides_supprimees` (RLS service_role only) — backup des 48 évaluations vides supprimées au passage.
+
+Restauration — Script ponctuel (non versionné) interrogeant Firestore via `firebase-admin` :
+- 24 solutions marquées `is_firebase_legacy = true` (matchées par nom + 1 alias manuel `MLM → monlogicielmedical`).
+- 144 lignes `resultats` (5 critères × 24 solutions + ligne `type='moyenne'` × 24) restaurées aux valeurs Firebase (`moyenneUtilisateurs / 2`).
+- Ancrage Firebase rempli dans les 2 nouvelles colonnes immédiatement après restauration.
+
+Code — `recalcResultatsPourSolution` (`src/lib/actions/evaluation.ts`) refactorisée :
+- Lit `solutions.is_firebase_legacy`. Si `true` → mode incrémental sur évaluations `created_at >= 2026-04-12`, agrégées par-dessus l'ancrage Firebase. Si `false` → full recalc comme avant.
+- Gère explicitement la ligne `criteres.type='moyenne'` (jamais touchée jusqu'ici car `identifiant_tech` IS NULL) : recalcule sa valeur à partir des `evaluations.moyenne_utilisateur` agrégées sur l'ancrage Firebase.
+- Crée la ligne `type='moyenne'` automatiquement pour une solution non-legacy qui n'en a pas encore (1ère évaluation).
+
+Affichage — `getNotesUtilisateursGlobales` (`src/lib/db/solutions.ts`) et `getAverageNoteUtilisateurs` (`src/lib/db/evaluations.ts`) :
+- Lecture prioritaire de la ligne `criteres.type='moyenne'` (= source de vérité unique).
+- Fallback automatique sur la moyenne des 5 critères majeurs pour les solutions sans ligne `moyenne` (solutions ajoutées post-migration sans encore d'agrégation).
+
+Vérification — Premiocare repasse à 4.3 (= 4.34 base5). Simulation : une nouvelle évaluation à 4.8 ferait passer Premiocare à 4.4, pas un saut vers 4.8.
+
+### Nettoyage — Suppression des 48 évaluations vides
+
+Diagnostic en passant : sur 699 évaluations en base, 48 ont `scores` complètement vide ou tous les critères principaux à `undefined`. Probablement des brouillons publiés (clic « Soumettre » sans rien remplir, ou évaluations cassées importées de Firebase). Toutes supprimées de `evaluations` ; backup intégral dans `evaluations_vides_supprimees` (RLS bloque tout sauf service_role). Impact : `nb_notes` reflète désormais le nombre réel d'évaluations utilisables (Premiocare : 6 au lieu de 7). Reste 16 évaluations « ancien format » Firebase (clés `"1"`-`"5"`, échelle 0-10) — non bloquantes, ajoutées au TODO pour conversion ultérieure.
+
+### Feat — Ciblage par spécialité aligné PSC vs admin
+
+Les libellés de spécialité utilisés côté PSC et côté liste admin diffèrent (ex. « Cardiologie et Maladies vasculaires » en PSC vs « Cardiologie » en liste admin). Conséquence : un filtre SQL `.in('specialite', specialites_cibles)` ratait systématiquement les utilisateurs authentifiés via PSC.
+
+- Liste `SPECIALITES` (`src/lib/constants/profil.ts`) enrichie (Allergologie, Anatomie/Cytologie, Biologie médicale, Médecine interne, Médecine légale, Neurochirurgie, Santé publique, Stomatologie) et triée alphabétiquement.
+- Nouveau mapping `PSC_TO_SPECIALITE` + helper `specialiteConcernee()` : rapproche un libellé PSC d'un ou plusieurs libellés de la liste admin. Valeurs PSC absentes du mapping → rattachées à « Autre » par défaut.
+- Bascule du filtrage côté code dans `send-etude`, `send-questionnaire`, `envoyer-campagnes-email` (le `.in()` SQL ne suffit plus). UI `mon-compte/etudes-cliniques` et `questionnaires-these` alignée sur la même comparaison.
+
+### TODO — Mises à jour
+- Ajout : « Convertir les 16 évaluations Firebase encore en ancien format » (clés `"1"`-`"5"`, échelle 0-10). Non bloquant, mais elles restent invisibles aux requêtes du nouveau site.
+- Ajout : « Vider la table `evaluations_vides_supprimees` après ~90 jours sans regret » (rétention de backup).
+
+---
+
 ## [2026-05-22] — Emails de lancement par syndicat + captcha Turnstile à l'inscription
 
 ### Email — Mail de lancement « clé en main » diffusable par chaque syndicat membre

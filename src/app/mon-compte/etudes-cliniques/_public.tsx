@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { FlaskConical, ExternalLink, CheckCircle, Loader2, X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
 import { sanitizeHtml } from '@/lib/sanitize'
+import { specialiteConcernee } from '@/lib/constants/profil'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim()
@@ -36,8 +37,8 @@ export default function EtudesCliniquesPublic() {
         setUserSpecialite(profile?.specialite ?? null)
         // Items concernés par la spécialité en premier
         const sorted = [...etudesData].sort((a, b) => {
-          const aOk = a.specialites_cibles.length === 0 || (profile?.specialite ? a.specialites_cibles.includes(profile.specialite) : true)
-          const bOk = b.specialites_cibles.length === 0 || (profile?.specialite ? b.specialites_cibles.includes(profile.specialite) : true)
+          const aOk = specialiteConcernee(profile?.specialite, a.specialites_cibles)
+          const bOk = specialiteConcernee(profile?.specialite, b.specialites_cibles)
           return aOk === bOk ? 0 : aOk ? -1 : 1
         })
         setEtudes(sorted)
@@ -101,7 +102,7 @@ export default function EtudesCliniquesPublic() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {etudes.map((etude) => {
-            const concerne = etude.specialites_cibles.length === 0 || (userSpecialite ? etude.specialites_cibles.includes(userSpecialite) : true)
+            const concerne = specialiteConcernee(userSpecialite, etude.specialites_cibles)
             return (
               <EtudeCard
                 key={etude.id}
@@ -308,14 +309,15 @@ function EtudeCard({
       onClick={onExpand}
     >
       <div className="p-5 flex flex-col flex-1 gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
-          {!concerne && (
-            <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-700 text-white whitespace-nowrap">
+        {!concerne && (
+          <div>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-700 text-white whitespace-nowrap">
               Hors spécialité
             </span>
-          )}
-        </div>
+          </div>
+        )}
+        <SpecialitesPills specialites={etude.specialites_cibles} />
+        <h2 className="font-bold text-navy text-base">{etude.titre}</h2>
 
         {plainText && (
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -379,6 +381,22 @@ function EtudeCard({
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function SpecialitesPills({ specialites }: { specialites: string[] }) {
+  const items = specialites.length === 0 ? ['Toutes spécialités'] : specialites
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((s) => (
+        <span
+          key={s}
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-100"
+        >
+          {s}
+        </span>
+      ))}
     </div>
   )
 }

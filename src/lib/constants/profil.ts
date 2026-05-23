@@ -1,6 +1,11 @@
 export const SPECIALITES = [
-  'Médecine générale',
+  'Allergologie',
+  'Anatomie et cytologie pathologiques',
+  'Anesthésie-réanimation',
+  'Biologie médicale',
   'Cardiologie',
+  'Chirurgie générale',
+  'Chirurgie orthopédique',
   'Dermatologie',
   'Endocrinologie',
   'Gastro-entérologie',
@@ -9,8 +14,13 @@ export const SPECIALITES = [
   'Hématologie',
   'Infectiologie',
   'Médecine du travail',
+  "Médecine d'urgence",
+  'Médecine générale',
+  'Médecine interne',
+  'Médecine légale',
   'Médecine physique',
   'Néphrologie',
+  'Neurochirurgie',
   'Neurologie',
   'Oncologie',
   'Ophtalmologie',
@@ -20,11 +30,9 @@ export const SPECIALITES = [
   'Psychiatrie',
   'Radiologie',
   'Rhumatologie',
+  'Santé publique',
+  'Stomatologie',
   'Urologie',
-  'Chirurgie générale',
-  'Chirurgie orthopédique',
-  'Anesthésie-réanimation',
-  "Médecine d'urgence",
   'Autre',
 ]
 
@@ -148,6 +156,137 @@ export function resolveSpecialite(value: string | null): string | null {
   if (!value) return null
   const normalized = value.replace(/\s+/g, '').toUpperCase()
   return SM_SPECIALITES[normalized] ?? value
+}
+
+/**
+ * Correspondance libellé PSC (valeurs de SM_SPECIALITES) → libellé de la liste
+ * admin SPECIALITES. PSC et le sélecteur admin utilisent deux référentiels de
+ * libellés distincts ; ce mapping permet de comparer une spécialité d'utilisateur
+ * (issue de PSC) à une spécialité ciblée (saisie via SPECIALITES).
+ *
+ * Toute valeur PSC absente de ce mapping est rapprochée par défaut de "Autre".
+ */
+const PSC_TO_SPECIALITE: Record<string, string> = {
+  'Allergologie': 'Allergologie',
+  'Anatomie et Cytologie pathologiques': 'Anatomie et cytologie pathologiques',
+  'Anesthésie-réanimation': 'Anesthésie-réanimation',
+  'Anesthésie-réanimation option anesthésie-pédiatrique': 'Anesthésie-réanimation',
+  'Médecine intensive-réanimation': 'Anesthésie-réanimation',
+  'Médecine intensive-réanimation option réanimation pédiatrique': 'Anesthésie-réanimation',
+  'Biologie médicale': 'Biologie médicale',
+  'Biologie médicale option biologie générale': 'Biologie médicale',
+  'Biologie médicale option médecine moléculaire, génétique et pharmacologie': 'Biologie médicale',
+  'Biologie médicale option hématologie et immunologie': 'Biologie médicale',
+  'Biologie médicale option agents infectieux': 'Biologie médicale',
+  'Biologie médicale option biologie de la reproduction': 'Biologie médicale',
+  'Cardiologie et Maladies vasculaires': 'Cardiologie',
+  'Médecine cardiovasculaire': 'Cardiologie',
+  'Médecine cardiovasculaire option cardiologie interventionnelle': 'Cardiologie',
+  "Médecine cardiovasculaire option imagerie cardio d'expert": 'Cardiologie',
+  'Médecine cardiovasculaire option rythmologie interventionnelle et stimulation cardiaque': 'Cardiologie',
+  'Médecine vasculaire': 'Cardiologie',
+  'Chirurgie générale': 'Chirurgie générale',
+  'Chirurgie maxillo-faciale': 'Chirurgie générale',
+  'Chirurgie maxillo-faciale et Stomatologie': 'Chirurgie générale',
+  'Chirurgie maxillo-faciale (réforme 2017)': 'Chirurgie générale',
+  'Chirurgie maxillo-faciale option orthodontie des dysmorphies maxillo-faciales': 'Chirurgie générale',
+  'Chirurgie infantile': 'Chirurgie générale',
+  'Chirurgie plastique reconstructrice et esthétique': 'Chirurgie générale',
+  'Chirurgie thoracique et cardio-vasculaire': 'Chirurgie générale',
+  'Chirurgie vasculaire': 'Chirurgie générale',
+  'Chirurgie viscérale et digestive': 'Chirurgie générale',
+  'Chirurgie viscérale et digestive option endoscopie chirurgicale': 'Chirurgie générale',
+  'Chirurgie orale': 'Chirurgie générale',
+  'Chirurgie pédiatrique option chirurgie viscérale pédiatrique': 'Chirurgie générale',
+  'Chirurgie orthopédique et Traumatologie': 'Chirurgie orthopédique',
+  'Chirurgie pédiatrique option orthopédie pédiatrique': 'Chirurgie orthopédique',
+  'Chirurgie urologique': 'Urologie',
+  'Dermatologie et vénéréologie': 'Dermatologie',
+  'Endocrinologie et métabolisme': 'Endocrinologie',
+  'Endocrinologie, diabétologie, nutrition': 'Endocrinologie',
+  'Gastro-entérologie et Hépatologie': 'Gastro-entérologie',
+  'Gériatrie': 'Gériatrie',
+  'Gynécologie médicale': 'Gynécologie',
+  'Gynécologie-obstétrique': 'Gynécologie',
+  'Gynéco-obstétrique et Gynéco-médicale, option Gynéco-obstétrique': 'Gynécologie',
+  'Gynéco-obstétrique et Gynéco-médicale, option Gynéco-médicale': 'Gynécologie',
+  'Hématologie': 'Hématologie',
+  'Hématologie, option Maladie du sang': 'Hématologie',
+  'Hématologie, option Onco-hématologie': 'Hématologie',
+  'Hématologie (réforme 2017)': 'Hématologie',
+  'Maladies infectieuses et tropicales': 'Infectiologie',
+  'Médecine du travail': 'Médecine du travail',
+  "Médecine d'urgence": "Médecine d'urgence",
+  'Médecin généraliste': 'Médecine générale',
+  'Médecine interne': 'Médecine interne',
+  'Médecine interne et immunologie clinique': 'Médecine interne',
+  'Médecine légale et expertises médicales': 'Médecine légale',
+  'Médecine physique et réadaptation': 'Médecine physique',
+  'Néphrologie': 'Néphrologie',
+  'Néphrologie option soins intensifs néphrologiques': 'Néphrologie',
+  'Neuro-chirurgie': 'Neurochirurgie',
+  'Neurologie': 'Neurologie',
+  "Neurologie option traitement interventionnel de l'ischémie cérébrale aigüe": 'Neurologie',
+  'Neuro-psychiatrie': 'Psychiatrie',
+  'ORL et Chirurgie cervico-faciale': 'ORL',
+  'ORL et chirurgie cervico-faciale option audiophonologie': 'ORL',
+  'Oto-rhino-laryngologie': 'ORL',
+  'Oncologie, option Onco-hématologie': 'Oncologie',
+  'Oncologie, option médicale': 'Oncologie',
+  'Oncologie, option radiothérapie': 'Oncologie',
+  'Ophtalmologie': 'Ophtalmologie',
+  'Ophtalmologie option chirurgie ophtalmopédiatrique et strabologique': 'Ophtalmologie',
+  'Pédiatrie': 'Pédiatrie',
+  'Pédiatrie option néonatologie': 'Pédiatrie',
+  'Pédiatrie option neuropédiatrie': 'Pédiatrie',
+  'Pédiatrie option pneumopédiatrie': 'Pédiatrie',
+  'Pédiatrie option réanimation pédiatrique': 'Pédiatrie',
+  'Pneumologie': 'Pneumologie',
+  'Pneumologie option soins intensifs respiratoires': 'Pneumologie',
+  'Psychiatrie': 'Psychiatrie',
+  'Psychiatrie, option enfant et adolescent': 'Psychiatrie',
+  'Psychiatrie option enfant et adolescent': 'Psychiatrie',
+  'Psychiatrie option psychiatrie personne âgée': 'Psychiatrie',
+  'Radio-diagnostic': 'Radiologie',
+  'Radio-thérapie': 'Radiologie',
+  'Radio-diagnostic et Radio-thérapie': 'Radiologie',
+  'Radiologie et imagerie médicale': 'Radiologie',
+  'Radiologie imagerie médicale option radiologie interventionnelle avancée': 'Radiologie',
+  'Médecine nucléaire': 'Radiologie',
+  'Rhumatologie': 'Rhumatologie',
+  'Santé publique': 'Santé publique',
+  'Santé publique et Médecine sociale': 'Santé publique',
+  'Santé publique option administration de la santé': 'Santé publique',
+  'Stomatologie': 'Stomatologie',
+  'Génétique médicale': 'Autre',
+  'Recherche médicale': 'Autre',
+}
+
+/**
+ * Ramène une spécialité d'utilisateur au libellé de la liste admin SPECIALITES.
+ * Accepte aussi bien un libellé déjà au format admin (renvoyé tel quel) qu'un
+ * libellé PSC (mappé via PSC_TO_SPECIALITE).
+ */
+export function normaliserSpecialite(value: string | null | undefined): string | null {
+  if (!value) return null
+  if ((SPECIALITES as readonly string[]).includes(value)) return value
+  return PSC_TO_SPECIALITE[value] ?? value
+}
+
+/**
+ * Indique si une spécialité d'utilisateur correspond à une liste de spécialités
+ * ciblées. Une liste de cibles vide signifie « toutes les spécialités ».
+ * La comparaison passe par normaliserSpecialite() pour réconcilier les libellés
+ * PSC et ceux de la liste admin.
+ */
+export function specialiteConcernee(
+  userSpecialite: string | null | undefined,
+  specialitesCibles: string[],
+): boolean {
+  if (!specialitesCibles || specialitesCibles.length === 0) return true
+  if (!userSpecialite) return true
+  const user = normaliserSpecialite(userSpecialite)
+  return specialitesCibles.some((c) => normaliserSpecialite(c) === user)
 }
 
 export const AVATARS = Array.from({ length: 48 }, (_, i) => ({

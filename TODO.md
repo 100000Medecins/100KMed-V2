@@ -37,6 +37,23 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
+#### *(quand on aura un moment)* Convertir les 16 évaluations Firebase encore en ancien format
+- **État** : 16 évaluations en BDD ont leurs scores sous l'ancien format Firebase — clés `"1"`-`"5"` (au lieu de `interface`, `fonctionnalites`...) et valeurs sur l'échelle 0-10 (au lieu de 0-5). Le code actuel ne sait pas les lire (`scores.interface` retourne `undefined`).
+- **Pas un sujet bloquant** : ces 16 évals concernent des solutions Firebase legacy dont les `resultats` sont désormais ancrés sur les valeurs Firebase d'origine (cf. correction du 2026-05-23). Donc elles ne polluent plus l'affichage. Elles sont juste invisibles pour les requêtes du nouveau site.
+- **À faire** : mapping `"1" → interface`, `"2" → fonctionnalites`, `"3" → fiabilite`, `"4" → editeur`, `"5" → qualite_prix`, valeurs divisées par 2, puis recalcul `moyenne_utilisateur`. Solutions concernées : Doctolib Médecin, Alma Pro, Medistory, Crossway, MLM, TAMM, Follow, Odaiji, AxiSanté 5, etc.
+- **Identifier ces évaluations** : `SELECT id FROM evaluations WHERE scores ? '1' AND NOT scores ? 'interface'` (env. 16 lignes).
+
+#### *(rétention 90 jours minimum)* Vider la table `evaluations_vides_supprimees`
+- **État** : 48 évaluations vides (scores complètement vides, ou `moyenne_utilisateur=0` sans aucune note de critère majeur) ont été supprimées le 2026-05-23 et sauvegardées dans `evaluations_vides_supprimees` (table de backup admin only, RLS bloque tout sauf service_role).
+- **Risque résiduel nul** : aucune de ces évaluations n'avait de notes utilisables ; leur suppression a aligné les `nb_notes` sur la réalité (Premiocare : 6 au lieu de 7).
+- **À faire après ~90 jours sans regret** : `DROP TABLE evaluations_vides_supprimees` (si aucune fuite/rollback nécessaire entre-temps).
+
+#### *(quand on aura un moment)* Nettoyer les ~270 erreurs ESLint préexistantes
+- **État** : `npm run lint` remonte ~270 erreurs, principalement `@typescript-eslint/no-explicit-any` sur la couche Supabase (`src/lib/db/`, `src/lib/actions/`), plus quelques `react/no-unescaped-entities` et `no-img-element`.
+- **Pas un sujet de fiabilité** : ces erreurs sont du style, pas du comportement. `tsc --noEmit` passe, le `next build` passe, le site tourne. La règle reste utile pour le code nouveau.
+- **Cause de fond** : les types Supabase auto-générés ont divergé de la BDD (cf. CLAUDE.md sur la "schema drift" — `actualites`, `documents` absentes des types, etc.). Le `as any` est un contournement.
+- **Remède durable** : régénérer `src/types/database.ts` (`npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts`) puis retirer les `as any` au fil de l'eau dans les fichiers qu'on touche. Pas de chantier dédié sauf si on veut un lint propre en CI.
+
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
 - Désinstaller `firebase-admin` du `package.json`
