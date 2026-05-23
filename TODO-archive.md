@@ -5,7 +5,16 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-22**
+- [OK] 2026-05-22 : Captcha anti-bots Cloudflare Turnstile à l'inscription (Sécurité)
+  - Cloudflare Turnstile (invisible) intégré sur `/inscription` — widget `TurnstileWidget`, vérification serveur `verifyTurnstileToken` dans `registerWithEmail`. Dégradation gracieuse sans clés (`TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY`).
+  - Garde-fou temporel (soumission < 2,5 s = bot) maintenu en complément. Honeypot abandonné (faux positifs password managers).
+  - Reste à faire à la mise en prod : créer les clés Turnstile côté Cloudflare et les renseigner dans Vercel (déplacé dans section « Déploiement final » de TODO.md).
+
 **2026-05-21**
+- [OK] 2026-05-21 : Reset mot de passe via lien HMAC idempotent (Sécurité)
+  - Module `src/lib/email/reset-token.ts` (HMAC `reset:uid:iat`, TTL 1h). `sendPasswordReset` génère un lien HMAC `/reinitialiser-mot-de-passe?uid&iat&token`. Réécriture de la page `/reinitialiser-mot-de-passe` (suppression du bricolage session/`access_token`/`sessionStorage`/bypass-lock). Server action `resetPasswordWithToken(uid, iat, token, newPassword)` → `admin.updateUserById`.
+  - Idempotence naturelle : le GET du lien n'affiche que le formulaire, c'est le POST qui agit → le scanner ne consomme rien. Plus de bug de pré-scan.
 - [OK] 2026-05-21 : Durcir la server action `generateAcronyme` (Sécurité)
   - `assertAdmin()` ajouté en tête de `generateAcronymeInfo` — l'endpoint n'est plus appelable sans cookie admin
 - [OK] 2026-05-21 : Refacto questionnaires d'évaluation — sortir du fallback ambigu `default` (Mises à jour techniques)
