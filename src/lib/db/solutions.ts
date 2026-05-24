@@ -42,6 +42,49 @@ export async function getSolutions(options?: {
 }
 
 /**
+ * Récupère les vidéos publiées rattachées à une solution via video_solutions
+ * et les transforme en GalerieItem pour les ajouter à la galerie de la fiche.
+ * Tri par video_solutions.ordre desc (score décroissant), puis date.
+ *
+ * Note : on transforme `videos.titre` en `GalerieItem.titre` et `videos.url`
+ * en `GalerieItem.url`. SolutionGallery détecte les URLs YouTube et affiche
+ * automatiquement la vignette + le bouton play.
+ */
+async function getVideosForSolutionAsGalerie(
+  supabase: Awaited<ReturnType<typeof createServerClient>>,
+  solutionId: string,
+  baseOrdre: number,
+) {
+  const { data } = await supabase
+    .from('video_solutions')
+    .select('ordre, videos(id, titre, url, statut, created_at)')
+    .eq('solution_id', solutionId)
+    .order('ordre', { ascending: false })
+
+  if (!data || data.length === 0) return []
+
+  // Filtrer côté JS sur statut='publie' (le filtre côté SQL via PostgREST
+  // sur une jointure imbriquée est plus fragile que ça)
+  const items = data
+    .map((row: Record<string, unknown>) => {
+      const video = row.videos as { id: string; titre: string | null; url: string | null; statut: string } | null
+      if (!video || video.statut !== 'publie' || !video.url) return null
+      return { video, ordre: row.ordre as number }
+    })
+    .filter((x): x is { video: { id: string; titre: string | null; url: string | null; statut: string }; ordre: number } => x !== null)
+
+  return items.map((item, idx) => ({
+    id: `video-${item.video.id}`,
+    id_solution: solutionId,
+    url: item.video.url,
+    titre: item.video.titre,
+    ordre: baseOrdre + idx + 1,
+    type: 'video',
+    created_at: null,
+  }))
+}
+
+/**
  * Récupère une solution par son ID avec toutes ses relations.
  * Remplace : fetchSolutionByIdSolution + sous-resolvers (editeur, categorie, tags)
  */
@@ -77,7 +120,16 @@ export async function getSolutionById(id: string) {
     tags = (tagsData || []).map((t: Record<string, unknown>) => ({ tag: t }))
   }
 
-  return { ...data, tags } as unknown as SolutionWithRelations
+  // Ajouter les vidéos validées à la galerie, après les images existantes
+  const existingGalerie = (data.galerie || []) as Array<{ ordre: number | null }>
+  const maxOrdre = existingGalerie.reduce((m, g) => Math.max(m, g.ordre ?? 0), 0)
+  const videoItems = await getVideosForSolutionAsGalerie(supabase, id, maxOrdre)
+
+  return {
+    ...data,
+    tags,
+    galerie: [...existingGalerie, ...videoItems],
+  } as unknown as SolutionWithRelations
 }
 
 /**
@@ -119,7 +171,16 @@ export async function getSolutionBySlug(slug: string) {
       }))
   }
 
-  return { ...data, tags } as unknown as SolutionWithRelations
+  // Ajouter les vidéos validées à la galerie, après les images existantes
+  const existingGalerie = (data.galerie || []) as Array<{ ordre: number | null }>
+  const maxOrdre = existingGalerie.reduce((m, g) => Math.max(m, g.ordre ?? 0), 0)
+  const videoItems = await getVideosForSolutionAsGalerie(supabase, data.id, maxOrdre)
+
+  return {
+    ...data,
+    tags,
+    galerie: [...existingGalerie, ...videoItems],
+  } as unknown as SolutionWithRelations
 }
 
 /**

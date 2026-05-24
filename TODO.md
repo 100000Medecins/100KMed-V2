@@ -21,6 +21,16 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
+#### Vidéos par solution — découverte YouTube + affichage front
+- **Concept** : pour chaque solution du site, agréger des vidéos YouTube pertinentes (tuto, démo, avis) et les afficher sur la fiche solution + dans une sous-section de Stories & Tutos.
+- **Plomberie SQL livrée le 2026-05-24** : table `video_solutions` (M-N), RLS qui filtre sur `videos.statut = 'publie'`, types regénérés.
+- **Étape 1 (à faire)** : créer une clé `YOUTUBE_API_KEY` sur Google Cloud Console (YouTube Data API v3, gratuite), l'ajouter à `.env.local` et Vercel.
+- **Étape 2** : écrire `scripts/discover-videos-youtube.mjs` — smoke test sur **Doctolib uniquement** d'abord. Requête `"<nom_solution>" (tutoriel OR démonstration OR avis OR "prise en main")`, lang=fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, top 8 par solution. Import en `statut='en_attente'`.
+- **Étape 3** : afficher la (les) solution(s) liée(s) à chaque vidéo dans `VideosPendingPanel` pour faciliter la validation.
+- **Étape 4** : bloc carousel `VideosSection` sur `/solutions/[idCategorie]/[idSolution]` (5 visibles + scroll horizontal). Sous-section « Vidéos sur les solutions » dans Stories & Tutos.
+- **Cas du doublon** : une même URL YouTube partagée par plusieurs solutions (ex. comparatif) → une seule ligne dans `videos`, plusieurs lignes dans `video_solutions`.
+- **Si smoke test OK** : étendre à toutes les solutions actives de la catégorie Agendas, puis aux autres catégories.
+
 #### Email de lancement par syndicat — finaliser le wording
 - **Concept** : un email de lancement du nouveau site, envoyé par chaque syndicat membre à sa propre base de sympathisants / liste de diffusion. Modèle « clé en main » : un fichier HTML par syndicat, que le syndicat envoie depuis son propre outil d'emailing.
 - **Base livrée (2026-05-21)** — visuel validé, wording à finaliser plus tard :

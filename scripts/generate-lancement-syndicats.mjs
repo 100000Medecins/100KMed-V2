@@ -26,19 +26,51 @@ const env = Object.fromEntries(
 const supabase = createClient(env['NEXT_PUBLIC_SUPABASE_URL'], env['SUPABASE_SERVICE_ROLE_KEY'])
 
 const EXCLURE = ['mg-france'] // syndicats non diffusés à ce stade
+const SITE = 'https://www.100000medecins.org'
 const STORAGE = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images'
 
 const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+// "Le mot du Président" / "de la Présidente" / "des Présidents" selon le titre
+function motDuPresident(titre) {
+  const t = String(titre || '').toLowerCase()
+  if (t.startsWith('présidente')) return 'Le mot de la Présidente'
+  if (t.startsWith('présidents')) return 'Le mot des Présidents'
+  if (t.startsWith('ex-président')) return 'Le mot de l’ex-Président'
+  return 'Le mot du Président'
+}
+
+// Construit la cellule HTML du logo syndicat (en-tête email).
+// Si logo_bg est défini → cartouche coloré avec coins arrondis + padding.
+// (Logique identique à src/components/admin/LancementSyndicatsManager.tsx)
+function buildLogoCell(s, linkHome) {
+  const height = s.logo_height || 48
+  const src = `${STORAGE}/syndicats/${s.id}.png`
+  const alt = esc(s.nom)
+  const img = `<img src="${src}" alt="${alt}" height="${height}" style="display:block;height:${height}px;width:auto;border:0;" />`
+  const link = `<a href="${linkHome}" style="text-decoration:none;display:block;line-height:0;">${img}</a>`
+  if (s.logo_bg) {
+    // Padding proportionnel à la hauteur pour que le cartouche suive le logo
+    const padY = Math.max(6, Math.round(height * 0.17))
+    const padX = Math.max(8, Math.round(height * 0.25))
+    return `<table cellpadding="0" cellspacing="0" role="presentation"><tr><td style="background:${s.logo_bg};border-radius:8px;padding:${padY}px ${padX}px;line-height:0;">${link}</td></tr></table>`
+  }
+  return link
+}
+
 // Remplit les placeholders {{...}} du template pour un syndicat donné.
-// (Logique identique à src/lib/email/lancement-syndicat.ts côté app.)
+// (Logique identique à src/components/admin/LancementSyndicatsManager.tsx.)
 function compose(templateHtml, s) {
+  const linkHome = `${SITE}/?utm_source=${encodeURIComponent(s.id)}&utm_medium=email&utm_campaign=lancement-2026`
   const vars = {
     nom_syndicat: esc(s.nom),
+    article_syndicat: esc(s.article || ''),
     logo_syndicat: `${STORAGE}/syndicats/${s.id}.png`,
+    logo_syndicat_cell: buildLogoCell(s, linkHome),
     citation: esc(s.citation),
     president_nom: esc(s.presidents),
-    president_fonction: `${esc(s.titre)} · ${esc(s.nom_complet)}`,
+    president_fonction: esc(s.titre),
+    mot_president_label: motDuPresident(s.titre),
     utm_source: encodeURIComponent(s.id),
   }
   return templateHtml.replace(/\{\{(\w+)\}\}/g, (_, k) => (k in vars ? vars[k] : `{{${k}}}`))
@@ -84,8 +116,14 @@ const outDir = join(__dirname, '../docs/lancement-syndicats')
 mkdirSync(outDir, { recursive: true })
 
 for (const s of syndicats) {
-  writeFileSync(join(outDir, `${s.id}.html`), compose(contenu_html, s), 'utf-8')
-  console.log(`✅ ${s.id}.html — ${s.nom} (${s.presidents})`)
+  // Override par syndicat (pages_statiques.metadata[i].contenu_html_override).
+  // Si présent et non vide, il remplace le template général pour CE syndicat uniquement.
+  const baseHtml = (typeof s.contenu_html_override === 'string' && s.contenu_html_override.length > 0)
+    ? s.contenu_html_override
+    : contenu_html
+  const tag = baseHtml === contenu_html ? '' : ' ✨ personnalisé'
+  writeFileSync(join(outDir, `${s.id}.html`), compose(baseHtml, s), 'utf-8')
+  console.log(`✅ ${s.id}.html — ${s.nom} (${s.presidents})${tag}`)
 }
 writeFileSync(join(outDir, '_index.html'), buildIndex(syndicats, sujet), 'utf-8')
 

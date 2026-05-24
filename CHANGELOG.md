@@ -5,6 +5,46 @@
 
 ---
 
+## [2026-05-24] — Refonte du mail de lancement par syndicat + WYSIWYG override + nouveau logo Jeunes Médecins
+
+### Email — Refonte complète du wording « lancement syndicat »
+
+Réécriture complète de l'email envoyé par chaque syndicat membre à sa base de sympathisants pour annoncer la nouvelle version du site. Style et structure totalement revus : intro « depuis 2019 », 6 bullets historique (premier site d'éval LGC, représentation ANS/DNS/CNAM, think-tank, journées e-santé, congrès, co-portage FEIMA/DNS sur la portabilité des logiciels métiers), encart bleu clair « Aujourd'hui » agrandi (titre 22px) avec 5 bullets nouveautés, 2 boutons centrés (« Découvrir la nouvelle version » + « Évaluer un logiciel »), citation finale « Notre avenir passe par le numérique. Mobilisons-nous pour guider sa transformation. ».
+
+- Tailles de police remontées de 2px (corps 14→16, titre 24→26, etc.) pour lisibilité Gmail Android.
+- En-tête refait : **logo 100K Médecins ♥ logo syndicat** côte à côte, avec cœur orange centré.
+- Encart « Le mot du Président » : label adapté automatiquement selon le titre du syndicat (« Le mot du Président », « de la Présidente », « des Présidents », « de l'ex-Président »).
+- Convention de nommage : `100 000 Médecins` (espaces insécables) pour l'association, `100000Medecins.org` pour le site.
+- Article syndicat (« la CSMF », « le SML », « Avenir Spé », « Le Bloc », etc.) géré via nouveau champ `article` dans `pages_statiques.metadata[i]`.
+
+### Email — Personnalisation par syndicat (override WYSIWYG inline)
+
+Nouvelle fonctionnalité dans `/admin/emails` → onglet « Lancement syndicats » : si un syndicat demande une modif spécifique, on peut créer une version dédiée pour lui sans toucher au template général.
+
+- Nouvelle carte orange sous l'éditeur principal : « Personnalisation pour {syndicat} ».
+- Bouton **Personnaliser pour {syndicat}** → ouvre un textarea pré-rempli avec le template général ; bouton **Enregistrer pour {syndicat}** ; bouton **Réinitialiser** (avec confirmation) qui supprime l'override.
+- Pictogramme ✨ Sparkles dans le sélecteur de syndicat quand l'override est actif.
+- Server actions `saveSyndicatOverride` + `clearSyndicatOverride` (`src/lib/actions/syndicatOverride.ts`) qui écrivent dans `pages_statiques.metadata[i].contenu_html_override`.
+- Le générateur de fichiers HTML (`scripts/generate-lancement-syndicats.mjs`) utilise l'override si présent.
+
+### Email — Personnalisation visuelle des logos par syndicat
+
+Chaque logo syndicat dans l'en-tête email peut maintenant être personnalisé sans toucher au PNG : nouveau placeholder `{{logo_syndicat_cell}}` qui factorise toute la cellule, alimenté par 2 nouveaux champs metadata.
+
+- `logo_height` (px, défaut 48) — permet d'agrandir ou réduire individuellement par syndicat.
+- `logo_bg` (couleur hex ou null) — si défini, ajoute un cartouche coloré à coins arrondis derrière le logo, avec **padding proportionnel automatique** à la hauteur (`Math.round(height × 0.17)` × `Math.round(height × 0.25)`).
+- Valeurs initiales : CSMF 55px, SML 60px, FMF 38px avec cartouche blanc, Avenir Spé 48px avec cartouche blanc, SNJMG 48px avec cartouche blanc, Jeunes Médecins 48px avec cartouche blanc. Le Bloc reste sur les défauts.
+- Logo Jeunes Médecins **remplacé** : ancien PNG → nouveau (les 4 cercles dégradés bleu marine + texte « JEUNES MÉDECINS »), converti depuis `public/logos/logo-jeunes-medecins.svg` via `sharp` (768×280 PNG), uploadé dans `storage/images/syndicats/jeunes-medecins.png`.
+
+### Scripts — Découverte de vidéos YouTube
+
+Nouveau script `scripts/discover-videos-youtube.mjs` — interroge l'API YouTube Data v3 pour découvrir des vidéos pertinentes pour les solutions du site, les insère dans `videos` (statut `en_attente`) + `video_solutions`. La validation finale se fait via `VideosPendingPanel` côté admin.
+
+### TODO — Mises à jour
+- Ajout : « Vidéos par solution — découverte YouTube + affichage front » (plomberie SQL + script de découverte livrés ; reste clé YOUTUBE_API_KEY, smoke test Doctolib, affichage carousel sur fiche solution).
+
+---
+
 ## [2026-05-23] — Correction des notes globales Firebase legacy + ciblage spécialités PSC
 
 ### Fix — Notes globales Firebase : restauration des valeurs d'origine + mode incrémental
