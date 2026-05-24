@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { submitVideoProposal } from '@/lib/actions/videos'
 import { Video, CheckCircle2, AlertCircle } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 const inputClass =
   'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
@@ -144,13 +145,9 @@ export default function ProposerVideoPage() {
           </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50"
-        >
+        <Button loading={isPending}>
           {isPending ? 'Envoi…' : 'Envoyer la vidéo'}
-        </button>
+        </Button>
       </form>
     </div>
   )

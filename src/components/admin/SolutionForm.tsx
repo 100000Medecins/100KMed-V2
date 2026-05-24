@@ -8,6 +8,7 @@ import RichTextEditor from '@/components/admin/RichTextEditor'
 import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
 import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
 import VideosLieesManager from '@/components/admin/VideosLieesManager'
+import Button from '@/components/ui/Button'
 
 function isVideoUrl(url: string): boolean {
   return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
@@ -993,17 +994,13 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
 
       {/* Submit */}
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4 flex-wrap">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50"
-        >
+        <Button loading={isPending}>
           {isPending
             ? 'Enregistrement...'
             : solution
               ? 'Mettre à jour'
               : 'Créer la solution'}
-        </button>
+        </Button>
         {solution && !solution.actif && (
           <button
             type="submit"

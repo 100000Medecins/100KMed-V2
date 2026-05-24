@@ -3,6 +3,10 @@
 import { useState, useTransition, useRef } from 'react'
 import { Sparkles, ChevronDown, ChevronUp, Images } from 'lucide-react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
+import Select from '@/components/ui/Select'
 import { updateArticleImageCouverture } from '@/lib/actions/admin'
 import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
 
@@ -269,14 +273,13 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
           {/* Titre */}
           <div>
             <label htmlFor="titre" className={labelClass}>Titre *</label>
-            <input
+            <Input
               id="titre" type="text" required
               value={titre}
               onChange={(e) => {
                 setTitre(e.target.value)
                 if (!slugManual) setSlug(slugify(e.target.value))
               }}
-              className={inputClass}
               placeholder="Titre de l'article"
             />
           </div>
@@ -286,10 +289,9 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
             <label className={labelClass}>Slug (URL)</label>
             <div className="flex gap-2 items-center">
               <span className="text-sm text-gray-400 shrink-0">/blog/</span>
-              <input
+              <Input
                 type="text" value={slug}
                 onChange={(e) => { setSlug(e.target.value); setSlugManual(true) }}
-                className={inputClass}
                 placeholder="url-de-larticle"
               />
             </div>
@@ -298,11 +300,10 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
           {/* Extrait / Chapeau */}
           <div>
             <label htmlFor="extrait" className={labelClass}>Extrait / Chapeau</label>
-            <textarea
+            <Textarea
               id="extrait" rows={3}
               value={extrait}
               onChange={(e) => setExtrait(e.target.value)}
-              className="w-full rounded-2xl bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3 resize-y"
               placeholder="Résumé court affiché sur la carte et en intro de l'article"
             />
           </div>
@@ -320,18 +321,17 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
           {/* Statut */}
           <div className="bg-white border border-gray-200 rounded-card p-4 space-y-3">
             <label className={labelClass}>Publication</label>
-            <select
+            <Select
               name="statut"
               value={statut}
               onChange={(e) => {
                 setStatut(e.target.value)
                 if (e.target.value === 'publié') { setScheduledDate(''); setScheduledHour(null) }
               }}
-              className={inputClass}
             >
               <option value="brouillon">Brouillon</option>
               <option value="publié">Publié</option>
-            </select>
+            </Select>
             {statut === 'brouillon' && (
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">
@@ -534,15 +534,10 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100">
-        <button
-          type="submit" disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50"
-        >
+        <Button loading={isPending}>
           {isPending ? 'Enregistrement...' : article?.id ? 'Mettre à jour' : 'Créer l\'article'}
-        </button>
-        <a href="/admin/blog" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all">
-          Annuler
-        </a>
+        </Button>
+        <Button variant="outline" href="/admin/blog">Annuler</Button>
       </div>
     </form>
   )

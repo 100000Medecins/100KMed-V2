@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Field from '@/components/ui/Field'
 
 interface PartenaireFormProps {
   partenaire?: { id: string; nom: string; logo_url: string | null; lien_url: string | null; actif: boolean | null } | null
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
-
-const inputClass = 'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
-const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 
 export default function PartenaireForm({ partenaire, action }: PartenaireFormProps) {
   const [error, setError] = useState<string | null>(null)
@@ -50,13 +50,11 @@ export default function PartenaireForm({ partenaire, action }: PartenaireFormPro
     <form action={handleSubmit} className="space-y-5">
       {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>}
 
-      <div>
-        <label htmlFor="nom" className={labelClass}>Nom *</label>
-        <input id="nom" type="text" name="nom" defaultValue={partenaire?.nom ?? ''} required className={inputClass} />
-      </div>
+      <Field label="Nom" required htmlFor="nom">
+        <Input id="nom" type="text" name="nom" defaultValue={partenaire?.nom ?? ''} required />
+      </Field>
 
-      <div>
-        <label className={labelClass}>Logo</label>
+      <Field label="Logo">
         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" className="hidden" onChange={handleFileChange} />
         <div className="flex items-center gap-3">
           {logoUrl && (
@@ -76,22 +74,17 @@ export default function PartenaireForm({ partenaire, action }: PartenaireFormPro
           </div>
         </div>
         {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
-      </div>
+      </Field>
 
-      <div>
-        <label htmlFor="lien_url" className={labelClass}>Lien URL (optionnel)</label>
-        <input id="lien_url" type="url" name="lien_url" defaultValue={partenaire?.lien_url ?? ''} placeholder="https://..." className={inputClass} />
-      </div>
+      <Field label="Lien URL (optionnel)" htmlFor="lien_url">
+        <Input id="lien_url" type="url" name="lien_url" defaultValue={partenaire?.lien_url ?? ''} placeholder="https://..." />
+      </Field>
 
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
-        <button type="submit" disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50">
+        <Button loading={isPending}>
           {isPending ? 'Enregistrement...' : partenaire ? 'Mettre à jour' : 'Créer le partenaire'}
-        </button>
-        <a href="/admin/partenaires"
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all">
-          Annuler
-        </a>
+        </Button>
+        <Button variant="outline" href="/admin/partenaires">Annuler</Button>
       </div>
     </form>
   )

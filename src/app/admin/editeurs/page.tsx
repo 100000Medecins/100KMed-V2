@@ -5,6 +5,7 @@ import { Plus, Pencil, ExternalLink } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import DeleteEditeurButton from '@/components/admin/DeleteEditeurButton'
 import AdminEditeurClaims from '@/components/admin/AdminEditeurClaims'
+import Button from '@/components/ui/Button'
 import type { Editeur } from '@/types/models'
 import type { ClaimRow, EditeurOption } from '@/components/admin/AdminEditeurClaims'
 
@@ -58,13 +59,9 @@ export default async function AdminEditeursPage(
             {editeurs.length} éditeur{editeurs.length > 1 ? 's' : ''}
           </p>
         </div>
-        <Link
-          href="/admin/editeurs/nouveau"
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft hover:shadow-card transition-all duration-300"
-        >
-          <Plus className="w-4 h-4" />
+        <Button href="/admin/editeurs/nouveau" leftIcon={<Plus className="w-4 h-4" />}>
           Ajouter un éditeur
-        </Link>
+        </Button>
       </div>
 
       {/* Onglets */}

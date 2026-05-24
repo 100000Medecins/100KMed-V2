@@ -7,6 +7,7 @@ import { ExternalLink, GraduationCap, CalendarDays, X, ZoomIn, BookOpen } from '
 import type { QuestionnaireThese } from '@/lib/actions/questionnaires-these'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { specialiteConcernee } from '@/lib/constants/profil'
+import Badge from '@/components/ui/Badge'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim()
@@ -224,9 +225,7 @@ function QuestionnaireCard({ q, concerne, onExpand }: { q: QuestionnaireThese; c
       <div className="p-5 flex flex-col gap-3 flex-1">
         {!concerne && (
           <div>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-700 text-white whitespace-nowrap">
-              Hors spécialité
-            </span>
+            <Badge variant="dark">Hors spécialité</Badge>
           </div>
         )}
         <SpecialitesPills specialites={q.specialites_cibles} />

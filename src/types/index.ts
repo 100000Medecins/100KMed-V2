@@ -33,4 +33,11 @@ export interface VideoItem {
   youtubeId: string;
 }
 
-export type ButtonVariant = "primary" | "outline" | "ghost" | "white" | "cta";
+export type ButtonVariant =
+  | "primary"   // bg-navy / text-white — action principale
+  | "secondary" // bg-accent-blue / text-white — action secondaire
+  | "outline"   // border-navy / text-navy — bouton avec contour, sans fond
+  | "ghost"     // transparent / text-navy — action tertiaire
+  | "danger"    // bg-red-500 / text-white — action destructive
+  | "white"     // border-white / text-white — pour les fonds sombres (hero)
+  | "cta";      // bg-accent-yellow / text-navy — bouton mis en avant (landing)

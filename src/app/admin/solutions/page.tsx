@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { getAllSolutionsAdmin } from '@/lib/db/admin-solutions'
 import { getAllCategoriesAdmin } from '@/lib/db/categories'
@@ -9,6 +8,7 @@ import AdminCategoryFilter from '@/components/admin/AdminCategoryFilter'
 import AdminSolutionsTable from '@/components/admin/AdminSolutionsTable'
 import ScrollToSolution from '@/components/admin/ScrollToSolution'
 import RecalcAllSolutionsButton from '@/components/admin/RecalcAllSolutionsButton'
+import Button from '@/components/ui/Button'
 
 interface PageProps {
   searchParams: Promise<{ categorie?: string }>
@@ -41,13 +41,9 @@ export default async function AdminSolutionsPage(props: PageProps) {
         </div>
         <div className="flex items-center gap-3">
           <RecalcAllSolutionsButton />
-          <Link
-            href="/admin/solutions/nouveau"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft hover:shadow-card transition-all duration-300"
-          >
-            <Plus className="w-4 h-4" />
+          <Button href="/admin/solutions/nouveau" leftIcon={<Plus className="w-4 h-4" />}>
             Ajouter une solution
-          </Link>
+          </Button>
         </div>
       </div>
 

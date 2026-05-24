@@ -5,17 +5,14 @@ import { useFormStatus } from 'react-dom'
 import { loginAdmin } from '@/lib/actions/admin'
 import { ShieldCheck } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
+import Button from '@/components/ui/Button'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft hover:shadow-card transition-all duration-300 disabled:opacity-50"
-    >
+    <Button loading={pending} fullWidth>
       {pending ? 'Connexion...' : 'Accéder au backoffice'}
-    </button>
+    </Button>
   )
 }
 

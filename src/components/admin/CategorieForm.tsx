@@ -3,6 +3,9 @@
 import { useState, useTransition, useRef, useEffect } from 'react'
 import type { Database } from '@/types/database'
 import RichTextEditor from './RichTextEditor'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Field from '@/components/ui/Field'
 import { updateCategorieImageUrl } from '@/lib/actions/admin'
 
 type Categorie = Database['public']['Tables']['categories']['Row'] & { has_note_redac?: boolean }
@@ -12,8 +15,6 @@ interface CategorieFormProps {
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
-const inputClass =
-  'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
 const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 
 export default function CategorieForm({ categorie, action }: CategorieFormProps) {
@@ -81,31 +82,29 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
         <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
       )}
 
-      <div>
-        <label htmlFor="nom" className={labelClass}>Nom *</label>
-        <input
+      <Field label="Nom" required htmlFor="nom">
+        <Input
           id="nom"
           type="text"
           name="nom"
           defaultValue={categorie?.nom ?? ''}
           required
-          className={inputClass}
         />
-      </div>
+      </Field>
 
       <div>
         <label htmlFor="slug" className={labelClass}>
           Slug (URL)
           {categorie && <span className="ml-2 text-xs text-amber-600 font-normal">— non modifiable après création</span>}
         </label>
-        <input
+        <Input
           id="slug"
           type="text"
           name="slug"
           defaultValue={categorie?.slug ?? ''}
           placeholder="Généré automatiquement si vide"
           readOnly={!!categorie}
-          className={`${inputClass} ${categorie ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
+          className={categorie ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}
         />
       </div>
 
@@ -224,19 +223,10 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
       </div>
 
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50"
-        >
+        <Button loading={isPending}>
           {isPending ? 'Enregistrement...' : categorie ? 'Mettre à jour' : 'Créer la catégorie'}
-        </button>
-        <a
-          href="/admin/categories"
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"
-        >
-          Annuler
-        </a>
+        </Button>
+        <Button variant="outline" href="/admin/categories">Annuler</Button>
       </div>
     </form>
   )

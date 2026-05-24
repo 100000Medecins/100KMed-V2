@@ -2,6 +2,9 @@
 
 import { useState, useTransition, useRef } from 'react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Field from '@/components/ui/Field'
 import type { EditeurSuggestion } from '@/lib/actions/searchEditeur'
 
 interface Editeur {
@@ -89,29 +92,25 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
 
       <Section title="Identité">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="nom" className={labelClass}>Nom (interne) *</label>
-            <input
+          <Field label="Nom (interne)" required htmlFor="nom">
+            <Input
               id="nom"
               type="text"
               name="nom"
               defaultValue={editeur?.nom ?? v?.nom ?? ''}
               required
-              className={inputClass}
               placeholder="Ex: CEGEDIM SA"
             />
-          </div>
-          <div>
-            <label htmlFor="nom_commercial" className={labelClass}>Nom commercial</label>
-            <input
+          </Field>
+          <Field label="Nom commercial" htmlFor="nom_commercial">
+            <Input
               id="nom_commercial"
               type="text"
               name="nom_commercial"
               defaultValue={editeur?.nom_commercial ?? v?.nom_commercial ?? ''}
-              className={inputClass}
               placeholder="Ex: Cegedim"
             />
-          </div>
+          </Field>
         </div>
 
         <div>
@@ -224,13 +223,9 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
       </Section>
 
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50"
-        >
+        <Button loading={isPending}>
           {isPending ? 'Enregistrement...' : editeur ? 'Mettre à jour' : "Créer l'éditeur"}
-        </button>
+        </Button>
         <a
           href="/admin/editeurs"
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"

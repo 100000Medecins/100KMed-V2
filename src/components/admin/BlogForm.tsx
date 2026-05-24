@@ -5,6 +5,9 @@ import type { Database } from '@/types/database'
 import type { SyndicatFoundateur } from '@/types/models'
 import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
 import { ChevronDown, GripVertical, ImageIcon, Sparkles } from 'lucide-react'
 
 type PageStatique = Database['public']['Tables']['pages_statiques']['Row'] & {
@@ -16,10 +19,6 @@ interface BlogFormProps {
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
-const inputClass =
-  'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
-const textareaClass =
-  'w-full rounded-2xl bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3 resize-y'
 const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 
 export default function BlogForm({ page, action }: BlogFormProps) {
@@ -147,13 +146,12 @@ export default function BlogForm({ page, action }: BlogFormProps) {
       {/* Titre */}
       <div>
         <label htmlFor="titre" className={labelClass}>Titre *</label>
-        <input
+        <Input
           id="titre"
           type="text"
           name="titre"
           defaultValue={page.titre}
           required
-          className={inputClass}
         />
       </div>
 
@@ -291,12 +289,11 @@ export default function BlogForm({ page, action }: BlogFormProps) {
       {/* Meta description */}
       <div>
         <label htmlFor="meta_description" className={labelClass}>Meta description (SEO)</label>
-        <textarea
+        <Textarea
           id="meta_description"
           name="meta_description"
           defaultValue={page.meta_description ?? ''}
           rows={2}
-          className={textareaClass}
         />
       </div>
 
@@ -368,43 +365,39 @@ export default function BlogForm({ page, action }: BlogFormProps) {
                   <div className="px-5 py-4 space-y-4 border-t border-gray-100">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Citation</label>
-                      <textarea
+                      <Textarea
                         value={s.citation}
                         onChange={(e) => updateSyndicat(s.id, 'citation', e.target.value)}
                         rows={4}
-                        className={textareaClass}
                         placeholder="Texte de la citation..."
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Président(s)</label>
-                        <input
+                        <Input
                           type="text"
                           value={s.presidents}
                           onChange={(e) => updateSyndicat(s.id, 'presidents', e.target.value)}
-                          className={inputClass}
                           placeholder="Dr Prénom NOM"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Titre officiel</label>
-                        <input
+                        <Input
                           type="text"
                           value={s.titre}
                           onChange={(e) => updateSyndicat(s.id, 'titre', e.target.value)}
-                          className={inputClass}
                           placeholder="Président / Présidente"
                         />
                       </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">URL du logo</label>
-                      <input
+                      <Input
                         type="text"
                         value={s.logo_url}
                         onChange={(e) => updateSyndicat(s.id, 'logo_url', e.target.value)}
-                        className={inputClass}
                         placeholder="/images/syndicats/nom.png"
                       />
                     </div>
@@ -418,19 +411,10 @@ export default function BlogForm({ page, action }: BlogFormProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all disabled:opacity-50"
-        >
+        <Button loading={isPending}>
           {isPending ? 'Enregistrement...' : 'Mettre à jour'}
-        </button>
-        <a
-          href="/admin/pages"
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"
-        >
-          Annuler
-        </a>
+        </Button>
+        <Button variant="outline" href="/admin/pages">Annuler</Button>
       </div>
     </form>
   )

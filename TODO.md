@@ -21,31 +21,28 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
-#### Vidéos par solution — découverte YouTube + affichage front
-- **Concept** : pour chaque solution du site, agréger des vidéos YouTube pertinentes (tuto, démo, avis) et les afficher sur la fiche solution + dans une sous-section de Stories & Tutos.
-- **Plomberie SQL livrée le 2026-05-24** : table `video_solutions` (M-N), RLS qui filtre sur `videos.statut = 'publie'`, types regénérés.
-- **Étape 1 (à faire)** : créer une clé `YOUTUBE_API_KEY` sur Google Cloud Console (YouTube Data API v3, gratuite), l'ajouter à `.env.local` et Vercel.
-- **Étape 2** : écrire `scripts/discover-videos-youtube.mjs` — smoke test sur **Doctolib uniquement** d'abord. Requête `"<nom_solution>" (tutoriel OR démonstration OR avis OR "prise en main")`, lang=fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, top 8 par solution. Import en `statut='en_attente'`.
-- **Étape 3** : afficher la (les) solution(s) liée(s) à chaque vidéo dans `VideosPendingPanel` pour faciliter la validation.
-- **Étape 4** : bloc carousel `VideosSection` sur `/solutions/[idCategorie]/[idSolution]` (5 visibles + scroll horizontal). Sous-section « Vidéos sur les solutions » dans Stories & Tutos.
-- **Cas du doublon** : une même URL YouTube partagée par plusieurs solutions (ex. comparatif) → une seule ligne dans `videos`, plusieurs lignes dans `video_solutions`.
-- **Si smoke test OK** : étendre à toutes les solutions actives de la catégorie Agendas, puis aux autres catégories.
+#### Vidéos par solution — étendre la découverte YouTube
+- **Acquis (2026-05-24)** : plomberie complète livrée — table `video_solutions` (M-N) avec RLS, script `scripts/discover-videos-youtube.mjs` avec filtres (lang fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, blacklist termes dev, bonus mots pro-santé), galerie publique des fiches solutions affiche automatiquement les vidéos validées, admin a panneaux symétriques côté vidéo (multi-select solutions) et côté solution (chips vidéos), badges 🎬 dans le panel propositions à modérer.
+- **Smoke test 2026-05-24** : 8 vidéos importées sur Doctolib agenda, validation manuelle dans `/admin/videos` (panel propositions). Quelques vidéos hors-sujet identifiées (chaîne « Mediia » génère du contenu IA générique qui mentionne Doctolib sans en être le sujet).
+- **Étape suivante — étendre aux autres solutions Agendas** : relancer le script sur Maiia, Keldoc, Clickdoc, Mondocteur et les autres solutions actives de la catégorie. Commande type :
+  ```bash
+  node scripts/discover-videos-youtube.mjs --solution-name=maiia --max=8 --dry-run
+  # puis sans --dry-run + --yes une fois la sélection OK
+  ```
+- **Étape d'après — étendre aux autres catégories** : Logiciels métier, IA Scribes, Téléconsultation, etc. Adapter peut-être la requête pour ces catégories (`"<nom>" logiciel médical` plutôt que `"<nom>" agenda`).
+- **Améliorations possibles du scoring** (à voir après plusieurs runs) :
+  - Blacklist par chaîne YouTube (pas seulement par mot-clé) : `Mediia` semble produire des vidéos qui matchent mais ne sont pas sur la solution recherchée.
+  - Bonus si la chaîne YouTube = chaîne officielle de la solution (ex. chaîne `Doctolib` officielle).
+  - Détecter les comparatifs (`X vs Y`) et lier automatiquement aux deux solutions via `video_solutions` plutôt que de réimporter.
+- **Cas du doublon** : une même URL YouTube partagée par plusieurs solutions (ex. comparatif). Le script saute aujourd'hui les URLs déjà en BDD (SELECT + `continue`), donc le rattachement à la 2e solution se fait manuellement via le panneau "Vidéos liées" de la fiche solution admin. Évolution possible : si l'URL existe déjà, ajouter juste un nouveau lien `video_solutions` au lieu de skip.
 
-#### Email de lancement par syndicat — finaliser le wording
-- **Concept** : un email de lancement du nouveau site, envoyé par chaque syndicat membre à sa propre base de sympathisants / liste de diffusion. Modèle « clé en main » : un fichier HTML par syndicat, que le syndicat envoie depuis son propre outil d'emailing.
-- **Base livrée (2026-05-21)** — visuel validé, wording à finaliser plus tard :
-  - Édition en ligne : **Admin → Emails → onglet « Lancement syndicats »** (sélecteur de syndicat, aperçu, édition du wording, téléchargement du HTML par syndicat). Accessible depuis n'importe quel poste, sans script.
-  - Template : `lancement_syndicat` dans `email_templates` (source de vérité, éditable dans l'admin). Reprend formellement `master_layout` (logo officiel en-tête + pied, carte blanche, barre accent). Mot du président tiré de `pages_statiques` (slug `qui-sommes-nous`), logos servis depuis le storage Supabase.
-  - Rendus versionnés : [docs/lancement-syndicats/_index.html](docs/lancement-syndicats/_index.html) (aperçu des 7 côte à côte) + un fichier par syndicat ([csmf](docs/lancement-syndicats/csmf.html) · [avenir-spe](docs/lancement-syndicats/avenir-spe.html) · [sml](docs/lancement-syndicats/sml.html) · [fmf](docs/lancement-syndicats/fmf.html) · [le-bloc](docs/lancement-syndicats/le-bloc.html) · [jeunes-medecins](docs/lancement-syndicats/jeunes-medecins.html) · [snjmg](docs/lancement-syndicats/snjmg.html)). Régénérables via [scripts/generate-lancement-syndicats.mjs](scripts/generate-lancement-syndicats.mjs) (`node scripts/generate-lancement-syndicats.mjs`) — à relancer après modification du wording dans l'admin.
-- **Restant à faire** :
-  - Finaliser le wording de l'annonce (titre + 2 paragraphes) ; trancher le « Nous avons repensé… » alors que l'expéditeur est le syndicat.
+#### ~~Email de lancement par syndicat — finaliser le wording~~ ✅ (fait le 2026-05-24)
+- ~~Base livrée le 2026-05-21 (template + admin + rendus versionnés). Wording finalisé le 2026-05-24.~~
 
 ### Nettoyage
 
-#### *(rétention 90 jours minimum)* Vider la table `evaluations_vides_supprimees`
-- **État** : 48 évaluations vides (scores complètement vides, ou `moyenne_utilisateur=0` sans aucune note de critère majeur) ont été supprimées le 2026-05-23 et sauvegardées dans `evaluations_vides_supprimees` (table de backup admin only, RLS bloque tout sauf service_role).
-- **Risque résiduel nul** : aucune de ces évaluations n'avait de notes utilisables ; leur suppression a aligné les `nb_notes` sur la réalité (Premiocare : 6 au lieu de 7).
-- **À faire après ~90 jours sans regret** : `DROP TABLE evaluations_vides_supprimees` (si aucune fuite/rollback nécessaire entre-temps).
+#### ~~Vider la table `evaluations_vides_supprimees`~~ ✅ (DROP fait le 2026-05-24)
+- ~~48 évaluations vides supprimées le 2026-05-23, backup `evaluations_vides_supprimees` droppé le 2026-05-24 (pas de rétention utile, données vides par définition).~~
 
 #### *(quand on aura un moment)* Nettoyer les ~270 erreurs ESLint préexistantes
 - **État** : `npm run lint` remonte ~270 erreurs, principalement `@typescript-eslint/no-explicit-any` sur la couche Supabase (`src/lib/db/`, `src/lib/actions/`), plus quelques `react/no-unescaped-entities` et `no-img-element`.
@@ -64,11 +61,18 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### UX / UI
 
-#### Créer un design system pour le site
-- Définir les tokens de design (couleurs, typographie, espacement, ombres, border-radius) dans un fichier de référence
-- Documenter les composants UI existants (Button, Card, Badge, StarRating, Breadcrumb…) avec leurs variantes
-- Identifier les incohérences visuelles entre pages et les normaliser
-- Objectif : base solide pour toute nouvelle feature et pour les éventuels contributeurs
+#### Extraire des composants UI partagés (mini design system pragmatique)
+- **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
+- **Phase 0 livrée (2026-05-24)** : dossier `src/components/ui/` créé, conventions tokens validées dans [src/components/ui/README.md](src/components/ui/README.md) (radius = `rounded-card` 16px et `rounded-button` 12px ; primaire = `bg-navy`, secondaire = `bg-accent-blue`).
+- **Phase 1 livrée (2026-05-25)** : `<Button>` étendu (l'existant a été enrichi, pas remplacé — 14 usages publics conservés). Nouveaux props : `size` (sm/md/lg, défaut lg), `loading` (spinner + disabled), `leftIcon`/`rightIcon`, `fullWidth`, support de tous les attrs HTML. Nouveaux variants : `secondary` (bg-accent-blue), `danger` (bg-red-500). **15 fichiers migrés** : 5 formulaires admin (Video/Editeur/Categorie/Partenaire/Article) + AdminLoginForm + BlogForm + SolutionForm + PropositionForm + 5 pages admin (categories/editeurs/solutions/pages/pages-nouveau) + page mon-compte/proposer/video. Tous les boutons `px-7 py-3.5 rounded-button bg-navy` sont migrés.
+- **Phase 2 livrée (2026-05-25)** : `<Badge>` créé (variants info/warning/success/danger/neutral/dark × sizes sm/md, avec `dot`, `leftIcon`/`rightIcon`, `onClick`). 2 fichiers migrés : `etudes-cliniques/_public.tsx`, `questionnaires-these/page.tsx`. `VideosPendingPanel.tsx` également migré mais **réverté par un processus externe** — à re-appliquer après diagnostic. **Reste à migrer au fil de l'eau** : ~30 occurrences de chips `bg-*-50 text-*-700 border border-*-200` dans d'autres composants.
+- **Phase 3 livrée (2026-05-25)** : `<Input>`, `<Textarea>`, `<Select>`, `<Field>` créés dans `src/components/ui/`. `<Input>` et `<Textarea>` partagent une fonction `buildInputClasses()` exportée (cohérence du style). `<Select>` rend un `<select>` natif avec chevron SVG inline. `<Field>` = wrapper label + hint + error. 5 formulaires migrés : `PartenaireForm` (complet), `CategorieForm` (complet), `EditeurForm` (2 fields démo), `BlogForm` (complet, 6 fields), `ArticleForm` (4 fields principaux). **`VideoForm` et `VideosPendingPanel` réverttés à plusieurs reprises par un processus externe** — à diagnostiquer avant de réessayer (probable conflit avec une autre session ou hook git).
+- **Phases restantes** (chaque phase = commit revertable indépendant) :
+  - Phase 3 — `<Input>` / `<Textarea>` / `<Select>` — 1h extraction + 1-2h de remplacements formulaire par formulaire (commencer par les petits : EditeurForm, CategorieForm…)
+  - Phase 4 — `<Modal>` (consolide les 10 overlays existants) — 1h + 1h de remplacements
+  - Phase 5 — `<Card>` (finition) — 30 min
+- **Méthode** : composant **extrait d'abord**, **remplacé ensuite** au fil de l'eau dans les fichiers qu'on touche pour d'autres raisons. Pas de big-bang.
+- **Pas dans le scope** : Storybook, doc formelle — pas de valeur tant qu'on est seul à coder.
 
 ### Performance
 

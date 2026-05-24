@@ -7,6 +7,7 @@ import { FlaskConical, ExternalLink, CheckCircle, Loader2, X, ChevronLeft, Chevr
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { specialiteConcernee } from '@/lib/constants/profil'
+import Badge from '@/components/ui/Badge'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim()
@@ -311,9 +312,7 @@ function EtudeCard({
       <div className="p-5 flex flex-col flex-1 gap-3">
         {!concerne && (
           <div>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-700 text-white whitespace-nowrap">
-              Hors spécialité
-            </span>
+            <Badge variant="dark">Hors spécialité</Badge>
           </div>
         )}
         <SpecialitesPills specialites={etude.specialites_cibles} />

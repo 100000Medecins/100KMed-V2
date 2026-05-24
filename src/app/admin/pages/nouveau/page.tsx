@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createPageStatique } from '@/lib/actions/admin'
+import Button from '@/components/ui/Button'
 
 export default function AdminNouvellePagePage() {
   return (
@@ -30,18 +31,8 @@ export default function AdminNouvellePagePage() {
             <p className="text-xs text-gray-400 mt-1">Sans espaces ni caractères spéciaux. Sera accessible à /[slug].</p>
           </div>
           <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-navy text-white hover:bg-navy-dark shadow-soft transition-all"
-            >
-              Créer la page
-            </button>
-            <a
-              href="/admin/pages"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm border-2 border-navy text-navy hover:bg-navy hover:text-white transition-all"
-            >
-              Annuler
-            </a>
+            <Button>Créer la page</Button>
+            <Button variant="outline" href="/admin/pages">Annuler</Button>
           </div>
         </form>
       </div>

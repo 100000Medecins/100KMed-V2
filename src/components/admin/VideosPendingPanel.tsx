@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Check, X, Pencil, Inbox } from 'lucide-react'
 import { approveVideoProposal, rejectVideoProposal } from '@/lib/actions/videos'
+import Badge from '@/components/ui/Badge'
 
 type PendingVideo = {
   id: string
@@ -95,13 +96,9 @@ export default function VideosPendingPanel({ videos }: { videos: PendingVideo[] 
                 {v.solutions && v.solutions.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {v.solutions.map((s) => (
-                      <span
-                        key={s.id}
-                        title="Solution liée à cette vidéo"
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent-blue/10 text-accent-blue border border-accent-blue/20"
-                      >
+                      <Badge key={s.id} variant="info" size="sm" title="Solution liée à cette vidéo">
                         🎬 {s.nom}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
