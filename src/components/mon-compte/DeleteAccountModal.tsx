@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react'
 import { deleteAccount } from '@/lib/actions/account'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { AlertTriangle, X, Trash2, Archive } from 'lucide-react'
+import { AlertTriangle, Trash2, Archive } from 'lucide-react'
+import Modal from '@/components/ui/Modal'
+import Button from '@/components/ui/Button'
 
 interface Props {
   onClose: () => void
@@ -34,25 +36,18 @@ export default function DeleteAccountModal({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-2 text-red-600">
-            <Trash2 className="w-4 h-4" />
-            <h2 className="font-bold text-sm">Supprimer mon compte</h2>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Modal open onClose={isDeleting ? () => {} : onClose} size="md" closeOnBackdropClick={!isDeleting}>
+      <Modal.Header
+        variant="danger"
+        icon={<Trash2 className="w-4 h-4" />}
+        onClose={isDeleting ? undefined : onClose}
+      >
+        Supprimer mon compte
+      </Modal.Header>
 
-        {step === 'form' ? (
-          <div className="px-6 py-5 space-y-5">
+      {step === 'form' ? (
+        <>
+          <Modal.Body className="space-y-5">
             {/* Avertissement */}
             <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
@@ -122,25 +117,16 @@ export default function DeleteAccountModal({ onClose }: Props) {
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
+          </Modal.Body>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-1">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-navy transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={() => setStep('confirm')}
-                className="px-5 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors"
-              >
-                Continuer
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="px-6 py-5 space-y-5">
+          <Modal.Footer>
+            <Button variant="ghost" size="md" onClick={onClose}>Annuler</Button>
+            <Button variant="danger" size="md" onClick={() => setStep('confirm')}>Continuer</Button>
+          </Modal.Footer>
+        </>
+      ) : (
+        <>
+          <Modal.Body className="space-y-5">
             <div className="text-center py-4">
               <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-7 h-7 text-red-500" />
@@ -155,26 +141,18 @@ export default function DeleteAccountModal({ onClose }: Props) {
             </div>
 
             {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+          </Modal.Body>
 
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setStep('form')}
-                disabled={isDeleting}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-navy transition-colors disabled:opacity-50"
-              >
-                Retour
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={isDeleting}
-                className="px-5 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded-xl transition-colors"
-              >
-                {isDeleting ? 'Suppression...' : 'Supprimer définitivement'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+          <Modal.Footer>
+            <Button variant="ghost" size="md" onClick={() => setStep('form')} disabled={isDeleting}>
+              Retour
+            </Button>
+            <Button variant="danger" size="md" onClick={handleConfirm} loading={isDeleting}>
+              {isDeleting ? 'Suppression...' : 'Supprimer définitivement'}
+            </Button>
+          </Modal.Footer>
+        </>
+      )}
+    </Modal>
   )
 }

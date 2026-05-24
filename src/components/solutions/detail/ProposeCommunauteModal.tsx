@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { X, Send, Check, Loader2 } from 'lucide-react'
+import { Send, Check } from 'lucide-react'
 import { submitSolutionCommunaute } from '@/lib/actions/solution-communautes'
+import Modal from '@/components/ui/Modal'
+import Button from '@/components/ui/Button'
 
 const TYPE_OPTIONS = [
   { value: 'whatsapp', label: 'WhatsApp' },
@@ -50,15 +52,7 @@ export default function ProposeCommunauteModal({
     }
   }, [open])
 
-  // Escape pour fermer
-  useEffect(() => {
-    if (!open) return
-    const handle = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handle)
-    return () => window.removeEventListener('keydown', handle)
-  }, [open, onClose])
-
-  if (!open) return null
+  // Note : ESC et clic backdrop gérés par <Modal>
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -78,45 +72,33 @@ export default function ProposeCommunauteModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-card shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
-          <div>
-            <h3 className="text-base font-bold text-navy">Proposer un groupe</h3>
-            <p className="text-xs text-gray-500 mt-0.5">pour {solutionNom}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <Modal open={open} onClose={onClose} size="md">
+      <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
+        <div>
+          <h3 className="text-base font-bold text-navy">Proposer un groupe</h3>
+          <p className="text-xs text-gray-500 mt-0.5">pour {solutionNom}</p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+          aria-label="Fermer"
+        >
+          ✕
+        </button>
+      </div>
 
-        {done ? (
-          <div className="p-6 flex flex-col items-center gap-2 text-center">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-              <Check className="w-5 h-5 text-green-600" />
-            </div>
-            <p className="text-sm font-semibold text-gray-700">Proposition envoyée, merci !</p>
-            <p className="text-xs text-gray-400">Elle sera examinée par notre équipe avant publication.</p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-3 px-4 py-2 text-xs font-semibold text-accent-blue border border-accent-blue/30 rounded-lg hover:bg-accent-blue/5 transition-colors"
-            >
-              Fermer
-            </button>
+      {done ? (
+        <div className="p-6 flex flex-col items-center gap-2 text-center">
+          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+            <Check className="w-5 h-5 text-green-600" />
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <p className="text-sm font-semibold text-gray-700">Proposition envoyée, merci !</p>
+          <p className="text-xs text-gray-400">Elle sera examinée par notre équipe avant publication.</p>
+          <Button variant="outline" size="sm" onClick={onClose} className="mt-3">Fermer</Button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Type *</label>
@@ -191,25 +173,19 @@ export default function ProposeCommunauteModal({
             {error && <p className="text-xs text-red-500">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-xs text-gray-400 hover:text-gray-600 px-3 py-1.5"
-              >
-                Annuler
-              </button>
-              <button
+              <Button type="button" variant="ghost" size="sm" onClick={onClose}>Annuler</Button>
+              <Button
                 type="submit"
-                disabled={isPending}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-accent-blue text-white rounded-lg hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
+                variant="secondary"
+                size="sm"
+                loading={isPending}
+                leftIcon={!isPending ? <Send className="w-3.5 h-3.5" /> : undefined}
               >
-                {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 {isPending ? 'Envoi…' : 'Envoyer'}
-              </button>
+              </Button>
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }

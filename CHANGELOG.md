@@ -37,6 +37,17 @@ Premier lot d'extractions du mini design system (cf. [src/components/ui/README.m
 - **`<Field>`** ([src/components/ui/Field.tsx](src/components/ui/Field.tsx)) : wrapper label + helper text + erreur.
 - Migration au fil de l'eau (pas de big-bang) : ArticleForm, BlogForm, CategorieForm, EditeurForm, PartenaireForm, SolutionForm, VideoForm, AdminLoginForm, PropositionForm, VideosPendingPanel + pages admin listing (CTA « Ajouter… ») + cards `_public`/`questionnaires-these` (badge « Hors spécialité »).
 
+### UI — Phase 4 du design system : `<Modal>` composé
+
+Composant `<Modal>` extrait (4ᵉ phase après Button/Badge/Input/Textarea/Select). Pattern composé pour plus de flexibilité.
+
+- **[src/components/ui/Modal.tsx](src/components/ui/Modal.tsx)** : `<Modal>` + sous-composants `Modal.Header`, `Modal.Body`, `Modal.Footer`. Gère pour toi : ESC pour fermer, clic backdrop (opt-out via `closeOnBackdropClick={false}`), scroll body bloqué automatiquement, `aria-modal="true"`. 4 tailles (sm/md/lg/xl). 4 variantes de Header (default/danger/success/warning) qui changent la couleur de l'icône + titre. Mode « libre » disponible : `<Modal>{children}</Modal>` sans les sous-composants, pour les cas custom (carousel zoom, etc.).
+- **3 modales migrées en démo** :
+  - `DeleteAccountModal` : pattern composé complet (Header danger + Body + Footer) + `<Button>` partout. ~50 lignes de boilerplate en moins.
+  - `ProposeCommunauteModal` : mode libre avec header custom préservé (sous-titre « pour {solutionNom} »). `useEffect` Escape supprimé (géré par Modal).
+  - `PublishEmailModal` : juste l'overlay externe remplacé, contenu interne (324 lignes) préservé pour limiter le risque sur ce gros composant.
+- **Reste à migrer au fil de l'eau** (~9 modales) : `SolutionGallery`, `ArticleForm`, `BlogForm`, `EmailTemplateEditor`, `LancementSyndicatsManager`, `AdminEmailsClient`, `NewslettersClient`, `etudes-cliniques/_public`, `questionnaires-these/page`.
+
 ### Méthode — Ajout d'un contrat comportemental dans CLAUDE.md
 
 Section « Contrat comportemental » ajoutée en tête de [CLAUDE.md](CLAUDE.md) (audit inspiré des 4 ratés récurrents de Karpathy) :

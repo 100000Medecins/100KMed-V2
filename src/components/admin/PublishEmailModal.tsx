@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import dynamic from 'next/dynamic'
 import { X, Send, Clock, Calendar, CheckCircle, Loader2, AlertCircle, Sparkles } from 'lucide-react'
 import SpecialitesSelector from '@/components/admin/SpecialitesSelector'
+import Modal from '@/components/ui/Modal'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
@@ -135,8 +136,7 @@ export default function PublishEmailModal({ config, onClose, onPublished }: Prop
   const inputClass = 'w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue'
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-card shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+    <Modal open onClose={onClose} size="md" className="flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
@@ -318,7 +318,6 @@ export default function PublishEmailModal({ config, onClose, onPublished }: Prop
             </button>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }
