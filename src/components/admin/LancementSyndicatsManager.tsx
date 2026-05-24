@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { saveEmailTemplate } from '@/lib/actions/emailTemplates'
-import { Eye, Check, AlertCircle, Download, Copy, Users } from 'lucide-react'
+import { saveSyndicatOverride, clearSyndicatOverride } from '@/lib/actions/syndicatOverride'
+import { Eye, Check, AlertCircle, Download, Copy, Users, Sparkles, RotateCcw } from 'lucide-react'
 
 const STORAGE = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images'
 
@@ -10,9 +11,18 @@ export interface SyndicatLancement {
   id: string
   nom: string
   nom_complet?: string | null
+  /** Article défini avec espace final ("la ", "le ", "" — ou "" si déjà inclus dans le nom). */
+  article?: string
   citation: string
   presidents: string
   titre: string
+  /** Override HTML par syndicat (optionnel). Si présent → remplace le template général
+   *  POUR CE SYNDICAT UNIQUEMENT. Les placeholders {{...}} y restent interpolés. */
+  contenu_html_override?: string | null
+  /** Hauteur du logo dans l'en-tête email (par défaut 48px). */
+  logo_height?: number | null
+  /** Couleur de fond du cartouche logo (ex : '#ffffff') — null = pas de cartouche. */
+  logo_bg?: string | null
 }
 
 interface Props {
@@ -26,21 +36,58 @@ function esc(t: string | null | undefined): string {
   return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-/** Remplit les placeholders {{…}} du template pour un syndicat donné.
+/** "Le mot du Président" / "de la Présidente" / "des Présidents" selon le titre. */
+function motDuPresident(titre: string): string {
+  const t = String(titre || '').toLowerCase()
+  if (t.startsWith('présidente')) return 'Le mot de la Présidente'
+  if (t.startsWith('présidents')) return 'Le mot des Présidents'
+  if (t.startsWith('ex-président')) return 'Le mot de l’ex-Président'
+  return 'Le mot du Président'
+}
+
+/** Construit la cellule HTML du logo syndicat (en-tête email).
+ *  Si logo_bg est défini → cartouche coloré avec coins arrondis + padding.
+ *  Logique identique à scripts/generate-lancement-syndicats.mjs. */
+function buildLogoCell(s: SyndicatLancement, linkHome: string): string {
+  const height = s.logo_height ?? 48
+  const src = `${STORAGE}/syndicats/${s.id}.png`
+  const alt = esc(s.nom)
+  const img = `<img src="${src}" alt="${alt}" height="${height}" style="display:block;height:${height}px;width:auto;border:0;" />`
+  const link = `<a href="${linkHome}" style="text-decoration:none;display:block;line-height:0;">${img}</a>`
+  if (s.logo_bg) {
+    // Padding proportionnel à la hauteur pour que le cartouche suive le logo
+    const padY = Math.max(6, Math.round(height * 0.17))
+    const padX = Math.max(8, Math.round(height * 0.25))
+    return `<table cellpadding="0" cellspacing="0" role="presentation"><tr><td style="background:${s.logo_bg};border-radius:8px;padding:${padY}px ${padX}px;line-height:0;">${link}</td></tr></table>`
+  }
+  return link
+}
+
+const SITE = 'https://www.100000medecins.org'
+
+/** Remplit les placeholders {{…}} du HTML donné pour un syndicat donné.
  *  Logique identique à scripts/generate-lancement-syndicats.mjs. */
 function composeFor(html: string, s: SyndicatLancement): string {
+  const linkHome = `${SITE}/?utm_source=${encodeURIComponent(s.id)}&utm_medium=email&utm_campaign=lancement-2026`
   const vars: Record<string, string> = {
     nom_syndicat: esc(s.nom),
+    article_syndicat: esc(s.article ?? ''),
     logo_syndicat: `${STORAGE}/syndicats/${s.id}.png`,
+    logo_syndicat_cell: buildLogoCell(s, linkHome),
     citation: esc(s.citation),
     president_nom: esc(s.presidents),
-    president_fonction: `${esc(s.titre)} · ${esc(s.nom_complet)}`,
+    president_fonction: esc(s.titre),
+    mot_president_label: motDuPresident(s.titre),
     utm_source: encodeURIComponent(s.id),
   }
   return html.replace(/\{\{(\w+)\}\}/g, (_, k) => (k in vars ? vars[k] : `{{${k}}}`))
 }
 
-const VARIABLES = ['{{nom_syndicat}}', '{{logo_syndicat}}', '{{citation}}', '{{president_nom}}', '{{president_fonction}}', '{{utm_source}}']
+const VARIABLES = [
+  '{{nom_syndicat}}', '{{article_syndicat}}', '{{logo_syndicat}}', '{{logo_syndicat_cell}}',
+  '{{citation}}', '{{president_nom}}', '{{president_fonction}}',
+  '{{mot_president_label}}', '{{utm_source}}',
+]
 
 export default function LancementSyndicatsManager({ template, syndicats }: Props) {
   const [sujet, setSujet] = useState(template?.sujet ?? '')
@@ -51,10 +98,31 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // Overrides : map { syndicatId → HTML actuel } pour ceux qui en ont un.
+  // Initialisé depuis les props, puis maintenu localement en cours d'édition.
+  const [overrides, setOverrides] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const s of syndicats) {
+      if (typeof s.contenu_html_override === 'string' && s.contenu_html_override.length > 0) {
+        init[s.id] = s.contenu_html_override
+      }
+    }
+    return init
+  })
+  const [overrideSaving, setOverrideSaving] = useState(false)
+  const [overrideStatus, setOverrideStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
   const selected = useMemo(
     () => syndicats.find((s) => s.id === selectedId) ?? syndicats[0],
     [syndicats, selectedId]
   )
+
+  // HTML effectivement utilisé pour ce syndicat (override prioritaire, sinon template général)
+  const effectiveHtml = selected && overrides[selected.id] ? overrides[selected.id] : html
+  const hasOverride = !!(selected && overrides[selected.id])
+
+  // Reset du statut "enregistré" override quand on change de syndicat
+  useEffect(() => { setOverrideStatus('idle') }, [selectedId])
 
   if (!template) {
     return (
@@ -89,8 +157,60 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
     }
   }
 
+  function handleStartOverride() {
+    if (!selected) return
+    // On part du template général (ou de ce qui était déjà l'override, peu probable ici)
+    setOverrides((prev) => ({ ...prev, [selected.id]: prev[selected.id] ?? html }))
+    setOverrideStatus('idle')
+  }
+
+  function handleOverrideChange(v: string) {
+    if (!selected) return
+    setOverrides((prev) => ({ ...prev, [selected.id]: v }))
+    setOverrideStatus('idle')
+  }
+
+  async function handleSaveOverride() {
+    if (!selected) return
+    const v = overrides[selected.id]
+    if (typeof v !== 'string') return
+    setOverrideSaving(true)
+    setOverrideStatus('idle')
+    try {
+      await saveSyndicatOverride(selected.id, v)
+      setOverrideStatus('success')
+      setTimeout(() => setOverrideStatus('idle'), 3000)
+    } catch {
+      setOverrideStatus('error')
+    } finally {
+      setOverrideSaving(false)
+    }
+  }
+
+  async function handleClearOverride() {
+    if (!selected) return
+    if (!confirm(`Réinitialiser ${selected.nom} sur le template général ? La version personnalisée sera perdue.`)) return
+    setOverrideSaving(true)
+    setOverrideStatus('idle')
+    try {
+      await clearSyndicatOverride(selected.id)
+      setOverrides((prev) => {
+        const next = { ...prev }
+        delete next[selected.id]
+        return next
+      })
+      setOverrideStatus('success')
+      setTimeout(() => setOverrideStatus('idle'), 3000)
+    } catch {
+      setOverrideStatus('error')
+    } finally {
+      setOverrideSaving(false)
+    }
+  }
+
   function handleDownload(s: SyndicatLancement) {
-    const blob = new Blob([composeFor(html, s)], { type: 'text/html;charset=utf-8' })
+    const baseHtml = overrides[s.id] ?? html
+    const blob = new Blob([composeFor(baseHtml, s)], { type: 'text/html;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -107,7 +227,8 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
   }
 
   async function handleCopy(s: SyndicatLancement) {
-    await navigator.clipboard.writeText(composeFor(html, s))
+    const baseHtml = overrides[s.id] ?? html
+    await navigator.clipboard.writeText(composeFor(baseHtml, s))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -126,20 +247,32 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
       <div>
         <label className="block text-xs font-medium text-navy mb-1.5">Syndicat émetteur</label>
         <div className="flex flex-wrap gap-1.5">
-          {syndicats.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setSelectedId(s.id)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                s.id === selectedId
-                  ? 'bg-navy text-white shadow-sm'
-                  : 'text-gray-500 border border-gray-200 hover:border-gray-400 hover:text-navy'
-              }`}
-            >
-              {s.nom}
-            </button>
-          ))}
+          {syndicats.map((s) => {
+            const isActive = s.id === selectedId
+            const isOverridden = !!overrides[s.id]
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSelectedId(s.id)}
+                className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-navy text-white shadow-sm'
+                    : 'text-gray-500 border border-gray-200 hover:border-gray-400 hover:text-navy'
+                }`}
+              >
+                {s.nom}
+                {isOverridden && (
+                  <span
+                    title="Version personnalisée"
+                    className={`ml-1.5 inline-flex items-center align-middle ${isActive ? 'text-amber-300' : 'text-amber-500'}`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
         {selected && (
           <div className="mt-2 flex items-start gap-2 text-xs text-gray-500 bg-surface-light rounded-lg px-3 py-2">
@@ -188,11 +321,12 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => selected && setPreviewHtml(composeFor(html, selected))}
+            onClick={() => selected && setPreviewHtml(composeFor(effectiveHtml, selected))}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-navy transition-colors"
           >
             <Eye className="w-4 h-4" />
             Aperçu — {selected?.nom}
+            {hasOverride && <span className="text-amber-600 text-xs">(personnalisé)</span>}
           </button>
           {template.updated_at && (
             <span className="text-xs text-gray-400">
@@ -215,6 +349,77 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
             {saving ? 'Enregistrement…' : 'Enregistrer le wording'}
           </button>
         </div>
+      </div>
+
+      {/* ── Personnalisation par syndicat ── */}
+      <div className="border border-amber-200/70 bg-amber-50/50 rounded-2xl p-5 space-y-3">
+        <div className="flex items-start gap-2.5">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-navy">
+              Personnalisation pour {selected?.nom}
+              {hasOverride && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                  Version personnalisée active
+                </span>
+              )}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {hasOverride
+                ? `Ce syndicat utilise une version HTML qui lui est propre. Les autres syndicats restent sur le template général ci-dessus.`
+                : `Si ${selected?.nom} demande une modification spécifique (un mot, un paragraphe…), tu peux créer une version dédiée pour ce syndicat uniquement, sans toucher au template général.`}
+            </p>
+          </div>
+        </div>
+
+        {!hasOverride ? (
+          <div>
+            <button
+              type="button"
+              onClick={handleStartOverride}
+              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Personnaliser pour {selected?.nom}
+            </button>
+          </div>
+        ) : (
+          <>
+            <textarea
+              value={overrides[selected!.id]}
+              onChange={(e) => handleOverrideChange(e.target.value)}
+              style={{ minHeight: 320 }}
+              className="w-full font-mono text-xs text-gray-700 border border-amber-200 bg-white rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400 resize-y"
+              spellCheck={false}
+            />
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleClearOverride}
+                disabled={overrideSaving}
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Réinitialiser sur le template général
+              </button>
+              <div className="flex items-center gap-3">
+                {overrideStatus === 'success' && (
+                  <span className="flex items-center gap-1 text-sm text-green-600"><Check className="w-4 h-4" />Enregistré</span>
+                )}
+                {overrideStatus === 'error' && (
+                  <span className="flex items-center gap-1 text-sm text-red-500"><AlertCircle className="w-4 h-4" />Erreur</span>
+                )}
+                <button
+                  onClick={handleSaveOverride}
+                  disabled={overrideSaving}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {overrideSaving ? 'Enregistrement…' : `Enregistrer pour ${selected?.nom}`}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Téléchargement / copie */}
@@ -257,7 +462,10 @@ export default function LancementSyndicatsManager({ template, syndicats }: Props
           <div className="bg-white rounded-card shadow-xl w-full max-w-3xl flex flex-col" style={{ height: '90vh' }}>
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
               <div>
-                <p className="text-xs text-gray-500">Aperçu — {selected?.nom}</p>
+                <p className="text-xs text-gray-500">
+                  Aperçu — {selected?.nom}
+                  {hasOverride && <span className="ml-2 text-amber-600">(version personnalisée)</span>}
+                </p>
                 <p className="text-sm font-semibold text-navy">{sujet}</p>
               </div>
               <button onClick={() => setPreviewHtml(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>

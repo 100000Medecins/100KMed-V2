@@ -55,9 +55,13 @@ async function getSyndicatsLancement() {
         id: s.id,
         nom: s.nom,
         nom_complet: s.nom_complet ?? null,
+        article: s.article ?? '',
         citation: s.citation ?? '',
         presidents: s.presidents ?? '',
         titre: s.titre ?? '',
+        contenu_html_override: typeof s.contenu_html_override === 'string' ? s.contenu_html_override : null,
+        logo_height: typeof s.logo_height === 'number' ? s.logo_height : null,
+        logo_bg: typeof s.logo_bg === 'string' ? s.logo_bg : null,
       }))
   } catch {
     return []
