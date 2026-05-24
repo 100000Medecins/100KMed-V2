@@ -14,15 +14,30 @@ async function getRubriques(): Promise<VideoRubrique[]> {
   return data ?? []
 }
 
+async function getSolutionsForSelector() {
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('solutions')
+    .select('id, nom, categorie:categories(nom)')
+    .eq('actif', true)
+    .order('nom')
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    nom: s.nom,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    categorie_nom: (s.categorie as any)?.nom ?? null,
+  }))
+}
+
 export default async function NouvelleVideoPage() {
-  const rubriques = await getRubriques()
+  const [rubriques, solutions] = await Promise.all([getRubriques(), getSolutionsForSelector()])
   return (
     <div>
       <Link href="/admin/videos" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy mb-6">
         <ChevronLeft className="w-4 h-4" /> Retour aux vidéos
       </Link>
       <h1 className="text-2xl font-bold text-navy mb-8">Nouvelle vidéo</h1>
-      <VideoForm rubriques={rubriques} action={createVideo} />
+      <VideoForm rubriques={rubriques} solutions={solutions} action={createVideo} />
     </div>
   )
 }

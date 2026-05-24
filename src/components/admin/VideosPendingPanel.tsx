@@ -15,6 +15,7 @@ type PendingVideo = {
   vignette: string | null
   created_at: string | null
   proposer: { prenom: string | null; nom: string | null; pseudo: string | null; email: string | null } | null
+  solutions?: Array<{ id: string; nom: string }>
 }
 
 function getYouTubeId(url: string | null): string | null {
@@ -90,6 +91,19 @@ export default function VideosPendingPanel({ videos }: { videos: PendingVideo[] 
                 <p className="font-semibold text-navy text-sm">{v.titre ?? <span className="italic text-gray-400">Sans titre</span>}</p>
                 {v.description && (
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{v.description}</p>
+                )}
+                {v.solutions && v.solutions.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {v.solutions.map((s) => (
+                      <span
+                        key={s.id}
+                        title="Solution liée à cette vidéo"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent-blue/10 text-accent-blue border border-accent-blue/20"
+                      >
+                        🎬 {s.nom}
+                      </span>
+                    ))}
+                  </div>
                 )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-gray-400">
                   <span>Proposé par <strong className="text-gray-600">{proposerLabel(v.proposer)}</strong></span>

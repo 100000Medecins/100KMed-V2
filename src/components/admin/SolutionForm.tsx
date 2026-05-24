@@ -7,6 +7,7 @@ import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
 import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
+import VideosLieesManager from '@/components/admin/VideosLieesManager'
 
 function isVideoUrl(url: string): boolean {
   return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
@@ -25,6 +26,9 @@ type NoteRedacItem = {
   avis_redac: string | null
 }
 
+type LinkedVideo = { id: string; titre: string | null; statut: string; url: string | null }
+type SelectableVideo = { id: string; titre: string | null; statut: string }
+
 interface SolutionFormProps {
   solution?: (Solution & {
     galerie?: GalerieImage[]
@@ -41,6 +45,8 @@ interface SolutionFormProps {
   notesRedac?: NoteRedacItem[]
   tagsForSolution?: TagForSolution[]
   solutionId?: string
+  videosLiees?: LinkedVideo[]
+  allVideos?: SelectableVideo[]
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
@@ -82,7 +88,7 @@ function Section({
   )
 }
 
-export default function SolutionForm({ solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, action }: SolutionFormProps) {
+export default function SolutionForm({ solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, videosLiees, allVideos, action }: SolutionFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [metaTitle, setMetaTitle] = useState(solution?.meta_title ?? '')
@@ -218,6 +224,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     fonctionnalites: false,
     fonctionnalitesAssociees: false,
     galerie: false,
+    videos: false,
     seo: false,
   })
 
@@ -892,6 +899,21 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           </button>
         </div>
       </Section>
+
+      {/* Section — Vidéos liées (table video_solutions) */}
+      {solutionId && (
+        <Section
+          title={`Vidéos liées (${(videosLiees ?? []).length})`}
+          isOpen={openSections.videos}
+          onToggle={() => toggleSection('videos')}
+        >
+          <VideosLieesManager
+            solutionId={solutionId}
+            initialLinked={videosLiees ?? []}
+            allVideos={allVideos ?? []}
+          />
+        </Section>
+      )}
 
       {/* Section 6 — SEO */}
       <Section

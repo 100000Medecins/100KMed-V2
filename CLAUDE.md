@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **OBLIGATOIRE avant tout chantier technique :** lire `CHANGELOG.md` (les 10-15 dernières entrées minimum) avant de planifier une migration SQL, un refactor, ou une correction de bug non triviale. La mémoire de session est compactée régulièrement — le CHANGELOG est la seule source de vérité fiable sur ce qui a déjà été fait. Ne jamais inférer l'historique depuis l'état courant du code ou de la BDD seul.
 
+## Contrat comportemental
+
+- **Définir « done » en 1 ligne avant de commencer** toute tâche non triviale — sinon l'agent boucle sans critère de succès.
+- **Vérifier l'état réel du code / de la BDD avant d'agir** — jamais sur hypothèse, ni sur mémoire seule. Les memos peuvent être périmés ; le code et la base sont la vérité.
+
 ## Commands
 
 ```bash

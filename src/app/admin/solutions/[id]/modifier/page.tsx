@@ -8,7 +8,7 @@ import SolutionWithSearch from '@/components/admin/SolutionWithSearch'
 import SolutionLiensManager from '@/components/admin/SolutionLiensManager'
 import SolutionCommunautesManager from '@/components/admin/SolutionCommunautesManager'
 import RecalcSolutionButton from '@/components/admin/RecalcSolutionButton'
-import { updateSolution } from '@/lib/actions/admin'
+import { updateSolution, getVideosLieesASolution, getVideosForSolutionSelector } from '@/lib/actions/admin'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -20,11 +20,13 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
   const solution = await getSolutionByIdAdmin(id).catch(() => null)
   if (!solution) notFound()
 
-  const [categories, editeurs, notesRedac, tagsForSolution] = await Promise.all([
+  const [categories, editeurs, notesRedac, tagsForSolution, videosLiees, allVideos] = await Promise.all([
     getAllCategoriesAdmin(),
     getEditeurs(),
     getResultatsRedacAdmin(id),
     getTagsForSolutionAdmin(id, solution.categorie_id),
+    getVideosLieesASolution(id),
+    getVideosForSolutionSelector(),
   ])
 
   const boundAction = updateSolution.bind(null, id)
@@ -42,6 +44,8 @@ export default async function AdminEditSolutionPage({ params }: PageProps) {
           notesRedac={notesRedac}
           tagsForSolution={tagsForSolution}
           solutionId={id}
+          videosLiees={videosLiees}
+          allVideos={allVideos}
           action={boundAction}
         />
       </div>

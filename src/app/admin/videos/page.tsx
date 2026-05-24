@@ -60,6 +60,22 @@ async function getPendingVideos() {
     }
   }
 
+  // Charger en bloc les solutions liées à chaque vidéo en attente
+  const videoIds = rows.map((r) => r.id)
+  const solutionsByVideo = new Map<string, Array<{ id: string; nom: string }>>()
+  if (videoIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: links } = await (supabase as any)
+      .from('video_solutions')
+      .select('video_id, solutions(id, nom)')
+      .in('video_id', videoIds)
+    for (const link of links ?? []) {
+      const existing = solutionsByVideo.get(link.video_id) ?? []
+      if (link.solutions) existing.push({ id: link.solutions.id, nom: link.solutions.nom })
+      solutionsByVideo.set(link.video_id, existing)
+    }
+  }
+
   return rows.map((r) => ({
     id: r.id,
     titre: r.titre,
@@ -69,6 +85,7 @@ async function getPendingVideos() {
     vignette: r.vignette,
     created_at: r.created_at,
     proposer: r.created_by ? proposerMap.get(r.created_by) ?? null : null,
+    solutions: solutionsByVideo.get(r.id) ?? [],
   }))
 }
 

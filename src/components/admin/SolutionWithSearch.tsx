@@ -29,6 +29,9 @@ type NoteRedacItem = {
   avis_redac: string | null
 }
 
+type LinkedVideo = { id: string; titre: string | null; statut: string; url: string | null }
+type SelectableVideo = { id: string; titre: string | null; statut: string }
+
 interface Props {
   solution: Solution
   categories: Categorie[]
@@ -36,6 +39,8 @@ interface Props {
   notesRedac?: NoteRedacItem[]
   tagsForSolution?: TagForSolution[]
   solutionId?: string
+  videosLiees?: LinkedVideo[]
+  allVideos?: SelectableVideo[]
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
@@ -43,7 +48,7 @@ const inputClass =
   'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
 
 export default function SolutionWithSearch({
-  solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, action,
+  solution, categories, editeurs, notesRedac, tagsForSolution, solutionId, videosLiees, allVideos, action,
 }: Props) {
   const editeurNom = editeurs.find((e) => e.id === solution.editeur_id)?.nom ?? null
 
@@ -164,6 +169,8 @@ export default function SolutionWithSearch({
         notesRedac={notesRedac}
         tagsForSolution={tagsForSolution}
         solutionId={solutionId}
+        videosLiees={videosLiees}
+        allVideos={allVideos}
         action={action}
       />
     </div>

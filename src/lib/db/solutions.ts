@@ -44,7 +44,7 @@ export async function getSolutions(options?: {
 /**
  * Récupère les vidéos publiées rattachées à une solution via video_solutions
  * et les transforme en GalerieItem pour les ajouter à la galerie de la fiche.
- * Tri par video_solutions.ordre desc (score décroissant), puis date.
+ * Tri par video_solutions.ordre asc (position, modifiable par drag & drop admin).
  *
  * Note : on transforme `videos.titre` en `GalerieItem.titre` et `videos.url`
  * en `GalerieItem.url`. SolutionGallery détecte les URLs YouTube et affiche
@@ -59,7 +59,7 @@ async function getVideosForSolutionAsGalerie(
     .from('video_solutions')
     .select('ordre, videos(id, titre, url, statut, created_at)')
     .eq('solution_id', solutionId)
-    .order('ordre', { ascending: false })
+    .order('ordre', { ascending: true })
 
   if (!data || data.length === 0) return []
 

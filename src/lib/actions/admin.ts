@@ -1217,14 +1217,44 @@ export async function setHomepageVideos(ids: string[]) {
   revalidatePath('/')
 }
 
+/**
+ * Synchronise les liaisons video_solutions avec la liste passée en argument.
+ * Stratégie : DELETE puis INSERT (simple, fiable, volume négligeable).
+ */
+async function syncVideoSolutions(videoId: string, solutionIds: string[]) {
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('video_solutions').delete().eq('video_id', videoId)
+  if (solutionIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('video_solutions').insert(
+      solutionIds.map((solution_id) => ({ video_id: videoId, solution_id, ordre: 0 })),
+    )
+  }
+}
+
+/** Extrait la liste des solutions_ids du formData (champ JSON sérialisé). */
+function extractSolutionIdsFromFormData(formData: FormData): string[] {
+  const raw = formData.get('solution_ids')
+  if (!raw || typeof raw !== 'string') return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 export async function createVideo(formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
+  const newId = randomUUID()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('videos')
-    .insert({ id: randomUUID(), ...extractVideoFromFormData(formData) })
+    .insert({ id: newId, ...extractVideoFromFormData(formData) })
   if (error) return { error: error.message }
+  await syncVideoSolutions(newId, extractSolutionIdsFromFormData(formData))
   revalidatePath('/admin/videos')
   revalidatePath('/stories-tutos')
   revalidatePath('/')
@@ -1240,10 +1270,131 @@ export async function updateVideo(id: string, formData: FormData) {
     .update(extractVideoFromFormData(formData))
     .eq('id', id)
   if (error) return { error: error.message }
+  await syncVideoSolutions(id, extractSolutionIdsFromFormData(formData))
   revalidatePath('/admin/videos')
   revalidatePath('/stories-tutos')
   revalidatePath('/')
+  // Le revalidate de la fiche solution n'est pas trivial sans connaître les slugs,
+  // mais Next.js refetch côté SSR à la prochaine visite — acceptable ici.
   redirect('/admin/videos')
+}
+
+/** Liste des solutions actuellement liées à une vidéo. */
+export async function getSolutionsLieesAVideo(videoId: string): Promise<string[]> {
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('video_solutions')
+    .select('solution_id')
+    .eq('video_id', videoId)
+  return (data ?? []).map((r: { solution_id: string }) => r.solution_id)
+}
+
+/**
+ * Pour le panneau "Vidéos liées" dans SolutionForm : liste les vidéos rattachées
+ * à cette solution avec un peu de méta pour les afficher dans des chips.
+ */
+export async function getVideosLieesASolution(solutionId: string): Promise<
+  Array<{ id: string; titre: string | null; statut: string; url: string | null }>
+> {
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('video_solutions')
+    .select('ordre, videos(id, titre, statut, url)')
+    .eq('solution_id', solutionId)
+    .order('ordre', { ascending: true })
+  return (data ?? [])
+    .map((r: { videos: { id: string; titre: string | null; statut: string; url: string | null } | null }) => r.videos)
+    .filter((v: unknown): v is { id: string; titre: string | null; statut: string; url: string | null } => v !== null)
+}
+
+/**
+ * Pour le sélecteur "ajouter une vidéo existante" dans SolutionForm :
+ * liste toutes les vidéos publiées + en_attente avec leur titre.
+ * On ne renvoie pas les brouillons/refusées (peu utile à proposer comme rattachement).
+ */
+export async function getVideosForSolutionSelector(): Promise<
+  Array<{ id: string; titre: string | null; statut: string }>
+> {
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('videos')
+    .select('id, titre, statut')
+    .in('statut', ['publie', 'en_attente'])
+    .order('titre')
+  return data ?? []
+}
+
+/**
+ * Ajoute un lien video_solutions (idempotent : si le couple existe déjà, ne fait rien).
+ * Utilisé depuis SolutionForm pour rattacher une vidéo à une solution.
+ * La nouvelle vidéo est ajoutée en fin de liste (ordre = max(ordre) + 1).
+ */
+export async function linkVideoToSolution(videoId: string, solutionId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: maxRow } = await (supabase as any)
+    .from('video_solutions')
+    .select('ordre')
+    .eq('solution_id', solutionId)
+    .order('ordre', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const nextOrdre = ((maxRow?.ordre ?? -1) as number) + 1
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('video_solutions')
+    .upsert({ video_id: videoId, solution_id: solutionId, ordre: nextOrdre }, { onConflict: 'video_id,solution_id' })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/admin/solutions')
+  revalidatePath('/')
+  return { ok: true }
+}
+
+/** Retire un lien video_solutions. Utilisé depuis SolutionForm. */
+export async function unlinkVideoFromSolution(videoId: string, solutionId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('video_solutions')
+    .delete()
+    .eq('video_id', videoId)
+    .eq('solution_id', solutionId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/videos')
+  revalidatePath('/admin/solutions')
+  revalidatePath('/')
+  return { ok: true }
+}
+
+/**
+ * Réordonne les vidéos liées à une solution. `orderedVideoIds` doit contenir
+ * exactement les vidéos actuellement liées (pas d'ajout/suppression ici).
+ * Persiste ordre = 0, 1, 2… dans l'ordre du tableau.
+ */
+export async function reorderVideosForSolution(
+  solutionId: string,
+  orderedVideoIds: string[],
+) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  for (let i = 0; i < orderedVideoIds.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('video_solutions')
+      .update({ ordre: i })
+      .eq('solution_id', solutionId)
+      .eq('video_id', orderedVideoIds[i])
+    if (error) return { error: error.message }
+  }
+  revalidatePath('/admin/solutions')
+  revalidatePath('/')
+  return { ok: true }
 }
 
 export async function deleteVideo(id: string) {
