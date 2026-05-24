@@ -5,6 +5,49 @@
 
 ---
 
+## [2026-05-25] — Vidéos liées aux solutions (drag & drop admin) + Phase 1 du design system
+
+### Vidéos — Drag & drop pour réordonner les vidéos d'une fiche solution
+
+Dans l'admin d'une solution, le panneau « Vidéos liées » permet désormais de réordonner les vidéos par glisser-déposer. L'ordre défini par l'admin est respecté par la galerie publique de la fiche solution.
+
+- Nouvelle action `reorderVideosForSolution(solutionId, orderedVideoIds[])` qui persiste `video_solutions.ordre = 0, 1, 2…` dans l'ordre du tableau.
+- Composant [VideosLieesManager](src/components/admin/VideosLieesManager.tsx) réécrit avec `@dnd-kit/sortable` (déjà installé) : poignée `GripVertical` sur chaque chip, drag & drop horizontal, mise à jour optimiste avec rollback si erreur serveur, support clavier (Tab + flèches).
+- **Changement de sémantique** : `video_solutions.ordre` passait pour un « score décroissant » (tri DESC), il est maintenant une **position croissante** (tri ASC). Migration SQL : backfill `ordre = ROW_NUMBER() OVER (PARTITION BY solution_id ORDER BY created_at)` + index `(solution_id, ordre)`.
+- `linkVideoToSolution` ajoute désormais la nouvelle vidéo en **fin de liste** (`ordre = max+1`) au lieu d'écraser à 0.
+- Le tri ASC est appliqué partout : galerie publique ([src/lib/db/solutions.ts](src/lib/db/solutions.ts:62)) + lecture admin (`getVideosLieesASolution`).
+
+### Vidéos — Plomberie « vidéos ↔ solutions » (M-N)
+
+Panneau symétrique côté solution et côté vidéo, qui permet à l'admin de rattacher une même vidéo à plusieurs solutions (utile pour les comparatifs « X vs Y »).
+
+- Côté `/admin/solutions/[id]/modifier` : section « Vidéos liées » avec chips, recherche pour ajouter une vidéo existante (statuts publié/en attente), bouton détacher.
+- Côté `/admin/videos/[id]/modifier` et `/admin/videos/nouveau` : champ « Solutions liées » multi-select avec recherche (filtrage par nom + catégorie).
+- Astuce inline : si la vidéo n'existe pas, redirection vers `/admin/videos/nouveau` avec champ « Solutions liées » pré-rempli.
+- Panneau de modération `/admin/videos` (propositions en attente) : badges 🎬 indiquent les solutions liées à chaque proposition.
+- Server actions : `linkVideoToSolution`, `unlinkVideoFromSolution`, `getVideosLieesASolution`, `getSolutionsLieesAVideo`, `getVideosForSolutionSelector`, `syncVideoSolutions`.
+
+### UI — Phase 1 du design system
+
+Premier lot d'extractions du mini design system (cf. [src/components/ui/README.md](src/components/ui/README.md) pour les conventions tokens).
+
+- **`<Button>` enrichi** ([src/components/ui/Button.tsx](src/components/ui/Button.tsx)) : 7 variants (primary, secondary, outline, ghost, danger, white, cta), 3 tailles (sm/md/lg), prop `loading` avec spinner intégré, support `disabled` et `fullWidth`. Plus de classes Tailwind dupliquées dans chaque form.
+- **`<Badge>`** ([src/components/ui/Badge.tsx](src/components/ui/Badge.tsx)) : variants info / warning / success / danger / neutral / dark, 2 tailles. Consolide les ~4 styles de chips qui coexistaient.
+- **`<Input>` / `<Textarea>` / `<Select>`** : style cohérent (rounded-button, focus ring accent-blue) pour tous les champs de formulaire admin.
+- **`<Field>`** ([src/components/ui/Field.tsx](src/components/ui/Field.tsx)) : wrapper label + helper text + erreur.
+- Migration au fil de l'eau (pas de big-bang) : ArticleForm, BlogForm, CategorieForm, EditeurForm, PartenaireForm, SolutionForm, VideoForm, AdminLoginForm, PropositionForm, VideosPendingPanel + pages admin listing (CTA « Ajouter… ») + cards `_public`/`questionnaires-these` (badge « Hors spécialité »).
+
+### Méthode — Ajout d'un contrat comportemental dans CLAUDE.md
+
+Section « Contrat comportemental » ajoutée en tête de [CLAUDE.md](CLAUDE.md) (audit inspiré des 4 ratés récurrents de Karpathy) :
+
+- Définir « done » en 1 ligne avant de commencer toute tâche non triviale.
+- Vérifier l'état réel du code / de la BDD avant d'agir — jamais sur hypothèse ou mémoire seule.
+
+Les 3 autres règles Karpathy (ambigu→demande, diff minimal, code minimum) étaient déjà couvertes côté mémoire et system prompt.
+
+---
+
 ## [2026-05-24] — Refonte du mail de lancement par syndicat + WYSIWYG override + nouveau logo Jeunes Médecins
 
 ### Email — Refonte complète du wording « lancement syndicat »
