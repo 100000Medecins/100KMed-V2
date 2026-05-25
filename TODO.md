@@ -121,6 +121,15 @@ _(rien à faire pour l'instant)_
 - **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
 
+#### Téléconsultation — finitions après seeding initial (2026-05-25)
+- Seeding fait : 7 nouveaux éditeurs, 19 tags (4 séparateurs + 15 toggles), 15 solutions (toutes en `actif=false`), 90 liaisons tags, 7 liens vers solutions existantes. Mapping détaillé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md).
+- **Concevoir le questionnaire d'évaluation pour la catégorie Téléconsultation** (équivalent du chantier livré pour Télétransmission le 2026-05-17 — brouillon à démarrer dans `docs/teleconsultation-questionnaire.md`)
+- **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
+- **Uploader les logos** des 15 solutions via l'admin
+- **Compléter les 7 nouveaux éditeurs** (Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, Solutions régionales) : website (URLs devinées à valider), description, logo
+- **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 15 fiches
+- **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
+
 ### Liens entre solutions — évolution future
 - Permettre aux éditeurs de proposer un lien entre solutions depuis `/mon-compte/mon-espace-editeur` (avec validation admin). La base — table `solution_liens`, UI sidebar, manager admin — est livrée (voir archive 2026-05-18).
 

@@ -5,6 +5,42 @@
 
 ---
 
+## [2026-05-25] — Import des 15 solutions de téléconsultation
+
+Catégorie `Téléconsultation` (jusqu'ici vide) peuplée avec les 15 solutions du fichier source `Comparatif_teleconsultation_medecins_2026_3.xlsx` (panorama 2026). Toutes les fiches sont importées en `actif = false` — elles seront revues une par une par David avant publication (logos, URLs, SEO, validation finale).
+
+### Grille de tags — catégorie Téléconsultation
+19 entrées créées dans `tags` (4 séparateurs + 15 toggles) pour piloter les "fonctionnalités cochables" de chaque fiche :
+- **Type de solution** : Plateforme agréée · Liée à un agenda ou un LGC · Solution régionale
+- **Modèle économique** : Gratuit côté médecin · Salariat/CDI temps partiel · Abonnement mensuel · Commission à l'acte
+- **Facturation** : SESAM-Vitale via la plateforme · SESAM-Vitale via le LGC
+- **Fonctionnalités** : Cabines/bornes · Télépaiement intégré · Intégration DMP/MES · Échange de documents · App patient · Téléexpertise/télésurveillance · Notification médecin traitant
+
+### Éditeurs
+- **7 nouveaux** : Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, « Solutions régionales » (générique pour les plateformes ARS/URPS/GRADeS)
+- **6 réutilisés** : Doctolib, Cegedim Santé, CompuGroup Medical, Hellocare, MadeForMed, Medaviz
+
+### Solutions importées (15)
+- **Plateformes agréées** (6) : Qare · Livi · MEDADOM · Tessan · Medaviz Téléconsultation · MédecinDirect
+- **Liées à un agenda/LGC** (6) : Doctolib Téléconsultation · Maiia Téléconsultation · Hellocare Pro · MadeForMed Téléconsultation · Clickdoc Téléconsultation · Globule
+- **Régionales** (3) : TELMI (BFC) · Prédice (HDF) · Télémédecine SARA / MonSisra (AURA)
+
+Pour chaque solution : description courte + longue, prix décodé (`prix_ttc` / `prix_ttc_min/max`, `prix_frequence`, `prix_duree_engagement_mois`), points forts/faibles arrayifiés, et 4 à 8 tags cochés (2 à 4 marqués `is_tag_principal`).
+
+> **À noter** : `Medaviz Téléconsultation` est une seconde fiche dédiée à la dimension TLC de Medaviz, la fiche `Medaviz` existante (catégorie « Agendas médicaux ») n'a pas été touchée. Les deux sont reliées par un lien `meme_suite`.
+
+### Liens entre solutions (`solution_liens`)
+7 liens créés vers des solutions déjà en base :
+- `meme_suite` : Doctolib TLC ↔ Doctolib Médecin · Maiia TLC ↔ Maiia Médecin · MadeForMed TLC ↔ Odaiji · Clickdoc TLC ↔ AxiSanté 5 · Clickdoc TLC ↔ HelloDoc · Medaviz TLC ↔ Medaviz (agendas)
+- `interoperable` : Globule ↔ Weda (interopérabilité annoncée par l'éditeur)
+
+### Suivi / docs
+- Mapping détaillé conservé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md) (descriptions, prix, tags, sources fichier Excel).
+- Types Supabase régénérés (`npx supabase gen types…`).
+- Reste à compléter par David fiche-par-fiche : logos, URLs éditeur (devinées), `meta.title`/`meta.description` SEO, puis bascule `actif = true`.
+
+---
+
 ## [2026-05-25] — Vidéos liées aux solutions (drag & drop admin) + Phase 1 du design system
 
 ### Vidéos — Drag & drop pour réordonner les vidéos d'une fiche solution
