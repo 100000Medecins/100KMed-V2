@@ -44,8 +44,9 @@ export default function ChoisirSolutionPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(supabase as any)
       .from('solutions')
-      .select('id, nom, slug, logo_url, categorie:categories(slug, nom, icon, image_url)')
+      .select('id, nom, slug, logo_url, categorie:categories!inner(slug, nom, icon, image_url, actif)')
       .eq('actif', true)
+      .eq('categorie.actif', true)
       .order('nom', { ascending: true })
       .then(({ data }: { data: any }) => {
         setSolutions((data as unknown as SolutionItem[]) || [])

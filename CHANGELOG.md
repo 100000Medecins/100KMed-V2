@@ -79,6 +79,17 @@ Pour chaque solution : description courte + longue, prix décodé (`prix_ttc` / 
 - Types Supabase régénérés (`npx supabase gen types…`).
 - Reste à compléter par David fiche-par-fiche : logos, URLs éditeur (devinées), `meta.title`/`meta.description` SEO, puis bascule `actif = true`.
 
+### Fix — /noter ne respectait pas le filtre `categories.actif`
+
+`/solutions/[idCategorie]` (comparatif) masque correctement les catégories inactives via `getCategorieBySlug()` qui filtre sur `.eq('actif', true)`. En revanche, `/solution/noter` lisait directement `solutions` avec un simple `.eq('actif', true)` sur la solution, sans regarder le `actif` de la catégorie jointe — donc une catégorie inactive avec des solutions individuellement actives apparaissait quand même dans la liste « Évaluer un logiciel ».
+
+- **Symptôme** : Télétransmission (catégorie en `actif=false` mais 2 solutions en `actif=true`) apparaissait sur `/noter` alors qu'elle était invisible sur `/solutions`.
+- **Fix** dans [src/app/solution/noter/page.tsx:46-49](src/app/solution/noter/page.tsx#L46-L49) : passage en INNER JOIN PostgREST (`categories!inner`) + filtre `.eq('categorie.actif', true)`. Comportement maintenant cohérent entre `/noter` et `/solutions`.
+
+### TODO — Mises à jour
+- Archivé dans `TODO-archive.md` : Email lancement syndicats (24/05), DROP `evaluations_vides_supprimees` (24/05), Checklist passage prod www (25/05), Bascule DNS prod (25/05).
+- Conservé en TODO : note résiduelle bascule prod (`legacy.100000medecins.org` sans noindex).
+
 ---
 
 ## [2026-05-25] — Vidéos liées aux solutions (drag & drop admin) + Phase 1 du design system
