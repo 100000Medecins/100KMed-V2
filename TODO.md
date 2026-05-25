@@ -87,22 +87,22 @@ _(rien à faire pour l'instant)_
 
 ### Déploiement final
 
-#### Kill-switch emails routiniers — à activer au déploiement final *(pas urgent, juste avant la mise en prod)*
-- Dans Admin → Emails, activer le toggle "Emails routiniers" avant de mettre le site en production
+#### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
+- Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
-- Ne pas oublier : sans ce switch, aucune relance évaluation / PSC / newsletter ne partira
+- **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
-#### Checklist technique passage en prod (www)
-- **Vercel** → `NEXT_PUBLIC_SITE_URL` (Production) : changer `https://dev.100000medecins.org` → `https://www.100000medecins.org`
-- **Supabase** → Authentication → URL Configuration → **Site URL** : changer vers `https://www.100000medecins.org`
-- **Supabase** → Redirect URLs : vérifier que `https://www.100000medecins.org/reinitialiser-mot-de-passe` est dans la liste
-- **PSC** : aucune action — le relay `/connexionPsc` gère automatiquement le basculement dev→www (déjà en place)
+#### ~~Checklist technique passage en prod (www)~~ ✅ Fait le 2026-05-25
+- ~~Vercel `NEXT_PUBLIC_SITE_URL` → `https://www.100000medecins.org` (Production redéployée)~~
+- ~~Supabase Site URL + Redirect URLs mis à jour~~
 
-#### DNS — mise en prod *(jour J uniquement)*
-- `@ A` : remplacer `217.70.184.55` par `76.76.21.21` (IP Vercel apex)
-- `www` : remplacer CNAME `webacc8.sd6.ghst.net` par `cname.vercel-dns.com.`
-- Supprimer les 4 CNAME SSL sectigo/comodoca (certificats ancien hébergeur)
-- Vérifier que le wildcard `* CNAME webredir.vip.gandi.net.` n'interfère pas
+#### ~~DNS — mise en prod~~ ✅ Fait le 2026-05-25
+- ~~Apex et www basculés sur Vercel (avec les nouvelles IPs `216.198.79.1` + CNAME `c7aae8f426bf52ce.vercel-dns-017.com.` recommandées par Vercel)~~
+- ~~4 CNAME SSL sectigo/comodoca supprimés~~
+- ~~`_dmarc` restauré au passage (était vide)~~
+- ~~Ancien site déplacé sur `archive.100000medecins.org` avec noindex + canonical~~
+- ~~Wildcard `* CNAME webredir.vip.gandi.net.` conservé (n'interfère pas, on l'avait laissé)~~
+- Note : `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi, sans noindex pour l'instant
 
 ---
 

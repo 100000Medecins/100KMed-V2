@@ -5,6 +5,46 @@
 
 ---
 
+## [2026-05-25] — Bascule du site en production sur www.100000medecins.org (Vercel)
+
+### Infrastructure — Mise en production du nouveau site
+
+Le nouveau site Next.js (`100KMed-V2`) est désormais servi sur `https://www.100000medecins.org` (au lieu de `dev.` jusque-là). L'ancien site Quasar (`Frontend`) est déplacé sur `https://archive.100000medecins.org` avec `noindex,follow` + canonical vers le nouveau pour transférer le SEO proprement.
+
+### DNS — Modifications dans la zone Gandi
+- `@ A` : `217.70.184.55` (ancien Gandi) → `216.198.79.1` (Vercel IP range moderne)
+- `www CNAME` : `webacc8.sd6.ghst.net.` → `c7aae8f426bf52ce.vercel-dns-017.com.`
+- `archive CNAME` ajouté → `webacc8.sd6.ghst.net.` (sert l'ancien site)
+- `_vercel TXT` (×2) ajoutés pour valider la propriété de `www` et de l'apex
+- 4 CNAME SSL `sectigo.com`/`comodoca.com` supprimés (ancien certificat hébergeur, plus utile)
+- `_dmarc TXT` restauré (était vide) : `v=DMARC1; p=quarantine; pct=50; rua=mailto:contact@100000medecins.org`
+
+### Ancien site Quasar — Déplacement et sécurisation SEO
+- Nouveau sous-domaine `archive.100000medecins.org` créé chez Gandi (vhost + cert HTTPS Let's Encrypt)
+- Contenu de l'ancien vhost dupliqué via SFTP : 528 fichiers, 93 Mo
+- `<meta name="robots" content="noindex, follow">` + `<link rel="canonical" href="https://www.100000medecins.org/">` ajoutés dans `src/index.template.html` (template Quasar) + injectés dans le `dist/spa/index.html` servi
+- `public/robots.txt` créé avec `Disallow: /` (ceinture + bretelles)
+- `sitemap.xml` supprimé du repo
+- README enrichi d'un bloc d'avertissement « V1 archivée »
+- Repo `100KMed/Frontend` reçoit le commit `chore(seo): noindex + canonical vers nouveau site Next.js`
+
+### Vercel
+- `www.100000medecins.org` + `100000medecins.org` (apex) ajoutés comme domaines de production
+- Apex configuré pour redirection 308 vers `www` (un seul canonique)
+- `NEXT_PUBLIC_SITE_URL` (env Production) : `https://dev.100000medecins.org` → `https://www.100000medecins.org`
+- Production redéployée pour prendre l'env var en compte
+- **Séparation `main` / `dev`** : `dev.100000medecins.org` détaché de Production, rattaché à la branche `dev` (Preview). Désormais `main` → `www`/apex, `dev` → `dev.`
+- Note : un ancien projet Vercel orphelin `frontend-v2` revendiquait `www.` — résolu via la vérification TXT, propriété transférée automatiquement par Vercel à notre projet actuel
+
+### Supabase
+- `Authentication → URL Configuration → Site URL` : `https://dev.100000medecins.org` → `https://www.100000medecins.org`
+- Redirect URLs : ajout de `https://www.100000medecins.org/**` et `https://100000medecins.org/**` (les wildcards `*.100000medecins.org/**` existants couvraient déjà la plupart des cas)
+
+### Reste à faire
+- Activer le kill-switch « Emails routiniers » dans `/admin/emails` (cf TODO Déploiement final) — sans ça les relances PSC/évaluations/newsletter ne partiront pas
+
+---
+
 ## [2026-05-25] — Import des 15 solutions de téléconsultation
 
 Catégorie `Téléconsultation` (jusqu'ici vide) peuplée avec les 15 solutions du fichier source `Comparatif_teleconsultation_medecins_2026_3.xlsx` (panorama 2026). Toutes les fiches sont importées en `actif = false` — elles seront revues une par une par David avant publication (logos, URLs, SEO, validation finale).
