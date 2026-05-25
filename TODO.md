@@ -36,13 +36,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
   - Détecter les comparatifs (`X vs Y`) et lier automatiquement aux deux solutions via `video_solutions` plutôt que de réimporter.
 - **Cas du doublon** : une même URL YouTube partagée par plusieurs solutions (ex. comparatif). Le script saute aujourd'hui les URLs déjà en BDD (SELECT + `continue`), donc le rattachement à la 2e solution se fait manuellement via le panneau "Vidéos liées" de la fiche solution admin. Évolution possible : si l'URL existe déjà, ajouter juste un nouveau lien `video_solutions` au lieu de skip.
 
-#### ~~Email de lancement par syndicat — finaliser le wording~~ ✅ (fait le 2026-05-24)
-- ~~Base livrée le 2026-05-21 (template + admin + rendus versionnés). Wording finalisé le 2026-05-24.~~
-
 ### Nettoyage
-
-#### ~~Vider la table `evaluations_vides_supprimees`~~ ✅ (DROP fait le 2026-05-24)
-- ~~48 évaluations vides supprimées le 2026-05-23, backup `evaluations_vides_supprimees` droppé le 2026-05-24 (pas de rétention utile, données vides par définition).~~
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
@@ -92,17 +86,8 @@ _(rien à faire pour l'instant)_
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
-#### ~~Checklist technique passage en prod (www)~~ ✅ Fait le 2026-05-25
-- ~~Vercel `NEXT_PUBLIC_SITE_URL` → `https://www.100000medecins.org` (Production redéployée)~~
-- ~~Supabase Site URL + Redirect URLs mis à jour~~
-
-#### ~~DNS — mise en prod~~ ✅ Fait le 2026-05-25
-- ~~Apex et www basculés sur Vercel (avec les nouvelles IPs `216.198.79.1` + CNAME `c7aae8f426bf52ce.vercel-dns-017.com.` recommandées par Vercel)~~
-- ~~4 CNAME SSL sectigo/comodoca supprimés~~
-- ~~`_dmarc` restauré au passage (était vide)~~
-- ~~Ancien site déplacé sur `archive.100000medecins.org` avec noindex + canonical~~
-- ~~Wildcard `* CNAME webredir.vip.gandi.net.` conservé (n'interfère pas, on l'avait laissé)~~
-- Note : `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi, sans noindex pour l'instant
+#### Note résiduelle bascule prod (2026-05-25)
+- `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi, sans noindex pour l'instant. À envisager si on veut éviter la concurrence SEO avec le nouveau site.
 
 ---
 
