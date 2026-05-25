@@ -745,33 +745,6 @@ export type Database = {
         }
         Relationships: []
       }
-      evaluations_vides_supprimees: {
-        Row: {
-          deleted_at: string
-          id: string
-          id_origine: string
-          snapshot: Json
-          solution_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          deleted_at?: string
-          id?: string
-          id_origine: string
-          snapshot: Json
-          solution_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          deleted_at?: string
-          id?: string
-          id_origine?: string
-          snapshot?: Json
-          solution_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       groupes_categories: {
         Row: {
           id: string
