@@ -74,6 +74,21 @@ Multi-step form at `/solution/noter/[...slug]`. Scores stored in `evaluations.sc
 
 Tailwind with custom theme: `navy` (primary), `accent-blue/yellow/orange/pink`, `rating-green/star`, `surface-light/muted`. Font: Poppins. Card radius: 16px.
 
+### Design system — composants UI à utiliser
+
+Un mini design system existe dans [src/components/ui/](src/components/ui/) (conventions : voir [src/components/ui/README.md](src/components/ui/README.md)). Pour tout **nouveau code**, utilise ces composants au lieu des classes Tailwind brutes :
+
+- `<Button variant="primary|secondary|outline|ghost|danger|white|cta" size="sm|md|lg" loading={...}>` — au lieu de `<button className="bg-navy text-white px-7 py-3.5 rounded-button ...">`
+- `<Card padding="none|sm|md|lg|xl" hoverable>` — au lieu de `<div className="bg-white rounded-card shadow-card ...">`
+- `<Input>` / `<Textarea>` / `<Select>` — au lieu de classes inline comme `w-full rounded-button bg-white border border-gray-200 ...`
+- `<Field label="..." hint="..." error="...">` — wrapper label + hint + erreur pour les champs de formulaire
+- `<Badge variant="info|warning|success|danger|neutral|dark" size="sm|md">` — au lieu de `<span className="inline-flex rounded-full bg-*-50 text-*-700 ...">`
+- `<Modal>` + `Modal.Header` / `Modal.Body` / `Modal.Footer` — au lieu de `<div className="fixed inset-0 bg-black/50 ...">` (gère ESC, backdrop, scroll lock automatiquement)
+
+**Règle « migration au fil de l'eau »** : quand tu modifies un fichier `.tsx` pour une raison X (fix bug, ajout feature), **si tu vois dans ce même fichier des patterns obsolètes ci-dessus, migre-les par la même occasion**. Cela élimine progressivement la dette de style sans chantier dédié.
+
+Cas où **ne pas migrer** : si la modification déborderait largement du périmètre demandé (ex. fichier de 1000 lignes avec 20 inputs à migrer alors que la tâche demandée touche 5 lignes) → signale-le à la fin et propose de le faire en session séparée. La migration ne doit jamais cacher le diff de la vraie tâche.
+
 ### HTML content from DB
 
 Editorial text may contain HTML tags. Use `sanitizeHtml()` from `src/lib/sanitize.ts` with `dangerouslySetInnerHTML` — only allows `<br>`, `<u>`, `<b>`, `<strong>`, `<em>`, `<i>`, `<p>`.
