@@ -114,6 +114,16 @@ After any SQL migration, regenerate types:
 npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts
 ```
 
+### Erreurs ESLint préexistantes — règle « migration au fil de l'eau »
+
+`npm run lint` remonte ~270 erreurs dans la base existante, majoritairement `@typescript-eslint/no-explicit-any` sur la couche Supabase (`src/lib/db/`, `src/lib/actions/`) à cause de la schema drift décrite ci-dessus. Ces erreurs **ne bloquent pas le build** (`next build` passe, `tsc --noEmit` passe), elles sont du style, pas du comportement.
+
+**Règle « migration au fil de l'eau »** : quand tu modifies un fichier `.ts` ou `.tsx` pour une raison X, **si tu vois un `as any` ou un `// eslint-disable-next-line @typescript-eslint/no-explicit-any` que tu peux typer proprement sans effort disproportionné, fais-le par la même occasion**. Cela élimine progressivement la dette ESLint sans chantier dédié.
+
+Cas où **ne pas typer** : si le `as any` contourne une vraie schema drift non résolue (table absente de `database.ts`, ex. `actualites`/`documents`) → laisse tel quel, c'est un contournement légitime. La régénération des types est le vrai remède, pas le typage manuel.
+
+Pour tout **nouveau code** : pas de `as any`, type proprement dès le début.
+
 ### GRANTs explicites sur toute nouvelle table (anticipation Supabase 2026-10-30)
 
 À partir du **30 octobre 2026**, Supabase n'expose plus automatiquement les nouvelles tables de `public` à la Data API (PostgREST/`supabase-js`) : il faut des `GRANT` explicites. Les tables existantes ne sont pas affectées.
