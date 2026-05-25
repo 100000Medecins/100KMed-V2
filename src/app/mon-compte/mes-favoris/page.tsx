@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { toggleFavorite } from '@/lib/actions/favorites'
 import { Heart } from 'lucide-react'
 import Link from 'next/link'
+import Card from '@/components/ui/Card'
 
 export default function MesFavorisPage() {
   const { user } = useAuth()
@@ -41,14 +42,14 @@ export default function MesFavorisPage() {
       <h1 className="text-xl font-bold text-navy mb-6">Mes favoris</h1>
 
       {favoris.length === 0 ? (
-        <div className="bg-white rounded-card shadow-card p-8 text-center">
+        <Card padding="xl" className="text-center">
           <Heart className="w-12 h-12 text-gray-200 mx-auto mb-4" />
           <p className="text-gray-500">Vous n&apos;avez pas encore de favoris.</p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {favoris.map((fav: any) => (
-            <div key={`${fav.user_id}-${fav.solution_id}`} className="bg-white rounded-card shadow-card p-5">
+            <Card key={`${fav.user_id}-${fav.solution_id}`} padding="sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {fav.solution?.logo_url ? (
@@ -76,7 +77,7 @@ export default function MesFavorisPage() {
                   <Heart className="w-5 h-5 fill-current" />
                 </button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

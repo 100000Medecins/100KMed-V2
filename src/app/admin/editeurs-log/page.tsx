@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import Card from '@/components/ui/Card'
 
 type LogRow = {
   id: string
@@ -52,11 +53,11 @@ export default async function EditeursLogPage() {
       </div>
 
       {logs.length === 0 ? (
-        <div className="bg-white rounded-card shadow-card p-8 text-center text-gray-400 text-sm">
+        <Card padding="xl" className="text-center text-gray-400 text-sm">
           Aucune modification enregistrée.
-        </div>
+        </Card>
       ) : (
-        <div className="bg-white rounded-card shadow-card overflow-hidden">
+        <Card padding="none">
           <table className="w-full text-sm">
             <thead className="bg-surface-light border-b border-gray-100">
               <tr>
@@ -106,7 +107,7 @@ export default async function EditeursLogPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
     </div>
   )

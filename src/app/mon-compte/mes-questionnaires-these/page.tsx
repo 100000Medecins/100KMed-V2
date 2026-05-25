@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, Plus, Trash2, Clock, CheckCircle, XCircle } from 'lucide-react'
 import type { QuestionnaireThese } from '@/lib/actions/questionnaires-these'
+import Card from '@/components/ui/Card'
 
 const STATUT_CONFIG = {
   en_attente: { label: 'En attente de validation', icon: Clock, className: 'text-amber-600 bg-amber-50' },
@@ -63,7 +64,7 @@ export default function MesQuestionnairesThesePage() {
       </div>
 
       {questionnaires.length === 0 ? (
-        <div className="bg-white rounded-card shadow-card p-8 text-center">
+        <Card padding="xl" className="text-center">
           <p className="text-sm text-gray-500 mb-4">Vous n&apos;avez encore déposé aucun questionnaire.</p>
           <Link
             href="/mon-compte/proposer/questionnaire-these"
@@ -72,7 +73,7 @@ export default function MesQuestionnairesThesePage() {
             <Plus className="w-4 h-4" />
             Déposer un questionnaire
           </Link>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-3">
           {questionnaires.map((q) => {

@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { deleteSolutionUtilisee, getEvaluationCompletionMap } from '@/lib/actions/solutions'
 import { reconfirmerEvaluation } from '@/lib/actions/evaluation'
 import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Pencil, Trash2, CheckCircle, RefreshCw, MessageSquare, AlertTriangle } from 'lucide-react'
@@ -134,14 +135,14 @@ export default function MesEvaluationsPage() {
       </div>
 
       {solutions.length === 0 ? (
-        <div className="bg-white rounded-card shadow-card p-8 text-center">
+        <Card padding="xl" className="text-center">
           <p className="text-gray-500 mb-4">
             Vous n&apos;avez pas encore évalué de logiciel.
           </p>
           <Button variant="primary" href="/solution/noter">
             Évaluer un logiciel
           </Button>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {solutions.map((su: any) => {
