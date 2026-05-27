@@ -73,6 +73,15 @@ _(rien à faire pour l'instant)_
 
 ### Mises à jour techniques
 
+#### Audit grants Supabase avant le 30 octobre 2026
+- **Contexte** : à partir du 30/10/2026, Supabase n'exposera plus automatiquement les nouvelles tables `public` à la Data API (PostgREST/`supabase-js`). Les tables existantes ne sont pas touchées — elles conservent leurs grants implicites.
+- **Réflexe déjà actif** dans [CLAUDE.md](CLAUDE.md) : tout nouveau `CREATE TABLE` doit inclure les `GRANT` explicites par rôle.
+- **À faire ~1 mois avant la deadline (≈ fin septembre 2026)** :
+  - Utiliser le Security Advisor du dashboard Supabase pour lister les tables actuellement exposées
+  - Vérifier qu'aucune table sensible n'est ouverte au rôle `anon` sans raison
+  - Vérifier qu'aucune table dont on a besoin n'est en `permission denied` (cf. cas `solution_liens` fixé le 2026-05-27)
+- **Pas urgent** : informatif tant que la deadline est lointaine.
+
 #### Vulnérabilités npm restantes
 - **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
 - **11 moderate** : toute la chaîne `uuid` / `@google-cloud/storage` / `@google-cloud/firestore` / `gaxios` / `google-gax` / `teeny-request` / `retry-request` / `firebase-admin`. **Partira automatiquement** quand on désinstallera `firebase-admin` (cf. item Nettoyage « Couper le cordon Firebase », prévu ~2 mois post-prod).

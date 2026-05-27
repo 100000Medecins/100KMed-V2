@@ -5,6 +5,36 @@
 
 ---
 
+## [2026-05-27] — Audit grants Supabase + fix `solution_liens`
+
+### Contexte — Changement de politique Supabase au 30/10/2026
+
+Email d'annonce reçu : à partir du **30 octobre 2026**, Supabase n'expose plus automatiquement les nouvelles tables `public` à la Data API (PostgREST/`supabase-js`). Sur notre projet existant (`qnspmlskzgqrqtuvsbuo`), **les tables existantes conservent leurs grants implicites** — seules les tables créées après cette date devront recevoir des `GRANT` explicites.
+
+Le réflexe est déjà documenté dans [CLAUDE.md](CLAUDE.md) (section « GRANTs explicites sur toute nouvelle table »).
+
+### Audit de l'état actuel
+
+Vérification via `pg_class.relacl` (et non `information_schema.role_table_grants`, qui peut être filtré selon le rôle interrogateur) : **toutes les tables `public` existantes ont bien les grants implicites** sur les rôles `anon` / `authenticated` / `service_role` (format `arwdDxtm` = tous privilèges).
+
+Une seule anomalie détectée : `solution_liens` était lisible via le MCP `claude_readonly` mais pas correctement visible — le rôle n'avait pas reçu son grant SELECT explicite.
+
+### Fix — GRANT explicites sur `solution_liens`
+
+```sql
+GRANT SELECT ON public.solution_liens TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.solution_liens TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.solution_liens TO service_role;
+GRANT SELECT ON public.solution_liens TO claude_readonly;
+```
+
+Le rôle `claude_readonly` (utilisé par le MCP Supabase) peut maintenant lire la table — utile pour le diagnostic depuis Claude Code. Aucun impact sur le site (les server actions utilisaient déjà `service_role`).
+
+### TODO — Mises à jour
+- Ajout dans `Mises à jour techniques` : « Audit grants Supabase avant le 30 octobre 2026 » avec checklist (Security Advisor du dashboard à utiliser ~1 mois avant la deadline).
+
+---
+
 ## [2026-05-25] — Bascule du site en production sur www.100000medecins.org (Vercel)
 
 ### Infrastructure — Mise en production du nouveau site
