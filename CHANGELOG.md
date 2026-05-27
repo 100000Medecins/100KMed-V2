@@ -5,6 +5,56 @@
 
 ---
 
+## [2026-05-28] — Audit & corrections des évaluations importées de Firebase (Fix #1, #1bis, #2)
+
+### Contexte — Signalement utilisateur sur Odaiji
+
+Un utilisateur de l'ancien site signale que la fiche Odaiji n'affiche pas certains avis présents avant migration et que les notes individuelles divergent (ex. Daphné Julie : note moyenne incorrecte + commentaire écrit absent). Investigation lancée sur Odaiji puis étendue aux 24 solutions `is_firebase_legacy = true`.
+
+### Audit — Comparaison Firebase ↔ Supabase sur les 24 solutions legacy
+
+- Script `scripts/audit-global-evaluations-firebase.ts` (ré-exécutable, lecture seule) : compare évals FB ↔ SB par RPPS pour chaque solution `is_firebase_legacy = true`. Rapport détaillé dans [docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md).
+- **Bug critique découvert pendant l'audit** : tous les scripts utilisant `.from('users').select(...)` étaient plafonnés silencieusement à **1000 rows** (limite Supabase par défaut), alors qu'on a 5930 users avec RPPS. Conséquence : la première passe d'audit et de fix manquait ~83% des utilisateurs. Corrigé par pagination explicite (`.range(from, from+PAGE-1)`).
+- **Chiffres clés (post-fixes)** : 705 évals FB vs 644 SB (24 solutions) ; 638 matchées ; 63 non importées ; 16 en ancien format (clés numériques `"6"-"50"`) ; 5 user-SB-sans-RPPS pré-launch.
+
+### Fix #1 — Moyenne + 5 critères majeurs alignés sur Firebase /2
+
+- Script `scripts/fix-firebase-evals-moyennes-et-criteres.ts` (idempotent, dry-run par défaut, `--execute` requis).
+- Pour chaque éval SB pré-`DATE_MISE_EN_LIGNE` (2026-04-12) matchée par RPPS avec une éval FB ayant `moyenneUtilisateur > 0` :
+  - `moyenne_utilisateur` = `fb.moyenneUtilisateur / 2`
+  - `scores.interface/fonctionnalites/fiabilite/editeur/qualite_prix` = valeurs Firebase brutes (idTech 1-5) /2, ou `null` si absent côté FB
+- Aucun impact sur l'agrégat : `recalcResultatsPourSolution` en mode legacy filtre `created_at >= DATE_MISE_EN_LIGNE`, donc modifier les scores d'une éval pré-lancement n'affecte ni `resultats.firebase_moyenne_base5` (figé) ni l'agrégat affiché.
+- **Résultat : 378 évals corrigées** (171 critères majeurs ajoutés, 1069 modifiés, 0 supprimé). Backup JSON intégral dans `docs/backup-fix-firebase-20260528-*.json`.
+- Cas extrême corrigé : Alexis Doro (Odaiji) → moyenne `1.9` → **`4.6`** (les critères `fonctionnalites`, `fiabilite`, `editeur` étaient null SB → comptés comme 0 dans le calcul).
+
+### Fix #1bis — Recalcul moyenne pour les évals Firebase avec `moyenneUtilisateur = 0`
+
+- Cause découverte : pour ~154 évals Firebase historiques (typiquement MLM/Medistory 2023-01-20), le médecin n'avait noté que les sous-critères (idTech 6-50), pas les 5 majeurs (idTech 1-5). `moyenneUtilisateur=0` côté FB est un artéfact de l'ancien site. Côté SB, les 5 majeurs ont été reconstruits depuis les sous-critères mais souvent 1 sur 5 reste `null` → bug calcul `null = 0` → moyenne anormalement basse.
+- Script `scripts/fix-firebase-evals-fb-zero.ts` : recalcule `moyenne_utilisateur` comme la moyenne des 5 critères majeurs SB **en excluant les `null`** (au lieu de les compter comme 0). Ne touche QUE `moyenne_utilisateur`, pas les scores individuels.
+- **Résultat : 37 évals corrigées** (toutes avec 4/5 critères utilisés). Changements modérés : aucun > +1.0. Ex MLM 10101095734 : `2.93` → **`3.66`**. Backup JSON.
+
+### Fix #2 — Commentaires Firebase perdus restaurés
+
+- Script `scripts/fix-firebase-commentaires-perdus.ts` : pour chaque éval SB matchée FB sans `scores.commentaire`, copie le texte du critère commentaire FB (idTech 50, `_fid=XEMuh3cPWbJjS7KYmj0l`) vers `sb.scores.commentaire`.
+- **Résultat : 10 commentaires restaurés** dont Daphné Julie (Odaiji, 1524 caractères), Eva De Peretti Della Rocca (Odaiji), Marie-Hélène Fabre (Doctolib), Charles Cartou (Doctolib), Carine Korkmaz (Follow + TAMM), Baptiste Ferry (Medistory), Philippe Luthier (DrSanté), Gaëlle Lunardi (Alma Pro), Arthur Deroure-Corte (Alma Pro). Backup JSON.
+
+### Garde-fous évals vides
+
+- **154 évals Firebase avec `moyenneUtilisateur=0`** : sont skippées par Fix #1 (logique : pas d'ancrage FB pour `/2`), traitées par Fix #1bis si reconstruisibles depuis SB.
+- Cohérence avec la décision passée (nettoyage 2026-05-23) : 48 évals vides supprimées et archivées dans `evaluations_vides_supprimees`.
+
+### Reste à faire
+
+- **Fix #3** (16 évals encore en ancien format clés `"6"-"50"`) — avec garde-fou évals vides
+- **Fix #4** (63 évals Firebase non importées) — création users + insert evals, avec garde-fou évals vides
+- Vérifier après Fix #3/#4 que l'agrégat des solutions reste figé (`firebase_moyenne_base5` non touché)
+
+### TODO — Mises à jour
+- Ajout : Fix #3 (16 évals ancien format) + Fix #4 (63 évals FB non importées) pour la prochaine session
+- Ajout : `.gitignore` exclut maintenant `docs/backup-fix-*.json` (les 4 backups du jour commités comme référence)
+
+---
+
 ## [2026-05-27] — Audit grants Supabase + fix `solution_liens`
 
 ### Contexte — Changement de politique Supabase au 30/10/2026

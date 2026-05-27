@@ -40,6 +40,10 @@ yarn-error.log*
 # Working files (dumps DB transitoires, etc.)
 tmp/
 
+# Backups JSON générés par les scripts de fix (lourds, locaux)
+# Les backups commités explicitement le 2026-05-28 sont conservés.
+docs/backup-fix-*.json
+
 # Claude Code — config locale par développeur
 # Ne jamais committer : accumule des patterns de permissions pouvant contenir des secrets
 .claude/settings.local.json
