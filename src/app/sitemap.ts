@@ -1,86 +1,105 @@
 import { MetadataRoute } from 'next'
-import { createServerClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://10000medecins.org'
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
+
+// Le sitemap doit refléter l'état courant de la BDD à chaque requête.
+export const dynamic = 'force-dynamic'
+
+// Routes statiques réellement servies par l'app (vérifiées dans src/app/).
+// Les pages de contenu (cgu, rgpd…) sont servies par le groupe (static) qui lit pages_statiques.
+const STATIC_ROUTES: Array<{
+  path: string
+  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']
+  priority: number
+}> = [
+  { path: '', changeFrequency: 'daily', priority: 1.0 },
+  { path: '/solutions', changeFrequency: 'daily', priority: 0.9 },
+  { path: '/comparatifs', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/blog', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/actualites', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/stories-tutos', changeFrequency: 'weekly', priority: 0.5 },
+  { path: '/videos', changeFrequency: 'weekly', priority: 0.5 },
+  { path: '/glossaire', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/qui-sommes-nous', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/irritants-esante', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/difficile-de-changer', changeFrequency: 'monthly', priority: 0.4 },
+  { path: '/tous-ensemble', changeFrequency: 'monthly', priority: 0.4 },
+  { path: '/lancement-100k', changeFrequency: 'monthly', priority: 0.4 },
+  { path: '/transparence', changeFrequency: 'monthly', priority: 0.4 },
+  { path: '/contact', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/cgu', changeFrequency: 'yearly', priority: 0.2 },
+  { path: '/rgpd', changeFrequency: 'yearly', priority: 0.2 },
+]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = await createServerClient()
+  const supabase = createServiceRoleClient()
 
-  // Fetch toutes les données nécessaires en parallèle
-  const [categoriesRes, solutionsRes, editeursRes] = await Promise.all([
+  const [categoriesRes, solutionsRes, articlesRes] = await Promise.all([
+    // Catégories actives uniquement
     supabase.from('categories').select('slug').eq('actif', true),
-    supabase.from('solutions').select('slug, categorie:categories(slug)'),
-    supabase.from('editeurs').select('id'),
+    // Solutions actives dont la catégorie est active (INNER JOIN sur categorie.actif)
+    supabase
+      .from('solutions')
+      .select('slug, updated_at, categorie:categories!inner(slug, actif)')
+      .eq('actif', true)
+      .eq('categorie.actif', true),
+    // Articles de blog publiés (statut en base = 'publié', avec accent)
+    supabase.from('articles').select('slug, updated_at, date_publication').eq('statut', 'publié'),
   ])
 
   const categories = categoriesRes.data || []
   const solutions = solutionsRes.data || []
-  const editeurs = editeursRes.data || []
+  const articles = articlesRes.data || []
 
-  // Pages statiques
-  const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: BASE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
-    {
-      url: `${BASE_URL}/qui-sommes-nous`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${BASE_URL}/cgu`,
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${BASE_URL}/rgpd`,
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${BASE_URL}/contact`,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/actualites`,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${BASE_URL}/videos`,
-      changeFrequency: 'weekly',
-      priority: 0.5,
-    },
-  ]
+  const now = new Date()
 
-  // Pages catégories
+  // ─── Pages statiques ───
+  const staticPages: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
+    url: `${BASE_URL}${r.path}`,
+    lastModified: now,
+    changeFrequency: r.changeFrequency,
+    priority: r.priority,
+  }))
+
+  // ─── Pages catégories ───
   const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
     url: `${BASE_URL}/solutions/${cat.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'daily' as const,
+    lastModified: now,
+    changeFrequency: 'daily',
     priority: 0.9,
   }))
 
-  // Pages solutions (les plus importantes pour le SEO)
-  const solutionPages: MetadataRoute.Sitemap = solutions.map((sol) => ({
-    url: `${BASE_URL}/solutions/${(sol.categorie as unknown as { slug: string } | null)?.slug ?? 'unknown'}/${sol.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
+  // ─── Pages solutions (les plus importantes pour le SEO) ───
+  const solutionPages: MetadataRoute.Sitemap = solutions
+    .map((sol) => {
+      const catSlug = (sol.categorie as unknown as { slug: string } | null)?.slug
+      if (!catSlug || !sol.slug) return null
+      return {
+        url: `${BASE_URL}/solutions/${catSlug}/${sol.slug}`,
+        lastModified: sol.updated_at ? new Date(sol.updated_at as string) : now,
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null)
 
-  // Pages éditeurs
-  const editeurPages: MetadataRoute.Sitemap = editeurs.map((ed) => ({
-    url: `${BASE_URL}/editeur/${ed.id}`,
-    lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.6,
-  }))
+  // ─── Articles de blog publiés ───
+  const articlePages: MetadataRoute.Sitemap = articles
+    .filter((a) => a.slug)
+    .map((a) => ({
+      url: `${BASE_URL}/blog/${a.slug}`,
+      lastModified: a.updated_at
+        ? new Date(a.updated_at as string)
+        : a.date_publication
+          ? new Date(a.date_publication as string)
+          : now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    }))
 
-  return [...staticPages, ...categoryPages, ...solutionPages, ...editeurPages]
+  // Note : pages éditeurs volontairement exclues — URLs en UUID non SEO-friendly,
+  // à réintégrer après la migration vers des slugs (cf TODO « URLs éditeurs en slug »).
+
+  return [...staticPages, ...categoryPages, ...solutionPages, ...articlePages]
 }
