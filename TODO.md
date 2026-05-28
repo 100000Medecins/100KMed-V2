@@ -15,8 +15,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
   - **Comparaison `slug-vs-slug`** → interception dans la page solution + résolution slugs→UUIDs (`getSolutionIdsBySlugs`) → redirect 301 vers `/solutions/comparer?ids=`.
   - **`archive.100000medecins.org` réparé** : page blanche due à un mismatch de build (`index.html` demandait des hash js absents). Réupload cohérent de `dist/spa/`. Rôle = transfert SEO uniquement (noindex + canonical).
   - **`legacy.100000medecins.org`** mis en noindex (`.htaccess` avec `X-Robots-Tag: noindex, follow`, vérifié live) pour le déréférencer de Google.
-- **Reste à faire (actions manuelles Search Console + suivi)** :
-  - Supprimer le sitemap fantôme `sitemap_v2.xml` dans Search Console (404, vestige 2024).
+- ✅ Sitemap fantôme `sitemap_v2.xml` supprimé de Search Console (2026-05-29).
+- **Reste à faire (suivi)** :
   - Vérifier sous ~1 semaine que `sitemap.xml` passe en « Réussite » (recrawl Google en cours ; l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections).
   - Surveiller le déréférencement progressif de `legacy.` dans les résultats Google.
 
@@ -139,7 +139,7 @@ _(rien à faire pour l'instant)_
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
 #### Note résiduelle bascule prod (2026-05-25)
-- `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi, sans noindex pour l'instant. À envisager si on veut éviter la concurrence SEO avec le nouveau site.
+- `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi. ✅ Mis en noindex le 2026-05-29 (`.htaccess` avec `X-Robots-Tag: noindex, follow`) → déréférencement Google en cours.
 
 ---
 
