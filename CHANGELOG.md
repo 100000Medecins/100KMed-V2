@@ -5,6 +5,34 @@
 
 ---
 
+## [2026-05-29] — SEO : redirections 301, sitemap, archive/legacy + nettoyage colonnes mortes
+
+### SEO — Redirections des anciennes URLs Quasar + sitemap
+
+Suite au constat de résultats Google pointant vers des 404 après la bascule en prod. Diagnostic complet dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md) : la plupart des URLs SEO gardent le même schéma ; les 404 venaient surtout du sitemap (qui exposait des pages inactives et que Google n'arrivait pas à lire) et de `legacy.` indexé.
+
+- **`next.config.mjs`** : 10 redirections 301 des anciennes URLs renommées (camelCase→kebab : `difficileDeChanger`, `tousEnsemble`, `lancement100k`, `monCompte/*`, `connexion/creationCompte/*` ; + `presentation100k`→`qui-sommes-nous`).
+- **Comparaison `slug-vs-slug`** : l'ancienne URL `/solutions/:cat/:slugA-vs-:slugB` est interceptée dans la page solution, les slugs sont résolus en UUIDs (`getSolutionIdsBySlugs` dans `src/lib/db/solutions.ts`) et redirigée 301 vers `/solutions/comparer?ids=`. Fallback `/solutions` si un slug est introuvable.
+- **`src/app/sitemap.ts`** : refonte — solutions filtrées `actif=true` + catégorie active, éditeurs ayant ≥1 solution active (dédoublonnés), ajout des articles de blog, `force-dynamic`, fix typo fallback `BASE_URL`.
+
+### Infrastructure — Réparation archive. et noindex sur legacy.
+
+- **`archive.100000medecins.org`** réparé : la page blanche venait d'un mismatch de build (l'`index.html` servi demandait `app.12dfe04f.js`/`vendor.a19a643d.js` alors que `htdocs/js/` contenait d'autres hash). Réupload cohérent de `dist/spa/`. Le `.htaccess` SPA était déjà en place. Rôle = transfert SEO uniquement (noindex + canonical), données vides sans importance.
+- **`legacy.100000medecins.org`** : ajout d'un `.htaccess` avec `Header set X-Robots-Tag "noindex, follow"` (uploadé côté Gandi) pour le déréférencer de Google sans le rendre inaccessible. Vérifié en live (en-tête présent sur HTTP 200).
+- **Search Console** : sitemap re-soumis (l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections ; le fichier répond bien, ~450 URLs). Sitemap fantôme `sitemap_v2.xml` (vestige 2024, 404) à retirer.
+
+### Nettoyage — Colonnes mortes Supabase
+
+- Suppression de colonnes inutilisées : `categories.criteres_recherche`, `categories.schema_evaluation`, `resultats.notes_critere`, `users.date_naissance`. Détail dans [docs/audit-colonnes-mortes-supabase.md](docs/audit-colonnes-mortes-supabase.md).
+- Régénération de `src/types/database.ts` + nettoyage de `src/types/models.ts` (type `SchemaEvaluation` retiré) et `src/lib/db/evaluations.ts` (références `notes_critere`).
+- **`CLAUDE.md`** : nouvelle section sur les chemins d'accès BDD (MCP `claude_readonly` + BYPASSRLS pour les analyses, `service_role` pour les écritures, DDL via SQL Editor).
+
+### TODO — Mises à jour
+- Ajout section URGENT (404/redirections, en grande partie traitée).
+- Ajout : URLs éditeurs en slug, éditeurs orphelins, logo condensé index, sitemap propre.
+
+---
+
 ## [2026-05-28] — Audit & corrections des évaluations importées de Firebase (Fix #1, #1bis, #2)
 
 ### Contexte — Signalement utilisateur sur Odaiji

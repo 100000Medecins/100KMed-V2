@@ -4,6 +4,24 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
+## URGENT
+
+#### ⚠️ Résultats Google → 404 : plan de redirection (2026-05-28)
+- **Symptôme** : les URLs de l'ancien site encore indexées dans Google renvoient vers une 404 sur le nouveau site.
+- **Diagnostic complet** dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md). Constat clé : la plupart des URLs SEO (solutions, catégories, éditeurs) gardent le même schéma → les 404 viennent surtout de solutions/catégories passées `actif=false`, de slugs changés (Firebase→Supabase), et du sitemap qui exposait les pages inactives.
+- ✅ **Fait le 2026-05-28/29** :
+  - Sitemap corrigé (filtre `actif` + catégorie active + fix typo `BASE_URL`, refonte complète : éditeurs actifs dédoublonnés, articles de blog, `force-dynamic`).
+  - 10 redirections 301 dans `next.config.mjs` (camelCase→kebab : `difficileDeChanger`, `tousEnsemble`, `lancement100k`, `monCompte/*`, `connexion/creationCompte/*` + `presentation100k`→`qui-sommes-nous`).
+  - **Comparaison `slug-vs-slug`** → interception dans la page solution + résolution slugs→UUIDs (`getSolutionIdsBySlugs`) → redirect 301 vers `/solutions/comparer?ids=`.
+  - **`archive.100000medecins.org` réparé** : page blanche due à un mismatch de build (`index.html` demandait des hash js absents). Réupload cohérent de `dist/spa/`. Rôle = transfert SEO uniquement (noindex + canonical).
+  - **`legacy.100000medecins.org`** mis en noindex (`.htaccess` avec `X-Robots-Tag: noindex, follow`, vérifié live) pour le déréférencer de Google.
+- **Reste à faire (actions manuelles Search Console + suivi)** :
+  - Supprimer le sitemap fantôme `sitemap_v2.xml` dans Search Console (404, vestige 2024).
+  - Vérifier sous ~1 semaine que `sitemap.xml` passe en « Réussite » (recrawl Google en cours ; l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections).
+  - Surveiller le déréférencement progressif de `legacy.` dans les résultats Google.
+
+---
+
 ## En attente / Idées
 
 ### Sécurité
@@ -62,6 +80,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### UX / UI
 
+#### URLs éditeurs en slug lisible (au lieu de l'UUID)
+- **Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).
+- **Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.
+- À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.
+
+#### Éditeurs orphelins (0 solution) — à nettoyer
+- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.
+
+#### Logo condensé sur l'index — nouvel essai
+- Retenter une version condensée du logo sur la page d'accueil du site.
+
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
 - **Phase 0 livrée (2026-05-24)** : dossier `src/components/ui/` créé, conventions tokens validées dans [src/components/ui/README.md](src/components/ui/README.md) (radius = `rounded-card` 16px et `rounded-button` 12px ; primaire = `bg-navy`, secondaire = `bg-accent-blue`).
@@ -77,6 +106,13 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ### Performance
 
 _(rien à faire pour l'instant)_
+
+### SEO / Référencement
+
+#### Sitemap propre + URLs éditeurs en UUID (demande Ben, 2026-05-28)
+- **Sitemap** : générer un `sitemap.xml` propre pour le nouveau site (à ce jour absent ou incomplet).
+- **Bug URLs éditeurs** : certaines fiches éditeurs sont servies sur une URL en UUID brut (ex. `/0597f887-e925-40be-b42a-2b75ad960b46`, `/064b3c08-971c-4bdf-bc30-990d8ce3b62c`) au lieu d'un slug lisible. À diagnostiquer : éditeurs sans `slug` ? Route qui retombe sur l'`id` faute de slug ? → leur générer un slug et corriger la route.
+- Lié au chantier URGENT « Résultats Google → 404 » (cohérence des URLs publiques).
 
 ### Mises à jour techniques
 
