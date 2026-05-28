@@ -1,6 +1,6 @@
 # Audit Firebase ↔ Supabase — évaluations
 
-> Généré le 2026-05-27.
+> Généré le 2026-05-28.
 > Périmètre : 24 solutions `is_firebase_legacy = true`.
 
 ## Synthèse globale
@@ -8,54 +8,59 @@
 | Métrique | Valeur |
 |---|---|
 | Évaluations Firebase totales (solutions legacy) | 705 |
-| Évaluations Supabase totales (mêmes solutions) | 644 |
-| Évals présentes des deux côtés (match RPPS) | 638 |
-| Évals Firebase **non importées** (FB only) | 63 |
+| Évaluations Supabase totales (mêmes solutions) | 658 |
+| Évals présentes des deux côtés (match RPPS) | 652 |
+| Évals Firebase **non importées** (FB only) | 49 |
 | Évals Supabase sans pendant FB (post-migration) | 1 |
-| Évals avec **moyenne_utilisateur divergente** vs FB/2 | 154 |
+| Évals avec **moyenne_utilisateur divergente** vs FB/2 | 155 |
 | Évals avec **commentaire Firebase perdu** | 0 |
-| Évals SB avec **ancien format** (clés numériques "1"-"50") | 16 |
+| Évals SB avec **ancien format** (clés numériques "1"-"50") | 0 |
 | Évals SB avec **critères majeurs manquants** | 155 |
 
 ## Détail par solution
 
 | Solution | FB | SB | Match | FB-only | Moy div | Com perdus | Anc fmt | Maj manquants |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| Acteur.fr | 4 | 2 | 2 | 2 | 0 | 0 | 0 | 0 |
-| Alma Pro | 57 | 56 | 55 | 2 | 16 | 0 | 2 | 16 |
-| AxiSanté 5 | 62 | 57 | 57 | 5 | 17 | 0 | 1 | 17 |
-| Crossway | 38 | 37 | 37 | 1 | 15 | 0 | 2 | 15 |
-| Doctolib Médecin | 84 | 73 | 71 | 12 | 0 | 0 | 4 | 0 |
-| DrSanté | 47 | 38 | 37 | 9 | 10 | 0 | 0 | 10 |
+| Acteur.fr | 4 | 3 | 3 | 1 | 1 | 0 | 0 | 0 |
+| Alma Pro | 57 | 56 | 55 | 2 | 16 | 0 | 0 | 16 |
+| AxiSanté 5 | 62 | 58 | 58 | 4 | 17 | 0 | 0 | 17 |
+| Crossway | 38 | 37 | 37 | 1 | 15 | 0 | 0 | 15 |
+| Doctolib Médecin | 84 | 76 | 74 | 9 | 0 | 0 | 0 | 0 |
+| DrSanté | 47 | 40 | 39 | 7 | 10 | 0 | 0 | 10 |
 | easy-care | 4 | 2 | 2 | 2 | 0 | 0 | 0 | 0 |
 | éO Médecin | 4 | 3 | 3 | 1 | 0 | 0 | 0 | 0 |
-| Follow | 3 | 3 | 3 | 0 | 0 | 0 | 1 | 0 |
-| HelloDoc | 57 | 54 | 53 | 3 | 26 | 0 | 0 | 27 |
-| Med'Oc | 3 | 2 | 2 | 1 | 2 | 0 | 0 | 2 |
+| Follow | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
+| HelloDoc | 57 | 56 | 55 | 1 | 26 | 0 | 0 | 27 |
+| Med'Oc | 3 | 3 | 3 | 0 | 2 | 0 | 0 | 2 |
 | Medicab | 2 | 2 | 2 | 0 | 1 | 0 | 0 | 1 |
 | MedicaWin | 3 | 3 | 3 | 0 | 2 | 0 | 0 | 2 |
 | Mediclick | 24 | 22 | 22 | 2 | 12 | 0 | 0 | 12 |
 | MEDILINK | 8 | 7 | 7 | 1 | 0 | 0 | 0 | 0 |
 | Medimust | 11 | 9 | 9 | 1 | 4 | 0 | 0 | 4 |
-| Medistory | 93 | 88 | 88 | 5 | 21 | 0 | 2 | 21 |
-| MLM | 34 | 32 | 32 | 2 | 12 | 0 | 1 | 12 |
-| Odaiji | 35 | 32 | 31 | 4 | 0 | 0 | 2 | 0 |
+| Medistory | 93 | 88 | 88 | 5 | 21 | 0 | 0 | 21 |
+| MLM | 34 | 32 | 32 | 2 | 12 | 0 | 0 | 12 |
+| Odaiji | 35 | 34 | 33 | 2 | 0 | 0 | 0 | 0 |
 | Premiocare | 7 | 6 | 6 | 1 | 0 | 0 | 0 | 0 |
 | Shaman | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| TAMM | 3 | 3 | 3 | 0 | 0 | 0 | 1 | 0 |
-| Weda | 114 | 105 | 105 | 9 | 16 | 0 | 0 | 16 |
+| TAMM | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
+| Weda | 114 | 107 | 107 | 7 | 16 | 0 | 0 | 16 |
 | XMED | 6 | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 
 ## Anomalies détaillées par solution
 
 ### Acteur.fr
 
-**2 évaluation(s) Firebase non importée(s) :**
+**1 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
-| 10001048536 | ? | 2023-01-20 |
 | 10001493146 | JULIEN GERVAIS | 2024-10-22 |
+
+**1 évaluation(s) avec moyenne divergente (>0.1) :**
+
+| RPPS | Nom | FB moy /10 | FB /2 attendu | SB moy | Diff |
+|---|---|--:|--:|--:|--:|
+| 10001048536 |  | 0 | 0 | 2.5 | 2.5 |
 
 ### Alma Pro
 
@@ -87,13 +92,6 @@
 | 10004067889 | SANDRINE ABGRALL-ROQUES | 0 | 0 | 4.27 | 4.27 |
 | 10003409322 | Catherine ZANUTTINI | 0 | 0 | 4.29 | 4.29 |
 
-**2 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10003126546 | Gaëlle LUNARDI |
-| 10100827053 | ARTHUR DEROURE-CORTE |
-
 **16 évaluation(s) avec critère(s) majeur(s) manquant(s) :**
 
 | RPPS | Nom | Manquants |
@@ -117,12 +115,11 @@
 
 ### AxiSanté 5
 
-**5 évaluation(s) Firebase non importée(s) :**
+**4 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
 | 10002939303 | JEAN-PHILIPPE COISNE | 2025-11-16 |
-| 10002915527 | BENJAMIN GRIMA | 2026-04-09 |
 | 10100204659 | Vincent POUPARD | 2026-03-18 |
 | 10101251436 | Adriaan DETAVERNIER | 2023-09-21 |
 | 10001930196 | NATHALIE BOURGEAIS | 2024-10-20 |
@@ -147,13 +144,7 @@
 | 10100396521 | DIMITRI STEPOWSKI | 0 | 0 | 2.54 | 2.54 |
 | 10100595445 | NICOLAS PELLEGRIN | 0 | 0 | 2.87 | 2.87 |
 | 10100565182 | Vincent ROBERDEAU | 0 | 0 | 3.2 | 3.2 |
-| 10002308848 | Frédéric MOUQUET | 0 | 0 | 2.35 | 2.35 |
-
-**1 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10110786612 | Moussa BOUDRIGA |
+| 10002308848 | Frédéric MOUQUET | 0 | 0 | 2.34 | 2.34 |
 
 **17 évaluation(s) avec critère(s) majeur(s) manquant(s) :**
 
@@ -193,7 +184,7 @@
 | 10000782010 | Jean-Francois DEVERRE | 0 | 0 | 3.91 | 3.91 |
 | 10002108446 | JEAN-PHILIPPE LARGILLIERE | 0 | 0 | 3.49 | 3.49 |
 | 10002086311 | SAMIA FARAD | 0 | 0 | 2.76 | 2.76 |
-| 10002601135 | JEAN-LOUIS FOURS | 0 | 0 | 3.99 | 3.99 |
+| 10002601135 | JEAN-LOUIS FOURS | 0 | 0 | 3.98 | 3.98 |
 | 10003110367 | BERANGERE BERTHOMME | 0 | 0 | 2.91 | 2.91 |
 | 10002950250 | Philippe BERTRON | 0 | 0 | 3.5 | 3.5 |
 | 10004060223 | Anne ROUSSEAU | 0 | 0 | 3.47 | 3.47 |
@@ -204,13 +195,6 @@
 | 10100323525 | EDOUARD SEVE | 0 | 0 | 3.13 | 3.13 |
 | 10100467934 | EVA DE PERETTI DELLA ROCCA | 0 | 0 | 1.61 | 1.61 |
 | 10000672377 | BRUNO GUILLEMOT | 0 | 0 | 3.08 | 3.08 |
-
-**2 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10002887460 | PATRICE TESTE |
-| 10003361341 | Didier RONDINET |
 
 **15 évaluation(s) avec critère(s) majeur(s) manquant(s) :**
 
@@ -234,16 +218,13 @@
 
 ### Doctolib Médecin
 
-**12 évaluation(s) Firebase non importée(s) :**
+**9 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
 | 10003714283 | Christophe BUSUTTIL | 2024-03-18 |
-| 10003356291 | MARIE-HELENE DESARMAGNAC | 2024-03-15 |
 | 10000961945 | Olivier MICHEL | 2024-08-06 |
-| 10004406244 | MICHAEL NAOURI | 2025-01-24 |
 | 10101516705 | Benoît PONCET | 2024-10-31 |
-| 10004031174 | PASCAL GUILLET | 2026-04-28 |
 | 10003450250 | Marc Georges RAINAUDI | 2024-12-09 |
 | 10109299932 | Hichem GHAOUTI | 2026-01-25 |
 | 10100835908 | LUC HUMBERTCLAUDE | 2025-12-11 |
@@ -251,28 +232,17 @@
 | 10100396497 | YOANN HENRI | 2025-07-21 |
 | 10100499812 | Stéphane TALA | 2024-09-30 |
 
-**4 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10000030568 | Muriel NNA EKAMKAM |
-| 10100737278 | Charles CARTOU |
-| 10107843939 | Carine KORKMAZ |
-| 10002871027 | MARIE-HELENE FABRE |
-
 ### DrSanté
 
-**9 évaluation(s) Firebase non importée(s) :**
+**7 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
 | 10101671039 | ? | 2026-05-12 |
 | 10004395389 | SEVERINE LETELLIER | 2025-04-18 |
 | 10100394740 | DAVID AZERAD | 2023-07-12 |
-| 10100911980 | DAMIEN BELIGNE | 2025-08-13 |
 | 10100599553 | Vasilis ANGELIS | 2025-11-14 |
 | 10003235305 | BERTRAND RAYNAL | 2025-01-01 |
-| 10101549466 | ? | 2026-03-24 |
 | 10100927895 | MAXIME JOHAN | 2024-12-29 |
 | 10101083227 | AUDREY VERNEAU | 2025-03-24 |
 
@@ -323,23 +293,13 @@
 |---|---|---|
 | 10100394740 | DAVID AZERAD | 2025-03-06 |
 
-### Follow
-
-**1 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10107843939 | Carine KORKMAZ |
-
 ### HelloDoc
 
-**3 évaluation(s) Firebase non importée(s) :**
+**1 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
 | 10002603248 | Nadine DURAND-TILY | 2024-10-30 |
-| 10002291069 | THIERRY RENAUX | 2026-04-29 |
-| 10002874617 | DAVID BILFELD | 2026-03-22 |
 
 **26 évaluation(s) avec moyenne divergente (>0.1) :**
 
@@ -406,12 +366,6 @@
 
 ### Med'Oc
 
-**1 évaluation(s) Firebase non importée(s) :**
-
-| RPPS | Nom | Date FB |
-|---|---|---|
-| 10002915527 | BENJAMIN GRIMA | 2026-04-09 |
-
 **2 évaluation(s) avec moyenne divergente (>0.1) :**
 
 | RPPS | Nom | FB moy /10 | FB /2 attendu | SB moy | Diff |
@@ -473,13 +427,13 @@
 | 10101368917 | Guillaume MALAFOSSE | 0 | 0 | 2.58 | 2.58 |
 | 10000981810 | Marc WURSTHORN | 0 | 0 | 2.75 | 2.75 |
 | 10003107108 | JULIEN MATHIAS | 0 | 0 | 0.94 | 0.94 |
-| 10002087483 | MICKAEL MALHAIRE | 0 | 0 | 2.77 | 2.77 |
+| 10002087483 | MICKAEL MALHAIRE | 0 | 0 | 2.76 | 2.76 |
 | 10000035252 | Iyadh ALLANI | 0 | 0 | 2.36 | 2.36 |
 | 10002697190 | FRANCOIS THISSE | 0 | 0 | 3.99 | 3.99 |
 | 10001669265 | Francois BOUTARIC | 0 | 0 | 2.94 | 2.94 |
 | 10100916161 | ANNA LEBATEUX | 0 | 0 | 2.89 | 2.89 |
 | 10100095107 | Mathieu VAN DESSEL | 0 | 0 | 2.19 | 2.19 |
-| 10001769016 | Francois LEAUD | 0 | 0 | 4.07 | 4.07 |
+| 10001769016 | Francois LEAUD | 0 | 0 | 4.06 | 4.06 |
 | 10100898187 | FRANKLIN HAYS | 0 | 0 | 3.35 | 3.35 |
 
 **12 évaluation(s) avec critère(s) majeur(s) manquant(s) :**
@@ -549,34 +503,27 @@
 
 | RPPS | Nom | FB moy /10 | FB /2 attendu | SB moy | Diff |
 |---|---|--:|--:|--:|--:|
-| 10100429033 | Celine ROUSSEL | 0 | 0 | 2.78 | 2.78 |
-| 10002891579 | Francis BLANC | 0 | 0 | 2.68 | 2.68 |
-| 10000853001 | Abdelhafid AHMED YAHIA | 0 | 0 | 3.89 | 3.89 |
-| 10000674746 | MICHEL ARNOULD | 0 | 0 | 3.62 | 3.62 |
-| 10100608511 | REMY PAZZOGNA | 0 | 0 | 3.3 | 3.3 |
-| 10003825030 | CHRISTOPHE LHERBIER | 0 | 0 | 3.36 | 3.36 |
-| 10100027639 | Sophie WENDLING | 0 | 0 | 3.07 | 3.07 |
-| 10101835154 | Astrid CHARDINY | 0 | 0 | 3.45 | 3.45 |
-| 10001753465 | Nicolas CONSTANT | 0 | 0 | 2.79 | 2.79 |
-| 10101018256 | Hélène PERUZZETTO | 0 | 0 | 3.48 | 3.48 |
-| 10001787240 | MICHEL VALLAEYS | 0 | 0 | 2.9 | 2.9 |
-| 10101372935 | DAMIEN BARAT | 0 | 0 | 3.43 | 3.43 |
-| 10002347994 | FRANCK ROUNG | 0 | 0 | 3.44 | 3.44 |
-| 10102006390 |  | 0 | 0 | 3.68 | 3.68 |
-| 10100098150 | Colin CHAUMONT | 0 | 0 | 2.49 | 2.49 |
-| 10100958882 | VINCENT TOUPIN | 0 | 0 | 2.37 | 2.37 |
-| 10100193449 | OLIVIER AMIEL | 0 | 0 | 2.29 | 2.29 |
-| 10101002664 | Maxime LAMIRAND | 0 | 0 | 3.1 | 3.1 |
-| 10100996999 | GAUTIER LABORIE | 0 | 0 | 3.27 | 3.27 |
-| 10003928859 | Marie-Hélène MAZEYRAC | 0 | 0 | 2.83 | 2.83 |
-| 10003819975 | WILFRID DANNER | 0 | 0 | 3.24 | 3.24 |
-
-**2 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10100114551 | ANNE CECILE DUPUIS |
-| 10100762276 | BAPTISTE FERRY |
+| 10100429033 | Celine ROUSSEL | 0 | 0 | 3.48 | 3.48 |
+| 10002891579 | Francis BLANC | 0 | 0 | 3.35 | 3.35 |
+| 10000853001 | Abdelhafid AHMED YAHIA | 0 | 0 | 4.86 | 4.86 |
+| 10000674746 | MICHEL ARNOULD | 0 | 0 | 4.52 | 4.52 |
+| 10100608511 | REMY PAZZOGNA | 0 | 0 | 4.13 | 4.13 |
+| 10003825030 | CHRISTOPHE LHERBIER | 0 | 0 | 4.21 | 4.21 |
+| 10100027639 | Sophie WENDLING | 0 | 0 | 3.84 | 3.84 |
+| 10101835154 | Astrid CHARDINY | 0 | 0 | 4.32 | 4.32 |
+| 10001753465 | Nicolas CONSTANT | 0 | 0 | 3.49 | 3.49 |
+| 10101018256 | Hélène PERUZZETTO | 0 | 0 | 4.35 | 4.35 |
+| 10001787240 | MICHEL VALLAEYS | 0 | 0 | 3.63 | 3.63 |
+| 10101372935 | DAMIEN BARAT | 0 | 0 | 4.29 | 4.29 |
+| 10002347994 | FRANCK ROUNG | 0 | 0 | 4.3 | 4.3 |
+| 10102006390 |  | 0 | 0 | 4.6 | 4.6 |
+| 10100098150 | Colin CHAUMONT | 0 | 0 | 3.11 | 3.11 |
+| 10100958882 | VINCENT TOUPIN | 0 | 0 | 2.97 | 2.97 |
+| 10100193449 | OLIVIER AMIEL | 0 | 0 | 2.86 | 2.86 |
+| 10101002664 | Maxime LAMIRAND | 0 | 0 | 3.88 | 3.88 |
+| 10100996999 | GAUTIER LABORIE | 0 | 0 | 4.09 | 4.09 |
+| 10003928859 | Marie-Hélène MAZEYRAC | 0 | 0 | 3.53 | 3.53 |
+| 10003819975 | WILFRID DANNER | 0 | 0 | 4.05 | 4.05 |
 
 **21 évaluation(s) avec critère(s) majeur(s) manquant(s) :**
 
@@ -617,24 +564,18 @@
 
 | RPPS | Nom | FB moy /10 | FB /2 attendu | SB moy | Diff |
 |---|---|--:|--:|--:|--:|
-| 10100631554 | Marianne VASSEUR | 0 | 0 | 2.43 | 2.43 |
-| 10002372364 | ERIC JARROUSSE | 0 | 0 | 4 | 4 |
-| 10101095734 | HELENE LEBOULANGER | 0 | 0 | 2.93 | 2.93 |
-| 10001623254 | Olivier DE SAUNIÈRE | 0 | 0 | 2.4 | 2.4 |
-| 10100908085 | SOPHIE PLAGNARD | 0 | 0 | 3.23 | 3.23 |
-| 10100909877 | AURELIE COMBIER | 0 | 0 | 2.09 | 2.09 |
-| 10100165355 | NABIL MAZOUZI | 0 | 0 | 2.44 | 2.44 |
-| 10001151827 | Henry ZILBERSCHLAG | 0 | 0 | 2.28 | 2.28 |
-| 10002048337 | Michel THENAISY | 0 | 0 | 2.19 | 2.19 |
-| 10002950482 | JACQUES BRIAND | 0 | 0 | 1.79 | 1.79 |
-| 10005059745 | Geraldine VERGNES | 0 | 0 | 2.69 | 2.69 |
-| 10100598209 | SIMON DROIN | 0 | 0 | 2.64 | 2.64 |
-
-**1 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10004434329 | AUDREY ATLAN-COTTIN |
+| 10100631554 | Marianne VASSEUR | 0 | 0 | 3.04 | 3.04 |
+| 10002372364 | ERIC JARROUSSE | 0 | 0 | 5 | 5 |
+| 10101095734 | HELENE LEBOULANGER | 0 | 0 | 3.66 | 3.66 |
+| 10001623254 | Olivier DE SAUNIÈRE | 0 | 0 | 3 | 3 |
+| 10100908085 | SOPHIE PLAGNARD | 0 | 0 | 4.03 | 4.03 |
+| 10100909877 | AURELIE COMBIER | 0 | 0 | 2.61 | 2.61 |
+| 10100165355 | NABIL MAZOUZI | 0 | 0 | 3.05 | 3.05 |
+| 10001151827 | Henry ZILBERSCHLAG | 0 | 0 | 2.85 | 2.85 |
+| 10002048337 | Michel THENAISY | 0 | 0 | 2.74 | 2.74 |
+| 10002950482 | JACQUES BRIAND | 0 | 0 | 2.24 | 2.24 |
+| 10005059745 | Geraldine VERGNES | 0 | 0 | 3.36 | 3.36 |
+| 10100598209 | SIMON DROIN | 0 | 0 | 3.3 | 3.3 |
 
 **12 évaluation(s) avec critère(s) majeur(s) manquant(s) :**
 
@@ -655,21 +596,12 @@
 
 ### Odaiji
 
-**4 évaluation(s) Firebase non importée(s) :**
+**2 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
-| 10100104099 | LAURENT SILVIN | 2026-04-23 |
-| 10107077009 | Blandine DARCHY | 2026-04-07 |
 | 10002182730 | NICOLAS RIBON | 2025-04-23 |
 | 10100394740 | DAVID AZERAD | 2025-11-19 |
-
-**2 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10002403227 | DAPHNE MOUROT-BOYON |
-| 10100467934 | EVA DE PERETTI DELLA ROCCA |
 
 ### Premiocare
 
@@ -679,24 +611,14 @@
 |---|---|---|
 | 10003741542 | GUILLAUME SCHLACHET | 2025-10-18 |
 
-### TAMM
-
-**1 évaluation(s) avec scores au format ancien (clés numériques) :**
-
-| RPPS | Nom |
-|---|---|
-| 10107843939 | Carine KORKMAZ |
-
 ### Weda
 
-**9 évaluation(s) Firebase non importée(s) :**
+**7 évaluation(s) Firebase non importée(s) :**
 
 | RPPS | Nom | Date FB |
 |---|---|---|
-| 10100725182 | GAELLE PASCO | 2023-07-10 |
 | 10100226561 | Dominique GAUTHIER | 2024-05-18 |
 | 10101687860 | BRYAN HORN | 2023-07-06 |
-| 10002671658 | ? | 2026-04-07 |
 | 10101578606 | RADU-CRISTIAN TUDOSE | 2024-07-29 |
 | 10100394740 | DAVID AZERAD | 2023-01-20 |
 | 10004420948 | CESAR ANCELLE-HANSEN | 2026-05-06 |

@@ -65,9 +65,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### Finir l'audit Firebase ↔ Supabase — Fix #3 et Fix #4 restants
 
 - **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) déjà appliqués.
-- **Fix #3 — Convertir les 16 évals encore en ancien format** (clés numériques `"1"-"50"` au lieu de `interface/fonctionnalites/...`). Garde-fou : exclure les évals où tous les scores numériques sont `null` ou `0` (= évals vides historiques) → backup dans `evaluations_vides_supprimees`.
-- **Fix #4 — Importer les 63 évals Firebase non importées** (cf rapport audit, ex. Doctolib 12, DrSanté 9, Weda 9). Garde-fou identique : skip les évals FB avec `moyenneUtilisateur=0` ou tous scores vides (cf 154 évals vides déjà identifiées par Fix #1). Pour les users absents côté SB, créer le compte selon la même logique que `scripts/import-firebase-late-users.ts` (2026-05-12).
-- **Validation finale** : régénérer `npx tsx scripts/audit-global-evaluations-firebase.ts` après chaque fix. Vérifier que l'agrégat des solutions (`firebase_moyenne_base5` dans `resultats`) reste figé (non touché par le mode legacy de `recalcResultatsPourSolution`).
+- ✅ **Fix #3 — FAIT** (vérifié le 2026-05-29 : 0 éval en ancien format restante en base). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé via `mapping_criteres_v2.csv` + reconstruction empirique (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
+- ⚠️ **Fix #4 — À CONFIRMER / EXÉCUTER** : script `scripts/fix-import-evals-manquantes.ts` écrit (idempotent, dry-run par défaut, `--execute` requis, garde-fous : skip évals vides + David Azerad + doublons). **Statut d'exécution incertain au 2026-05-29** — vérifier si lancé en `--execute`. Sinon le lancer. Importe les ~63 évals FB manquantes (users absents créés sans email si besoin).
+- **Validation finale** : régénérer `npx tsx scripts/audit-global-evaluations-firebase.ts` après Fix #4. Vérifier que l'agrégat des solutions (`firebase_moyenne_base5` dans `resultats`) reste figé (non touché par le mode legacy de `recalcResultatsPourSolution`).
 
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
