@@ -83,28 +83,6 @@ export interface CritereWithChildren extends Critere {
 // Types pour les structures JSONB
 // ============================================
 
-/** Structure du schéma d'évaluation (stocké dans categories.schema_evaluation) */
-export interface SchemaEvaluation {
-  general: {
-    titre: string
-    information: string
-    listeCriteres: Array<Record<string, boolean | Record<string, boolean>[]>>
-  }
-  detail: {
-    steps: Array<{
-      titre: string
-      question: string
-      information?: string
-      listeCriteres: Array<Record<string, boolean | Record<string, boolean>[]>>
-    }>
-  }
-  synthese: {
-    titre: string
-    information?: string
-    listeCriteres: Array<Record<string, boolean | Record<string, boolean>[]>>
-  }
-}
-
 /** Structure de la réponse d'un critère (stocké dans criteres.reponse) */
 export interface CritereReponse {
   type: string

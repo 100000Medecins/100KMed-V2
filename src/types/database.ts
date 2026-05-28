@@ -186,7 +186,6 @@ export type Database = {
         Row: {
           actif: boolean | null
           categorie_defaut: boolean | null
-          criteres_recherche: Json | null
           groupe_id: string | null
           has_note_redac: boolean
           icon: string | null
@@ -197,13 +196,11 @@ export type Database = {
           label_fonctionnalites: string | null
           nom: string
           position: number | null
-          schema_evaluation: Json | null
           slug: string | null
         }
         Insert: {
           actif?: boolean | null
           categorie_defaut?: boolean | null
-          criteres_recherche?: Json | null
           groupe_id?: string | null
           has_note_redac?: boolean
           icon?: string | null
@@ -214,13 +211,11 @@ export type Database = {
           label_fonctionnalites?: string | null
           nom: string
           position?: number | null
-          schema_evaluation?: Json | null
           slug?: string | null
         }
         Update: {
           actif?: boolean | null
           categorie_defaut?: boolean | null
-          criteres_recherche?: Json | null
           groupe_id?: string | null
           has_note_redac?: boolean
           icon?: string | null
@@ -231,7 +226,6 @@ export type Database = {
           label_fonctionnalites?: string | null
           nom?: string
           position?: number | null
-          schema_evaluation?: Json | null
           slug?: string | null
         }
         Relationships: [
@@ -1050,7 +1044,6 @@ export type Database = {
           note_redac: number | null
           note_redac_base5: number | null
           notes: Json | null
-          notes_critere: Json | null
           nps: number | null
           repartition: Json | null
           solution_id: string | null
@@ -1067,7 +1060,6 @@ export type Database = {
           note_redac?: number | null
           note_redac_base5?: number | null
           notes?: Json | null
-          notes_critere?: Json | null
           nps?: number | null
           repartition?: Json | null
           solution_id?: string | null
@@ -1084,7 +1076,6 @@ export type Database = {
           note_redac?: number | null
           note_redac_base5?: number | null
           notes?: Json | null
-          notes_critere?: Json | null
           nps?: number | null
           repartition?: Json | null
           solution_id?: string | null
@@ -1615,7 +1606,6 @@ export type Database = {
           contact_telephone: string | null
           contact_ville: string | null
           created_at: string | null
-          date_naissance: string | null
           densite_population: string | null
           editeur_id: string | null
           email: string | null
@@ -1644,7 +1634,6 @@ export type Database = {
           contact_telephone?: string | null
           contact_ville?: string | null
           created_at?: string | null
-          date_naissance?: string | null
           densite_population?: string | null
           editeur_id?: string | null
           email?: string | null
@@ -1673,7 +1662,6 @@ export type Database = {
           contact_telephone?: string | null
           contact_ville?: string | null
           created_at?: string | null
-          date_naissance?: string | null
           densite_population?: string | null
           editeur_id?: string | null
           email?: string | null

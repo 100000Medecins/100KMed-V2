@@ -468,7 +468,6 @@ export async function computeAggregatedResultats(
       note_redac_base5: null,
       avis_redac: null,
       notes: null,
-      notes_critere: null,
       nps: null,
       repartition: null,
       critere: {
@@ -511,7 +510,6 @@ export async function computeAggregatedResultats(
       note_redac_base5: null,
       avis_redac: null,
       notes: null,
-      notes_critere: null,
       nps: null,
       repartition: null,
       critere: {

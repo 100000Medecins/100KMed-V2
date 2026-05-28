@@ -61,10 +61,28 @@ PSC-authenticated users have `rpps` set in `users` table. Fields sourced from PS
 
 ### Database patterns
 
-- Heavy use of **JSONB** for flexible data: `evaluations.scores`, `solutions.prix`, `categories.schema_evaluation`
+- Heavy use of **JSONB** for flexible data: `evaluations.scores`, `categories.meta`
 - **Criteres** are hierarchical (self-referencing `parent_id`)
 - **RLS** enabled on most tables — use service role only when needed (admin ops, registration before user is authenticated)
 - Supabase join syntax: `.select('*, editeur:editeurs(*), categorie:categories(*)')`
+
+### Accès BDD pour analyses (MCP) vs écritures (service_role) — IMPORTANT
+
+Deux chemins d'accès distincts, à ne pas confondre :
+
+- **Analyses / comptages / lecture** → outil MCP `mcp__supabase__query` (rôle `claude_readonly`).
+  Ce rôle a `SELECT` seul sur les 38 tables **+ `BYPASSRLS`** (posé le 2026-05-28) → il voit
+  **toutes les lignes** mais **ne peut rien écrire**. Fiable pour `count(*)`, audits, vérifs.
+  - **Piège historique résolu** : avant le `BYPASSRLS`, ce rôle était soumis à la RLS et
+    renvoyait silencieusement `count = 0` sur `users`/`evaluations` (tables protégées) → faux
+    diagnostics de « colonnes/tables vides ». Si un jour un comptage paraît anormalement bas,
+    vérifier `SELECT rolbypassrls FROM pg_roles WHERE rolname='claude_readonly'` (doit être `true`).
+  - Réversible : `ALTER ROLE claude_readonly NOBYPASSRLS;`
+- **Écritures (fix de données, migrations de contenu)** → script `tsx` + `SUPABASE_SERVICE_ROLE_KEY`.
+  `service_role` bypass tout (lecture **et** écriture). Toujours : **dry-run par défaut**,
+  `--execute` requis, **backup JSON avant écriture** (cf `scripts/fix-firebase-*.ts`).
+- **DDL (CREATE/ALTER/DROP)** → le MCP ne peut pas (lecture seule). C'est David qui lance le SQL
+  dans le SQL Editor Supabase (rôle `postgres`). Après tout DDL : régénérer `src/types/database.ts`.
 
 ### Evaluation flow
 
