@@ -62,12 +62,13 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Cause principale** : schema drift (`actualites`, `documents` absentes des types Supabase auto-générés) → contournement légitime via `as any`. Le vrai remède = régénérer `src/types/database.ts` (`npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts`), pas du typage manuel.
 - **Pas de chantier dédié prévu** sauf si un jour on veut un lint propre en CI.
 
-#### Finir l'audit Firebase ↔ Supabase — Fix #3 et Fix #4 restants
+#### ✅ Audit Firebase ↔ Supabase — TERMINÉ (2026-05-29)
 
-- **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) déjà appliqués.
-- ✅ **Fix #3 — FAIT** (vérifié le 2026-05-29 : 0 éval en ancien format restante en base). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé via `mapping_criteres_v2.csv` + reconstruction empirique (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
-- ⚠️ **Fix #4 — À CONFIRMER / EXÉCUTER** : script `scripts/fix-import-evals-manquantes.ts` écrit (idempotent, dry-run par défaut, `--execute` requis, garde-fous : skip évals vides + David Azerad + doublons). **Statut d'exécution incertain au 2026-05-29** — vérifier si lancé en `--execute`. Sinon le lancer. Importe les ~63 évals FB manquantes (users absents créés sans email si besoin).
-- **Validation finale** : régénérer `npx tsx scripts/audit-global-evaluations-firebase.ts` après Fix #4. Vérifier que l'agrégat des solutions (`firebase_moyenne_base5` dans `resultats`) reste figé (non touché par le mode legacy de `recalcResultatsPourSolution`).
+- **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) appliqués.
+- ✅ **Fix #3 — FAIT** (vérifié 2026-05-29 : 0 éval en ancien format restante). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
+- ✅ **Fix #4 — SANS OBJET** (vérifié 2026-05-29 via le mapping Excel + dry-run du script). Sur les 718 évals Firebase : 656 déjà présentes, 15 sur des solutions non reprises au catalogue (Medaplix, OSOFT…), et **44 « absentes » qui sont en réalité des coquilles vides** (49 scores tous à 0, aucune note/date/commentaire = formulaire ouvert jamais rempli). Le garde-fou `isEmpty` du script `scripts/fix-import-evals-manquantes.ts` les skip à juste titre → **aucune vraie évaluation perdue, rien à importer**.
+- **560 users Firebase non migrés = profils dormants** (`isComplete=false`, pas d'email, jamais finalisés, dont 0 avec une vraie éval). **Décision : ne PAS les importer** — s'ils reviennent un jour, leur RPPS sera récupéré à l'inscription, ce qui évite des fusions de comptes.
+- Mapping de correspondance Firebase↔Supabase généré via `scripts/export-mapping-firebase-supabase.ts` (Excel local, non commité car données perso).
 
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
