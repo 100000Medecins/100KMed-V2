@@ -5,6 +5,114 @@
 
 ---
 
+## [2026-05-29] — SEO : redirections 301, sitemap, archive/legacy + nettoyage colonnes mortes
+
+### SEO — Redirections des anciennes URLs Quasar + sitemap
+
+Suite au constat de résultats Google pointant vers des 404 après la bascule en prod. Diagnostic complet dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md) : la plupart des URLs SEO gardent le même schéma ; les 404 venaient surtout du sitemap (qui exposait des pages inactives et que Google n'arrivait pas à lire) et de `legacy.` indexé.
+
+- **`next.config.mjs`** : 10 redirections 301 des anciennes URLs renommées (camelCase→kebab : `difficileDeChanger`, `tousEnsemble`, `lancement100k`, `monCompte/*`, `connexion/creationCompte/*` ; + `presentation100k`→`qui-sommes-nous`).
+- **Comparaison `slug-vs-slug`** : l'ancienne URL `/solutions/:cat/:slugA-vs-:slugB` est interceptée dans la page solution, les slugs sont résolus en UUIDs (`getSolutionIdsBySlugs` dans `src/lib/db/solutions.ts`) et redirigée 301 vers `/solutions/comparer?ids=`. Fallback `/solutions` si un slug est introuvable.
+- **`src/app/sitemap.ts`** : refonte — solutions filtrées `actif=true` + catégorie active, éditeurs ayant ≥1 solution active (dédoublonnés), ajout des articles de blog, `force-dynamic`, fix typo fallback `BASE_URL`.
+
+### Infrastructure — Réparation archive. et noindex sur legacy.
+
+- **`archive.100000medecins.org`** réparé : la page blanche venait d'un mismatch de build (l'`index.html` servi demandait `app.12dfe04f.js`/`vendor.a19a643d.js` alors que `htdocs/js/` contenait d'autres hash). Réupload cohérent de `dist/spa/`. Le `.htaccess` SPA était déjà en place. Rôle = transfert SEO uniquement (noindex + canonical), données vides sans importance.
+- **`legacy.100000medecins.org`** : ajout d'un `.htaccess` avec `Header set X-Robots-Tag "noindex, follow"` (uploadé côté Gandi) pour le déréférencer de Google sans le rendre inaccessible. Vérifié en live (en-tête présent sur HTTP 200).
+- **Search Console** : sitemap re-soumis (l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections ; le fichier répond bien, ~450 URLs). Sitemap fantôme `sitemap_v2.xml` (vestige 2024, 404) à retirer.
+
+### Nettoyage — Colonnes mortes Supabase
+
+- Suppression de colonnes inutilisées : `categories.criteres_recherche`, `categories.schema_evaluation`, `resultats.notes_critere`, `users.date_naissance`. Détail dans [docs/audit-colonnes-mortes-supabase.md](docs/audit-colonnes-mortes-supabase.md).
+- Régénération de `src/types/database.ts` + nettoyage de `src/types/models.ts` (type `SchemaEvaluation` retiré) et `src/lib/db/evaluations.ts` (références `notes_critere`).
+- **`CLAUDE.md`** : nouvelle section sur les chemins d'accès BDD (MCP `claude_readonly` + BYPASSRLS pour les analyses, `service_role` pour les écritures, DDL via SQL Editor).
+
+### TODO — Mises à jour
+- Ajout section URGENT (404/redirections, en grande partie traitée).
+- Ajout : URLs éditeurs en slug, éditeurs orphelins, logo condensé index, sitemap propre.
+
+---
+
+## [2026-05-28] — Audit & corrections des évaluations importées de Firebase (Fix #1, #1bis, #2)
+
+### Contexte — Signalement utilisateur sur Odaiji
+
+Un utilisateur de l'ancien site signale que la fiche Odaiji n'affiche pas certains avis présents avant migration et que les notes individuelles divergent (ex. Daphné Julie : note moyenne incorrecte + commentaire écrit absent). Investigation lancée sur Odaiji puis étendue aux 24 solutions `is_firebase_legacy = true`.
+
+### Audit — Comparaison Firebase ↔ Supabase sur les 24 solutions legacy
+
+- Script `scripts/audit-global-evaluations-firebase.ts` (ré-exécutable, lecture seule) : compare évals FB ↔ SB par RPPS pour chaque solution `is_firebase_legacy = true`. Rapport détaillé dans [docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md).
+- **Bug critique découvert pendant l'audit** : tous les scripts utilisant `.from('users').select(...)` étaient plafonnés silencieusement à **1000 rows** (limite Supabase par défaut), alors qu'on a 5930 users avec RPPS. Conséquence : la première passe d'audit et de fix manquait ~83% des utilisateurs. Corrigé par pagination explicite (`.range(from, from+PAGE-1)`).
+- **Chiffres clés (post-fixes)** : 705 évals FB vs 644 SB (24 solutions) ; 638 matchées ; 63 non importées ; 16 en ancien format (clés numériques `"6"-"50"`) ; 5 user-SB-sans-RPPS pré-launch.
+
+### Fix #1 — Moyenne + 5 critères majeurs alignés sur Firebase /2
+
+- Script `scripts/fix-firebase-evals-moyennes-et-criteres.ts` (idempotent, dry-run par défaut, `--execute` requis).
+- Pour chaque éval SB pré-`DATE_MISE_EN_LIGNE` (2026-04-12) matchée par RPPS avec une éval FB ayant `moyenneUtilisateur > 0` :
+  - `moyenne_utilisateur` = `fb.moyenneUtilisateur / 2`
+  - `scores.interface/fonctionnalites/fiabilite/editeur/qualite_prix` = valeurs Firebase brutes (idTech 1-5) /2, ou `null` si absent côté FB
+- Aucun impact sur l'agrégat : `recalcResultatsPourSolution` en mode legacy filtre `created_at >= DATE_MISE_EN_LIGNE`, donc modifier les scores d'une éval pré-lancement n'affecte ni `resultats.firebase_moyenne_base5` (figé) ni l'agrégat affiché.
+- **Résultat : 378 évals corrigées** (171 critères majeurs ajoutés, 1069 modifiés, 0 supprimé). Backup JSON intégral dans `docs/backup-fix-firebase-20260528-*.json`.
+- Cas extrême corrigé : Alexis Doro (Odaiji) → moyenne `1.9` → **`4.6`** (les critères `fonctionnalites`, `fiabilite`, `editeur` étaient null SB → comptés comme 0 dans le calcul).
+
+### Fix #1bis — Recalcul moyenne pour les évals Firebase avec `moyenneUtilisateur = 0`
+
+- Cause découverte : pour ~154 évals Firebase historiques (typiquement MLM/Medistory 2023-01-20), le médecin n'avait noté que les sous-critères (idTech 6-50), pas les 5 majeurs (idTech 1-5). `moyenneUtilisateur=0` côté FB est un artéfact de l'ancien site. Côté SB, les 5 majeurs ont été reconstruits depuis les sous-critères mais souvent 1 sur 5 reste `null` → bug calcul `null = 0` → moyenne anormalement basse.
+- Script `scripts/fix-firebase-evals-fb-zero.ts` : recalcule `moyenne_utilisateur` comme la moyenne des 5 critères majeurs SB **en excluant les `null`** (au lieu de les compter comme 0). Ne touche QUE `moyenne_utilisateur`, pas les scores individuels.
+- **Résultat : 37 évals corrigées** (toutes avec 4/5 critères utilisés). Changements modérés : aucun > +1.0. Ex MLM 10101095734 : `2.93` → **`3.66`**. Backup JSON.
+
+### Fix #2 — Commentaires Firebase perdus restaurés
+
+- Script `scripts/fix-firebase-commentaires-perdus.ts` : pour chaque éval SB matchée FB sans `scores.commentaire`, copie le texte du critère commentaire FB (idTech 50, `_fid=XEMuh3cPWbJjS7KYmj0l`) vers `sb.scores.commentaire`.
+- **Résultat : 10 commentaires restaurés** dont Daphné Julie (Odaiji, 1524 caractères), Eva De Peretti Della Rocca (Odaiji), Marie-Hélène Fabre (Doctolib), Charles Cartou (Doctolib), Carine Korkmaz (Follow + TAMM), Baptiste Ferry (Medistory), Philippe Luthier (DrSanté), Gaëlle Lunardi (Alma Pro), Arthur Deroure-Corte (Alma Pro). Backup JSON.
+
+### Garde-fous évals vides
+
+- **154 évals Firebase avec `moyenneUtilisateur=0`** : sont skippées par Fix #1 (logique : pas d'ancrage FB pour `/2`), traitées par Fix #1bis si reconstruisibles depuis SB.
+- Cohérence avec la décision passée (nettoyage 2026-05-23) : 48 évals vides supprimées et archivées dans `evaluations_vides_supprimees`.
+
+### Reste à faire
+
+- **Fix #3** (16 évals encore en ancien format clés `"6"-"50"`) — avec garde-fou évals vides
+- **Fix #4** (63 évals Firebase non importées) — création users + insert evals, avec garde-fou évals vides
+- Vérifier après Fix #3/#4 que l'agrégat des solutions reste figé (`firebase_moyenne_base5` non touché)
+
+### TODO — Mises à jour
+- Ajout : Fix #3 (16 évals ancien format) + Fix #4 (63 évals FB non importées) pour la prochaine session
+- Ajout : `.gitignore` exclut maintenant `docs/backup-fix-*.json` (les 4 backups du jour commités comme référence)
+
+---
+
+## [2026-05-27] — Audit grants Supabase + fix `solution_liens`
+
+### Contexte — Changement de politique Supabase au 30/10/2026
+
+Email d'annonce reçu : à partir du **30 octobre 2026**, Supabase n'expose plus automatiquement les nouvelles tables `public` à la Data API (PostgREST/`supabase-js`). Sur notre projet existant (`qnspmlskzgqrqtuvsbuo`), **les tables existantes conservent leurs grants implicites** — seules les tables créées après cette date devront recevoir des `GRANT` explicites.
+
+Le réflexe est déjà documenté dans [CLAUDE.md](CLAUDE.md) (section « GRANTs explicites sur toute nouvelle table »).
+
+### Audit de l'état actuel
+
+Vérification via `pg_class.relacl` (et non `information_schema.role_table_grants`, qui peut être filtré selon le rôle interrogateur) : **toutes les tables `public` existantes ont bien les grants implicites** sur les rôles `anon` / `authenticated` / `service_role` (format `arwdDxtm` = tous privilèges).
+
+Une seule anomalie détectée : `solution_liens` était lisible via le MCP `claude_readonly` mais pas correctement visible — le rôle n'avait pas reçu son grant SELECT explicite.
+
+### Fix — GRANT explicites sur `solution_liens`
+
+```sql
+GRANT SELECT ON public.solution_liens TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.solution_liens TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.solution_liens TO service_role;
+GRANT SELECT ON public.solution_liens TO claude_readonly;
+```
+
+Le rôle `claude_readonly` (utilisé par le MCP Supabase) peut maintenant lire la table — utile pour le diagnostic depuis Claude Code. Aucun impact sur le site (les server actions utilisaient déjà `service_role`).
+
+### TODO — Mises à jour
+- Ajout dans `Mises à jour techniques` : « Audit grants Supabase avant le 30 octobre 2026 » avec checklist (Security Advisor du dashboard à utiliser ~1 mois avant la deadline).
+
+---
+
 ## [2026-05-25] — Bascule du site en production sur www.100000medecins.org (Vercel)
 
 ### Infrastructure — Mise en production du nouveau site
@@ -78,6 +186,17 @@ Pour chaque solution : description courte + longue, prix décodé (`prix_ttc` / 
 - Mapping détaillé conservé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md) (descriptions, prix, tags, sources fichier Excel).
 - Types Supabase régénérés (`npx supabase gen types…`).
 - Reste à compléter par David fiche-par-fiche : logos, URLs éditeur (devinées), `meta.title`/`meta.description` SEO, puis bascule `actif = true`.
+
+### Fix — /noter ne respectait pas le filtre `categories.actif`
+
+`/solutions/[idCategorie]` (comparatif) masque correctement les catégories inactives via `getCategorieBySlug()` qui filtre sur `.eq('actif', true)`. En revanche, `/solution/noter` lisait directement `solutions` avec un simple `.eq('actif', true)` sur la solution, sans regarder le `actif` de la catégorie jointe — donc une catégorie inactive avec des solutions individuellement actives apparaissait quand même dans la liste « Évaluer un logiciel ».
+
+- **Symptôme** : Télétransmission (catégorie en `actif=false` mais 2 solutions en `actif=true`) apparaissait sur `/noter` alors qu'elle était invisible sur `/solutions`.
+- **Fix** dans [src/app/solution/noter/page.tsx:46-49](src/app/solution/noter/page.tsx#L46-L49) : passage en INNER JOIN PostgREST (`categories!inner`) + filtre `.eq('categorie.actif', true)`. Comportement maintenant cohérent entre `/noter` et `/solutions`.
+
+### TODO — Mises à jour
+- Archivé dans `TODO-archive.md` : Email lancement syndicats (24/05), DROP `evaluations_vides_supprimees` (24/05), Checklist passage prod www (25/05), Bascule DNS prod (25/05).
+- Conservé en TODO : note résiduelle bascule prod (`legacy.100000medecins.org` sans noindex).
 
 ---
 

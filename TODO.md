@@ -4,6 +4,24 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ---
 
+## URGENT
+
+#### ⚠️ Résultats Google → 404 : plan de redirection (2026-05-28)
+- **Symptôme** : les URLs de l'ancien site encore indexées dans Google renvoient vers une 404 sur le nouveau site.
+- **Diagnostic complet** dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md). Constat clé : la plupart des URLs SEO (solutions, catégories, éditeurs) gardent le même schéma → les 404 viennent surtout de solutions/catégories passées `actif=false`, de slugs changés (Firebase→Supabase), et du sitemap qui exposait les pages inactives.
+- ✅ **Fait le 2026-05-28/29** :
+  - Sitemap corrigé (filtre `actif` + catégorie active + fix typo `BASE_URL`, refonte complète : éditeurs actifs dédoublonnés, articles de blog, `force-dynamic`).
+  - 10 redirections 301 dans `next.config.mjs` (camelCase→kebab : `difficileDeChanger`, `tousEnsemble`, `lancement100k`, `monCompte/*`, `connexion/creationCompte/*` + `presentation100k`→`qui-sommes-nous`).
+  - **Comparaison `slug-vs-slug`** → interception dans la page solution + résolution slugs→UUIDs (`getSolutionIdsBySlugs`) → redirect 301 vers `/solutions/comparer?ids=`.
+  - **`archive.100000medecins.org` réparé** : page blanche due à un mismatch de build (`index.html` demandait des hash js absents). Réupload cohérent de `dist/spa/`. Rôle = transfert SEO uniquement (noindex + canonical).
+  - **`legacy.100000medecins.org`** mis en noindex (`.htaccess` avec `X-Robots-Tag: noindex, follow`, vérifié live) pour le déréférencer de Google.
+- ✅ Sitemap fantôme `sitemap_v2.xml` supprimé de Search Console (2026-05-29).
+- **Reste à faire (suivi)** :
+  - Vérifier sous ~1 semaine que `sitemap.xml` passe en « Réussite » (recrawl Google en cours ; l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections).
+  - Surveiller le déréférencement progressif de `legacy.` dans les résultats Google.
+
+---
+
 ## En attente / Idées
 
 ### Sécurité
@@ -36,19 +54,20 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
   - Détecter les comparatifs (`X vs Y`) et lier automatiquement aux deux solutions via `video_solutions` plutôt que de réimporter.
 - **Cas du doublon** : une même URL YouTube partagée par plusieurs solutions (ex. comparatif). Le script saute aujourd'hui les URLs déjà en BDD (SELECT + `continue`), donc le rattachement à la 2e solution se fait manuellement via le panneau "Vidéos liées" de la fiche solution admin. Évolution possible : si l'URL existe déjà, ajouter juste un nouveau lien `video_solutions` au lieu de skip.
 
-#### ~~Email de lancement par syndicat — finaliser le wording~~ ✅ (fait le 2026-05-24)
-- ~~Base livrée le 2026-05-21 (template + admin + rendus versionnés). Wording finalisé le 2026-05-24.~~
-
 ### Nettoyage
-
-#### ~~Vider la table `evaluations_vides_supprimees`~~ ✅ (DROP fait le 2026-05-24)
-- ~~48 évaluations vides supprimées le 2026-05-23, backup `evaluations_vides_supprimees` droppé le 2026-05-24 (pas de rétention utile, données vides par définition).~~
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
 - **Cause principale** : schema drift (`actualites`, `documents` absentes des types Supabase auto-générés) → contournement légitime via `as any`. Le vrai remède = régénérer `src/types/database.ts` (`npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts`), pas du typage manuel.
 - **Pas de chantier dédié prévu** sauf si un jour on veut un lint propre en CI.
+
+#### Finir l'audit Firebase ↔ Supabase — Fix #3 et Fix #4 restants
+
+- **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) déjà appliqués.
+- ✅ **Fix #3 — FAIT** (vérifié le 2026-05-29 : 0 éval en ancien format restante en base). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé via `mapping_criteres_v2.csv` + reconstruction empirique (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
+- ⚠️ **Fix #4 — À CONFIRMER / EXÉCUTER** : script `scripts/fix-import-evals-manquantes.ts` écrit (idempotent, dry-run par défaut, `--execute` requis, garde-fous : skip évals vides + David Azerad + doublons). **Statut d'exécution incertain au 2026-05-29** — vérifier si lancé en `--execute`. Sinon le lancer. Importe les ~63 évals FB manquantes (users absents créés sans email si besoin).
+- **Validation finale** : régénérer `npx tsx scripts/audit-global-evaluations-firebase.ts` après Fix #4. Vérifier que l'agrégat des solutions (`firebase_moyenne_base5` dans `resultats`) reste figé (non touché par le mode legacy de `recalcResultatsPourSolution`).
 
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
@@ -60,6 +79,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
 
 ### UX / UI
+
+#### URLs éditeurs en slug lisible (au lieu de l'UUID)
+- **Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).
+- **Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.
+- À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.
+
+#### Éditeurs orphelins (0 solution) — à nettoyer
+- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.
+
+#### Logo condensé sur l'index — nouvel essai
+- Retenter une version condensée du logo sur la page d'accueil du site.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -77,7 +107,23 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 _(rien à faire pour l'instant)_
 
+### SEO / Référencement
+
+#### Sitemap propre + URLs éditeurs en UUID (demande Ben, 2026-05-28)
+- **Sitemap** : générer un `sitemap.xml` propre pour le nouveau site (à ce jour absent ou incomplet).
+- **Bug URLs éditeurs** : certaines fiches éditeurs sont servies sur une URL en UUID brut (ex. `/0597f887-e925-40be-b42a-2b75ad960b46`, `/064b3c08-971c-4bdf-bc30-990d8ce3b62c`) au lieu d'un slug lisible. À diagnostiquer : éditeurs sans `slug` ? Route qui retombe sur l'`id` faute de slug ? → leur générer un slug et corriger la route.
+- Lié au chantier URGENT « Résultats Google → 404 » (cohérence des URLs publiques).
+
 ### Mises à jour techniques
+
+#### Audit grants Supabase avant le 30 octobre 2026
+- **Contexte** : à partir du 30/10/2026, Supabase n'exposera plus automatiquement les nouvelles tables `public` à la Data API (PostgREST/`supabase-js`). Les tables existantes ne sont pas touchées — elles conservent leurs grants implicites.
+- **Réflexe déjà actif** dans [CLAUDE.md](CLAUDE.md) : tout nouveau `CREATE TABLE` doit inclure les `GRANT` explicites par rôle.
+- **À faire ~1 mois avant la deadline (≈ fin septembre 2026)** :
+  - Utiliser le Security Advisor du dashboard Supabase pour lister les tables actuellement exposées
+  - Vérifier qu'aucune table sensible n'est ouverte au rôle `anon` sans raison
+  - Vérifier qu'aucune table dont on a besoin n'est en `permission denied` (cf. cas `solution_liens` fixé le 2026-05-27)
+- **Pas urgent** : informatif tant que la deadline est lointaine.
 
 #### Vulnérabilités npm restantes
 - **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
@@ -92,17 +138,8 @@ _(rien à faire pour l'instant)_
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
-#### ~~Checklist technique passage en prod (www)~~ ✅ Fait le 2026-05-25
-- ~~Vercel `NEXT_PUBLIC_SITE_URL` → `https://www.100000medecins.org` (Production redéployée)~~
-- ~~Supabase Site URL + Redirect URLs mis à jour~~
-
-#### ~~DNS — mise en prod~~ ✅ Fait le 2026-05-25
-- ~~Apex et www basculés sur Vercel (avec les nouvelles IPs `216.198.79.1` + CNAME `c7aae8f426bf52ce.vercel-dns-017.com.` recommandées par Vercel)~~
-- ~~4 CNAME SSL sectigo/comodoca supprimés~~
-- ~~`_dmarc` restauré au passage (était vide)~~
-- ~~Ancien site déplacé sur `archive.100000medecins.org` avec noindex + canonical~~
-- ~~Wildcard `* CNAME webredir.vip.gandi.net.` conservé (n'interfère pas, on l'avait laissé)~~
-- Note : `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi, sans noindex pour l'instant
+#### Note résiduelle bascule prod (2026-05-25)
+- `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi. ✅ Mis en noindex le 2026-05-29 (`.htaccess` avec `X-Robots-Tag: noindex, follow`) → déréférencement Google en cours.
 
 ---
 

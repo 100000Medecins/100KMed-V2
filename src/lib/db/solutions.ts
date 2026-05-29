@@ -133,6 +133,16 @@ export async function getSolutionById(id: string) {
 }
 
 /**
+ * Résout des slugs de solutions en UUIDs (lookup léger, sans charger les relations).
+ * Utilisé pour rediriger les anciennes URLs de comparaison `slug-vs-slug` vers `/solutions/comparer?ids=`.
+ */
+export async function getSolutionIdsBySlugs(slugs: string[]): Promise<Map<string, string>> {
+  const supabase = await createServerClient()
+  const { data } = await supabase.from('solutions').select('id, slug').in('slug', slugs)
+  return new Map((data ?? []).filter((s): s is { id: string; slug: string } => !!s.slug).map((s) => [s.slug, s.id]))
+}
+
+/**
  * Récupère une solution par son slug avec toutes ses relations.
  */
 export async function getSolutionBySlug(slug: string) {

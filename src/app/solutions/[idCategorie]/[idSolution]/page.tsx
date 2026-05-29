@@ -1,10 +1,10 @@
 export const revalidate = 300
 
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { getSolutionBySlug, getSolutions, getNotesRedac } from '@/lib/db/solutions'
+import { getSolutionBySlug, getSolutionIdsBySlugs, getSolutions, getNotesRedac } from '@/lib/db/solutions'
 import { getAllResultats } from '@/lib/db/resultats'
 import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNoteUtilisateurs } from '@/lib/db/evaluations'
 import { getSolutionsLiees } from '@/lib/db/solution-liens'
@@ -37,6 +37,16 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function SolutionPage(props: PageProps) {
   const params = await props.params;
+
+  // Ancienne URL de comparaison Quasar `/solutions/:cat/:slugA-vs-:slugB` → redirige 301 vers /solutions/comparer?ids=
+  if (params.idSolution.includes('-vs-')) {
+    const [slugA, slugB] = params.idSolution.split('-vs-')
+    const idMap = await getSolutionIdsBySlugs([slugA, slugB])
+    const ids = [idMap.get(slugA), idMap.get(slugB)].filter(Boolean)
+    if (ids.length === 2) redirect(`/solutions/comparer?ids=${ids.join(',')}`)
+    redirect('/solutions') // au moins un slug introuvable : fallback vers le listing
+  }
+
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
   if (!solution) notFound()
 

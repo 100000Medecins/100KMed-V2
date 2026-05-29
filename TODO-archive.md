@@ -5,6 +5,23 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-05-25**
+- [OK] 2026-05-25 : Checklist technique passage en prod (www) (Déploiement final)
+  - Vercel `NEXT_PUBLIC_SITE_URL` → `https://www.100000medecins.org` (Production redéployée).
+  - Supabase Site URL + Redirect URLs mis à jour.
+- [OK] 2026-05-25 : DNS — mise en prod (Déploiement final)
+  - Apex et www basculés sur Vercel (avec les nouvelles IPs `216.198.79.1` + CNAME `c7aae8f426bf52ce.vercel-dns-017.com.` recommandées par Vercel).
+  - 4 CNAME SSL sectigo/comodoca supprimés.
+  - `_dmarc` restauré au passage (était vide).
+  - Ancien site déplacé sur `archive.100000medecins.org` avec noindex + canonical.
+  - Wildcard `* CNAME webredir.vip.gandi.net.` conservé (n'interfère pas, on l'avait laissé).
+
+**2026-05-24**
+- [OK] 2026-05-24 : Email de lancement par syndicat — finaliser le wording (Communication)
+  - Base livrée le 2026-05-21 (template + admin + rendus versionnés). Wording finalisé le 2026-05-24.
+- [OK] 2026-05-24 : Vider la table `evaluations_vides_supprimees` — DROP fait (Nettoyage)
+  - 48 évaluations vides supprimées le 2026-05-23, backup `evaluations_vides_supprimees` droppé le 2026-05-24 (pas de rétention utile, données vides par définition).
+
 **2026-05-23**
 - [OK] 2026-05-23 : Clés Cloudflare Turnstile posées en production (Déploiement final)
   - `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` créées côté Cloudflare et renseignées dans Vercel (env Production). Clés au format `0x4A...` (préfixe Cloudflare standard) également présentes dans `.env.local` pour dev.
