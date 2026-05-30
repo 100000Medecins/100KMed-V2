@@ -5,6 +5,7 @@ import { createHmac, randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { generateUniqueEditeurSlug } from '@/lib/db/editeurs'
 
 // ────────────────────────────────────────────
 // Auth
@@ -580,6 +581,49 @@ export async function updatePageStatique(id: string, formData: FormData) {
   redirect('/admin/pages')
 }
 
+/**
+ * Action dédiée pour la tooltip note globale (slug 'tooltip-note-globale').
+ * Valide les 4 champs structurés, les sérialise en JSON dans pages_statiques.contenu,
+ * puis revalide les fiches solutions qui consomment la tooltip.
+ */
+export async function updateNoteGlobaleTooltip(id: string, formData: FormData) {
+  await assertAdmin()
+
+  const supabase = createServiceRoleClient()
+
+  const tooltip_court_legacy = ((formData.get('tooltip_court_legacy') as string) || '').trim()
+  const tooltip_court_standard = ((formData.get('tooltip_court_standard') as string) || '').trim()
+  const tooltip_long_titre = ((formData.get('tooltip_long_titre') as string) || '').trim()
+  const tooltip_long_corps = ((formData.get('tooltip_long_corps') as string) || '').trim()
+
+  if (!tooltip_court_legacy || !tooltip_court_standard || !tooltip_long_titre || !tooltip_long_corps) {
+    return { error: 'Les 4 champs sont obligatoires.' }
+  }
+  if (tooltip_court_legacy.length > 300 || tooltip_court_standard.length > 300) {
+    return { error: 'Les textes courts ne doivent pas dépasser 300 caractères.' }
+  }
+
+  const contenu = JSON.stringify({
+    tooltip_court_legacy,
+    tooltip_court_standard,
+    tooltip_long_titre,
+    tooltip_long_corps,
+  })
+
+  const { error } = await supabase
+    .from('pages_statiques')
+    .update({ contenu })
+    .eq('id', id)
+
+  if (error) return { error: `Erreur lors de la mise à jour : ${error.message}` }
+
+  revalidatePath('/admin/pages')
+  // Revalider les listings de solutions (les fiches utilisent revalidate=300, donc max 5min de cache)
+  revalidatePath('/solutions', 'layout')
+
+  redirect('/admin/pages')
+}
+
 // ────────────────────────────────────────────
 // Partenaires
 // ────────────────────────────────────────────
@@ -637,9 +681,13 @@ export async function togglePartenaireActif(id: string, actif: boolean) {
 export async function createEditeur(formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
-  const { data, error } = await supabase.from('editeurs').insert({
+  const nom = formData.get('nom') as string
+  const slug = await generateUniqueEditeurSlug(nom)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).from('editeurs').insert({
     id: randomUUID(),
-    nom: formData.get('nom') as string,
+    nom,
+    slug,
     nom_commercial: (formData.get('nom_commercial') as string) || null,
     description: (formData.get('description') as string) || null,
     logo_url: (formData.get('logo_url') as string) || null,
@@ -650,6 +698,7 @@ export async function createEditeur(formData: FormData) {
     nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
     siret: (formData.get('siret') as string) || null,
     mot_editeur: (formData.get('mot_editeur') as string) || null,
+    affiche_sur_index: formData.get('affiche_sur_index') === 'on',
   }).select('id').single()
   if (error) return { error: error.message }
   revalidatePath('/admin/editeurs')
@@ -663,7 +712,8 @@ export async function createEditeur(formData: FormData) {
 export async function updateEditeur(id: string, formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
-  const { error } = await supabase.from('editeurs').update({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('editeurs').update({
     nom: formData.get('nom') as string,
     nom_commercial: (formData.get('nom_commercial') as string) || null,
     description: (formData.get('description') as string) || null,
@@ -675,10 +725,13 @@ export async function updateEditeur(id: string, formData: FormData) {
     nb_employes: formData.get('nb_employes') ? Number(formData.get('nb_employes')) : null,
     siret: (formData.get('siret') as string) || null,
     mot_editeur: (formData.get('mot_editeur') as string) || null,
+    affiche_sur_index: formData.get('affiche_sur_index') === 'on',
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/editeurs')
-  revalidatePath(`/editeur/${id}`)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: ed } = await (supabase as any).from('editeurs').select('slug').eq('id', id).single()
+  if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
   redirect('/admin/editeurs')
 }
 
@@ -697,7 +750,9 @@ export async function attachSolutionToEditeur(solutionId: string, editeurId: str
   const supabase = createServiceRoleClient()
   await supabase.from('solutions').update({ id_editeur: editeurId }).eq('id', solutionId)
   revalidatePath(`/admin/editeurs/${editeurId}/modifier`)
-  revalidatePath(`/editeur/${editeurId}`)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: ed } = await (supabase as any).from('editeurs').select('slug').eq('id', editeurId).single()
+  if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
 }
 
 /**
@@ -708,7 +763,9 @@ export async function detachSolutionFromEditeur(solutionId: string, editeurId: s
   const supabase = createServiceRoleClient()
   await supabase.from('solutions').update({ id_editeur: null }).eq('id', solutionId)
   revalidatePath(`/admin/editeurs/${editeurId}/modifier`)
-  revalidatePath(`/editeur/${editeurId}`)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: ed } = await (supabase as any).from('editeurs').select('slug').eq('id', editeurId).single()
+  if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
 }
 
 // ────────────────────────────────────────────
@@ -1497,4 +1554,126 @@ export async function rejectSuggestion(id: string) {
   const supabase = createServiceRoleClient() as any
   await supabase.from('suggestions_acronymes').delete().eq('id', id)
   revalidatePath('/admin/acronymes')
+}
+
+// ────────────────────────────────────────────
+// Demandes de référencement éditeur (formulaire public sur /editeurs)
+// ────────────────────────────────────────────
+
+export async function suggestEditeurReferencement(formData: FormData) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
+  const nomEditeur = (formData.get('nom_editeur') as string)?.trim()
+  const nomSolution = (formData.get('nom_solution') as string)?.trim() || null
+  const emailContact = (formData.get('email_contact') as string)?.trim()
+  const siteWeb = (formData.get('site_web') as string)?.trim() || null
+  const message = (formData.get('message') as string)?.trim() || null
+
+  if (!nomEditeur || !emailContact) {
+    return { error: 'Le nom de la société et l\'email sont obligatoires.' }
+  }
+  // Validation email basique
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailContact)) {
+    return { error: 'L\'adresse email n\'est pas valide.' }
+  }
+
+  const { error } = await supabase.from('editeur_demandes_referencement').insert({
+    nom_editeur: nomEditeur,
+    nom_solution: nomSolution,
+    email_contact: emailContact,
+    site_web: siteWeb,
+    message,
+  })
+  if (error) return { error: error.message }
+
+  // Envoi des emails (non-bloquant : si SendGrid plante, on retourne quand même success)
+  try {
+    const { default: sgMail } = await import('@sendgrid/mail')
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+    const FROM = { email: 'contact@100000medecins.org', name: '100000médecins.org' }
+
+    // Accusé de réception au demandeur
+    await sgMail.send({
+      to: emailContact,
+      from: FROM,
+      subject: 'Votre demande de référencement — 100000médecins.org',
+      html: `
+        <h2>Demande bien reçue</h2>
+        <p>Bonjour,</p>
+        <p>Nous avons bien reçu votre demande de référencement pour <strong>${nomEditeur}</strong>${
+          nomSolution ? ` (logiciel : <strong>${nomSolution}</strong>)` : ''
+        }.</p>
+        <p>Notre équipe l'examinera dans les meilleurs délais et reviendra vers vous par email.</p>
+        <p>Merci de votre intérêt pour 100000médecins.org.</p>
+        <hr />
+        <p style="color:#888;font-size:12px">Récapitulatif de votre demande :</p>
+        <ul style="color:#888;font-size:12px">
+          <li><strong>Société :</strong> ${nomEditeur}</li>
+          ${nomSolution ? `<li><strong>Logiciel :</strong> ${nomSolution}</li>` : ''}
+          ${siteWeb ? `<li><strong>Site :</strong> ${siteWeb}</li>` : ''}
+          ${message ? `<li><strong>Message :</strong> ${message.replace(/\n/g, '<br />')}</li>` : ''}
+        </ul>
+      `,
+    })
+
+    // Notification interne
+    await sgMail.send({
+      to: 'david.azerad@100000medecins.org',
+      from: FROM,
+      replyTo: emailContact,
+      subject: `[Demande référencement] ${nomEditeur}`,
+      html: `
+        <h2>Nouvelle demande de référencement éditeur</h2>
+        <ul>
+          <li><strong>Société :</strong> ${nomEditeur}</li>
+          ${nomSolution ? `<li><strong>Logiciel concerné :</strong> ${nomSolution}</li>` : ''}
+          <li><strong>Email contact :</strong> <a href="mailto:${emailContact}">${emailContact}</a></li>
+          ${siteWeb ? `<li><strong>Site web :</strong> <a href="${siteWeb}">${siteWeb}</a></li>` : ''}
+        </ul>
+        ${message ? `<hr /><p><strong>Message :</strong></p><p>${message.replace(/\n/g, '<br />')}</p>` : ''}
+        <hr />
+        <p><a href="https://www.100000medecins.org/admin/editeurs/demandes">Voir dans l'admin</a></p>
+      `,
+    })
+  } catch (e) {
+    console.error('[suggestEditeurReferencement] email error', e)
+    // On ne fait pas échouer la requête : la demande est en base, l'admin la verra de toute façon.
+  }
+
+  return { success: true }
+}
+
+export async function approveEditeurReferencement(id: string, payload: {
+  nom: string
+  nom_commercial: string | null
+  website: string | null
+}) {
+  await assertAdmin()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
+  const slug = await generateUniqueEditeurSlug(payload.nom)
+  const newId = randomUUID()
+  const { error: insertError } = await supabase.from('editeurs').insert({
+    id: newId,
+    nom: payload.nom,
+    slug,
+    nom_commercial: payload.nom_commercial,
+    website: payload.website,
+    affiche_sur_index: false, // l'admin activera la visibilité après avoir complété la fiche
+  })
+  if (insertError) return { error: insertError.message }
+
+  await supabase.from('editeur_demandes_referencement').delete().eq('id', id)
+  revalidatePath('/admin/editeurs/demandes')
+  revalidatePath('/admin', 'layout')
+  return { success: true, editeurId: newId }
+}
+
+export async function rejectEditeurReferencement(id: string) {
+  await assertAdmin()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceRoleClient() as any
+  await supabase.from('editeur_demandes_referencement').delete().eq('id', id)
+  revalidatePath('/admin/editeurs/demandes')
+  revalidatePath('/admin', 'layout')
 }

@@ -15,6 +15,7 @@ const STATIC_ROUTES: Array<{
 }> = [
   { path: '', changeFrequency: 'daily', priority: 1.0 },
   { path: '/solutions', changeFrequency: 'daily', priority: 0.9 },
+  { path: '/editeurs', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/comparatifs', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/blog', changeFrequency: 'weekly', priority: 0.6 },
   { path: '/actualites', changeFrequency: 'weekly', priority: 0.6 },
@@ -35,7 +36,7 @@ const STATIC_ROUTES: Array<{
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceRoleClient()
 
-  const [categoriesRes, solutionsRes, articlesRes] = await Promise.all([
+  const [categoriesRes, solutionsRes, articlesRes, editeursRes] = await Promise.all([
     // Catégories actives uniquement
     supabase.from('categories').select('slug').eq('actif', true),
     // Solutions actives dont la catégorie est active (INNER JOIN sur categorie.actif)
@@ -46,11 +47,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq('categorie.actif', true),
     // Articles de blog publiés (statut en base = 'publié', avec accent)
     supabase.from('articles').select('slug, updated_at, date_publication').eq('statut', 'publié'),
+    // Éditeurs marqués "affiche_sur_index" ET ayant au moins une solution active
+    // dans une catégorie active (INNER JOIN imbriqué — dédoublonné côté code).
+    // Cohérent avec /editeurs : un éditeur masqué de l'annuaire ne doit pas être indexé.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('editeurs')
+      .select('slug, updated_at, solutions:solutions!inner(actif, categorie:categories!inner(actif))')
+      .eq('affiche_sur_index', true)
+      .eq('solutions.actif', true)
+      .eq('solutions.categorie.actif', true),
   ])
 
   const categories = categoriesRes.data || []
   const solutions = solutionsRes.data || []
   const articles = articlesRes.data || []
+  const editeurs = editeursRes.data || []
+
+  // Dédoublonnage des éditeurs (l'INNER JOIN peut renvoyer plusieurs lignes par éditeur)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const editeursUniques = Array.from(
+    new Map((editeurs as any[]).map((e) => [e.slug as string, e])).values()
+  )
 
   const now = new Date()
 
@@ -98,8 +116,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }))
 
-  // Note : pages éditeurs volontairement exclues — URLs en UUID non SEO-friendly,
-  // à réintégrer après la migration vers des slugs (cf TODO « URLs éditeurs en slug »).
+  // ─── Pages éditeurs (avec slug, ayant au moins une solution active) ───
+  const editeurPages: MetadataRoute.Sitemap = editeursUniques.map((ed) => ({
+    url: `${BASE_URL}/editeur/${ed.slug}`,
+    lastModified: ed.updated_at ? new Date(ed.updated_at as string) : now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.5,
+  }))
 
-  return [...staticPages, ...categoryPages, ...solutionPages, ...articlePages]
+  return [...staticPages, ...categoryPages, ...solutionPages, ...articlePages, ...editeurPages]
 }

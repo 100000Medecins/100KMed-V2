@@ -12,7 +12,7 @@ export type AdminBadges = {
 /**
  * Compte les items en attente de modération côté admin.
  * Sources :
- * - editeur_claims (statut = en_attente)
+ * - editeur_claims (statut = en_attente) + editeur_demandes_referencement (toutes les lignes) → badge cumulé editeurClaims
  * - questionnaires_these + etudes_cliniques (statut = en_attente)
  * - emails_campagnes pending dont scheduled_at <= now() (envois en retard ou imminents)
  * - videos (statut = en_attente) — propositions vidéos utilisateurs à modérer
@@ -23,12 +23,16 @@ export async function getAdminBadges(): Promise<AdminBadges> {
   const supabase = createServiceRoleClient()
   const now = new Date().toISOString()
 
-  const [editeurClaims, etudes, questionnaires, emails, videos, propositions, communautes] = await Promise.all([
+  const [editeurClaims, editeurDemandes, etudes, questionnaires, emails, videos, propositions, communautes] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('editeur_claims')
       .select('id', { count: 'exact', head: true })
       .eq('statut', 'en_attente'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('editeur_demandes_referencement')
+      .select('id', { count: 'exact', head: true }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('etudes_cliniques')
@@ -63,7 +67,7 @@ export async function getAdminBadges(): Promise<AdminBadges> {
   ])
 
   return {
-    editeurClaims: editeurClaims.count ?? 0,
+    editeurClaims: (editeurClaims.count ?? 0) + (editeurDemandes.count ?? 0),
     etudesThese: (etudes.count ?? 0) + (questionnaires.count ?? 0),
     emails: emails.count ?? 0,
     videos: videos.count ?? 0,

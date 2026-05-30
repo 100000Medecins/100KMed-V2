@@ -20,7 +20,9 @@ function escapeAttr(s: string): string {
  * - la mise en forme inline : br, u, b, strong, em, i
  * - les paragraphes : p
  * - les listes : ul, ol, li
- * - les liens `<a href>` dont le href est en http(s):// ou mailto: (target/rel forcés)
+ * - les liens `<a href>` dont le href est :
+ *     - externe (http(s):// ou mailto:) → target="_blank" rel="noopener noreferrer"
+ *     - interne (commence par /) → pas de target (navigation interne au site)
  *
  * Toute autre balise (script, img, iframe, style, table, h1…) est supprimée.
  *
@@ -39,11 +41,19 @@ export function sanitizeHtml(html: string): string {
   const placeholders: string[] = []
   const keep = (tag: string): string => `__SAFE_${placeholders.push(tag) - 1}__`
 
-  // 1. Liens : conservés seulement si le href est en http(s):// ou mailto:
+  // 1. Liens : conservés selon le type de href.
+  //    - http(s):// ou mailto: → externe, ouvre dans un nouvel onglet
+  //    - /xxx → interne, reste dans le site (pas de target)
+  //    - tout autre href (javascript:, data:, sans schéma) → supprimé (sécurité)
   let work = html.replace(/<a\b[^>]*>/gi, (match) => {
     const href = match.match(/href\s*=\s*["']([^"']*)["']/i)?.[1]?.trim() ?? ''
-    if (!/^(https?:\/\/|mailto:)/i.test(href)) return ''
-    return keep(`<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">`)
+    if (/^(https?:\/\/|mailto:)/i.test(href)) {
+      return keep(`<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">`)
+    }
+    if (/^\/[^/]/.test(href) || href === '/') {
+      return keep(`<a href="${escapeAttr(href)}">`)
+    }
+    return ''
   })
   work = work.replace(/<\/a>/gi, () => keep('</a>'))
 

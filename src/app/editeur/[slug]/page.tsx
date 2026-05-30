@@ -10,13 +10,13 @@ import { sanitizeHtml } from '@/lib/sanitize'
 export const revalidate = 3600 // ISR : 1 heure
 
 interface PageProps {
-  params: Promise<{ idEditeur: string }>
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params;
   try {
-    const { editeur } = await getEditeurWithSolutions(params.idEditeur)
+    const { editeur } = await getEditeurWithSolutions(params.slug)
     return {
       title: `${editeur.nom} — Éditeur de logiciels médicaux`,
       description: editeur.description || `Découvrez les solutions de ${editeur.nom} et les avis de médecins.`,
@@ -36,7 +36,7 @@ export default async function EditeurPage(props: PageProps) {
   const params = await props.params;
   let editeur, solutions
   try {
-    const result = await getEditeurWithSolutions(params.idEditeur)
+    const result = await getEditeurWithSolutions(params.slug)
     editeur = result.editeur
     solutions = result.solutions
   } catch {

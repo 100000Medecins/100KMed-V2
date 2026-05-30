@@ -394,6 +394,7 @@ export type Database = {
       }
       editeurs: {
         Row: {
+          affiche_sur_index: boolean
           contact_adresse: string | null
           contact_cp: string | null
           contact_pays: string | null
@@ -408,10 +409,12 @@ export type Database = {
           nom: string | null
           nom_commercial: string | null
           siret: string | null
+          slug: string
           updated_at: string | null
           website: string | null
         }
         Insert: {
+          affiche_sur_index?: boolean
           contact_adresse?: string | null
           contact_cp?: string | null
           contact_pays?: string | null
@@ -426,10 +429,12 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
+          slug: string
           updated_at?: string | null
           website?: string | null
         }
         Update: {
+          affiche_sur_index?: boolean
           contact_adresse?: string | null
           contact_cp?: string | null
           contact_pays?: string | null
@@ -444,6 +449,7 @@ export type Database = {
           nom?: string | null
           nom_commercial?: string | null
           siret?: string | null
+          slug?: string
           updated_at?: string | null
           website?: string | null
         }

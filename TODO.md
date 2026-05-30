@@ -56,6 +56,20 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
+#### Supprimer les fallbacks silencieux des pages BDD (try/catch vide)
+
+- **Contexte (2026-05-29)** : les pages servies via `(static)/` (cgu, rgpd, transparence, contact, actualites, etc.) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui **avalait silencieusement** toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.
+- **Bug GRANT réparé** le 2026-05-29 (`GRANT SELECT TO anon` posé), mais le pattern lui-même reste dangereux.
+- **À faire** : remplacer chaque `try {} catch {}` vide dans `src/app/(static)/*/page.tsx` (et le fichier `transparence/page.tsx` racine) par un vrai `console.error()` qui remonte côté logs Vercel, voire un fallback explicite qui affiche un message d'erreur visible (« contenu temporairement indisponible ») plutôt qu'une version potentiellement périmée. Au minimum : logger l'erreur.
+
+#### Versioning/audit des contenus admin (pages_statiques, articles, etc.)
+
+- **Contexte (2026-05-29)** : un écrasement involontaire de `pages_statiques.contenu` (slug=transparence) a fait perdre ~1600 caractères (toute la section "Déclarations publiques d'intérêt des représentants"). Seule la version backup quotidien Synology a permis de constater l'écart. Aucune trace en base de l'historique des modifications (juste le dernier `updated_at`).
+- **Idée 1 — table d'audit `pages_statiques_history`** : trigger PG qui INSERT l'ancienne version avant chaque UPDATE. Idem pour `articles`, `editeurs_edit_log` (qui existe déjà).
+- **Idée 2 — diff visuel dans l'admin** : avant de sauvegarder, montrer ce qui change vs version actuelle (vert/rouge).
+- **Idée 3 — autosave + brouillons** : éviter qu'une perte de focus efface le travail en cours.
+- À cadrer selon priorité.
+
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
@@ -81,10 +95,24 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### UX / UI
 
-#### URLs éditeurs en slug lisible (au lieu de l'UUID)
-- **Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).
-- **Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.
-- À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.
+#### Tooltip note globale — affiner après la livraison initiale (2026-05-30)
+
+- **Livré (2026-05-30)** : tooltip cliquable à côté de la note globale sur chaque fiche solution (popover au survol + modale au clic), éditable depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
+- ~~**À améliorer — modale détaillée** : le rendu actuel utilise `prose-custom` + sanitize HTML par défaut. Travailler la lisibilité (hiérarchie typographique, aération des paragraphes, encadrés visuels pour les exemples chiffrés type « 4,2 sur 50 avis »).~~ [OK] Fait 2026-05-30 (styles Tailwind ciblés `[&_strong]`, `[&_a]`, `[&_ul]` + taille `lg` + `text-[15px] leading-relaxed`).
+- ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
+- **À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport. Si problème, ajouter une logique de positionnement adaptatif.
+
+#### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
+- ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).~~
+- ~~**Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.~~
+- ~~À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.~~
+- **Reste à faire** : poser les redirections 301 `/editeur/<uuid>` → `/editeur/<slug>` dans `next.config.mjs` pour la rétro-compat SEO (si des liens externes pointent encore vers les anciennes URLs UUID).
+
+#### ✅ Référencement éditeurs — livré (2026-05-30)
+- Nouvelle page publique `/editeurs/` (liste de tous les éditeurs) + composant `EditeursListClient`.
+- Formulaire public `EditeurReferencementForm` pour qu'un éditeur non référencé puisse demander son ajout au catalogue.
+- Côté admin : panneau `AdminEditeurDemandesRef` pour modérer les demandes + action server dans `src/lib/actions/admin.ts`.
+- Lien dans la Navbar vers `/editeurs`.
 
 #### Éditeurs orphelins (0 solution) — à nettoyer
 - 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.

@@ -5,9 +5,11 @@ import { Plus, Pencil, ExternalLink } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import DeleteEditeurButton from '@/components/admin/DeleteEditeurButton'
 import AdminEditeurClaims from '@/components/admin/AdminEditeurClaims'
+import AdminEditeurDemandesRef from '@/components/admin/AdminEditeurDemandesRef'
 import Button from '@/components/ui/Button'
 import type { Editeur } from '@/types/models'
 import type { ClaimRow, EditeurOption } from '@/components/admin/AdminEditeurClaims'
+import type { DemandeRefRow } from '@/components/admin/AdminEditeurDemandesRef'
 
 async function getAllEditeurs(): Promise<Editeur[]> {
   const supabase = createServiceRoleClient()
@@ -35,6 +37,17 @@ async function getEditeurClaims(): Promise<ClaimRow[]> {
   return (data || []) as unknown as ClaimRow[]
 }
 
+async function getDemandesReferencement(): Promise<DemandeRefRow[]> {
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('editeur_demandes_referencement')
+    .select('id, nom_editeur, nom_solution, email_contact, site_web, message, created_at')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []) as DemandeRefRow[]
+}
+
 export default async function AdminEditeursPage(
   props: {
     searchParams: Promise<{ tab?: string }>
@@ -42,9 +55,14 @@ export default async function AdminEditeursPage(
 ) {
   const searchParams = await props.searchParams;
   const tab = searchParams.tab === 'demandes' ? 'demandes' : 'editeurs'
-  const [editeurs, claims] = await Promise.all([getAllEditeurs(), getEditeurClaims()])
+  const [editeurs, claims, demandesRef] = await Promise.all([
+    getAllEditeurs(),
+    getEditeurClaims(),
+    getDemandesReferencement(),
+  ])
 
-  const pendingCount = claims.filter((c) => c.statut === 'en_attente').length
+  const pendingClaims = claims.filter((c) => c.statut === 'en_attente').length
+  const pendingCount = pendingClaims + demandesRef.length
   const editeurOptions: EditeurOption[] = editeurs.map((e) => ({
     id: e.id,
     nom: e.nom_commercial || e.nom || e.id,
@@ -178,7 +196,30 @@ export default async function AdminEditeursPage(
       )}
 
       {tab === 'demandes' && (
-        <AdminEditeurClaims claims={claims} editeurs={editeurOptions} />
+        <div className="space-y-8">
+          <section>
+            <h2 className="text-sm font-bold text-navy mb-3 uppercase tracking-wider">
+              Demandes de référencement (nouvelle fiche)
+              {demandesRef.length > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-accent-orange/10 text-accent-orange text-xs font-semibold">
+                  {demandesRef.length}
+                </span>
+              )}
+            </h2>
+            <AdminEditeurDemandesRef demandes={demandesRef} />
+          </section>
+          <section>
+            <h2 className="text-sm font-bold text-navy mb-3 uppercase tracking-wider">
+              Revendications de fiche existante
+              {pendingClaims > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-accent-orange/10 text-accent-orange text-xs font-semibold">
+                  {pendingClaims}
+                </span>
+              )}
+            </h2>
+            <AdminEditeurClaims claims={claims} editeurs={editeurOptions} />
+          </section>
+        </div>
       )}
     </div>
   )

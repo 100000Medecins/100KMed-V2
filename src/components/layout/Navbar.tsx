@@ -72,7 +72,8 @@ export default function Navbar() {
         setNavLoaded(true)
         const groupesBuilt = buildGroupes(cats)
         if (groupesBuilt.length > 0) {
-          setOpenGroupes({ [groupesBuilt[0].nom]: true })
+          // Tous les groupes (ex. "Logiciels médicaux", "IA médicales") dépliés par défaut.
+          setOpenGroupes(Object.fromEntries(groupesBuilt.map((g) => [g.nom, true])))
         }
       })
       .catch(() => {})
@@ -197,12 +198,18 @@ export default function Navbar() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-white/10">
+                <div className={`mt-4 pt-4 border-t border-white/10 grid gap-6 ${groupes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <a
                     href="/comparatifs"
-                    className="text-xs font-semibold text-accent-blue hover:underline"
+                    className="text-xs font-semibold text-accent-blue hover:underline px-2"
                   >
                     Voir tous les comparatifs →
+                  </a>
+                  <a
+                    href="/editeurs"
+                    className="text-xs font-semibold text-accent-blue hover:underline px-2"
+                  >
+                    Voir tous les éditeurs →
                   </a>
                 </div>
               </div>
@@ -417,6 +424,13 @@ export default function Navbar() {
                     onClick={() => setIsMobileOpen(false)}
                   >
                     Voir tous les comparatifs →
+                  </a>
+                  <a
+                    href="/editeurs"
+                    className="block text-xs font-semibold text-accent-blue pt-1"
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    Voir tous les éditeurs →
                   </a>
                 </div>
               )}
