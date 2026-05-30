@@ -20,6 +20,7 @@ interface Editeur {
   nb_employes: number | null
   siret: string | null
   mot_editeur: string | null
+  affiche_sur_index?: boolean | null
 }
 
 interface EditeurFormProps {
@@ -220,6 +221,23 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
           />
         </div>
 
+      </Section>
+
+      <Section title="Visibilité publique">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="affiche_sur_index"
+            defaultChecked={editeur?.affiche_sur_index ?? false}
+            className="mt-1 w-4 h-4 rounded border-gray-300 text-accent-blue focus:ring-2 focus:ring-accent-blue/30"
+          />
+          <span className="text-sm text-gray-700">
+            <span className="font-medium text-navy">Lister cet éditeur sur la page publique /editeurs</span>
+            <span className="block text-xs text-gray-500 mt-0.5">
+              À activer une fois la fiche complète (logo, description, …). Décocher si la page éditeur n'est pas prête à être exposée.
+            </span>
+          </span>
+        </label>
       </Section>
 
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4">

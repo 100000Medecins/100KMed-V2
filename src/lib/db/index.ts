@@ -27,7 +27,7 @@ export {
   getEditeurs,
   getEditeurById,
   getEditeurWithSolutions,
-  getAllEditeurIds,
+  getAllEditeurSlugs,
 } from './editeurs'
 
 // Critères

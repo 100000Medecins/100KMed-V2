@@ -16,6 +16,11 @@ type Groupe = {
   categories: NavCategorie[]
 }
 
+// Hauteur du logo qui déborde sous la navbar (navbar reste à 72px).
+// Ajustables visuellement : tester 90 vs 110 sur desktop.
+const LOGO_HEIGHT_DESKTOP = 120
+const LOGO_HEIGHT_MOBILE = 80
+
 function buildGroupes(categories: NavCategorie[]): Groupe[] {
   const map = new Map<string, Groupe>()
 
@@ -72,7 +77,8 @@ export default function Navbar() {
         setNavLoaded(true)
         const groupesBuilt = buildGroupes(cats)
         if (groupesBuilt.length > 0) {
-          setOpenGroupes({ [groupesBuilt[0].nom]: true })
+          // Tous les groupes (ex. "Logiciels médicaux", "IA médicales") dépliés par défaut.
+          setOpenGroupes(Object.fromEntries(groupesBuilt.map((g) => [g.nom, true])))
         }
       })
       .catch(() => {})
@@ -124,32 +130,37 @@ export default function Navbar() {
         boxShadow: isHome && !isScrolled ? 'none' : '0 2px 20px rgba(0,0,0,0.18)',
       }}
     >
-      <nav className="max-w-7xl mx-auto pl-5 pr-0 min-[1150px]:px-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
-        {/* Col 1 : Logo */}
-        <div className="flex items-center">
-          <a href="/" className="flex items-center shrink-0">
-            {/* Logo 3 lignes sur mobile / tablet (< 1150px) */}
-            <Image
-              src="/logos/logo-principal-couleur-trimmed.png"
-              alt="100 000 Médecins"
-              width={63}
-              height={44}
-              className="h-[44px] w-auto min-[1150px]:hidden"
-              priority
-              unoptimized
-            />
-            {/* Logo horizontal sur desktop (≥ 1150px) */}
-            <Image
-              src="/logos/logo-secondaire-couleur-trimmed.png"
-              alt="100 000 Médecins"
-              width={400}
-              height={100}
-              className="h-[27px] w-auto hidden min-[1150px]:block"
-              priority
-              unoptimized
-            />
-          </a>
-        </div>
+      <nav className="max-w-7xl mx-auto pl-0 pr-0 min-[1150px]:pl-6 min-[1150px]:pr-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
+        {/*
+          Col 1 : Logo (3 lignes).
+          - Mobile : centré verticalement dans la navbar (taille ≤ 72px donc rentre).
+          - Desktop : aligné en haut (self-start) avec overflow visible → déborde
+            vers le bas sans pousser les autres éléments.
+          z-10 pour passer au-dessus du contenu de la page quand on scrolle.
+        */}
+        <a href="/" className="relative z-10 shrink-0 flex items-center min-[1150px]:items-start min-[1150px]:self-start min-[1150px]:h-[72px] min-[1150px]:pt-1" aria-label="100 000 Médecins — accueil">
+          <Image
+            src="/logos/logo-principal-couleur.svg"
+            alt="100 000 Médecins"
+            width={200}
+            height={140}
+            priority
+            unoptimized
+            style={{ height: `${LOGO_HEIGHT_MOBILE}px`, transform: 'translateY(-1px)' }}
+            className="w-auto min-[1150px]:!hidden"
+          />
+          <Image
+            src="/logos/logo-principal-couleur.svg"
+            alt=""
+            aria-hidden="true"
+            width={200}
+            height={140}
+            priority
+            unoptimized
+            style={{ height: `${LOGO_HEIGHT_DESKTOP}px` }}
+            className="w-auto hidden min-[1150px]:!block"
+          />
+        </a>
 
         {/* Desktop Nav */}
         <div className="hidden min-[1150px]:flex items-center justify-center gap-6 min-w-0">
@@ -197,12 +208,18 @@ export default function Navbar() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-white/10">
+                <div className={`mt-4 pt-4 border-t border-white/10 grid gap-6 ${groupes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <a
                     href="/comparatifs"
-                    className="text-xs font-semibold text-accent-blue hover:underline"
+                    className="text-xs font-semibold text-accent-blue hover:underline px-2"
                   >
                     Voir tous les comparatifs →
+                  </a>
+                  <a
+                    href="/editeurs"
+                    className="text-xs font-semibold text-accent-blue hover:underline px-2"
+                  >
+                    Voir tous les éditeurs →
                   </a>
                 </div>
               </div>
@@ -281,7 +298,7 @@ export default function Navbar() {
         </div>
 
         {/* Col 3 : mobile (loupe + évaluer) / desktop (loupe + CTAs) */}
-        <div className="flex items-center gap-2 justify-self-end">
+        <div className="flex items-center gap-2 justify-self-end" style={{ transform: 'translateY(-2px)' }}>
           {/* Loupe mobile */}
           <button
             type="button"
@@ -417,6 +434,13 @@ export default function Navbar() {
                     onClick={() => setIsMobileOpen(false)}
                   >
                     Voir tous les comparatifs →
+                  </a>
+                  <a
+                    href="/editeurs"
+                    className="block text-xs font-semibold text-accent-blue pt-1"
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    Voir tous les éditeurs →
                   </a>
                 </div>
               )}

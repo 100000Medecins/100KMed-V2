@@ -37,13 +37,17 @@ export async function getSolutionsLiees(solutionId: string): Promise<SolutionLie
     const liensTyped = (liens ?? []) as Array<{ id: string; type: string; description: string | null; solution_a_id: string; solution_b_id: string }>
     if (liensTyped.length === 0) return []
 
-    // Étape 2 : récupérer les solutions voisines (l'autre id) en bloc
+    // Étape 2 : récupérer les solutions voisines (l'autre id) en bloc.
+    // On ne garde que les solutions actives ET dont la catégorie est active
+    // (sinon, lien fantôme vers une fiche invisible côté public).
     const voisinIds = Array.from(new Set(liensTyped.map((l) => l.solution_a_id === solutionId ? l.solution_b_id : l.solution_a_id)))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: solutions, error: solErr } = await (supabase as any)
       .from('solutions')
-      .select('id, nom, slug, logo_url, categorie:categories(slug, nom)')
+      .select('id, nom, slug, logo_url, categorie:categories!inner(slug, nom, actif)')
       .in('id', voisinIds)
+      .eq('actif', true)
+      .eq('categorie.actif', true)
     if (solErr) {
       console.error('[getSolutionsLiees] step2', JSON.stringify(solErr))
       return []

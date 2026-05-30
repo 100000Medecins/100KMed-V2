@@ -56,18 +56,34 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
+#### Supprimer les fallbacks silencieux des pages BDD (try/catch vide) — partiellement fait
+
+- **Contexte (2026-05-29)** : les pages servies via `(static)/` (cgu, rgpd, transparence, contact, actualites, etc.) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui **avalait silencieusement** toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.
+- **Bug GRANT réparé** le 2026-05-29 (`GRANT SELECT TO anon` posé), mais le pattern lui-même reste dangereux.
+- ✅ **Fait 2026-05-31** sur `cgu/page.tsx`, `rgpd/page.tsx`, `transparence/page.tsx` : suppression des fallbacks hardcodés (~768 lignes mortes retirées), seule la BDD est lue. Ajout d'un `error.tsx` dans `(static)/` qui couvre toutes les pages du groupe (« Contenu temporairement indisponible » + bouton Réessayer + ref d'erreur).
+- **Reste à faire** : auditer les autres pages BDD (`contact`, `actualites`, `videos`, `cgu` racine si présente, etc.) — chercher tous les `try { } catch {}` vides et les remplacer (idéalement laisser propager pour que `error.tsx` se déclenche, ou logger explicitement).
+
+#### Versioning/audit des contenus admin (pages_statiques, articles, etc.)
+
+- **Contexte (2026-05-29)** : un écrasement involontaire de `pages_statiques.contenu` (slug=transparence) a fait perdre ~1600 caractères (toute la section "Déclarations publiques d'intérêt des représentants"). Seule la version backup quotidien Synology a permis de constater l'écart. Aucune trace en base de l'historique des modifications (juste le dernier `updated_at`).
+- **Idée 1 — table d'audit `pages_statiques_history`** : trigger PG qui INSERT l'ancienne version avant chaque UPDATE. Idem pour `articles`, `editeurs_edit_log` (qui existe déjà).
+- **Idée 2 — diff visuel dans l'admin** : avant de sauvegarder, montrer ce qui change vs version actuelle (vert/rouge).
+- **Idée 3 — autosave + brouillons** : éviter qu'une perte de focus efface le travail en cours.
+- À cadrer selon priorité.
+
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
 - **Cause principale** : schema drift (`actualites`, `documents` absentes des types Supabase auto-générés) → contournement légitime via `as any`. Le vrai remède = régénérer `src/types/database.ts` (`npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts`), pas du typage manuel.
 - **Pas de chantier dédié prévu** sauf si un jour on veut un lint propre en CI.
 
-#### Finir l'audit Firebase ↔ Supabase — Fix #3 et Fix #4 restants
+#### ✅ Audit Firebase ↔ Supabase — TERMINÉ (2026-05-29)
 
-- **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) déjà appliqués.
-- ✅ **Fix #3 — FAIT** (vérifié le 2026-05-29 : 0 éval en ancien format restante en base). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé via `mapping_criteres_v2.csv` + reconstruction empirique (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
-- ⚠️ **Fix #4 — À CONFIRMER / EXÉCUTER** : script `scripts/fix-import-evals-manquantes.ts` écrit (idempotent, dry-run par défaut, `--execute` requis, garde-fous : skip évals vides + David Azerad + doublons). **Statut d'exécution incertain au 2026-05-29** — vérifier si lancé en `--execute`. Sinon le lancer. Importe les ~63 évals FB manquantes (users absents créés sans email si besoin).
-- **Validation finale** : régénérer `npx tsx scripts/audit-global-evaluations-firebase.ts` après Fix #4. Vérifier que l'agrégat des solutions (`firebase_moyenne_base5` dans `resultats`) reste figé (non touché par le mode legacy de `recalcResultatsPourSolution`).
+- **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) appliqués.
+- ✅ **Fix #3 — FAIT** (vérifié 2026-05-29 : 0 éval en ancien format restante). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
+- ✅ **Fix #4 — SANS OBJET** (vérifié 2026-05-29 via le mapping Excel + dry-run du script). Sur les 718 évals Firebase : 656 déjà présentes, 15 sur des solutions non reprises au catalogue (Medaplix, OSOFT…), et **44 « absentes » qui sont en réalité des coquilles vides** (49 scores tous à 0, aucune note/date/commentaire = formulaire ouvert jamais rempli). Le garde-fou `isEmpty` du script `scripts/fix-import-evals-manquantes.ts` les skip à juste titre → **aucune vraie évaluation perdue, rien à importer**.
+- **560 users Firebase non migrés = profils dormants** (`isComplete=false`, pas d'email, jamais finalisés, dont 0 avec une vraie éval). **Décision : ne PAS les importer** — s'ils reviennent un jour, leur RPPS sera récupéré à l'inscription, ce qui évite des fusions de comptes.
+- Mapping de correspondance Firebase↔Supabase généré via `scripts/export-mapping-firebase-supabase.ts` (Excel local, non commité car données perso).
 
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
@@ -80,16 +96,34 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### UX / UI
 
-#### URLs éditeurs en slug lisible (au lieu de l'UUID)
-- **Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).
-- **Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.
-- À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.
+#### Tooltip note globale — affiner après la livraison initiale (2026-05-30)
+
+- **Livré (2026-05-30)** : tooltip cliquable à côté de la note globale sur chaque fiche solution (popover au survol + modale au clic), éditable depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
+- ~~**À améliorer — modale détaillée** : le rendu actuel utilise `prose-custom` + sanitize HTML par défaut. Travailler la lisibilité (hiérarchie typographique, aération des paragraphes, encadrés visuels pour les exemples chiffrés type « 4,2 sur 50 avis »).~~ [OK] Fait 2026-05-30 (styles Tailwind ciblés `[&_strong]`, `[&_a]`, `[&_ul]` + taille `lg` + `text-[15px] leading-relaxed`).
+- ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
+- ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
+
+#### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
+- ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).~~
+- ~~**Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.~~
+- ~~À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.~~
+- **Reste à faire** : poser les redirections 301 `/editeur/<uuid>` → `/editeur/<slug>` dans `next.config.mjs` pour la rétro-compat SEO (si des liens externes pointent encore vers les anciennes URLs UUID).
+
+#### ✅ Référencement éditeurs — livré (2026-05-30)
+- Nouvelle page publique `/editeurs/` (liste de tous les éditeurs) + composant `EditeursListClient`.
+- Formulaire public `EditeurReferencementForm` pour qu'un éditeur non référencé puisse demander son ajout au catalogue.
+- Côté admin : panneau `AdminEditeurDemandesRef` pour modérer les demandes + action server dans `src/lib/actions/admin.ts`.
+- Lien dans la Navbar vers `/editeurs`.
 
 #### Éditeurs orphelins (0 solution) — à nettoyer
 - 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.
 
 #### Logo condensé sur l'index — nouvel essai
 - Retenter une version condensée du logo sur la page d'accueil du site.
+
+#### Mettre le logo 3 lignes dans les templates emails
+- **Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes (`logo-principal-couleur.svg`, identique au footer). Aligner les templates emails sur ce visuel pour une identité cohérente.
+- À faire : identifier les templates emails (transactionnels + newsletter), remplacer le logo actuel par la version 3 lignes, vérifier le rendu sur les principaux clients mail (Gmail, Outlook, Apple Mail) — attention au support SVG variable selon clients, peut nécessiter un PNG haute résolution.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.

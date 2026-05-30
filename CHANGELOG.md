@@ -5,6 +5,82 @@
 
 ---
 
+## [2026-05-31] — Logo navbar 3 lignes + cleanup fallbacks hardcodés pages statiques
+
+### UX / UI — Logo navbar 3 lignes
+
+- Remplacement du logo horizontal desktop (`logo-secondaire-couleur-trimmed.png`) et de l'ancien logo mobile 44px par **un seul logo 3 lignes** (`logo-principal-couleur.svg`, le même que le footer).
+- **Desktop ≥ 1150px** : logo 120px, débordant sous la navbar (qui reste à 72px) via `self-start` + cellule grid 72px + `z-10`.
+- **Mobile < 1150px** : logo 80px, centré verticalement, `translateY(-1px)` pour ajustement visuel, `pl-0` (collé au bord gauche).
+- Constantes `LOGO_HEIGHT_DESKTOP` / `LOGO_HEIGHT_MOBILE` en haut du composant pour ajustement futur en 1 ligne.
+- Col droite (loupe + Évaluer + burger + CTAs) `translateY(-2px)` pour corriger le centrage perçu.
+- **Pourquoi déborder** : ~40 fichiers dépendent du `72px` de la navbar (offset top, sticky, padding-top des `<main>`). Changer cette hauteur aurait été un chantier transversal lourd.
+
+### Nettoyage — Suppression des fallbacks hardcodés sur pages statiques (cf TODO 2026-05-29)
+
+Suite à l'incident GRANT du 2026-05-29 (pages BDD pourries pendant 2 mois à cause de `try{} catch{}` vides), suppression du pattern dans les pages statiques :
+
+- **`src/app/(static)/cgu/page.tsx`** : suppression du fallback hardcodé (245 lignes), seule la BDD est lue. Commentaire décision en tête.
+- **`src/app/(static)/rgpd/page.tsx`** : suppression du fallback hardcodé (300 lignes).
+- **`src/app/(static)/transparence/page.tsx`** : suppression du fallback hardcodé (223 lignes).
+- **`src/app/(static)/error.tsx`** (nouveau) : page d'erreur dédiée aux pages statiques (« Contenu temporairement indisponible » + bouton Réessayer + ref d'erreur Next.js). Couvre tous les `(static)/*`.
+
+### TODO — Mises à jour
+- ✅ Try/catch silencieux : nettoyé sur cgu/rgpd/transparence (les autres pages BDD restent à faire).
+- ✅ Tooltip note globale — testé OK sur mobile.
+- Ajout : mettre le logo 3 lignes dans les templates emails (vérifier le rendu et changer le template).
+
+---
+
+## [2026-05-30] — Tooltip note globale + slugs éditeurs + référencement éditeurs + fixes divers
+
+### Feature — Tooltip explicative "Note globale" sur les fiches solutions
+
+Suite à un signalement utilisateur (note site ≠ moyenne arithmétique des avis affichés), ajout d'une tooltip pédagogique éditable depuis l'admin.
+
+- **Nouveau composant** `NoteGlobaleTooltip.tsx` : icône ⓘ à côté de la note utilisateurs sur chaque fiche, popover navy au survol (texte court différent selon `is_firebase_legacy`), modale détaillée au clic.
+- **Stockage BDD** : `pages_statiques` slug=`tooltip-note-globale`, contenu JSON 4 champs (`tooltip_court_legacy`, `tooltip_court_standard`, `tooltip_long_titre`, `tooltip_long_corps`).
+- **Admin** : nouveau form dédié `TooltipNoteGlobaleForm` + routage conditionnel dans `/admin/pages/[id]/modifier` (les autres pages gardent `BlogForm`).
+- **Helper** `getNoteGlobaleTooltip()` dans `src/lib/db/tooltips.ts` — pas de fallback silencieux (cause de bugs cachés cf 2026-05-29 sur pages_statiques) : logs explicites + `null` si erreur.
+- **Bugs corrigés dans la foulée** :
+  - Cause : `Modal` ne fait pas de portail React → héritage CSS du parent. Fix : `className="normal-case tracking-normal text-left font-medium"` sur le card de Modal.
+  - Cause : hydration error `<div>` dans `<p>`. Fix : `RatingCard` passe son label de `<p>` à `<div>` (`SolutionHero.tsx`).
+  - Cause : tooltip popover disparaît au survol entre icône et popover. Fix : gestion JS `onMouseEnter`/`onMouseLeave` avec délai 180 ms + popover interactif.
+  - Cause : popover sort du viewport en haut. Fix : positionnement `top-full mt-2` (en dessous de l'icône) + flèche triangulaire.
+
+### Fix — `sanitizeHtml` autorise les liens internes `/xxx`
+
+Découverte en remplaçant `mailto:contact@…` par `<a href="/contact">` : `sanitizeHtml` n'acceptait que les href en `http(s)://` ou `mailto:` → les liens relatifs étaient silencieusement supprimés.
+
+- `src/lib/sanitize.ts` : ajout d'une branche pour les href commençant par `/` (interne au site, pas de `target="_blank"`). Sécurité préservée : `//evil.com`, `javascript:`, `data:` toujours bloqués via la regex `/^\/[^/]/`.
+- Effet collatéral positif : tous les contenus passés par `sanitizeHtml` (descriptions solutions, pages statiques, articles) supportent maintenant les liens relatifs.
+
+### Fix — Solutions des catégories inactives ne fuitent plus
+
+Signalement : sur la page éditeur Doctolib, "Doctolib Télétransmission" apparaissait alors que la catégorie Télétransmission n'est pas encore activée. Pareil pour `getSolutionsLiees`.
+
+- `src/lib/db/editeurs.ts` (`getEditeurWithSolutions`) : INNER JOIN `categories!inner` + `.eq('actif', true)` + `.eq('categorie.actif', true)`.
+- `src/lib/db/solution-liens.ts` (`getSolutionsLiees`) : même filtre, pour éviter qu'une fiche solution masquée apparaisse via un lien depuis une autre fiche.
+
+### Feature — Slugs éditeurs + page publique liste éditeurs + référencement éditeurs
+
+Chantier indépendant (travail externe à la session, intégré dans le même commit) :
+
+- **Routes** : `src/app/editeur/[idEditeur]` renommé en `src/app/editeur/[slug]`, nouvelle page publique `/editeurs/` (liste de tous les éditeurs).
+- **Composants** : `EditeursListClient`, `EditeurReferencementForm` (côté public, demande de référencement), `AdminEditeurDemandesRef` (côté admin, modération).
+- **Admin** : nouvelle action dans `src/lib/actions/admin.ts` pour gérer les demandes de référencement.
+- **Navbar** : lien vers `/editeurs`.
+- **EditeurForm** : améliorations.
+
+### TODO — Mises à jour
+- ✅ Tooltip note globale livrée (chantier complet front + admin).
+- ✅ URLs éditeurs en slug — la route publique passe en slug (chantier en partie fait).
+- Ajout : améliorer lisibilité modale (déjà en partie fait, reste à confirmer) + remplacer mailto par /contact (fait).
+- Ajout : versioning/audit des contenus admin (table d'audit `pages_statiques_history`).
+- Ajout : retirer les `try { } catch {}` vides qui ont caché 2 mois le bug GRANT (cf 2026-05-29).
+
+---
+
 ## [2026-05-29] — SEO : redirections 301, sitemap, archive/legacy + nettoyage colonnes mortes
 
 ### SEO — Redirections des anciennes URLs Quasar + sitemap

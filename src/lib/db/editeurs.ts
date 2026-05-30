@@ -2,6 +2,38 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import type { Editeur } from '@/types/models'
 
 /**
+ * Slugifie un nom d'éditeur (cohérent avec la migration SQL 2026-05-29).
+ * Translit accents, garde alphanum + tirets, en minuscules.
+ */
+function slugifyNom(nom: string): string {
+  return nom
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/['']/g, ' ')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+}
+
+/**
+ * Génère un slug unique pour un nouvel éditeur en suffixant -2, -3, etc. en cas de collision.
+ */
+export async function generateUniqueEditeurSlug(nom: string): Promise<string> {
+  const supabase = createServiceRoleClient()
+  const base = slugifyNom(nom)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('editeurs')
+    .select('slug')
+    .like('slug', `${base}%`)
+  const existing = new Set<string>((data ?? []).map((r: { slug: string }) => r.slug))
+  if (!existing.has(base)) return base
+  let i = 2
+  while (existing.has(`${base}-${i}`)) i++
+  return `${base}-${i}`
+}
+
+/**
  * Récupère tous les éditeurs.
  * Remplace : fetchEditeurs
  */
@@ -35,41 +67,47 @@ export async function getEditeurById(id: string) {
 }
 
 /**
- * Récupère un éditeur avec toutes ses solutions.
+ * Récupère un éditeur (par slug) avec toutes ses solutions.
  * Utilise le service role car la page éditeur est publique + ISR :
  * createServerClient lit cookies() ce qui est incompatible avec revalidate sur Next 16.
  */
-export async function getEditeurWithSolutions(id: string) {
+export async function getEditeurWithSolutions(slug: string) {
   const supabase = createServiceRoleClient()
 
-  const [editeurResult, solutionsResult] = await Promise.all([
-    supabase.from('editeurs').select('*').eq('id', id).single(),
-    supabase
-      .from('solutions')
-      .select(`*, categorie:categories(*)`)
-      .eq('id_editeur', id)
-      .order('nom', { ascending: true }),
-  ])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const editeurReq = (supabase as any).from('editeurs').select('*').eq('slug', slug).single()
+  const { data: editeurData, error: editeurErr } = await editeurReq
+  if (editeurErr) throw editeurErr
 
-  if (editeurResult.error) throw editeurResult.error
-  if (solutionsResult.error) throw solutionsResult.error
+  // Ne lister que les solutions actives ET dont la catégorie est active.
+  // INNER JOIN PostgREST via `categories!inner` pour que le filtre sur categorie.actif
+  // exclue effectivement les lignes (sinon LEFT JOIN par défaut → solution gardée même si cat inactive).
+  const { data: solutions, error: solErr } = await supabase
+    .from('solutions')
+    .select(`*, categorie:categories!inner(*)`)
+    .eq('id_editeur', editeurData.id)
+    .eq('actif', true)
+    .eq('categorie.actif', true)
+    .order('nom', { ascending: true })
+  if (solErr) throw solErr
 
   return {
-    editeur: editeurResult.data as Editeur,
-    solutions: solutionsResult.data,
+    editeur: editeurData as Editeur,
+    solutions,
   }
 }
 
 /**
  * Génère les paramètres statiques pour ISR.
  */
-export async function getAllEditeurIds() {
+export async function getAllEditeurSlugs() {
   const supabase = await createServerClient()
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('editeurs')
-    .select('id')
+    .select('slug')
 
   if (error) throw error
-  return data.map((e) => e.id)
+  return (data as { slug: string }[]).map((e) => e.slug)
 }

@@ -15,6 +15,7 @@ import PublisherWord from './detail/PublisherWord'
 import SupportSection from './detail/SupportSection'
 import type { SolutionWithRelations, ResultatWithCritere } from '@/types/models'
 import type { NoteRedac } from '@/lib/db/solutions'
+import type { NoteGlobaleTooltip as NoteGlobaleTooltipData } from '@/lib/db/tooltips'
 
 interface AvisPagine {
   id: string
@@ -42,6 +43,7 @@ interface SolutionDetailPageProps {
   autreSolutions?: { id: string; nom: string; logo_url: string | null }[]
   solutionsLiees?: SolutionLienVoisin[]
   communautes?: CommunautePublique[]
+  noteGlobaleTooltip?: NoteGlobaleTooltipData | null
 }
 
 export default function SolutionDetailPage({
@@ -53,6 +55,7 @@ export default function SolutionDetailPage({
   autreSolutions,
   solutionsLiees,
   communautes,
+  noteGlobaleTooltip,
 }: SolutionDetailPageProps) {
   const categorieSlug = solution.categorie?.slug || ''
   // Ne garder que les critères avec un nom_capital non null
@@ -76,6 +79,7 @@ export default function SolutionDetailPage({
         nbEvaluations={nbEvaluations}
         categorieSlug={categorieSlug}
         hasDetailedRatings={notesRedac.length > 0}
+        noteGlobaleTooltip={noteGlobaleTooltip}
       />
 
       {/* Contenu — background gradient SVG */}

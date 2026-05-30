@@ -52,7 +52,7 @@ export default async function AdminModifierEditeurPage({ params }: PageProps) {
           Modifier : {(editeur as Editeur).nom_commercial || (editeur as Editeur).nom}
         </h1>
         <a
-          href={`/editeur/${id}`}
+          href={`/editeur/${(editeur as Editeur).slug}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm text-accent-blue hover:underline"

@@ -5,7 +5,9 @@ import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { sanitizeHtml } from '@/lib/sanitize'
 import AcronymHtml from '@/components/AcronymHtml'
+import NoteGlobaleTooltip from '@/components/solutions/detail/NoteGlobaleTooltip'
 import type { SolutionWithRelations } from '@/types/models'
+import type { NoteGlobaleTooltip as NoteGlobaleTooltipData } from '@/lib/db/tooltips'
 
 interface SolutionHeroProps {
   solution: SolutionWithRelations
@@ -14,6 +16,7 @@ interface SolutionHeroProps {
   nbEvaluations: number
   categorieSlug: string
   hasDetailedRatings: boolean
+  noteGlobaleTooltip?: NoteGlobaleTooltipData | null
 }
 
 /** Carte de note — design identique pour utilisateurs & rédaction */
@@ -21,10 +24,13 @@ function RatingCard({
   rating,
   label,
   subtitle,
+  tooltip,
 }: {
   rating: number
   label: string
   subtitle?: string
+  /** Slot optionnel pour afficher une icône info à côté du label (ex. tooltip note utilisateurs). */
+  tooltip?: React.ReactNode
 }) {
   return (
     <div className="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-5 text-center shadow-sm">
@@ -37,9 +43,15 @@ function RatingCard({
       {subtitle && (
         <p className="text-xs text-gray-500 mt-1.5">{subtitle}</p>
       )}
-      <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-2.5 font-medium leading-tight">
+      {/*
+        <div> et non <p> car `tooltip` peut contenir des <div> (popover, modale).
+        HTML5 interdit <div> dans <p> → hydration error Next 16.
+        Le `inline-flex` + classes typo conservent le rendu visuel à l'identique.
+      */}
+      <div className="text-[10px] text-gray-400 uppercase tracking-widest mt-2.5 font-medium leading-tight inline-flex items-center justify-center gap-1">
         {label}
-      </p>
+        {tooltip}
+      </div>
     </div>
   )
 }
@@ -51,6 +63,7 @@ export default function SolutionHero({
   nbEvaluations,
   categorieSlug,
   hasDetailedRatings,
+  noteGlobaleTooltip,
 }: SolutionHeroProps) {
   const sol = solution as unknown as Record<string, string | null>
   const hasContactsUtiles = !!(
@@ -109,7 +122,7 @@ export default function SolutionHero({
                       <div className="flex items-center gap-1 mt-1 text-gray-500 text-sm">
                         Edité par{' '}
                         <Link
-                          href={`/editeur/${solution.editeur.id}`}
+                          href={`/editeur/${solution.editeur.slug}`}
                           className="hover:text-navy hover:underline ml-1"
                         >
                           {solution.editeur.nom_commercial || solution.editeur.nom}
@@ -158,6 +171,14 @@ export default function SolutionHero({
                       rating={noteUtilisateurs}
                       label="Notes des utilisateurs"
                       subtitle={nbEvaluations > 0 ? `${nbEvaluations} avis` : undefined}
+                      tooltip={
+                        noteGlobaleTooltip ? (
+                          <NoteGlobaleTooltip
+                            data={noteGlobaleTooltip}
+                            isLegacy={(solution as unknown as { is_firebase_legacy?: boolean }).is_firebase_legacy === true}
+                          />
+                        ) : null
+                      }
                     />
                   )}
                   {noteRedaction != null && (
