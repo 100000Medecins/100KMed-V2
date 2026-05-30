@@ -5,6 +5,33 @@
 
 ---
 
+## [2026-05-31] — Logo navbar 3 lignes + cleanup fallbacks hardcodés pages statiques
+
+### UX / UI — Logo navbar 3 lignes
+
+- Remplacement du logo horizontal desktop (`logo-secondaire-couleur-trimmed.png`) et de l'ancien logo mobile 44px par **un seul logo 3 lignes** (`logo-principal-couleur.svg`, le même que le footer).
+- **Desktop ≥ 1150px** : logo 120px, débordant sous la navbar (qui reste à 72px) via `self-start` + cellule grid 72px + `z-10`.
+- **Mobile < 1150px** : logo 80px, centré verticalement, `translateY(-1px)` pour ajustement visuel, `pl-0` (collé au bord gauche).
+- Constantes `LOGO_HEIGHT_DESKTOP` / `LOGO_HEIGHT_MOBILE` en haut du composant pour ajustement futur en 1 ligne.
+- Col droite (loupe + Évaluer + burger + CTAs) `translateY(-2px)` pour corriger le centrage perçu.
+- **Pourquoi déborder** : ~40 fichiers dépendent du `72px` de la navbar (offset top, sticky, padding-top des `<main>`). Changer cette hauteur aurait été un chantier transversal lourd.
+
+### Nettoyage — Suppression des fallbacks hardcodés sur pages statiques (cf TODO 2026-05-29)
+
+Suite à l'incident GRANT du 2026-05-29 (pages BDD pourries pendant 2 mois à cause de `try{} catch{}` vides), suppression du pattern dans les pages statiques :
+
+- **`src/app/(static)/cgu/page.tsx`** : suppression du fallback hardcodé (245 lignes), seule la BDD est lue. Commentaire décision en tête.
+- **`src/app/(static)/rgpd/page.tsx`** : suppression du fallback hardcodé (300 lignes).
+- **`src/app/(static)/transparence/page.tsx`** : suppression du fallback hardcodé (223 lignes).
+- **`src/app/(static)/error.tsx`** (nouveau) : page d'erreur dédiée aux pages statiques (« Contenu temporairement indisponible » + bouton Réessayer + ref d'erreur Next.js). Couvre tous les `(static)/*`.
+
+### TODO — Mises à jour
+- ✅ Try/catch silencieux : nettoyé sur cgu/rgpd/transparence (les autres pages BDD restent à faire).
+- ✅ Tooltip note globale — testé OK sur mobile.
+- Ajout : mettre le logo 3 lignes dans les templates emails (vérifier le rendu et changer le template).
+
+---
+
 ## [2026-05-30] — Tooltip note globale + slugs éditeurs + référencement éditeurs + fixes divers
 
 ### Feature — Tooltip explicative "Note globale" sur les fiches solutions

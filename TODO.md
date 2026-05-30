@@ -56,11 +56,12 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
-#### Supprimer les fallbacks silencieux des pages BDD (try/catch vide)
+#### Supprimer les fallbacks silencieux des pages BDD (try/catch vide) — partiellement fait
 
 - **Contexte (2026-05-29)** : les pages servies via `(static)/` (cgu, rgpd, transparence, contact, actualites, etc.) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui **avalait silencieusement** toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.
 - **Bug GRANT réparé** le 2026-05-29 (`GRANT SELECT TO anon` posé), mais le pattern lui-même reste dangereux.
-- **À faire** : remplacer chaque `try {} catch {}` vide dans `src/app/(static)/*/page.tsx` (et le fichier `transparence/page.tsx` racine) par un vrai `console.error()` qui remonte côté logs Vercel, voire un fallback explicite qui affiche un message d'erreur visible (« contenu temporairement indisponible ») plutôt qu'une version potentiellement périmée. Au minimum : logger l'erreur.
+- ✅ **Fait 2026-05-31** sur `cgu/page.tsx`, `rgpd/page.tsx`, `transparence/page.tsx` : suppression des fallbacks hardcodés (~768 lignes mortes retirées), seule la BDD est lue. Ajout d'un `error.tsx` dans `(static)/` qui couvre toutes les pages du groupe (« Contenu temporairement indisponible » + bouton Réessayer + ref d'erreur).
+- **Reste à faire** : auditer les autres pages BDD (`contact`, `actualites`, `videos`, `cgu` racine si présente, etc.) — chercher tous les `try { } catch {}` vides et les remplacer (idéalement laisser propager pour que `error.tsx` se déclenche, ou logger explicitement).
 
 #### Versioning/audit des contenus admin (pages_statiques, articles, etc.)
 
@@ -100,7 +101,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Livré (2026-05-30)** : tooltip cliquable à côté de la note globale sur chaque fiche solution (popover au survol + modale au clic), éditable depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 - ~~**À améliorer — modale détaillée** : le rendu actuel utilise `prose-custom` + sanitize HTML par défaut. Travailler la lisibilité (hiérarchie typographique, aération des paragraphes, encadrés visuels pour les exemples chiffrés type « 4,2 sur 50 avis »).~~ [OK] Fait 2026-05-30 (styles Tailwind ciblés `[&_strong]`, `[&_a]`, `[&_ul]` + taille `lg` + `text-[15px] leading-relaxed`).
 - ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
-- **À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport. Si problème, ajouter une logique de positionnement adaptatif.
+- ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 
 #### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
 - ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).~~
@@ -119,6 +120,10 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### Logo condensé sur l'index — nouvel essai
 - Retenter une version condensée du logo sur la page d'accueil du site.
+
+#### Mettre le logo 3 lignes dans les templates emails
+- **Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes (`logo-principal-couleur.svg`, identique au footer). Aligner les templates emails sur ce visuel pour une identité cohérente.
+- À faire : identifier les templates emails (transactionnels + newsletter), remplacer le logo actuel par la version 3 lignes, vérifier le rendu sur les principaux clients mail (Gmail, Outlook, Apple Mail) — attention au support SVG variable selon clients, peut nécessiter un PNG haute résolution.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
