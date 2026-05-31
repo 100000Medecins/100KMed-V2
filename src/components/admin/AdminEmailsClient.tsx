@@ -49,6 +49,7 @@ interface Props {
   campagnesQuestionnaires?: EmailCampagne[]
   lancementSyndicatTemplate?: EmailTemplate | null
   syndicatsLancement?: SyndicatLancement[]
+  masterLayoutTestTemplate?: EmailTemplate | null
 }
 
 export default function AdminEmailsClient({
@@ -64,6 +65,7 @@ export default function AdminEmailsClient({
   campagnesQuestionnaires = [],
   lancementSyndicatTemplate = null,
   syndicatsLancement = [],
+  masterLayoutTestTemplate = null,
 }: Props) {
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
   const masterLayoutHtml = masterLayoutTemplate?.contenu_html ?? undefined
@@ -303,19 +305,39 @@ export default function AdminEmailsClient({
         />
       )}
 
-      {/* Onglet Template email — master layout */}
+      {/* Onglet Template email — master layout + bac à sable */}
       {activeTab === 'template' && (
-        <div className="bg-white rounded-card shadow-card p-6">
-          <p className="text-sm text-gray-500 mb-6">
-            Layout HTML partagé par tous les emails SendGrid du site. Modifier ce fichier change l&apos;apparence de <strong>tous les emails</strong> (fond, header, footer, typographie).
-            Placer <code className="bg-gray-100 px-1 rounded font-mono text-xs">{'{{contenu}}'}</code> à l&apos;endroit où chaque email injecte son corps.
-          </p>
-          <EmailTemplateEditor
-            templateId="master_layout"
-            initialSujet={masterLayoutTemplate?.sujet ?? 'Layout global'}
-            initialHtml={masterLayoutTemplate?.contenu_html ?? ''}
-            updatedAt={masterLayoutTemplate?.updated_at ?? null}
-          />
+        <div className="space-y-6">
+          <div className="bg-white rounded-card shadow-card p-6">
+            <p className="text-sm text-gray-500 mb-6">
+              Layout HTML partagé par tous les emails SendGrid du site. Modifier ce fichier change l&apos;apparence de <strong>tous les emails</strong> (fond, header, footer, typographie).
+              Placer <code className="bg-gray-100 px-1 rounded font-mono text-xs">{'{{contenu}}'}</code> à l&apos;endroit où chaque email injecte son corps.
+            </p>
+            <EmailTemplateEditor
+              templateId="master_layout"
+              initialSujet={masterLayoutTemplate?.sujet ?? 'Layout global'}
+              initialHtml={masterLayoutTemplate?.contenu_html ?? ''}
+              updatedAt={masterLayoutTemplate?.updated_at ?? null}
+            />
+          </div>
+
+          {/* Master layout de test — bac à sable isolé du layout de production */}
+          <div className="bg-white rounded-card shadow-card p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-navy mb-1">🧪 Master layout de test</h2>
+              <p className="text-sm text-gray-500">
+                Bac à sable pour tester un nouveau layout (logo, fond, structure de carte) <strong>sans impact sur les mails de production</strong>.
+                Modifie ce layout, puis utilise <strong>« Envoyer un test »</strong> pour recevoir un mail avec un contenu de démo injecté dans <code className="bg-gray-100 px-1 rounded font-mono text-xs">{'{{contenu}}'}</code>.
+                Quand satisfait, copie le HTML dans le <strong>Master layout</strong> ci-dessus pour le déployer en prod.
+              </p>
+            </div>
+            <EmailTemplateEditor
+              templateId="master_layout_test"
+              initialSujet={masterLayoutTestTemplate?.sujet ?? 'Test layout — 100 000 Médecins'}
+              initialHtml={masterLayoutTestTemplate?.contenu_html ?? ''}
+              updatedAt={masterLayoutTestTemplate?.updated_at ?? null}
+            />
+          </div>
         </div>
       )}
 

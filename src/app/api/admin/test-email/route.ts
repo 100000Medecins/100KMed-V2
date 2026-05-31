@@ -40,6 +40,8 @@ const SAMPLE_VARS: Record<string, Record<string, string>> = {
   suppression_compte: { nom: 'DUPONT', prenom: 'Marie' },
   reinitialisation_mot_de_passe: { lien_reinitialisation: '#' },
   fusion_comptes: { lien_fusion: '#' },
+  confirmation_inscription: { lien_confirmation: '#' },
+  infos_mensuels: { nom: 'Dr. DUPONT', prenom: 'Marie', lien_desabonnement: '#' },
   lancement: {
     nom: 'Dr. DUPONT', prenom: 'Dr. DUPONT', solution_nom: 'MonLogiciel Pro',
     lien_1clic: '#', lien_reevaluation: '#', lien_desabonnement: '#',
@@ -56,6 +58,9 @@ const SAMPLE_VARS: Record<string, Record<string, string>> = {
   },
   master_layout: {
     contenu: '<div style="font-family:sans-serif;color:#333;padding:24px;"><h2>Exemple de contenu</h2><p>Ceci est un aperçu du layout avec un contenu fictif injecté à la place de <code>{{contenu}}</code>.</p></div>',
+  },
+  bac_a_sable: {
+    nom: 'Dr. DUPONT', prenom: 'Dr. DUPONT', lien_1clic: '#',
   },
 }
 
@@ -88,11 +93,18 @@ export async function POST(req: NextRequest) {
     lienDesabonnement = generateUnsubscribeLink(recipient.id, siteUrl)
   }
 
-  const baseVars = SAMPLE_VARS[templateId] ?? {}
+  // Bac à sable : on teste un layout alternatif (master_layout_test) avec un
+  // contenu de démo (template "bac_a_sable" en BDD) — sans toucher au layout
+  // de production.
+  const isMasterLayoutTest = templateId === 'master_layout_test'
+  const effectiveTemplateId = isMasterLayoutTest ? 'bac_a_sable' : templateId
+  const effectiveLayoutId = isMasterLayoutTest ? 'master_layout_test' : 'master_layout'
+
+  const baseVars = SAMPLE_VARS[effectiveTemplateId] ?? SAMPLE_VARS[templateId] ?? {}
   const vars = 'lien_desabonnement' in baseVars
     ? { ...baseVars, lien_desabonnement: lienDesabonnement }
     : baseVars
-  const result = await buildEmail(templateId, vars, siteUrl)
+  const result = await buildEmail(effectiveTemplateId, vars, siteUrl, effectiveLayoutId)
 
   if (!result) {
     return NextResponse.json({ error: `Template "${templateId}" introuvable ou vide en base de données.` }, { status: 404 })

@@ -75,6 +75,10 @@ export default async function AdminEmailsPage() {
     templatePsc, template1an, template3mois, templateLancement,
     templateSuppression, templateReset, templateFusion, templateEtude, templateQuestionnaire,
     templateMasterLayout,
+    templateRelanceIncomplet,
+    templateRelancePsc,
+    templateConfirmationInscription,
+    templateInfosMensuels,
     emailsEtudes, emailsQuestionnaires,
     countEtudes, countQuestionnaires,
     { data: newsletters },
@@ -85,6 +89,7 @@ export default async function AdminEmailsPage() {
     campagnes,
     templateLancementSyndicat,
     syndicatsLancement,
+    templateMasterLayoutTest,
   ] = await Promise.all([
     getEmailTemplate('verification_psc'),
     getEmailTemplate('relance_1an'),
@@ -96,6 +101,10 @@ export default async function AdminEmailsPage() {
     getEmailTemplate('etude_clinique'),
     getEmailTemplate('questionnaire_recherche'),
     getEmailTemplate('master_layout'),
+    getEmailTemplate('relance_incomplet'),
+    getEmailTemplate('relance_psc'),
+    getEmailTemplate('confirmation_inscription'),
+    getEmailTemplate('infos_mensuels'),
     getOptedInEmails('etudes_cliniques'),
     getOptedInEmails('questionnaires_these'),
     getOptedInCount('etudes_cliniques'),
@@ -112,6 +121,7 @@ export default async function AdminEmailsPage() {
     getEmailsCampagnes(),
     getEmailTemplate('lancement_syndicat'),
     getSyndicatsLancement(),
+    getEmailTemplate('master_layout_test'),
   ])
 
   const sections = [
@@ -167,6 +177,38 @@ export default async function AdminEmailsPage() {
           variables: ['{{lien_fusion}}'],
           data: templateFusion,
           defaultSujet: 'Fusionnez vos comptes 100 000 Médecins',
+        },
+        {
+          id: 'confirmation_inscription',
+          title: "Confirmation d'inscription (email)",
+          description: "Envoyé après une inscription par email (pas PSC) — contient le lien HMAC de confirmation d'adresse.",
+          variables: ['{{lien_confirmation}}'],
+          data: templateConfirmationInscription,
+          defaultSujet: 'Confirmez votre inscription — 100 000 Médecins',
+        },
+        {
+          id: 'relance_incomplet',
+          title: 'Relance évaluation incomplète',
+          description: "Envoyé aux utilisateurs ayant commencé mais non finalisé une évaluation.",
+          variables: ['{{prenom}}', '{{nom}}', '{{solution_nom}}', '{{lien_reprise}}'],
+          data: templateRelanceIncomplet,
+          defaultSujet: 'Votre évaluation de {{solution_nom}} est incomplète',
+        },
+        {
+          id: 'relance_psc',
+          title: 'Relance vérification PSC',
+          description: "Envoyé aux utilisateurs n'ayant pas finalisé leur vérification Pro Santé Connect (1 à 3 relances).",
+          variables: ['{{prenom}}', '{{nom}}', '{{solution_nom}}', '{{psc_link}}', '{{relance_num}}', '{{max_relances}}'],
+          data: templateRelancePsc,
+          defaultSujet: 'Finalisez votre évaluation de {{solution_nom}} avec ProSanté Connect',
+        },
+        {
+          id: 'infos_mensuels',
+          title: 'Newsletter — Infos mensuelles',
+          description: "Newsletter mensuelle (en cours de définition côté éditorial). Template prêt à l'emploi avec placeholder.",
+          variables: ['{{prenom}}', '{{nom}}'],
+          data: templateInfosMensuels,
+          defaultSujet: 'Les infos du mois — 100 000 Médecins',
         },
       ],
     },
@@ -246,6 +288,7 @@ export default async function AdminEmailsPage() {
         campagnesQuestionnaires={campagnes.questionnaires}
         lancementSyndicatTemplate={templateLancementSyndicat}
         syndicatsLancement={syndicatsLancement}
+        masterLayoutTestTemplate={templateMasterLayoutTest}
       />
     </div>
   )
