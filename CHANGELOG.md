@@ -5,6 +5,43 @@
 
 ---
 
+## [2026-06-01] — Refonte design system emails : logo 3 lignes + label BDD + migration de 10 templates
+
+### Email — Nouveau master_layout avec logo 3 lignes débordant + slot label
+
+- **Nouveau master_layout** : logo 3 lignes (`logo-principal-couleur-trimmed.png`, 140px) débordant en haut à gauche via `margin-bottom:-50px`, label de la catégorie en blanc à droite (aligné en bas du logo), spacer de 60px au-dessus du contenu de la carte blanche, footer simple (logo 110px + lien `Gérer mes notifications`).
+- **Sauvegarde** du master_layout d'avril dans `email_templates.master_layout_backup_2026_05_31` (rollback possible via `UPDATE master_layout SET contenu_html = (SELECT contenu_html FROM master_layout_backup_2026_05_31)`).
+- **Nouveau bac à sable** dans `/admin/emails` → onglet « Template email » : 2ᵉ bloc « 🧪 Master layout de test » qui édite `master_layout_test` (clone initial du master_layout). Les envois de test depuis ce bloc utilisent `master_layout_test` + un contenu de démo (`bac_a_sable`), sans toucher au layout de production.
+
+### Email — Schéma : colonne `label` + injection dans le layout via `{{label}}`
+
+- **`ALTER TABLE email_templates ADD COLUMN label TEXT`** : chaque template déclare son label court (ex. "Fusion de comptes", "Votre avis a 1 an") une seule fois en BDD.
+- **`buildEmail()`** modifié : lit `template.label`, substitue `{{label}}` dans le layout. Évite la duplication des labels dans chaque template HTML.
+- **Signature étendue** : `buildEmail(templateId, vars, siteUrl, layoutId)` — le `layoutId` par défaut est `master_layout`, peut être surchargé pour le bac à sable.
+- **Fallback `lien_desabonnement`** : si pas passé en vars, automatiquement remplacé par `${siteUrl}/mon-compte/mes-notifications` (évite que `{{lien_desabonnement}}` apparaisse littéralement dans les mails qui n'ont pas de désabo).
+
+### Email — Migration de 10 templates de full-HTML vers fragment `<tr><td>` + master_layout
+
+Cause : 10 templates contenaient leur propre `<!doctype>`, `<body>`, fond, logo header et footer — la modif du master_layout n'avait aucun effet sur eux. Pattern hérité d'une migration progressive jamais finie.
+
+- **Templates migrés** : `relance_1an`, `relance_3mois`, `relance_incomplet`, `relance_psc`, `verification_psc`, `suppression_compte`, `etude_clinique`, `questionnaire_recherche`, `infos_mensuels` (9). Chacun ne garde que le contenu intérieur de la carte sous forme `<tr><td>...</td></tr>`, et déclare son label en BDD.
+- **`lancement_syndicat` non migré** : cas particulier avec en-tête tripartite (logo 100K + cœur + logo syndicat dynamique), garde son full-HTML.
+- **4 templates déjà au format fragment avant la session** : `fusion_comptes`, `reinitialisation_mot_de_passe`, `lancement`, `confirmation_inscription` — labels posés en BDD.
+- **Backup** : 10 lignes `*_backup_2026_05_31` créées en BDD avant migration.
+
+### Admin — Ajout de 4 templates manquants dans `/admin/emails`
+
+- `confirmation_inscription` (mail envoyé à l'inscription par email avec lien HMAC), `relance_incomplet`, `relance_psc`, `infos_mensuels` (newsletter mensuelle, encore en placeholder) — désormais éditables et testables depuis l'admin via les boutons « Envoyer un test ».
+- SAMPLE_VARS ajoutés dans `/api/admin/test-email/route.ts` pour ces templates.
+
+### TODO — Mises à jour
+- ✅ Tooltip mobile testé OK (déjà acté).
+- ✅ Logo condensé sur l'index — couvert par le logo 3 lignes débordant de la navbar.
+- ✅ Note résiduelle bascule prod (legacy noindex) — pas d'action restante, retiré du TODO.
+- Ajout : retravailler `lancement_syndicat` plus tard pour le faire passer dans le master_layout avec un slot logo dynamique.
+
+---
+
 ## [2026-05-31] — Logo navbar 3 lignes + cleanup fallbacks hardcodés pages statiques
 
 ### UX / UI — Logo navbar 3 lignes

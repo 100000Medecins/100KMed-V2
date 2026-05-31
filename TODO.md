@@ -104,10 +104,9 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 
 #### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
-- ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly (ex. `/editeur/0597f887-e925-...` pour Xtrem Santé).~~
-- ~~**Chantier** : ajouter une colonne `slug` à `editeurs` (unique), générer les slugs depuis `nom`, router `/editeur/[slug]` au lieu de `[idEditeur]`, et poser des redirections 301 des anciennes URLs UUID → slug.~~
-- ~~À cadrer : unicité des slugs (homonymes), rétro-compat des liens existants, regénération des types après migration.~~
-- **Reste à faire** : poser les redirections 301 `/editeur/<uuid>` → `/editeur/<slug>` dans `next.config.mjs` pour la rétro-compat SEO (si des liens externes pointent encore vers les anciennes URLs UUID).
+- ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly.~~
+- ~~**Chantier** : route `/editeur/[slug]` + redirections.~~
+- **Pas de redirection 301 UUID→slug nécessaire** : le format `/editeur/<uuid>` n'a quasiment jamais existé en prod (fenêtre courte entre la mise en ligne et la bascule en slug le 2026-05-30, peu de chances que des liens externes pointent dessus). Si Search Console signale des 404 dessus à l'avenir, on les ajoutera ponctuellement.
 
 #### ✅ Référencement éditeurs — livré (2026-05-30)
 - Nouvelle page publique `/editeurs/` (liste de tous les éditeurs) + composant `EditeursListClient`.
@@ -118,12 +117,17 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### Éditeurs orphelins (0 solution) — à nettoyer
 - 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.
 
-#### Logo condensé sur l'index — nouvel essai
-- Retenter une version condensée du logo sur la page d'accueil du site.
+#### ~~Logo condensé sur l'index — nouvel essai~~ [OK] Validé 2026-05-31
+- ~~Retenter une version condensée du logo sur la page d'accueil du site.~~ Le logo 3 lignes débordant dans la navbar (livré 2026-05-31) couvre le besoin.
 
-#### Mettre le logo 3 lignes dans les templates emails
-- **Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes (`logo-principal-couleur.svg`, identique au footer). Aligner les templates emails sur ce visuel pour une identité cohérente.
-- À faire : identifier les templates emails (transactionnels + newsletter), remplacer le logo actuel par la version 3 lignes, vérifier le rendu sur les principaux clients mail (Gmail, Outlook, Apple Mail) — attention au support SVG variable selon clients, peut nécessiter un PNG haute résolution.
+#### ~~Mettre le logo 3 lignes dans les templates emails~~ [OK] Fait 2026-06-01
+- ~~**Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes. Aligner les templates emails sur ce visuel.~~
+- ✅ **Fait 2026-06-01** : refonte complète du `master_layout` (logo 3 lignes débordant en haut à gauche + label à droite + footer simple avec logo 110px). 13 templates sur 14 migrés vers `<tr><td>` + master_layout. Nouvelle colonne BDD `email_templates.label` injectée via `{{label}}`. Bac à sable « 🧪 Master layout de test » ajouté dans `/admin/emails` pour itérer sur les layouts sans risque. Cf CHANGELOG 2026-06-01.
+
+#### Migrer `lancement_syndicat` vers le master_layout (cas particulier en-tête)
+- **Contexte (2026-06-01)** : lors de la refonte design system emails, 9 templates ont été migrés en `<tr><td>` + master_layout. `lancement_syndicat` est resté en full-HTML car son en-tête contient un montage tripartite (logo 100K + ❤ + logo syndicat dynamique via `{{logo_syndicat}}`).
+- **Pistes** : créer un `master_layout_syndicat` dédié OU étendre le master_layout actuel pour accepter un slot d'en-tête optionnel (`{{header_logo_extra}}` injecté à droite du logo principal).
+- **Pas urgent** : le template fonctionne. À traiter quand on enverra à nouveau ce type de mail.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -143,10 +147,10 @@ _(rien à faire pour l'instant)_
 
 ### SEO / Référencement
 
-#### Sitemap propre + URLs éditeurs en UUID (demande Ben, 2026-05-28)
-- **Sitemap** : générer un `sitemap.xml` propre pour le nouveau site (à ce jour absent ou incomplet).
-- **Bug URLs éditeurs** : certaines fiches éditeurs sont servies sur une URL en UUID brut (ex. `/0597f887-e925-40be-b42a-2b75ad960b46`, `/064b3c08-971c-4bdf-bc30-990d8ce3b62c`) au lieu d'un slug lisible. À diagnostiquer : éditeurs sans `slug` ? Route qui retombe sur l'`id` faute de slug ? → leur générer un slug et corriger la route.
-- Lié au chantier URGENT « Résultats Google → 404 » (cohérence des URLs publiques).
+#### Sitemap propre (demande Ben, 2026-05-28) — fait, en attente validation Google
+- ✅ **Sitemap dynamique** (`src/app/sitemap.ts`, `force-dynamic`) : recalculé à chaque requête HTTP. **Pas besoin de le régénérer manuellement** quand on crée/modifie un éditeur, une solution ou un article — le prochain GET sur `/sitemap.xml` reflète l'état BDD.
+- ✅ **Bug URLs éditeurs UUID brut** : résolu de facto par le passage en slug (2026-05-30). Le code ne génère plus jamais d'URL `/editeur/<uuid>`.
+- **À surveiller** : Search Console → propriété `100000medecins.org` → menu **Sitemaps** → vérifier que `https://www.100000medecins.org/sitemap.xml` passe en « Réussite ». Recrawl Google en cours.
 
 ### Mises à jour techniques
 
@@ -171,9 +175,6 @@ _(rien à faire pour l'instant)_
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
-
-#### Note résiduelle bascule prod (2026-05-25)
-- `legacy.100000medecins.org` (ancienne landing page) conservé chez Gandi. ✅ Mis en noindex le 2026-05-29 (`.htaccess` avec `X-Robots-Tag: noindex, follow`) → déréférencement Google en cours.
 
 ---
 
@@ -200,9 +201,6 @@ _(rien à faire pour l'instant)_
 - **Compléter les 7 nouveaux éditeurs** (Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, Solutions régionales) : website (URLs devinées à valider), description, logo
 - **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 15 fiches
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
-
-### Liens entre solutions — évolution future
-- Permettre aux éditeurs de proposer un lien entre solutions depuis `/mon-compte/mon-espace-editeur` (avec validation admin). La base — table `solution_liens`, UI sidebar, manager admin — est livrée (voir archive 2026-05-18).
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales
