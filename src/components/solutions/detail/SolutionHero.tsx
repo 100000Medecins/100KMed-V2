@@ -85,7 +85,7 @@ export default function SolutionHero({
     <div>
       {/* Bande fil d'Ariane */}
       <div className="bg-white/70 border-b border-gray-200/60 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5 min-[1150px]:pl-[200px]">
           <Breadcrumb variant="default" items={[
             { label: 'Accueil', href: '/' },
             ...(solution.categorie ? [{ label: solution.categorie.nom, href: `/solutions/${categorieSlug}` }] : []),

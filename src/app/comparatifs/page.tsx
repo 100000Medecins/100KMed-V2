@@ -62,8 +62,8 @@ export default async function ComparatifsPage() {
     <>
       <Navbar />
       <main className="pt-[72px]" style={{ backgroundColor: '#CDD5EA' }}>
-        <section className="bg-hero-gradient pt-4 pb-14 md:pb-20">
-          <div className="max-w-7xl mx-auto px-6 pt-2 pb-0">
+        <section className="bg-hero-gradient pb-14 md:pb-20">
+          <div className="max-w-7xl mx-auto px-6 pt-4 pb-0 min-[1150px]:pl-[200px]">
             <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Comparatifs' }]} variant="light" />
           </div>
           <div className="max-w-5xl mx-auto px-6 text-center mt-10 md:mt-14">
