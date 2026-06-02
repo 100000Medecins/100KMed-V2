@@ -108,11 +108,11 @@ export default async function SolutionsPage(props: PageProps) {
       <Navbar />
       <main className="pt-[72px]">
         {/* Hero catégorie */}
-        <section className="bg-hero-gradient pt-3 pb-4 md:pb-14">
+        <section className="bg-hero-gradient pb-4 md:pb-14">
+          <div className="max-w-7xl mx-auto px-6 pt-4 pb-3 md:pb-12 min-[1150px]:pl-[200px]">
+            <Breadcrumb variant="light" items={[{ label: 'Accueil', href: '/' }, { label: 'Comparatifs', href: '/comparatifs' }, { label: categorie.nom }]} />
+          </div>
           <div className="max-w-7xl mx-auto px-6">
-            <div className="mb-3 md:mb-12">
-              <Breadcrumb variant="light" items={[{ label: 'Accueil', href: '/' }, { label: 'Comparatifs', href: '/comparatifs' }, { label: categorie.nom }]} />
-            </div>
             <div className="flex items-center gap-2 md:gap-10">
               <div className="flex-1">
                 {/* Titre */}

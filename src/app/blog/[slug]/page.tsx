@@ -81,7 +81,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <div className="absolute inset-0 bg-hero-gradient" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
-          <div className="absolute top-0 left-0 right-0 max-w-3xl mx-auto px-6 pt-4">
+          <div className="absolute top-0 left-0 right-0 max-w-3xl mx-auto px-6 pt-4 min-[1150px]:pl-[200px]">
             <Breadcrumb items={[
               { label: 'Accueil', href: '/' },
               { label: 'Blog', href: '/blog' },

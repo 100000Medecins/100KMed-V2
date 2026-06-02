@@ -16,7 +16,7 @@ export default function QuiSommesNousPage({ page }: Props) {
       <Navbar />
 
       <div className="pt-[72px] bg-white">
-        <div className="max-w-4xl mx-auto px-6 pt-4 pb-0">
+        <div className="max-w-7xl mx-auto px-6 pt-4 pb-0 min-[1150px]:pl-[200px]">
           <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Qui sommes-nous ?' }]} />
         </div>
       </div>

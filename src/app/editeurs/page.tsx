@@ -65,7 +65,7 @@ export default async function EditeursPage() {
     <>
       <Navbar />
       <main className="pt-[72px] min-h-screen bg-surface-light">
-        <div className="max-w-5xl mx-auto px-6 pt-4 pb-0">
+        <div className="max-w-7xl mx-auto px-6 pt-4 pb-0 min-[1150px]:pl-[200px]">
           <Breadcrumb
             items={[{ label: 'Accueil', href: '/' }, { label: 'Éditeurs' }]}
           />

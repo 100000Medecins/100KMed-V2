@@ -62,8 +62,8 @@ export default async function BlogPage({ searchParams }: PageProps) {
       <Navbar />
       <main className="pt-[72px]">
         {/* Hero */}
-        <section className="bg-hero-gradient pt-4 pb-10 md:pb-16">
-          <div className="max-w-7xl mx-auto px-6 pt-2 pb-0">
+        <section className="bg-hero-gradient pb-10 md:pb-16">
+          <div className="max-w-7xl mx-auto px-6 pt-4 pb-0 min-[1150px]:pl-[200px]">
             <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Blog' }]} variant="light" />
           </div>
           <div className="max-w-5xl mx-auto px-6 text-center mt-10 md:mt-14">
