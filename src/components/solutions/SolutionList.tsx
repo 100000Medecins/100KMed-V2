@@ -1,18 +1,32 @@
 import Link from 'next/link'
 import StarRating from '@/components/ui/StarRating'
 import RatingBadge from '@/components/ui/RatingBadge'
+import PriceTag from './PriceTag'
+import { computeCategoryMedian, computePriceTier, type PrixInput } from '@/lib/prix'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function asPrixInput(s: Record<string, unknown>): PrixInput {
+  return {
+    prix_ttc: (s.prix_ttc as number | null) ?? null,
+    prix_ttc_min: (s.prix_ttc_min as number | null) ?? null,
+    prix_ttc_max: (s.prix_ttc_max as number | null) ?? null,
+    prix_devise: (s.prix_devise as string | null) ?? null,
+    prix_frequence: (s.prix_frequence as string | null) ?? null,
+    prix_duree_engagement_mois: (s.prix_duree_engagement_mois as number | null) ?? null,
+  }
 }
 
 interface SolutionListProps {
   solutions: any[]
   categorieSlug?: string
   tri?: string
+  displayPrixFront?: boolean
 }
 
-export default function SolutionList({ solutions, categorieSlug, tri }: SolutionListProps) {
+export default function SolutionList({ solutions, categorieSlug, tri, displayPrixFront = false }: SolutionListProps) {
   if (solutions.length === 0) {
     return (
       <div className="text-center py-12">
@@ -20,6 +34,9 @@ export default function SolutionList({ solutions, categorieSlug, tri }: Solution
       </div>
     )
   }
+
+  // Médiane de la catégorie (calculée une seule fois sur l'ensemble des solutions de la liste)
+  const median = displayPrixFront ? computeCategoryMedian(solutions.map(asPrixInput)) : null
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -78,6 +95,17 @@ export default function SolutionList({ solutions, categorieSlug, tri }: Solution
                 ))}
               </div>
             )}
+
+            {/* Prix (si toggle global ON et prix renseigné) */}
+            {displayPrixFront && (() => {
+              const prix = asPrixInput(solution)
+              const tier = computePriceTier(prix, median)
+              return (
+                <div className="mb-2">
+                  <PriceTag prix={prix} tier={tier} categoryMedian={median} />
+                </div>
+              )
+            })()}
 
             {/* Note */}
             {(() => {

@@ -635,9 +635,14 @@ export async function updateNoteGlobaleTooltip(id: string, formData: FormData) {
   const tooltip_court_standard = ((formData.get('tooltip_court_standard') as string) || '').trim()
   const tooltip_long_titre = ((formData.get('tooltip_long_titre') as string) || '').trim()
   const tooltip_long_corps = ((formData.get('tooltip_long_corps') as string) || '').trim()
+  // Checkbox HTML : présente dans formData uniquement si cochée. Si absente = false.
+  const modale_active = formData.get('modale_active') === 'on'
 
-  if (!tooltip_court_legacy || !tooltip_court_standard || !tooltip_long_titre || !tooltip_long_corps) {
-    return { error: 'Les 4 champs sont obligatoires.' }
+  if (!tooltip_court_legacy || !tooltip_court_standard) {
+    return { error: 'Les deux textes courts sont obligatoires.' }
+  }
+  if (modale_active && (!tooltip_long_titre || !tooltip_long_corps)) {
+    return { error: 'Le titre et le corps de la modale sont obligatoires quand la modale est activée.' }
   }
   if (tooltip_court_legacy.length > 300 || tooltip_court_standard.length > 300) {
     return { error: 'Les textes courts ne doivent pas dépasser 300 caractères.' }
@@ -648,6 +653,7 @@ export async function updateNoteGlobaleTooltip(id: string, formData: FormData) {
     tooltip_court_standard,
     tooltip_long_titre,
     tooltip_long_corps,
+    modale_active,
   })
 
   const { error } = await supabase
@@ -1716,4 +1722,36 @@ export async function rejectEditeurReferencement(id: string) {
   await supabase.from('editeur_demandes_referencement').delete().eq('id', id)
   revalidatePath('/admin/editeurs/demandes')
   revalidatePath('/admin', 'layout')
+}
+
+// ────────────────────────────────────────────
+// Paramètres globaux (app_settings)
+// ────────────────────────────────────────────
+
+export async function setDisplayPrixFront(value: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert(
+      { key: 'display_prix_front', value: value as never },
+      { onConflict: 'key' }
+    )
+  if (error) return { error: error.message }
+  revalidatePath('/admin/parametres')
+  revalidatePath('/', 'layout')
+}
+
+export async function setDisplayContactsCommerciaux(value: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert(
+      { key: 'display_contacts_commerciaux', value: value as never },
+      { onConflict: 'key' }
+    )
+  if (error) return { error: error.message }
+  revalidatePath('/admin/parametres')
+  revalidatePath('/solutions', 'layout')
 }

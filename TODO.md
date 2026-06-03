@@ -39,6 +39,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
+#### Peupler les prix et coordonnées des éditeurs (2026-06-04)
+- **Contexte** : nouveau module tarification livré (cf CHANGELOG 2026-06-04) mais peu de prix renseignés en BDD pour le moment. Le toggle global « Afficher les prix sur le site » est OFF tant qu'une masse critique n'est pas atteinte.
+- **Coordonnées éditeurs** : le bloc « Contacts commerciaux » est désormais masqué par défaut (toggle OFF dans `/admin/parametres`) car beaucoup de coordonnées en BDD sont incorrectes ou inappropriées. À nettoyer + compléter pour pouvoir réactiver le toggle.
+- **À faire** : demander à Agathe si elle veut s'en charger (collecte auprès des éditeurs des prix officiels + coordonnées commerciales + support à jour). Une fois la base à jour, activer les 2 toggles dans `/admin/parametres`.
+
 #### Vidéos par solution — étendre la découverte YouTube
 - **Acquis (2026-05-24)** : plomberie complète livrée — table `video_solutions` (M-N) avec RLS, script `scripts/discover-videos-youtube.mjs` avec filtres (lang fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, blacklist termes dev, bonus mots pro-santé), galerie publique des fiches solutions affiche automatiquement les vidéos validées, admin a panneaux symétriques côté vidéo (multi-select solutions) et côté solution (chips vidéos), badges 🎬 dans le panel propositions à modérer.
 - **Smoke test 2026-05-24** : 8 vidéos importées sur Doctolib agenda, validation manuelle dans `/admin/videos` (panel propositions). Quelques vidéos hors-sujet identifiées (chaîne « Mediia » génère du contenu IA générique qui mentionne Doctolib sans en être le sujet).
@@ -102,6 +107,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**À améliorer — modale détaillée** : le rendu actuel utilise `prose-custom` + sanitize HTML par défaut. Travailler la lisibilité (hiérarchie typographique, aération des paragraphes, encadrés visuels pour les exemples chiffrés type « 4,2 sur 50 avis »).~~ [OK] Fait 2026-05-30 (styles Tailwind ciblés `[&_strong]`, `[&_a]`, `[&_ul]` + taille `lg` + `text-[15px] leading-relaxed`).
 - ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
+- **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
 #### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
 - ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly.~~
@@ -204,24 +210,19 @@ _(rien à faire pour l'instant)_
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
 
-### Refaire le système d'affichage des prix
-- **État actuel (2026-05-15)** : édition côté éditeur en place dans `/mon-compte/mon-espace-editeur` (rien d'affiché côté front)
-  - Soit **prix unique** : `prix_ttc`
-  - Soit **plage de prix** : `prix_ttc_min` + `prix_ttc_max`
-  - Plus `prix_devise`, `prix_frequence`, `prix_duree_engagement_mois`
-  - Badge « Bientôt affiché sur le site » dans le formulaire éditeur (à retirer quand on activera l'affichage)
-- **Décisions cadrées 2026-06-03** :
-  - **TTC uniquement** (pas de HT)
-  - **Médiane** pour positionner les solutions en plage de prix (`(min + max) / 2`)
-  - **Affichage carte comparatif = chiffre brut + €/€€/€€€/€€€€** (les deux ensemble), code couleur calculé vs médiane de la **catégorie** (pas du site)
-- **À implémenter** :
-  - **Bloc Tarification** sur la fiche solution : `💶 À partir de X €/mois TTC · Engagement Y mois` (ou « Prix sur demande » + lien contact commercial si non renseigné)
-  - **Indicateur €/€€/€€€/€€€€** sur les cartes du comparatif (en plus du prix chiffré), seuils : < 50% médiane / 50-100% / 100-200% / > 200%, tooltip au survol
-  - **Tri par prix croissant/décroissant** dans `/solutions/[idCategorie]` (solutions sans prix en bloc séparé en fin de liste)
-  - **Toggle global admin** « Afficher les prix sur le front » dans `/admin/parametres` (OFF par défaut) pour basculer quand la masse critique de prix renseignés est atteinte
-  - **Colonne « Prix » + filtre « Sans prix »** dans `/admin/solutions` pour piloter les relances éditeurs
-  - **Aperçu live du rendu** dans le formulaire éditeur sous le bloc Tarification
-  - Retirer le badge « Bientôt affiché sur le site » une fois le toggle global ON
+### Refaire le système d'affichage des prix — plomberie livrée 2026-06-04, en attente de remplissage
+- **Décisions cadrées 2026-06-03** : TTC uniquement, médiane pour les plages (`(min+max)/2`), affichage carte comparatif = chiffre brut + indicateur €/€€/€€€/€€€€ (couleur vs médiane catégorie).
+- ✅ **Livré 2026-06-04** :
+  - Helpers `src/lib/prix.ts` (formatPrix, computeCategoryMedian, computePriceTier) avec normalisation défensive (0 ou négatif = null, accepte `€`/`EUR` indifféremment)
+  - Table `app_settings` + page `/admin/parametres` (sous-menu Solutions) avec toggle global « Afficher les prix sur le front » (OFF par défaut)
+  - Bloc Tarification sur fiche solution (sidebar) gated derrière le toggle
+  - Indicateur €/€€/€€€/€€€€ + tri par prix sur `/solutions/[idCategorie]` gated derrière le toggle
+  - Colonne « Prix » + filtre « Sans prix » dans `/admin/solutions`
+  - Aperçu live du rendu dans le formulaire éditeur
+- ⏳ **Reste à faire — remplir les prix avant d'activer le toggle** :
+  - **Fix BDD préalable** : `UPDATE solutions SET prix_ttc=NULL WHERE prix_ttc=0;` (19 solutions parasites héritées Firebase) + `UPDATE solutions SET prix_devise='EUR' WHERE prix_devise='€';` (21 solutions, normalisation code ISO)
+  - **Stratégie remplissage 2026-06-04** : scraping abandonné (essai Hellodoc + Weda non concluant — pages tarifs officielles vides chez Weda, PDF Hellodoc obsolète 2007, sites tiers contradictoires entre 100 et 130 €/mois → risque éditorial + péremption). À la place : **mails aux éditeurs référencés** pour leur demander de saisir leurs prix dans l'espace éditeur. À planifier sur 3-5 éditeurs « amis » d'abord pour amorcer.
+  - **Une fois la masse critique atteinte** : activer le toggle dans `/admin/parametres` + retirer le badge « Bientôt affiché sur le site » du formulaire éditeur (`src/app/mon-compte/mon-espace-editeur/page.tsx` ligne ~494)
 
 ### ROR sur le site
 - Intégrer le ROR (Répertoire Opérationnel des Ressources) sur le site

@@ -37,6 +37,7 @@ export default function NoteGlobaleTooltip({ data, isLegacy }: Props) {
   const [modalOpen, setModalOpen] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const modaleActive = data.modale_active !== false
   const textCourt = nbspMarque(isLegacy ? data.tooltip_court_legacy : data.tooltip_court_standard)
   const corpsHtml = nbspMarque(sanitizeHtml(data.tooltip_long_corps))
 
@@ -48,6 +49,16 @@ export default function NoteGlobaleTooltip({ data, isLegacy }: Props) {
     if (closeTimer.current) clearTimeout(closeTimer.current)
     closeTimer.current = setTimeout(() => setHoverOpen(false), 180)
   }
+  // Clic sur l'icône :
+  //  - modale active : ouvre la modale détaillée
+  //  - modale désactivée : toggle le popover (utile sur mobile où il n'y a pas de hover)
+  const handleIconClick = () => {
+    if (modaleActive) {
+      setModalOpen(true)
+    } else {
+      setHoverOpen((v) => !v)
+    }
+  }
 
   return (
     <>
@@ -58,10 +69,12 @@ export default function NoteGlobaleTooltip({ data, isLegacy }: Props) {
       >
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={handleIconClick}
           onFocus={handleEnter}
           onBlur={handleLeave}
-          aria-label="En savoir plus sur le calcul de la note globale"
+          aria-label={modaleActive
+            ? 'En savoir plus sur le calcul de la note globale'
+            : 'Afficher l\'information sur la note globale'}
           className="inline-flex items-center justify-center w-5 h-5 text-gray-400 hover:text-navy focus:text-navy transition-colors rounded-full focus:outline-none focus:ring-2 focus:ring-accent-blue/40"
         >
           <Info className="w-4 h-4" />
@@ -81,16 +94,18 @@ export default function NoteGlobaleTooltip({ data, isLegacy }: Props) {
             <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-navy rotate-45" aria-hidden="true" />
             <div className="relative p-3">
               <p>{textCourt}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setHoverOpen(false)
-                  setModalOpen(true)
-                }}
-                className="mt-2 text-[11px] text-accent-blue hover:text-white underline underline-offset-2 transition-colors"
-              >
-                En savoir plus →
-              </button>
+              {modaleActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHoverOpen(false)
+                    setModalOpen(true)
+                  }}
+                  className="mt-2 text-[11px] text-accent-blue hover:text-white underline underline-offset-2 transition-colors"
+                >
+                  En savoir plus →
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -103,28 +118,30 @@ export default function NoteGlobaleTooltip({ data, isLegacy }: Props) {
         React Portal — il hérite donc des classes typo du parent. On les
         neutralise explicitement ici sinon toute la modale s'affiche en MAJUSCULES.
       */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        size="lg"
-        className="normal-case tracking-normal text-left font-medium"
-      >
-        <Modal.Header onClose={() => setModalOpen(false)}>{data.tooltip_long_titre}</Modal.Header>
-        <Modal.Body>
-          <div
-            className="
-              text-[15px] text-gray-700 text-left leading-relaxed font-normal
-              [&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0
-              [&_strong]:text-navy [&_strong]:font-semibold
-              [&_em]:text-gray-600
-              [&_a]:text-accent-blue [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-navy
-              [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-3 [&_ul]:space-y-1
-              [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-3 [&_ol]:space-y-1
-            "
-            dangerouslySetInnerHTML={{ __html: corpsHtml }}
-          />
-        </Modal.Body>
-      </Modal>
+      {modaleActive && (
+        <Modal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          size="lg"
+          className="normal-case tracking-normal text-left font-medium"
+        >
+          <Modal.Header onClose={() => setModalOpen(false)}>{data.tooltip_long_titre}</Modal.Header>
+          <Modal.Body>
+            <div
+              className="
+                text-[15px] text-gray-700 text-left leading-relaxed font-normal
+                [&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0
+                [&_strong]:text-navy [&_strong]:font-semibold
+                [&_em]:text-gray-600
+                [&_a]:text-accent-blue [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-navy
+                [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-3 [&_ul]:space-y-1
+                [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-3 [&_ol]:space-y-1
+              "
+              dangerouslySetInnerHTML={{ __html: corpsHtml }}
+            />
+          </Modal.Body>
+        </Modal>
+      )}
     </>
   )
 }

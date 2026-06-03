@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           contenu: string | null
@@ -392,6 +413,36 @@ export type Database = {
           },
         ]
       }
+      editeur_demandes_referencement: {
+        Row: {
+          created_at: string
+          email_contact: string
+          id: string
+          message: string | null
+          nom_editeur: string
+          nom_solution: string | null
+          site_web: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_contact: string
+          id?: string
+          message?: string | null
+          nom_editeur: string
+          nom_solution?: string | null
+          site_web?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_contact?: string
+          id?: string
+          message?: string | null
+          nom_editeur?: string
+          nom_solution?: string | null
+          site_web?: string | null
+        }
+        Relationships: []
+      }
       editeurs: {
         Row: {
           affiche_sur_index: boolean
@@ -492,18 +543,21 @@ export type Database = {
         Row: {
           contenu_html: string
           id: string
+          label: string | null
           sujet: string
           updated_at: string | null
         }
         Insert: {
           contenu_html: string
           id: string
+          label?: string | null
           sujet: string
           updated_at?: string | null
         }
         Update: {
           contenu_html?: string
           id?: string
+          label?: string | null
           sujet?: string
           updated_at?: string | null
         }
@@ -843,6 +897,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      pages_statiques_history: {
+        Row: {
+          contenu: string | null
+          id: string
+          image_couverture: string | null
+          meta_description: string | null
+          metadata: Json | null
+          page_id: string
+          saved_at: string
+          saved_by: string | null
+          slug: string
+          titre: string | null
+        }
+        Insert: {
+          contenu?: string | null
+          id?: string
+          image_couverture?: string | null
+          meta_description?: string | null
+          metadata?: Json | null
+          page_id: string
+          saved_at?: string
+          saved_by?: string | null
+          slug: string
+          titre?: string | null
+        }
+        Update: {
+          contenu?: string | null
+          id?: string
+          image_couverture?: string | null
+          meta_description?: string | null
+          metadata?: Json | null
+          page_id?: string
+          saved_at?: string
+          saved_by?: string | null
+          slug?: string
+          titre?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_statiques_history_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages_statiques"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partenaires: {
         Row: {

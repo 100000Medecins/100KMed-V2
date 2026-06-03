@@ -47,6 +47,9 @@ docs/backup-fix-*.json
 # Supabase CLI — fichiers temporaires auto-générés (version du CLI, etc.)
 supabase/.temp/
 
+# Fichiers temporaires de régénération des types Supabase (sortie de `gen types`)
+*.ts.new
+
 # Claude Code — config locale par développeur
 # Ne jamais committer : accumule des patterns de permissions pouvant contenir des secrets
 .claude/settings.local.json

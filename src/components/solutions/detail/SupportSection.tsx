@@ -3,6 +3,12 @@ import type { SolutionWithRelations } from '@/types/models'
 
 interface SupportSectionProps {
   solution: SolutionWithRelations
+  /**
+   * Toggle global `app_settings.display_contacts_commerciaux` :
+   * si false (défaut), le sous-bloc « Contacts commerciaux » (demande de démo/devis)
+   * est masqué. Le sous-bloc « Contacts support » reste affiché.
+   */
+  displayCommercial?: boolean
 }
 
 function ContactButton({
@@ -33,7 +39,7 @@ function ContactButton({
  * pour CETTE solution (les contacts sont propres à chaque produit, pas à l'éditeur).
  * Masquée si aucun contact n'est renseigné.
  */
-export default function SupportSection({ solution }: SupportSectionProps) {
+export default function SupportSection({ solution, displayCommercial = false }: SupportSectionProps) {
   const sol = solution as unknown as Record<string, string | null>
   const contactEmail = sol.contact_email
   const contactTel = sol.contact_telephone
@@ -41,7 +47,8 @@ export default function SupportSection({ solution }: SupportSectionProps) {
   const supportTel = sol.support_telephone
   const supportSite = sol.support_website
 
-  const hasCommercial = !!(contactEmail || contactTel)
+  // Le bloc commercial n'est rendu QUE si le toggle admin est activé ET qu'il y a des coordonnées renseignées.
+  const hasCommercial = displayCommercial && !!(contactEmail || contactTel)
   const hasSupport = !!(supportEmail || supportTel || supportSite)
   if (!hasCommercial && !hasSupport) return null
 

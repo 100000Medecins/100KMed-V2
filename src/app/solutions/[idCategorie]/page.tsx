@@ -9,6 +9,8 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import { getCategorieBySlug } from '@/lib/db/categories'
 import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
+import { getDisplayPrixFront } from '@/lib/db/settings'
+import { computeSortValue } from '@/lib/prix'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
 import SolutionSortBar from '@/components/solutions/SolutionSortBar'
@@ -61,11 +63,12 @@ export default async function SolutionsPage(props: PageProps) {
   const needsUserNotes = tri === 'note_utilisateurs'
   const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
 
-  const [tags, criteresMajeurs, notesRedac, nbNotesMap] = await Promise.all([
+  const [tags, criteresMajeurs, notesRedac, nbNotesMap, displayPrixFront] = await Promise.all([
     getTags(categorie.id),
     getCriteresMajeurs(categorie.id),
     needsRedacNotes ? getNotesGlobalesRedac(solutionIds) : Promise.resolve({} as Record<string, number>),
     getNbNotesUtilisateurs(solutionIds),
+    getDisplayPrixFront(),
   ])
 
   const [notesUtilisateurs, notesCritere] = await Promise.all([
@@ -96,6 +99,20 @@ export default async function SolutionsPage(props: PageProps) {
     solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
       asc ? (a.noteUtilisateursBase5 ?? -1) - (b.noteUtilisateursBase5 ?? -1) : (b.noteUtilisateursBase5 ?? -1) - (a.noteUtilisateursBase5 ?? -1)
     )
+  } else if (tri === 'prix' && displayPrixFront) {
+    // Tri par prix : solutions sans prix renvoyées en fin de liste (séparées visuellement)
+    const sortValueOf = (s: { prix_ttc: number | null; prix_ttc_min: number | null; prix_ttc_max: number | null }) =>
+      computeSortValue({ ...s, prix_devise: null, prix_frequence: null, prix_duree_engagement_mois: null })
+    const withPrix = solutionsAvecNotes.filter((s) => sortValueOf(s as any) != null)
+    const withoutPrix = solutionsAvecNotes.filter((s) => sortValueOf(s as any) == null)
+    withPrix.sort((a, b) => {
+      const va = sortValueOf(a as any)!
+      const vb = sortValueOf(b as any)!
+      return asc ? va - vb : vb - va
+    })
+    // Solutions sans prix triees par nom A→Z pour un ordre stable
+    withoutPrix.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
+    solutionsAvecNotes = [...withPrix, ...withoutPrix]
   } else {
     // tri nom
     solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
@@ -157,6 +174,7 @@ export default async function SolutionsPage(props: PageProps) {
                 selectedTagIds={selectedTagIds}
                 count={solutionsAvecNotes.length}
                 hideNoteRedac={!(categorie as any).has_note_redac}
+                showPrixOption={displayPrixFront}
               />
             </div>
 
@@ -178,7 +196,7 @@ export default async function SolutionsPage(props: PageProps) {
 
             {/* Liste solutions : mobile = bas, desktop = colonne droite ligne 2 */}
             <div className="md:col-start-2 md:row-start-2 min-w-0">
-              <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} />
+              <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} displayPrixFront={displayPrixFront} />
             </div>
           </div>
         </section>
