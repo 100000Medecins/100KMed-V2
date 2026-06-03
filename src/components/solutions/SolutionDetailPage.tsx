@@ -6,6 +6,7 @@ import MainFeatures from './detail/MainFeatures'
 import CategoryLink from './detail/CategoryLink'
 import SolutionLiensCard from './detail/SolutionLiensCard'
 import SolutionCommunautesCard from './detail/SolutionCommunautesCard'
+import TarificationCard from './detail/TarificationCard'
 import type { SolutionLienVoisin } from '@/lib/db/solution-liens'
 import type { CommunautePublique } from '@/lib/db/solution-communautes'
 import UserReviewsSection from './detail/UserReviewsSection'
@@ -44,6 +45,10 @@ interface SolutionDetailPageProps {
   solutionsLiees?: SolutionLienVoisin[]
   communautes?: CommunautePublique[]
   noteGlobaleTooltip?: NoteGlobaleTooltipData | null
+  /** Toggle global app_settings.display_prix_front : si false, on n'affiche pas le bloc Tarification. */
+  displayPrixFront?: boolean
+  /** Toggle global app_settings.display_contacts_commerciaux : si false, on masque le sous-bloc commercial dans SupportSection. */
+  displayContactsCommerciaux?: boolean
 }
 
 export default function SolutionDetailPage({
@@ -56,6 +61,8 @@ export default function SolutionDetailPage({
   solutionsLiees,
   communautes,
   noteGlobaleTooltip,
+  displayPrixFront = false,
+  displayContactsCommerciaux = false,
 }: SolutionDetailPageProps) {
   const categorieSlug = solution.categorie?.slug || ''
   // Ne garder que les critères avec un nom_capital non null
@@ -80,6 +87,7 @@ export default function SolutionDetailPage({
         categorieSlug={categorieSlug}
         hasDetailedRatings={notesRedac.length > 0}
         noteGlobaleTooltip={noteGlobaleTooltip}
+        displayContactsCommerciaux={displayContactsCommerciaux}
       />
 
       {/* Contenu — background gradient SVG */}
@@ -144,7 +152,7 @@ export default function SolutionDetailPage({
               </div>
 
               <div id="support" className="scroll-mt-[140px]">
-                <SupportSection solution={solution} />
+                <SupportSection solution={solution} displayCommercial={displayContactsCommerciaux} />
               </div>
 
               <div id="communautes" className="scroll-mt-[140px]">
@@ -158,6 +166,20 @@ export default function SolutionDetailPage({
 
             {/* Colonne droite (sidebar) */}
             <div className="space-y-6 min-w-0">
+              {displayPrixFront && (
+                <TarificationCard
+                  prix={{
+                    prix_ttc: (solution as unknown as { prix_ttc: number | null }).prix_ttc ?? null,
+                    prix_ttc_min: (solution as unknown as { prix_ttc_min: number | null }).prix_ttc_min ?? null,
+                    prix_ttc_max: (solution as unknown as { prix_ttc_max: number | null }).prix_ttc_max ?? null,
+                    prix_devise: (solution as unknown as { prix_devise: string | null }).prix_devise ?? null,
+                    prix_frequence: (solution as unknown as { prix_frequence: string | null }).prix_frequence ?? null,
+                    prix_duree_engagement_mois: (solution as unknown as { prix_duree_engagement_mois: number | null }).prix_duree_engagement_mois ?? null,
+                  }}
+                  contactEmail={(solution as unknown as { contact_email: string | null }).contact_email ?? null}
+                  contactTelephone={(solution as unknown as { contact_telephone: string | null }).contact_telephone ?? null}
+                />
+              )}
               <div className="hidden lg:block">
                 <MainFeatures tags={solution.tags || []} />
               </div>

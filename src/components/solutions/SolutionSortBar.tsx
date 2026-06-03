@@ -13,12 +13,14 @@ interface SolutionSortBarProps {
   selectedTagIds: string[]
   count: number
   hideNoteRedac?: boolean
+  showPrixOption?: boolean
 }
 
 const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
   nom: 'asc',
   note_redac: 'desc',
   note_utilisateurs: 'desc',
+  prix: 'asc',
 }
 
 // Ordre : Note utilisateurs en premier (sélectionné par défaut), Note 100000Médecins en second
@@ -33,7 +35,9 @@ const DESKTOP_OPTIONS = [
   { value: 'note_redac', label: 'Note 100000Médecins' },
 ]
 
-export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCritere, currentDir, selectedTagIds, count, hideNoteRedac = false }: SolutionSortBarProps) {
+const PRIX_OPTION = { value: 'prix', label: 'Prix' }
+
+export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCritere, currentDir, selectedTagIds, count, hideNoteRedac = false, showPrixOption = false }: SolutionSortBarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -50,13 +54,15 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
     return () => document.removeEventListener('mousedown', handleClick)
   }, [dropdownOpen])
 
-  const mobileOptions = hideNoteRedac
-    ? MOBILE_NOTE_OPTIONS.filter((o) => o.value !== 'note_redac')
-    : MOBILE_NOTE_OPTIONS
+  const mobileOptions = [
+    ...(hideNoteRedac ? MOBILE_NOTE_OPTIONS.filter((o) => o.value !== 'note_redac') : MOBILE_NOTE_OPTIONS),
+    ...(showPrixOption ? [PRIX_OPTION] : []),
+  ]
 
-  const desktopOptions = hideNoteRedac
-    ? DESKTOP_OPTIONS.filter((o) => o.value !== 'note_redac')
-    : DESKTOP_OPTIONS
+  const desktopOptions = [
+    ...(hideNoteRedac ? DESKTOP_OPTIONS.filter((o) => o.value !== 'note_redac') : DESKTOP_OPTIONS),
+    ...(showPrixOption ? [PRIX_OPTION] : []),
+  ]
 
   function isOptActive(value: string) {
     // Si tri non défini dans l'URL, le défaut côté serveur est note_utilisateurs

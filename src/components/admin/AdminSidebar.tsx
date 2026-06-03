@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays, Sparkles, MessageCircle } from 'lucide-react'
+import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays, Sparkles, MessageCircle, Settings } from 'lucide-react'
 import type { AdminBadges } from '@/lib/db/admin-badges'
 
 type NavItem = {
@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
       { href: '/admin/categories', label: 'Catégories', icon: FolderOpen },
       { href: '/admin/seo', label: 'SEO', icon: Search },
       { href: '/admin/questionnaires', label: 'Questionnaires', icon: ListChecks },
+      { href: '/admin/parametres', label: 'Paramètres', icon: Settings },
     ],
   },
   { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },

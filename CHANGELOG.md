@@ -5,6 +5,55 @@
 
 ---
 
+## [2026-06-04] — Toggle modale tooltip note globale + toggle contacts commerciaux + module tarification
+
+### Admin — Toggle « Afficher la modale détaillée » dans la tooltip note globale
+
+Permet de désactiver la modale détaillée au clic sur l'icône ⓘ à côté de la note globale d'une fiche solution. Utile quand le texte court suffit et qu'on ne veut pas ouvrir une modale supplémentaire.
+
+- **`src/lib/db/tooltips.ts`** : interface `NoteGlobaleTooltip` étendue avec `modale_active: boolean`. Validation rétrocompat : si le champ est absent du JSON existant en BDD (fiches d'avant le 2026-06-04), défaut = `true` → comportement inchangé.
+- **`src/components/admin/TooltipNoteGlobaleForm.tsx`** : nouveau toggle stylisé à droite du titre « Modale détaillée (au clic) ». Champs titre+corps disabled et grisés quand OFF.
+- **`src/lib/actions/admin.ts`** (`updateNoteGlobaleTooltip`) : lit la checkbox `modale_active`, validation conditionnelle (titre/corps obligatoires uniquement si modale activée).
+- **`src/components/solutions/detail/NoteGlobaleTooltip.tsx`** : si `modale_active === false` → clic sur l'icône toggle le popover (utile sur mobile où il n'y a pas de hover), suppression du lien « En savoir plus » dans le popover, modale jamais rendue.
+
+### Admin — Toggle « Afficher les contacts commerciaux des éditeurs » (défaut OFF)
+
+Beaucoup de coordonnées commerciales en BDD sont incorrectes ou inappropriées. Masquage global du sous-bloc commercial (demande de démo/devis) sur toutes les fiches solutions, sans toucher aux données (réversible en 1 clic).
+
+- **`src/lib/db/settings.ts`** : nouveau type `'display_contacts_commerciaux'` + helper `getDisplayContactsCommerciaux()` (défaut `false`).
+- **`src/lib/actions/admin.ts`** : server action `setDisplayContactsCommerciaux(value)`, revalide `/solutions` au layout.
+- **`src/components/admin/ParametresClient.tsx`** : 2ᵉ bloc toggle dans `/admin/parametres` (icône Briefcase + texte explicatif sur le pourquoi du défaut OFF).
+- **`src/components/solutions/detail/SupportSection.tsx`** : nouvelle prop `displayCommercial`. Le bloc « Contacts commerciaux » n'est rendu que si toggle ON ET coordonnées renseignées. Le bloc « Contacts support » (SAV) reste toujours affiché si renseigné.
+- **`src/components/solutions/detail/SolutionHero.tsx`** : prop miroir + logique d'ancre `Contacts utiles` qui disparaît du menu si seules des coordonnées commerciales sont renseignées (évite une ancre pointant vers une section vide).
+- **`src/components/solutions/SolutionDetailPage.tsx`** et **`src/app/solutions/[idCategorie]/[idSolution]/page.tsx`** : fetch en parallèle et propagation de la valeur.
+
+### Feature — Module tarification + page admin paramètres
+
+Nouveau module pour afficher les prix des solutions sur les fiches et listings, avec un panneau admin pour activer/configurer cet affichage.
+
+- **Nouveaux fichiers** :
+  - `src/lib/prix.ts` — utilitaires de calcul (formatage, conversion, plage de prix)
+  - `src/lib/db/settings.ts` — helpers d'accès key/value pour les paramètres globaux (table `app_settings`)
+  - `src/components/solutions/PriceTag.tsx` — composant prix dans les listings
+  - `src/components/solutions/detail/TarificationCard.tsx` — carte tarification sur fiche solution
+  - `src/components/admin/ParametresClient.tsx` — UI admin des paramètres
+  - `src/app/admin/parametres/page.tsx` — nouvelle route admin
+- **Modifs intégration** :
+  - `src/components/admin/AdminSolutionsTable.tsx` : colonne prix dans le listing admin (+109/-25)
+  - `src/components/admin/AdminSidebar.tsx` : lien « Paramètres » dans la sidebar
+  - `src/components/solutions/SolutionList.tsx`, `SolutionSortBar.tsx` : affichage et tri par prix
+  - `src/components/solutions/SolutionDetailPage.tsx` : intégration `TarificationCard` sur fiche
+  - Pages `/solutions/[idCategorie]/[idSolution]/page.tsx`, `/solutions/[idCategorie]/page.tsx`, `/mon-compte/mon-espace-editeur/page.tsx` : fetch et passage des données prix
+- **Types** : `src/types/database.ts` régénéré (+101 lignes — table `app_settings` + colonnes prix).
+
+### Infrastructure
+- `.gitignore` : exclusion de `*.ts.new` (sortie temporaire de `npx supabase gen types`).
+
+### TODO — Mises à jour
+- Ajout : retravailler le texte de la modale d'information à côté de la note globale (texte actuel à revoir).
+
+---
+
 ## [2026-06-01] — Refonte design system emails : logo 3 lignes + label BDD + migration de 10 templates
 
 ### Email — Nouveau master_layout avec logo 3 lignes débordant + slot label

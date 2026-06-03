@@ -17,6 +17,8 @@ interface SolutionHeroProps {
   categorieSlug: string
   hasDetailedRatings: boolean
   noteGlobaleTooltip?: NoteGlobaleTooltipData | null
+  /** Toggle global : si false, on n'affiche pas l'ancre "Contacts utiles" quand seules des coordonnées commerciales sont renseignées. */
+  displayContactsCommerciaux?: boolean
 }
 
 /** Carte de note — design identique pour utilisateurs & rédaction */
@@ -64,15 +66,14 @@ export default function SolutionHero({
   categorieSlug,
   hasDetailedRatings,
   noteGlobaleTooltip,
+  displayContactsCommerciaux = false,
 }: SolutionHeroProps) {
   const sol = solution as unknown as Record<string, string | null>
-  const hasContactsUtiles = !!(
-    sol.contact_email ||
-    sol.contact_telephone ||
-    sol.support_email ||
-    sol.support_telephone ||
-    sol.support_website
-  )
+  // Le bloc commercial n'est rendu QUE si le toggle admin est ON.
+  // L'ancre "Contacts utiles" doit donc refléter la même condition pour ne pas pointer vers une section vide.
+  const hasCommercial = displayContactsCommerciaux && !!(sol.contact_email || sol.contact_telephone)
+  const hasSupport = !!(sol.support_email || sol.support_telephone || sol.support_website)
+  const hasContactsUtiles = hasCommercial || hasSupport
   const anchors = [
     { id: 'avis-redaction', label: 'Avis de la rédaction', show: !!solution.evaluation_redac_avis },
     { id: 'galerie', label: 'Galerie', show: !!(solution.galerie && solution.galerie.length > 0) },

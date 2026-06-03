@@ -39,6 +39,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
 
+#### Peupler les prix et coordonnées des éditeurs (2026-06-04)
+- **Contexte** : nouveau module tarification livré (cf CHANGELOG 2026-06-04) mais peu de prix renseignés en BDD pour le moment. Le toggle global « Afficher les prix sur le site » est OFF tant qu'une masse critique n'est pas atteinte.
+- **Coordonnées éditeurs** : le bloc « Contacts commerciaux » est désormais masqué par défaut (toggle OFF dans `/admin/parametres`) car beaucoup de coordonnées en BDD sont incorrectes ou inappropriées. À nettoyer + compléter pour pouvoir réactiver le toggle.
+- **À faire** : demander à Agathe si elle veut s'en charger (collecte auprès des éditeurs des prix officiels + coordonnées commerciales + support à jour). Une fois la base à jour, activer les 2 toggles dans `/admin/parametres`.
+
 #### Vidéos par solution — étendre la découverte YouTube
 - **Acquis (2026-05-24)** : plomberie complète livrée — table `video_solutions` (M-N) avec RLS, script `scripts/discover-videos-youtube.mjs` avec filtres (lang fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, blacklist termes dev, bonus mots pro-santé), galerie publique des fiches solutions affiche automatiquement les vidéos validées, admin a panneaux symétriques côté vidéo (multi-select solutions) et côté solution (chips vidéos), badges 🎬 dans le panel propositions à modérer.
 - **Smoke test 2026-05-24** : 8 vidéos importées sur Doctolib agenda, validation manuelle dans `/admin/videos` (panel propositions). Quelques vidéos hors-sujet identifiées (chaîne « Mediia » génère du contenu IA générique qui mentionne Doctolib sans en être le sujet).
@@ -102,6 +107,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**À améliorer — modale détaillée** : le rendu actuel utilise `prose-custom` + sanitize HTML par défaut. Travailler la lisibilité (hiérarchie typographique, aération des paragraphes, encadrés visuels pour les exemples chiffrés type « 4,2 sur 50 avis »).~~ [OK] Fait 2026-05-30 (styles Tailwind ciblés `[&_strong]`, `[&_a]`, `[&_ul]` + taille `lg` + `text-[15px] leading-relaxed`).
 - ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
+- **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
 #### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
 - ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly.~~
@@ -114,8 +120,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Côté admin : panneau `AdminEditeurDemandesRef` pour modérer les demandes + action server dans `src/lib/actions/admin.ts`.
 - Lien dans la Navbar vers `/editeurs`.
 
-#### Éditeurs orphelins (0 solution) — à nettoyer
-- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.
+#### Éditeurs orphelins (0 solution) — à conserver, fiches à créer
+- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. **Conservés volontairement** — fiches solutions à créer prochainement pour chacun (décision 2026-06-02).
 
 #### ~~Logo condensé sur l'index — nouvel essai~~ [OK] Validé 2026-05-31
 - ~~Retenter une version condensée du logo sur la page d'accueil du site.~~ Le logo 3 lignes débordant dans la navbar (livré 2026-05-31) couvre le besoin.
@@ -123,11 +129,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### ~~Mettre le logo 3 lignes dans les templates emails~~ [OK] Fait 2026-06-01
 - ~~**Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes. Aligner les templates emails sur ce visuel.~~
 - ✅ **Fait 2026-06-01** : refonte complète du `master_layout` (logo 3 lignes débordant en haut à gauche + label à droite + footer simple avec logo 110px). 13 templates sur 14 migrés vers `<tr><td>` + master_layout. Nouvelle colonne BDD `email_templates.label` injectée via `{{label}}`. Bac à sable « 🧪 Master layout de test » ajouté dans `/admin/emails` pour itérer sur les layouts sans risque. Cf CHANGELOG 2026-06-01.
-
-#### Migrer `lancement_syndicat` vers le master_layout (cas particulier en-tête)
-- **Contexte (2026-06-01)** : lors de la refonte design system emails, 9 templates ont été migrés en `<tr><td>` + master_layout. `lancement_syndicat` est resté en full-HTML car son en-tête contient un montage tripartite (logo 100K + ❤ + logo syndicat dynamique via `{{logo_syndicat}}`).
-- **Pistes** : créer un `master_layout_syndicat` dédié OU étendre le master_layout actuel pour accepter un slot d'en-tête optionnel (`{{header_logo_extra}}` injecté à droite du logo principal).
-- **Pas urgent** : le template fonctionne. À traiter quand on enverra à nouveau ce type de mail.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -209,18 +210,19 @@ _(rien à faire pour l'instant)_
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
 
-### Refaire le système d'affichage des prix
-- **État actuel (2026-05-15)** : édition côté éditeur en place dans `/mon-compte/mon-espace-editeur`
-  - Soit **prix unique** : `prix_ttc`
-  - Soit **plage de prix** : `prix_ttc_min` + `prix_ttc_max`
-  - Plus `prix_devise`, `prix_frequence`, `prix_duree_engagement_mois`
-  - Badge « Bientôt affiché sur le site » dans le formulaire éditeur
-- **Restant à décider / faire** :
-  - **Logique de classement** : quelle valeur retenir pour trier une solution en plage de prix ? (min, max, moyenne, médiane ?) → trancher
-  - **Indicateur visuel** : 1 à 4 euros jaunes calculés vs. médiane de la catégorie (ou autre)
-  - **Bouton classement par prix** dans la page comparatif (`/solutions/[idCategorie]`)
-  - **Toggle admin** « Afficher le prix sur le front » (OFF par défaut) pour switcher quand prêt
-  - Affichage côté front (page solution + listing comparatif) une fois la logique tranchée
+### Refaire le système d'affichage des prix — plomberie livrée 2026-06-04, en attente de remplissage
+- **Décisions cadrées 2026-06-03** : TTC uniquement, médiane pour les plages (`(min+max)/2`), affichage carte comparatif = chiffre brut + indicateur €/€€/€€€/€€€€ (couleur vs médiane catégorie).
+- ✅ **Livré 2026-06-04** :
+  - Helpers `src/lib/prix.ts` (formatPrix, computeCategoryMedian, computePriceTier) avec normalisation défensive (0 ou négatif = null, accepte `€`/`EUR` indifféremment)
+  - Table `app_settings` + page `/admin/parametres` (sous-menu Solutions) avec toggle global « Afficher les prix sur le front » (OFF par défaut)
+  - Bloc Tarification sur fiche solution (sidebar) gated derrière le toggle
+  - Indicateur €/€€/€€€/€€€€ + tri par prix sur `/solutions/[idCategorie]` gated derrière le toggle
+  - Colonne « Prix » + filtre « Sans prix » dans `/admin/solutions`
+  - Aperçu live du rendu dans le formulaire éditeur
+- ⏳ **Reste à faire — remplir les prix avant d'activer le toggle** :
+  - **Fix BDD préalable** : `UPDATE solutions SET prix_ttc=NULL WHERE prix_ttc=0;` (19 solutions parasites héritées Firebase) + `UPDATE solutions SET prix_devise='EUR' WHERE prix_devise='€';` (21 solutions, normalisation code ISO)
+  - **Stratégie remplissage 2026-06-04** : scraping abandonné (essai Hellodoc + Weda non concluant — pages tarifs officielles vides chez Weda, PDF Hellodoc obsolète 2007, sites tiers contradictoires entre 100 et 130 €/mois → risque éditorial + péremption). À la place : **mails aux éditeurs référencés** pour leur demander de saisir leurs prix dans l'espace éditeur. À planifier sur 3-5 éditeurs « amis » d'abord pour amorcer.
+  - **Une fois la masse critique atteinte** : activer le toggle dans `/admin/parametres` + retirer le badge « Bientôt affiché sur le site » du formulaire éditeur (`src/app/mon-compte/mon-espace-editeur/page.tsx` ligne ~494)
 
 ### ROR sur le site
 - Intégrer le ROR (Répertoire Opérationnel des Ressources) sur le site

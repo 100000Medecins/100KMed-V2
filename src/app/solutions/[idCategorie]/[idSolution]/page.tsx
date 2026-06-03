@@ -10,6 +10,7 @@ import { getAvisUtilisateursPaginated, computeAggregatedResultats, getAverageNot
 import { getSolutionsLiees } from '@/lib/db/solution-liens'
 import { getCommunautesPubliques } from '@/lib/db/solution-communautes'
 import { getNoteGlobaleTooltip } from '@/lib/db/tooltips'
+import { getDisplayPrixFront, getDisplayContactsCommerciaux } from '@/lib/db/settings'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
 
@@ -51,8 +52,8 @@ export default async function SolutionPage(props: PageProps) {
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)
   if (!solution) notFound()
 
-  // Fetch résultats, notes rédac, avis paginés, note utilisateurs, solutions liées, communautés et tooltip en parallèle
-  let [resultats, notesRedac, avisPagines, noteUtilisateursData, solutionsLiees, communautes, noteGlobaleTooltip] = await Promise.all([
+  // Fetch résultats, notes rédac, avis paginés, note utilisateurs, solutions liées, communautés, tooltip et toggles en parallèle
+  let [resultats, notesRedac, avisPagines, noteUtilisateursData, solutionsLiees, communautes, noteGlobaleTooltip, displayPrixFront, displayContactsCommerciaux] = await Promise.all([
     getAllResultats(solution.id),
     getNotesRedac(solution.id),
     getAvisUtilisateursPaginated(solution.id, { page: 1, limit: 10, tri: 'date' }),
@@ -60,6 +61,8 @@ export default async function SolutionPage(props: PageProps) {
     getSolutionsLiees(solution.id),
     getCommunautesPubliques(solution.id),
     getNoteGlobaleTooltip(),
+    getDisplayPrixFront(),
+    getDisplayContactsCommerciaux(),
   ])
 
   // Fallback : si la table resultats est vide, calculer depuis les évaluations
@@ -100,6 +103,8 @@ export default async function SolutionPage(props: PageProps) {
           solutionsLiees={solutionsLiees}
           communautes={communautes}
           noteGlobaleTooltip={noteGlobaleTooltip}
+          displayPrixFront={displayPrixFront}
+          displayContactsCommerciaux={displayContactsCommerciaux}
         />
       </main>
       <Footer />

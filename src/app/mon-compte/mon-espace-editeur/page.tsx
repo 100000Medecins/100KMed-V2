@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { getEditeurDataForUser, updateEditeurByUser, updateSolutionByEditeur, syncGalerieByEditeur } from '@/lib/actions/admin-users'
-import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase } from 'lucide-react'
+import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase, Euro } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { buildPrixDisplay } from '@/lib/prix'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
@@ -584,6 +585,43 @@ function SolutionEditeurCard({
                 />
               </div>
             </div>
+
+            {/* Aperçu live du rendu front */}
+            {(() => {
+              const preview = buildPrixDisplay({
+                prix_ttc: prixMode === 'unique' && prixTtc !== '' ? Number(prixTtc) : null,
+                prix_ttc_min: prixMode === 'plage' && prixMin !== '' ? Number(prixMin) : null,
+                prix_ttc_max: prixMode === 'plage' && prixMax !== '' ? Number(prixMax) : null,
+                prix_devise: prixDevise,
+                prix_frequence: prixFrequence,
+                prix_duree_engagement_mois: prixDuree === '' ? null : Number(prixDuree),
+              })
+              return (
+                <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Aperçu sur la fiche solution
+                  </p>
+                  {preview.hasPrice && preview.label ? (
+                    <div className="flex items-start gap-2">
+                      <Euro className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-navy">{preview.label}</p>
+                        {preview.engagementLabel && (
+                          <p className="text-xs text-gray-500 mt-0.5">{preview.engagementLabel}</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Euro className="w-4 h-4 text-gray-400" />
+                      <p className="text-sm font-medium text-gray-500">
+                        Prix sur demande <span className="text-xs text-gray-400 italic">(aucun montant renseigné)</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Contacts commerciaux (par solution) */}

@@ -11,6 +11,7 @@ interface ParsedContenu {
   tooltip_court_standard?: string
   tooltip_long_titre?: string
   tooltip_long_corps?: string
+  modale_active?: boolean
 }
 
 interface Props {
@@ -37,6 +38,8 @@ export default function TooltipNoteGlobaleForm({ initialContenu, action }: Props
   const [standard, setStandard] = useState(parsed.tooltip_court_standard ?? '')
   const [titre, setTitre] = useState(parsed.tooltip_long_titre ?? '')
   const [corps, setCorps] = useState(parsed.tooltip_long_corps ?? '')
+  // Défaut true si absent (rétrocompat). Voir getNoteGlobaleTooltip côté serveur.
+  const [modaleActive, setModaleActive] = useState(parsed.modale_active !== false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -95,29 +98,57 @@ export default function TooltipNoteGlobaleForm({ initialContenu, action }: Props
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-base font-bold text-navy">Modale détaillée (au clic)</h2>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-navy">Modale détaillée (au clic)</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Quand le toggle est désactivé : seule la petite note au survol (desktop) ou au clic (mobile) s&apos;affiche, sans lien « En savoir plus » ni modale détaillée.
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              name="modale_active"
+              checked={modaleActive}
+              onChange={(e) => setModaleActive(e.target.checked)}
+              className="sr-only peer"
+            />
+            <span className="relative inline-block w-10 h-6 bg-gray-300 peer-checked:bg-accent-blue rounded-full transition-colors">
+              <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
+            </span>
+            <span className="text-sm font-medium text-navy select-none">
+              {modaleActive ? 'Activée' : 'Désactivée'}
+            </span>
+          </label>
+        </div>
 
-        <Field label="Titre de la modale">
-          <Input
-            name="tooltip_long_titre"
-            value={titre}
-            onChange={(e) => setTitre(e.target.value)}
-            required
-          />
-        </Field>
+        <div className={modaleActive ? '' : 'opacity-40 pointer-events-none'}>
+          <Field label="Titre de la modale">
+            <Input
+              name="tooltip_long_titre"
+              value={titre}
+              onChange={(e) => setTitre(e.target.value)}
+              required={modaleActive}
+              disabled={!modaleActive}
+            />
+          </Field>
 
-        <Field
-          label="Corps de la modale (HTML autorisé)"
-          hint="Balises supportées : <p>, <strong>, <em>, <ul>, <ol>, <li>, <br>. Le HTML est sanitizé à l'affichage."
-        >
-          <Textarea
-            name="tooltip_long_corps"
-            value={corps}
-            onChange={(e) => setCorps(e.target.value)}
-            rows={12}
-            required
-          />
-        </Field>
+          <div className="mt-4">
+            <Field
+              label="Corps de la modale (HTML autorisé)"
+              hint="Balises supportées : <p>, <strong>, <em>, <ul>, <ol>, <li>, <br>. Le HTML est sanitizé à l'affichage."
+            >
+              <Textarea
+                name="tooltip_long_corps"
+                value={corps}
+                onChange={(e) => setCorps(e.target.value)}
+                rows={12}
+                required={modaleActive}
+                disabled={!modaleActive}
+              />
+            </Field>
+          </div>
+        </div>
       </section>
 
       {error && (

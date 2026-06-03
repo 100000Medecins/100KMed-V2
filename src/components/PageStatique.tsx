@@ -16,7 +16,7 @@ export default function PageStatique({ page, breadcrumbLabel }: PageStatiqueProp
 
       {/* Breadcrumb bar */}
       <div className="pt-[72px] bg-surface-light border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-6 py-4 min-[1150px]:pl-[200px]">
+        <div className="max-w-7xl mx-auto px-6 py-4 min-[1150px]:pl-[200px]">
           <Breadcrumb
             items={[
               { label: 'Accueil', href: '/' },

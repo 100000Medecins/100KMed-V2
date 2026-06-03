@@ -5,11 +5,18 @@ export interface NoteGlobaleTooltip {
   tooltip_court_standard: string
   tooltip_long_titre: string
   tooltip_long_corps: string
+  /**
+   * Si false, la modale détaillée au clic est désactivée :
+   * - desktop : le popover au survol n'affiche plus le lien « En savoir plus »
+   * - mobile : le clic sur l'icône ⓘ affiche le popover (au lieu d'ouvrir la modale)
+   * Défaut : true (rétrocompat — fiches existantes en BDD sans ce champ gardent le comportement actuel).
+   */
+  modale_active: boolean
 }
 
 const SLUG = 'tooltip-note-globale'
 
-function isValidTooltip(obj: unknown): obj is NoteGlobaleTooltip {
+function isValidTooltip(obj: unknown): obj is Omit<NoteGlobaleTooltip, 'modale_active'> {
   if (!obj || typeof obj !== 'object') return false
   const o = obj as Record<string, unknown>
   return (
@@ -56,5 +63,8 @@ export async function getNoteGlobaleTooltip(): Promise<NoteGlobaleTooltip | null
     return null
   }
 
-  return parsed
+  // modale_active : défaut true si absent (rétrocompat fiches existantes sans ce champ).
+  const modale_active = (parsed as Record<string, unknown>).modale_active !== false
+
+  return { ...parsed, modale_active }
 }
