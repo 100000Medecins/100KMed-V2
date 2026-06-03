@@ -114,8 +114,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Côté admin : panneau `AdminEditeurDemandesRef` pour modérer les demandes + action server dans `src/lib/actions/admin.ts`.
 - Lien dans la Navbar vers `/editeurs`.
 
-#### Éditeurs orphelins (0 solution) — à nettoyer
-- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. Vérifier si ce sont des vestiges de seeding à supprimer ou des éditeurs en attente de fiche.
+#### Éditeurs orphelins (0 solution) — à conserver, fiches à créer
+- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. **Conservés volontairement** — fiches solutions à créer prochainement pour chacun (décision 2026-06-02).
 
 #### ~~Logo condensé sur l'index — nouvel essai~~ [OK] Validé 2026-05-31
 - ~~Retenter une version condensée du logo sur la page d'accueil du site.~~ Le logo 3 lignes débordant dans la navbar (livré 2026-05-31) couvre le besoin.
@@ -123,11 +123,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### ~~Mettre le logo 3 lignes dans les templates emails~~ [OK] Fait 2026-06-01
 - ~~**Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes. Aligner les templates emails sur ce visuel.~~
 - ✅ **Fait 2026-06-01** : refonte complète du `master_layout` (logo 3 lignes débordant en haut à gauche + label à droite + footer simple avec logo 110px). 13 templates sur 14 migrés vers `<tr><td>` + master_layout. Nouvelle colonne BDD `email_templates.label` injectée via `{{label}}`. Bac à sable « 🧪 Master layout de test » ajouté dans `/admin/emails` pour itérer sur les layouts sans risque. Cf CHANGELOG 2026-06-01.
-
-#### Migrer `lancement_syndicat` vers le master_layout (cas particulier en-tête)
-- **Contexte (2026-06-01)** : lors de la refonte design system emails, 9 templates ont été migrés en `<tr><td>` + master_layout. `lancement_syndicat` est resté en full-HTML car son en-tête contient un montage tripartite (logo 100K + ❤ + logo syndicat dynamique via `{{logo_syndicat}}`).
-- **Pistes** : créer un `master_layout_syndicat` dédié OU étendre le master_layout actuel pour accepter un slot d'en-tête optionnel (`{{header_logo_extra}}` injecté à droite du logo principal).
-- **Pas urgent** : le template fonctionne. À traiter quand on enverra à nouveau ce type de mail.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -210,17 +205,23 @@ _(rien à faire pour l'instant)_
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
 
 ### Refaire le système d'affichage des prix
-- **État actuel (2026-05-15)** : édition côté éditeur en place dans `/mon-compte/mon-espace-editeur`
+- **État actuel (2026-05-15)** : édition côté éditeur en place dans `/mon-compte/mon-espace-editeur` (rien d'affiché côté front)
   - Soit **prix unique** : `prix_ttc`
   - Soit **plage de prix** : `prix_ttc_min` + `prix_ttc_max`
   - Plus `prix_devise`, `prix_frequence`, `prix_duree_engagement_mois`
-  - Badge « Bientôt affiché sur le site » dans le formulaire éditeur
-- **Restant à décider / faire** :
-  - **Logique de classement** : quelle valeur retenir pour trier une solution en plage de prix ? (min, max, moyenne, médiane ?) → trancher
-  - **Indicateur visuel** : 1 à 4 euros jaunes calculés vs. médiane de la catégorie (ou autre)
-  - **Bouton classement par prix** dans la page comparatif (`/solutions/[idCategorie]`)
-  - **Toggle admin** « Afficher le prix sur le front » (OFF par défaut) pour switcher quand prêt
-  - Affichage côté front (page solution + listing comparatif) une fois la logique tranchée
+  - Badge « Bientôt affiché sur le site » dans le formulaire éditeur (à retirer quand on activera l'affichage)
+- **Décisions cadrées 2026-06-03** :
+  - **TTC uniquement** (pas de HT)
+  - **Médiane** pour positionner les solutions en plage de prix (`(min + max) / 2`)
+  - **Affichage carte comparatif = chiffre brut + €/€€/€€€/€€€€** (les deux ensemble), code couleur calculé vs médiane de la **catégorie** (pas du site)
+- **À implémenter** :
+  - **Bloc Tarification** sur la fiche solution : `💶 À partir de X €/mois TTC · Engagement Y mois` (ou « Prix sur demande » + lien contact commercial si non renseigné)
+  - **Indicateur €/€€/€€€/€€€€** sur les cartes du comparatif (en plus du prix chiffré), seuils : < 50% médiane / 50-100% / 100-200% / > 200%, tooltip au survol
+  - **Tri par prix croissant/décroissant** dans `/solutions/[idCategorie]` (solutions sans prix en bloc séparé en fin de liste)
+  - **Toggle global admin** « Afficher les prix sur le front » dans `/admin/parametres` (OFF par défaut) pour basculer quand la masse critique de prix renseignés est atteinte
+  - **Colonne « Prix » + filtre « Sans prix »** dans `/admin/solutions` pour piloter les relances éditeurs
+  - **Aperçu live du rendu** dans le formulaire éditeur sous le bloc Tarification
+  - Retirer le badge « Bientôt affiché sur le site » une fois le toggle global ON
 
 ### ROR sur le site
 - Intégrer le ROR (Répertoire Opérationnel des Ressources) sur le site
