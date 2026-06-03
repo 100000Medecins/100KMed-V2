@@ -582,6 +582,46 @@ export async function updatePageStatique(id: string, formData: FormData) {
 }
 
 /**
+ * Restaure une page statique à partir d'une entrée d'historique.
+ * UPDATE pages_statiques avec les valeurs de la version archivée → déclenche
+ * automatiquement le trigger d'audit qui archive l'état actuel (donc on peut
+ * « annuler » une restauration en restaurant la version intermédiaire).
+ */
+export async function restorePageStatique(pageId: string, historyId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: entry, error: histErr } = await (supabase as any)
+    .from('pages_statiques_history')
+    .select('*')
+    .eq('id', historyId)
+    .eq('page_id', pageId)
+    .single()
+  if (histErr || !entry) return { error: 'Version historisée introuvable.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updErr } = await (supabase as any)
+    .from('pages_statiques')
+    .update({
+      titre: entry.titre,
+      contenu: entry.contenu,
+      meta_description: entry.meta_description,
+      image_couverture: entry.image_couverture,
+      metadata: entry.metadata,
+    })
+    .eq('id', pageId)
+  if (updErr) return { error: `Erreur restauration : ${updErr.message}` }
+
+  // Revalidation : la fiche admin + la page publique
+  const slug = entry.slug as string | null
+  revalidatePath('/admin/pages')
+  revalidatePath(`/admin/pages/${pageId}/modifier`)
+  if (slug) revalidatePath(`/${slug}`)
+  return { success: true }
+}
+
+/**
  * Action dédiée pour la tooltip note globale (slug 'tooltip-note-globale').
  * Valide les 4 champs structurés, les sérialise en JSON dans pages_statiques.contenu,
  * puis revalide les fiches solutions qui consomment la tooltip.

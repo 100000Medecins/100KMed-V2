@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useEffect, useMemo, useState, useTransition, useRef } from 'react'
 import type { Database } from '@/types/database'
 import type { SyndicatFoundateur } from '@/types/models'
 import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
@@ -8,6 +8,8 @@ import RichTextEditor from '@/components/admin/RichTextEditor'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
+import DraftBanner from '@/components/admin/DraftBanner'
+import { useDraft } from '@/lib/hooks/useDraft'
 import { ChevronDown, GripVertical, ImageIcon, Sparkles } from 'lucide-react'
 
 type PageStatique = Database['public']['Tables']['pages_statiques']['Row'] & {
@@ -24,6 +26,8 @@ const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 export default function BlogForm({ page, action }: BlogFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [titre, setTitre] = useState(page.titre ?? '')
+  const [metaDescription, setMetaDescription] = useState(page.meta_description ?? '')
   const [contenu, setContenu] = useState(page.contenu ?? '')
   const [syndicats, setSyndicats] = useState<SyndicatFoundateur[]>(
     Array.isArray(page.metadata) ? page.metadata : []
@@ -87,6 +91,53 @@ export default function BlogForm({ page, action }: BlogFormProps) {
 
   const isQuiSommesNous = page.slug === 'qui-sommes-nous'
 
+  // ────────────────────────────────────────────
+  // Autosave / brouillon (localStorage)
+  // ────────────────────────────────────────────
+  const draftKey = useMemo(() => `draft:pages_statiques:${page.id}`, [page.id])
+  const draftValues = useMemo(
+    () => ({ titre, metaDescription, contenu, imageUrl, syndicats }),
+    [titre, metaDescription, contenu, imageUrl, syndicats]
+  )
+  // Dernière modif côté BDD (utilisée pour décider si le brouillon local est plus récent).
+  const pageUpdatedAtMs = useMemo(() => {
+    const raw = (page as unknown as { updated_at?: string | null }).updated_at
+    return raw ? new Date(raw).getTime() : 0
+  }, [page])
+
+  const { getDraft, clearDraft, lastSavedAt } = useDraft({
+    key: draftKey,
+    values: draftValues,
+    enabled: !isPending, // ne pas écraser pendant la sauvegarde serveur
+  })
+
+  // Au montage : si un brouillon plus récent que la BDD existe, on propose de le restaurer.
+  const [pendingDraft, setPendingDraft] = useState<number | null>(null)
+  useEffect(() => {
+    const d = getDraft()
+    if (d && d.savedAt > pageUpdatedAtMs) setPendingDraft(d.savedAt)
+    // Pas de dépendance volontaire : on ne veut consulter le brouillon qu'au montage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function restoreDraft() {
+    const d = getDraft()
+    if (!d) return
+    setTitre(d.values.titre as string)
+    setMetaDescription(d.values.metaDescription as string)
+    setContenu(d.values.contenu as string)
+    setImageUrl(d.values.imageUrl as string)
+    if (Array.isArray(d.values.syndicats)) {
+      setSyndicats(d.values.syndicats as SyndicatFoundateur[])
+    }
+    setPendingDraft(null)
+  }
+
+  function discardDraft() {
+    clearDraft()
+    setPendingDraft(null)
+  }
+
   function handleDragStart(index: number) {
     dragIndexRef.current = index
   }
@@ -125,12 +176,25 @@ export default function BlogForm({ page, action }: BlogFormProps) {
     }
     startTransition(async () => {
       const result = await action(formData)
-      if (result?.error) setError(result.error)
+      if (result?.error) {
+        setError(result.error)
+        return
+      }
+      // Sauvegarde serveur réussie → on efface le brouillon local
+      clearDraft()
     })
   }
 
   return (
     <form action={handleSubmit} className="space-y-5">
+      {pendingDraft !== null && (
+        <DraftBanner
+          draftSavedAt={pendingDraft}
+          onRestore={restoreDraft}
+          onDiscard={discardDraft}
+        />
+      )}
+
       {error && (
         <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
       )}
@@ -150,7 +214,8 @@ export default function BlogForm({ page, action }: BlogFormProps) {
           id="titre"
           type="text"
           name="titre"
-          defaultValue={page.titre}
+          value={titre}
+          onChange={(e) => setTitre(e.target.value)}
           required
         />
       </div>
@@ -292,7 +357,8 @@ export default function BlogForm({ page, action }: BlogFormProps) {
         <Textarea
           id="meta_description"
           name="meta_description"
-          defaultValue={page.meta_description ?? ''}
+          value={metaDescription}
+          onChange={(e) => setMetaDescription(e.target.value)}
           rows={2}
         />
       </div>
@@ -415,6 +481,15 @@ export default function BlogForm({ page, action }: BlogFormProps) {
           {isPending ? 'Enregistrement...' : 'Mettre à jour'}
         </Button>
         <Button variant="outline" href="/admin/pages">Annuler</Button>
+        {lastSavedAt && (
+          <span className="text-xs text-gray-400">
+            Brouillon enregistré automatiquement{' '}
+            {new Date(lastSavedAt).toLocaleTimeString('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        )}
       </div>
     </form>
   )
