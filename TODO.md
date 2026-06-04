@@ -176,15 +176,7 @@ _(rien à faire pour l'instant)_
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
----
-
-### Thèmes alternatifs du site
-- Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
-- Version "Pinky" : palette rose/violet
-- Version "Dark" : mode sombre complet
-
-### Nouvelles catégories de solutions
-- Créer les catégories : Télétransmission, Téléconsultation, Téléexpertise
+### Nouvelles catégories de solutions (en cours)
 
 #### Télétransmission — finitions après seeding initial (2026-05-17)
 - Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
@@ -211,6 +203,13 @@ _(rien à faire pour l'instant)_
 - **Instruire Avisdoc** : entretien éditeur pour compléter la fiche (tarifs, conformité, fonctionnalités précises). Fiche actuelle indique « en cours d'instruction » dans le descriptif.
 - **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 10 fiches
 - **Activer** (`actif=true`) la catégorie + les solutions quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
+
+---
+
+### Thèmes alternatifs du site
+- Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
+- Version "Pinky" : palette rose/violet
+- Version "Dark" : mode sombre complet
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales
