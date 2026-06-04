@@ -29,9 +29,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 #### Passer DMARC de `quarantine 50%` à `quarantine 100%` puis `reject`
 - ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
 - ✅ `pct=10` → `pct=50` fait le 2026-05-15 (rapports clean : 24 mails sur 3 semaines, 100 % DKIM/SPF aligné sur Gandi + SendGrid, 0 source inconnue)
-- **Prochaine étape (~2026-05-29 à 2026-06-05)** : passer à `pct=100` après 2 semaines de stabilité à 50 % et idéalement un envoi groupé légitime entre-temps
-- Étape finale (après 2-3 semaines à `pct=100` clean) : passer à `p=reject`
-- Modifier l'enregistrement DNS `_dmarc.100000medecins.org` chez le registrar
+- ✅ `pct=50` → `pct=100` fait le 2026-06-04 (rapports clean du 26 au 30/05 : 7 mails sur 5 jours, 100 % DKIM/SPF aligné, seulement Gandi `gm1` + SendGrid `s1` via `em1895`, aucune source inconnue)
+- **Étape finale (~2026-06-25 à 2026-07-02)** : passer à `p=reject` après 2-3 semaines à `pct=100` clean. Modifier `_dmarc.100000medecins.org` chez Gandi → remplacer `p=quarantine; pct=100` par `p=reject` (et garder le reste : `sp`, `np`, `adkim=r`, `aspf=r`, `fo=0`, `rua`).
 
 ### Communication
 
@@ -177,15 +176,7 @@ _(rien à faire pour l'instant)_
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
----
-
-### Thèmes alternatifs du site
-- Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
-- Version "Pinky" : palette rose/violet
-- Version "Dark" : mode sombre complet
-
-### Nouvelles catégories de solutions
-- Créer les catégories : Télétransmission, Téléconsultation, Téléexpertise
+### Nouvelles catégories de solutions (en cours)
 
 #### Télétransmission — finitions après seeding initial (2026-05-17)
 - Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
@@ -202,6 +193,23 @@ _(rien à faire pour l'instant)_
 - **Compléter les 7 nouveaux éditeurs** (Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, Solutions régionales) : website (URLs devinées à valider), description, logo
 - **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 15 fiches
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
+
+#### Téléexpertise — finitions après seeding initial (2026-06-04)
+- Seeding fait : 1 catégorie (inactive), 5 nouveaux éditeurs (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc), 22 tags (4 séparateurs + 18 toggles), 10 solutions (toutes en `actif=false`), 79 liaisons tags (24 tags principaux). Mapping détaillé dans [docs/teleexpertise-import.md](docs/teleexpertise-import.md). Une solution sans éditeur : « Plateformes régionales (marchés GRADeS) » → `id_editeur=NULL` (volontaire, concept regroupant les marchés régionaux, pas de page éditeur publique).
+- **Concevoir le questionnaire d'évaluation pour la catégorie Téléexpertise** (équivalent du chantier livré pour Télétransmission le 2026-05-17 — brouillon à démarrer dans `docs/teleexpertise-questionnaire.md`)
+- **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, points forts/faibles)
+- **Uploader les logos** des 10 solutions via l'admin
+- **Compléter les 5 nouveaux éditeurs** (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc) : description, logo. URLs devinées par convention à valider/corriger. Avisdoc → site NULL pour l'instant.
+- **Instruire Avisdoc** : entretien éditeur pour compléter la fiche (tarifs, conformité, fonctionnalités précises). Fiche actuelle indique « en cours d'instruction » dans le descriptif.
+- **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 10 fiches
+- **Activer** (`actif=true`) la catégorie + les solutions quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
+
+---
+
+### Thèmes alternatifs du site
+- Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
+- Version "Pinky" : palette rose/violet
+- Version "Dark" : mode sombre complet
 
 ### Obsolescence des notes (pondération temporelle)
 - Les avis anciens devraient peser moins que les récents dans le calcul des notes globales

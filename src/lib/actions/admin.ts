@@ -1755,3 +1755,45 @@ export async function setDisplayContactsCommerciaux(value: boolean) {
   revalidatePath('/admin/parametres')
   revalidatePath('/solutions', 'layout')
 }
+
+// ────────────────────────────────────────────
+// Articles — Historique / Restauration
+// (cf. restorePageStatique — même mécanique : UPDATE déclenche le trigger
+// d'audit qui archive l'état actuel, donc la restauration reste réversible.)
+// ────────────────────────────────────────────
+
+export async function restoreArticle(articleId: string, historyId: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+
+  const { data: entry, error: histErr } = await supabase
+    .from('articles_history')
+    .select('*')
+    .eq('id', historyId)
+    .eq('article_id', articleId)
+    .single()
+  if (histErr || !entry) return { error: 'Version historisée introuvable.' }
+
+  const { error: updErr } = await supabase
+    .from('articles')
+    .update({
+      titre: entry.titre ?? '',
+      contenu: entry.contenu,
+      extrait: entry.extrait,
+      image_couverture: entry.image_couverture,
+      meta_description: entry.meta_description,
+      id_categorie: entry.id_categorie,
+      statut: entry.statut ?? 'brouillon',
+    })
+    .eq('id', articleId)
+  if (updErr) return { error: `Erreur restauration : ${updErr.message}` }
+
+  const slug = entry.slug as string | null
+  revalidatePath('/admin/blog')
+  revalidatePath(`/admin/blog/${articleId}/modifier`)
+  if (slug) {
+    revalidatePath(`/blog/${slug}`)
+    revalidatePath('/blog')
+  }
+  return { success: true }
+}

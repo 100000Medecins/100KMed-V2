@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect, useMemo } from 'react'
 import { Sparkles, ChevronDown, ChevronUp, Images } from 'lucide-react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
 import Select from '@/components/ui/Select'
+import DraftBanner from '@/components/admin/DraftBanner'
+import { useDraft } from '@/lib/hooks/useDraft'
 import { updateArticleImageCouverture } from '@/lib/actions/admin'
 import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
 
@@ -102,6 +104,56 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
 
+  // ────────────────────────────────────────────
+  // Autosave / brouillon (localStorage)
+  // ────────────────────────────────────────────
+  const draftKey = useMemo(
+    () => `draft:articles:${article?.id ?? 'new'}`,
+    [article?.id]
+  )
+  const draftValues = useMemo(
+    () => ({ titre, slug, extrait, metaDescription, contenu, imageUrl }),
+    [titre, slug, extrait, metaDescription, contenu, imageUrl]
+  )
+  // Dernière modif côté BDD (utilisée pour décider si le brouillon local est plus récent).
+  const articleUpdatedAtMs = useMemo(() => {
+    const raw = (article as unknown as { updated_at?: string | null } | null)?.updated_at
+    return raw ? new Date(raw).getTime() : 0
+  }, [article])
+
+  const { getDraft, clearDraft, lastSavedAt } = useDraft({
+    key: draftKey,
+    values: draftValues,
+    enabled: !isPending && !isGenerating, // ne pas écraser pendant la génération IA ou la sauvegarde
+  })
+
+  // Au montage : si un brouillon plus récent que la BDD existe, on propose de le restaurer.
+  const [pendingDraft, setPendingDraft] = useState<number | null>(null)
+  useEffect(() => {
+    const d = getDraft()
+    if (d && d.savedAt > articleUpdatedAtMs) setPendingDraft(d.savedAt)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function restoreDraft() {
+    const d = getDraft()
+    if (!d) return
+    setTitre(d.values.titre as string)
+    setSlug(d.values.slug as string)
+    setSlugManual(true) // on respecte le slug du brouillon, ne pas le réécraser par slugify(titre)
+    setExtrait(d.values.extrait as string)
+    setMetaDescription(d.values.metaDescription as string)
+    setContenu(d.values.contenu as string)
+    setImageUrl(d.values.imageUrl as string)
+    setEditorKey((k) => k + 1) // force le rechargement du RichTextEditor avec le contenu restauré
+    setPendingDraft(null)
+  }
+
+  function discardDraft() {
+    clearDraft()
+    setPendingDraft(null)
+  }
+
   // Suggestions d'images
   const [imageSuggestions, setImageSuggestions] = useState<UnsplashPhoto[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
@@ -195,12 +247,25 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
     formData.set('image_couverture', imageUrl)
     startTransition(async () => {
       const result = await action(formData)
-      if (result?.error) setError(result.error)
+      if (result?.error) {
+        setError(result.error)
+        return
+      }
+      // Sauvegarde serveur réussie → on efface le brouillon local
+      clearDraft()
     })
   }
 
   return (
     <form action={handleSubmit} className="space-y-6">
+      {pendingDraft !== null && (
+        <DraftBanner
+          draftSavedAt={pendingDraft}
+          onRestore={restoreDraft}
+          onDiscard={discardDraft}
+        />
+      )}
+
       {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>}
 
       {/* ── Panneau Générer avec Claude ── */}
@@ -538,6 +603,15 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
           {isPending ? 'Enregistrement...' : article?.id ? 'Mettre à jour' : 'Créer l\'article'}
         </Button>
         <Button variant="outline" href="/admin/blog">Annuler</Button>
+        {lastSavedAt && (
+          <span className="text-xs text-gray-400">
+            Brouillon enregistré automatiquement{' '}
+            {new Date(lastSavedAt).toLocaleTimeString('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        )}
       </div>
     </form>
   )

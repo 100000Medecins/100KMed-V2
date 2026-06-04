@@ -12,11 +12,19 @@ export interface HistoryEntry {
   meta_description: string | null
 }
 
+export type RestoreAction = (
+  entityId: string,
+  historyId: string
+) => Promise<{ error?: string } | void>
+
 interface PageHistoryModalProps {
+  /** ID de l'entité éditée (pageId, articleId, …). Conservé en `pageId` pour compat. */
   pageId: string
   /** Liste des versions historisées chargée côté serveur (la plus récente d'abord). */
   history: HistoryEntry[]
   onClose: () => void
+  /** Server Action de restauration. Défaut = restorePageStatique (compat existante). */
+  restoreAction?: RestoreAction
 }
 
 function formatDateTime(iso: string): string {
@@ -42,6 +50,7 @@ export default function PageHistoryModal({
   pageId,
   history,
   onClose,
+  restoreAction = restorePageStatique,
 }: PageHistoryModalProps) {
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const [, startTransition] = useTransition()
@@ -66,7 +75,7 @@ export default function PageHistoryModal({
     setError(null)
     setPending((p) => ({ ...p, [entry.id]: true }))
     startTransition(async () => {
-      const res = await restorePageStatique(pageId, entry.id)
+      const res = await restoreAction(pageId, entry.id)
       if (res?.error) {
         setError(res.error)
         setPending((p) => ({ ...p, [entry.id]: false }))
