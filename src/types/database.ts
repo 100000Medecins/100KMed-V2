@@ -148,6 +148,59 @@ export type Database = {
         }
         Relationships: []
       }
+      articles_history: {
+        Row: {
+          article_id: string
+          contenu: string | null
+          extrait: string | null
+          id: string
+          id_categorie: string | null
+          image_couverture: string | null
+          meta_description: string | null
+          saved_at: string
+          saved_by: string | null
+          slug: string
+          statut: string | null
+          titre: string | null
+        }
+        Insert: {
+          article_id: string
+          contenu?: string | null
+          extrait?: string | null
+          id?: string
+          id_categorie?: string | null
+          image_couverture?: string | null
+          meta_description?: string | null
+          saved_at?: string
+          saved_by?: string | null
+          slug: string
+          statut?: string | null
+          titre?: string | null
+        }
+        Update: {
+          article_id?: string
+          contenu?: string | null
+          extrait?: string | null
+          id?: string
+          id_categorie?: string | null
+          image_couverture?: string | null
+          meta_description?: string | null
+          saved_at?: string
+          saved_by?: string | null
+          slug?: string
+          statut?: string | null
+          titre?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_history_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avatar_generations: {
         Row: {
           created_at: string
