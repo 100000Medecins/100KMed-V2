@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-06-04] — Toggle modale tooltip note globale + toggle contacts commerciaux + module tarification
+## [2026-06-04] — Toggle modale tooltip + toggle contacts commerciaux + module tarification + DMARC 100% + brouillon Téléexpertise
 
 ### Admin — Toggle « Afficher la modale détaillée » dans la tooltip note globale
 
@@ -46,11 +46,23 @@ Nouveau module pour afficher les prix des solutions sur les fiches et listings, 
   - Pages `/solutions/[idCategorie]/[idSolution]/page.tsx`, `/solutions/[idCategorie]/page.tsx`, `/mon-compte/mon-espace-editeur/page.tsx` : fetch et passage des données prix
 - **Types** : `src/types/database.ts` régénéré (+101 lignes — table `app_settings` + colonnes prix).
 
+### Sécurité — DMARC : passage de `pct=50` à `pct=100`
+
+Analyse des rapports DMARC du 26 au 30/05 : 7 mails sur 5 jours, 100 % DKIM/SPF aligné, seulement Gandi (selector `gm1`) + SendGrid (selector `s1` via sous-domaine `em1895.100000medecins.org`), aucune source inconnue. Cohérent avec les 3 semaines précédentes à `pct=50`.
+
+- Passage du DNS `_dmarc.100000medecins.org` chez Gandi : `p=quarantine; pct=50` → `p=quarantine; pct=100`.
+- Étape finale (`p=reject`) prévue ~2026-06-25 à 2026-07-02 après 2-3 semaines à `pct=100` clean.
+
+### Module — Catégorie Téléexpertise (préparation seeding)
+
+- Nouveau document de travail `docs/teleexpertise-import.md` (237 lignes) : mapping de 10 solutions du CSV `Comparatif_teleexpertise_medecins_2026.csv` vers la future catégorie `teleexpertise` (à créer). Inclut grille de tags (4 séparateurs + 17 toggles), sites web devinés à valider, décisions sur les prix nuls. Seeding effectif à faire dans une session dédiée.
+
 ### Infrastructure
 - `.gitignore` : exclusion de `*.ts.new` (sortie temporaire de `npx supabase gen types`).
 
 ### TODO — Mises à jour
 - Ajout : retravailler le texte de la modale d'information à côté de la note globale (texte actuel à revoir).
+- ✅ DMARC `pct=50` → `pct=100` (validé par analyse rapports clean).
 
 ---
 
