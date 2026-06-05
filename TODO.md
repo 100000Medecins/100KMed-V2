@@ -165,8 +165,9 @@ _(rien à faire pour l'instant)_
 
 #### Vulnérabilités npm restantes
 - **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
-- **11 moderate** : toute la chaîne `uuid` / `@google-cloud/storage` / `@google-cloud/firestore` / `gaxios` / `google-gax` / `teeny-request` / `retry-request` / `firebase-admin`. **Partira automatiquement** quand on désinstallera `firebase-admin` (cf. item Nettoyage « Couper le cordon Firebase », prévu ~2 mois post-prod).
-- **1 high — `xlsx`** (Prototype Pollution + ReDoS) : no fix sur npm. **Utilisé uniquement dans 3 scripts de seed admin** (`import-agendas.ts`, `import-ia-documentaires.ts`, `import-ia-scribes.ts`), pas dans le code du site. **Plan** : remplacer par `exceljs` après l'import des 2 catégories encore en attente (Téléconsultation, Téléexpertise). API très proche, ~10 lignes à adapter par script.
+- **État 2026-06-06** : `xlsx` désinstallé (vulnérabilité high éliminée) + `xlsx-js-style` désinstallé en préventif. Audit npm : **12 moderate, 0 high**. Cf CHANGELOG 2026-06-06.
+- **12 moderate restantes** : toute la chaîne `uuid` / `@google-cloud/storage` / `@google-cloud/firestore` / `gaxios` / `google-gax` / `teeny-request` / `retry-request` / `firebase-admin`. **Partira automatiquement** quand on désinstallera `firebase-admin` (cf. item Nettoyage « Couper le cordon Firebase », prévu ~2 mois post-prod).
+- ~~**1 high — `xlsx`** (Prototype Pollution + ReDoS)~~ **[OK] Fait 2026-06-06** : migration vers `exceljs` (4 scripts migrés via helper `scripts/lib/excel-helper.ts`). 5ᵉ script `export-catalogue-editeurs.ts` désactivé proprement (réutilisera `xlsx-js-style` au moment du besoin, à réinstaller ou à migrer alors).
 - ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux (downgraderait Next 16 → 9).
 
 ### Déploiement final

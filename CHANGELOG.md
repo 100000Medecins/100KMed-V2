@@ -5,6 +5,24 @@
 
 ---
 
+## [2026-06-06] — Migration xlsx → exceljs : vulnérabilité high éliminée
+
+### Sécurité — Désinstallation de `xlsx` et `xlsx-js-style`
+
+`xlsx` était la dernière dépendance restante avec une vulnérabilité high (Prototype Pollution + ReDoS, no fix sur npm). Migration vers `exceljs` qui n'a pas de vulnérabilité high connue.
+
+- **`npm audit`** : `12 moderate + 1 high` → `12 moderate + 0 high` (les 12 moderate restantes sont toutes dans la chaîne `firebase-admin`, partiront avec le cordon Firebase).
+- **Nouveau helper** `scripts/lib/excel-helper.ts` : encapsule l'API exceljs avec une signature compatible avec les anciens usages xlsx (`readExcelAsRows`, `createWorkbook`, `addSheetFromJson`, `writeWorkbook`). Permet de minimiser la diff côté scripts appelants.
+- **4 scripts migrés** :
+  - `scripts/import-agendas.ts`, `scripts/import-ia-documentaires.ts`, `scripts/import-ia-scribes.ts` : lecture Excel + détection en-têtes + mapping colonnes déplacés dans `main()` car `exceljs` est async (contrairement à `xlsx` qui était sync).
+  - `scripts/export-mapping-firebase-supabase.ts` : migration triviale (déjà dans `main()` async).
+- **1 script désactivé** : `scripts/export-catalogue-editeurs.ts` utilisait `xlsx-js-style` pour du styling (gras, couleurs, fusions de cellules). Migration vers exceljs plus délicate (API styling très différente) et pas réutilisée en pratique selon David → désactivé proprement avec instructions de réactivation en en-tête. `xlsx-js-style` aussi désinstallé.
+
+### TODO — Mises à jour
+- ✅ Vulnérabilité `xlsx` : éliminée (cf section Sécurité ci-dessus).
+
+---
+
 ## [2026-06-04] — Toggle modale tooltip + toggle contacts commerciaux + module tarification + DMARC 100% + brouillon Téléexpertise
 
 ### Admin — Toggle « Afficher la modale détaillée » dans la tooltip note globale

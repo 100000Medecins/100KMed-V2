@@ -7,11 +7,11 @@
  * Les lignes séparateurs de groupe sont détectées dynamiquement.
  */
 
-import * as XLSX from 'xlsx'
 import * as path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as crypto from 'crypto'
+import { readExcelAsRows } from './lib/excel-helper'
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') })
 
@@ -94,27 +94,8 @@ function parseEditeur(raw: string): { nom: string; ville: string | null; date: s
   return { nom, ville, date }
 }
 
-// ─── Lecture Excel ───────────────────────────────────────────────────────────
-
-const xlsxPath = path.join(process.cwd(), 'comparatif_ia_documentaires_2026.xlsx')
-const workbook = XLSX.readFile(xlsxPath)
-const sheet = workbook.Sheets[workbook.SheetNames[0]]
-const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
-
-// Les en-têtes sont sur la ligne 2 (index 1), forcé
-const HEADER_ROW_INDEX = 1
-const headerRow = rawRows[HEADER_ROW_INDEX] as unknown[]
-const headers = headerRow.map((h) => str(h))
-
-// Les données commencent à l'index 2
-const dataRows = rawRows.slice(HEADER_ROW_INDEX + 1)
-
-console.log(`✅ En-têtes ligne ${HEADER_ROW_INDEX + 1}. Colonnes (A→T) :`)
-headers.slice(0, 20).forEach((h, i) => {
-  const col = String.fromCharCode(65 + i)
-  if (h) console.log(`  ${col}: ${h}`)
-})
-console.log()
+// La lecture Excel a été déplacée dans main() lors de la migration xlsx → exceljs
+// (2026-06-06) car exceljs est async. Cf. ligne ~210.
 
 // ─── Index de colonnes par position ────────────────────────────────────────
 // B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, M=12, N=13, O=14, Q=16, R=17, S=18, T=19
@@ -207,6 +188,28 @@ const TAG_DEFS: TagDef[] = [
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // ─── Lecture Excel ─────────────────────────────────────────────────────────
+  // Déplacé dans main() depuis le top-level lors de la migration xlsx → exceljs
+  // (2026-06-06) car exceljs est async.
+
+  const xlsxPath = path.join(process.cwd(), 'comparatif_ia_documentaires_2026.xlsx')
+  const rawRows = await readExcelAsRows(xlsxPath)
+
+  // Les en-têtes sont sur la ligne 2 (index 1), forcé
+  const HEADER_ROW_INDEX = 1
+  const headerRow = rawRows[HEADER_ROW_INDEX] as unknown[]
+  const headers = headerRow.map((h) => str(h))
+
+  // Les données commencent à l'index 2
+  const dataRows = rawRows.slice(HEADER_ROW_INDEX + 1)
+
+  console.log(`✅ En-têtes ligne ${HEADER_ROW_INDEX + 1}. Colonnes (A→T) :`)
+  headers.slice(0, 20).forEach((h, i) => {
+    const col = String.fromCharCode(65 + i)
+    if (h) console.log(`  ${col}: ${h}`)
+  })
+  console.log()
+
   // 1. Catégorie (existante)
   const { data: categories } = await supabase.from('categories').select('id, nom, slug')
   const categorie = (categories ?? []).find(
