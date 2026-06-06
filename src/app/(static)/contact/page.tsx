@@ -39,7 +39,7 @@ export default function ContactPage() {
         <div className="max-w-lg mx-auto px-6 py-16">
           <h1 className="text-2xl font-bold text-navy mb-2">Contactez-nous</h1>
           <p className="text-gray-500 text-sm mb-8">
-            Une question ? N&apos;hésitez pas à nous écrire.
+            Une question ? Un bug ? Une suggestion ? Un petit mot doux ? N&apos;hésitez pas à nous écrire !
           </p>
           <p className="text-xs text-gray-400 mb-6">Les champs marqués <span className="text-red-400">*</span> sont obligatoires.</p>
 

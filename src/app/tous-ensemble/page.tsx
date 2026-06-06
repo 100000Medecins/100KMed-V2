@@ -6,7 +6,7 @@ import PageStatique from '@/components/PageStatique'
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPageBySlug('tous-ensemble')
   return {
-    title: page.titre + ' — 10000médecins.org',
+    title: page.titre + ' — 100 000 Médecins',
     description: page.meta_description,
   }
 }

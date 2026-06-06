@@ -30,7 +30,7 @@ export const missionItems: MissionItem[] = [
   {
     title: "La naissance d'un mouvement",
     description:
-      "Découvrez comment 10000médecins.org est né de la volonté commune de médecins souhaitant reprendre le contrôle sur leurs outils numériques au quotidien.",
+      "Découvrez comment 100 000 Médecins est né de la volonté commune de médecins souhaitant reprendre le contrôle sur leurs outils numériques au quotidien.",
     color: "#E0EAFF",
     href: "/lancement-100k",
     image: "/images/homempage/mouvement.jpg",

@@ -6,6 +6,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins
 // Le sitemap doit refléter l'état courant de la BDD à chaque requête.
 export const dynamic = 'force-dynamic'
 
+// Bloquer le sitemap hors prod (cf robots.ts) : evite que Google decouvre
+// les URLs via le sitemap d'un environnement preview/dev.
+const IS_PROD = process.env.VERCEL_ENV === 'production'
+
 // Routes statiques réellement servies par l'app (vérifiées dans src/app/).
 // Les pages de contenu (cgu, rgpd…) sont servies par le groupe (static) qui lit pages_statiques.
 const STATIC_ROUTES: Array<{
@@ -34,6 +38,9 @@ const STATIC_ROUTES: Array<{
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Hors prod : sitemap vide (en complement du robots.txt qui Disallow: /)
+  if (!IS_PROD) return []
+
   const supabase = createServiceRoleClient()
 
   const [categoriesRes, solutionsRes, articlesRes, editeursRes] = await Promise.all([

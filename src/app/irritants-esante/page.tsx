@@ -7,11 +7,11 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const page = await getPageBySlug('irritants-esante')
     return {
-      title: page.titre + ' — 10000médecins.org',
+      title: page.titre + ' — 100 000 Médecins',
       description: page.meta_description,
     }
   } catch {
-    return { title: 'Les irritants de l\'e-santé — 10000médecins.org' }
+    return { title: 'Les irritants de l\'e-santé — 100 000 Médecins' }
   }
 }
 

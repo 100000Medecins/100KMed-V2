@@ -6,7 +6,7 @@ import QuiSommesNousPage from '@/components/QuiSommesNousPage'
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getPageBySlug('qui-sommes-nous')
   return {
-    title: page.titre + ' — 10000médecins.org',
+    title: page.titre + ' — 100 000 Médecins',
     description: page.meta_description,
   }
 }
