@@ -6,7 +6,7 @@
  * Les en-têtes sont sur la 3e ligne (les 2 premières sont ignorées).
  */
 
-import * as XLSX from 'xlsx'
+import { readExcelAsRows } from './lib/excel-helper'
 import * as path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
@@ -87,89 +87,8 @@ function isBoolOui(val: unknown): boolean {
   return s.includes('✅') || s === 'oui' || s === 'yes' || s === '1' || s === 'true'
 }
 
-// ─── Lecture Excel ───────────────────────────────────────────────────────────
-
-const xlsxPath = path.join(process.cwd(), 'comparatif_ia_scribes_2026.xlsx')
-const workbook = XLSX.readFile(xlsxPath)
-const sheet = workbook.Sheets[workbook.SheetNames[0]]
-const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
-
-// Trouver la ligne d'en-têtes : au moins 4 cellules non vides ET une cellule contenant "solution" ou "nom"
-const HEADER_HINT = ['solution', 'nom']
-const headerRowIndex = rawRows.findIndex((row) => {
-  if (!Array.isArray(row)) return false
-  const nonEmpty = row.filter((cell) => str(cell) !== '')
-  if (nonEmpty.length < 4) return false  // les lignes titre ont peu de cellules
-  return row.some((cell) => {
-    const norm = normalizeKey(String(cell))
-    return HEADER_HINT.some((h) => norm.includes(h))
-  })
-})
-
-if (headerRowIndex === -1) {
-  console.error('❌ Ligne d\'en-têtes introuvable (aucune cellule contenant "solution" ou "nom").')
-  process.exit(1)
-}
-
-const headerRow = rawRows[headerRowIndex] as unknown[]
-const headers = headerRow.map((h) => str(h))
-
-const dataRows = rawRows.slice(headerRowIndex + 1)
-const rows: Record<string, unknown>[] = dataRows
-  .map((rawRow) => {
-    const arr = rawRow as unknown[]
-    const obj: Record<string, unknown> = {}
-    headers.forEach((h, i) => { if (h) obj[h] = arr[i] ?? '' })
-    return obj
-  })
-  .filter((r) => headers.some((h) => h && str(r[h]) !== ''))
-
-if (rows.length === 0) {
-  console.error('❌ Aucune ligne de données trouvée.')
-  process.exit(1)
-}
-
-console.log(`✅ ${rows.length} lignes (en-têtes ligne ${headerRowIndex + 1}). Colonnes : ${headers.filter(Boolean).join(', ')}\n`)
-
-// ─── Mapping colonnes ────────────────────────────────────────────────────────
-
-const COL_NOM         = findCol(headers, 'Nom de la solution', 'Solution', 'Nom')
-const COL_PAYS        = findCol(headers, 'Pays d\'origine', 'Pays', 'Origine', 'Pays origine')
-const COL_FONDEE      = findCol(headers, 'Fondée', 'Fondee', 'Fondation', 'Année fondation', 'Date fondation')
-const COL_AUDIO       = findCol(headers, 'Audio conservé', 'Audio conserve', 'Audio')
-const COL_TRANSCRIT   = findCol(headers, 'Transcrit conservé', 'Transcrit conserve', 'Transcrit')
-const COL_RESUME      = findCol(headers, 'Résumé réglable', 'Resume reglable', 'Résumé', 'Resume')
-const COL_RGPD        = findCol(headers, 'RGPD')
-const COL_HDS         = findCol(headers, 'HDS')
-const COL_SOUVERAINETE = findCol(headers, 'Souveraineté serveurs', 'Souverainete serveurs', 'Souveraineté', 'Serveurs')
-const COL_FREEMIUM    = findCol(headers, 'Freemium', 'Essai gratuit', 'Gratuit')
-const COL_PRIX        = findCol(headers, 'Prix indicatif / mois', 'Prix indicatif', 'Prix / mois', 'Prix')
-const COL_INTEGRATION = findCol(headers, 'Intégration logiciels France', 'Integration logiciels', 'Intégration', 'Integration')
-const COL_POINTS_FORTS   = findCol(headers, 'Points forts', 'Points fort')
-const COL_POINTS_FAIBLES = findCol(headers, 'Points faibles', 'Points faible')
-const COL_SITE        = findCol(headers, 'Site web', 'Site internet', 'Site', 'Website', 'URL')
-
-console.log('Mapping colonnes :')
-console.log(`  Nom            : ${COL_NOM ?? '❌ NON TROUVÉ'}`)
-console.log(`  Pays           : ${COL_PAYS ?? '❌ NON TROUVÉ'}`)
-console.log(`  Fondée         : ${COL_FONDEE ?? '❌ NON TROUVÉ'}`)
-console.log(`  Audio          : ${COL_AUDIO ?? '❌ NON TROUVÉ'}`)
-console.log(`  Transcrit      : ${COL_TRANSCRIT ?? '❌ NON TROUVÉ'}`)
-console.log(`  Résumé         : ${COL_RESUME ?? '❌ NON TROUVÉ'}`)
-console.log(`  RGPD           : ${COL_RGPD ?? '❌ NON TROUVÉ'}`)
-console.log(`  HDS            : ${COL_HDS ?? '❌ NON TROUVÉ'}`)
-console.log(`  Souveraineté   : ${COL_SOUVERAINETE ?? '❌ NON TROUVÉ'}`)
-console.log(`  Freemium       : ${COL_FREEMIUM ?? '❌ NON TROUVÉ'}`)
-console.log(`  Prix           : ${COL_PRIX ?? '❌ NON TROUVÉ'}`)
-console.log(`  Intégration    : ${COL_INTEGRATION ?? '❌ NON TROUVÉ'}`)
-console.log(`  Points forts   : ${COL_POINTS_FORTS ?? '❌ NON TROUVÉ'}`)
-console.log(`  Points faibles : ${COL_POINTS_FAIBLES ?? '❌ NON TROUVÉ'}`)
-console.log(`  Site web       : ${COL_SITE ?? '❌ NON TROUVÉ'}\n`)
-
-if (!COL_NOM) {
-  console.error('❌ Colonne "Nom" introuvable. Vérifiez le fichier Excel.')
-  process.exit(1)
-}
+// La lecture Excel + le mapping colonnes ont été déplacés dans main()
+// lors de la migration xlsx → exceljs (2026-06-06) car exceljs est async.
 
 // ─── Définition des tags ─────────────────────────────────────────────────────
 
@@ -213,6 +132,90 @@ const TAG_DEFS: TagDef[] = [
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // ─── Lecture Excel ─────────────────────────────────────────────────────────
+  // Déplacé dans main() depuis le top-level lors de la migration xlsx → exceljs
+  // (2026-06-06) car exceljs est async.
+
+  const xlsxPath = path.join(process.cwd(), 'comparatif_ia_scribes_2026.xlsx')
+  const rawRows = await readExcelAsRows(xlsxPath)
+
+  // Trouver la ligne d'en-têtes : au moins 4 cellules non vides ET une cellule contenant "solution" ou "nom"
+  const HEADER_HINT = ['solution', 'nom']
+  const headerRowIndex = rawRows.findIndex((row) => {
+    if (!Array.isArray(row)) return false
+    const nonEmpty = row.filter((cell) => str(cell) !== '')
+    if (nonEmpty.length < 4) return false  // les lignes titre ont peu de cellules
+    return row.some((cell) => {
+      const norm = normalizeKey(String(cell))
+      return HEADER_HINT.some((h) => norm.includes(h))
+    })
+  })
+
+  if (headerRowIndex === -1) {
+    console.error('❌ Ligne d\'en-têtes introuvable (aucune cellule contenant "solution" ou "nom").')
+    process.exit(1)
+  }
+
+  const headerRow = rawRows[headerRowIndex] as unknown[]
+  const headers = headerRow.map((h) => str(h))
+
+  const dataRows = rawRows.slice(headerRowIndex + 1)
+  const rows: Record<string, unknown>[] = dataRows
+    .map((rawRow) => {
+      const arr = rawRow as unknown[]
+      const obj: Record<string, unknown> = {}
+      headers.forEach((h, i) => { if (h) obj[h] = arr[i] ?? '' })
+      return obj
+    })
+    .filter((r) => headers.some((h) => h && str(r[h]) !== ''))
+
+  if (rows.length === 0) {
+    console.error('❌ Aucune ligne de données trouvée.')
+    process.exit(1)
+  }
+
+  console.log(`✅ ${rows.length} lignes (en-têtes ligne ${headerRowIndex + 1}). Colonnes : ${headers.filter(Boolean).join(', ')}\n`)
+
+  // ─── Mapping colonnes ────────────────────────────────────────────────────────
+
+  const COL_NOM         = findCol(headers, 'Nom de la solution', 'Solution', 'Nom')
+  const COL_PAYS        = findCol(headers, 'Pays d\'origine', 'Pays', 'Origine', 'Pays origine')
+  const COL_FONDEE      = findCol(headers, 'Fondée', 'Fondee', 'Fondation', 'Année fondation', 'Date fondation')
+  const COL_AUDIO       = findCol(headers, 'Audio conservé', 'Audio conserve', 'Audio')
+  const COL_TRANSCRIT   = findCol(headers, 'Transcrit conservé', 'Transcrit conserve', 'Transcrit')
+  const COL_RESUME      = findCol(headers, 'Résumé réglable', 'Resume reglable', 'Résumé', 'Resume')
+  const COL_RGPD        = findCol(headers, 'RGPD')
+  const COL_HDS         = findCol(headers, 'HDS')
+  const COL_SOUVERAINETE = findCol(headers, 'Souveraineté serveurs', 'Souverainete serveurs', 'Souveraineté', 'Serveurs')
+  const COL_FREEMIUM    = findCol(headers, 'Freemium', 'Essai gratuit', 'Gratuit')
+  const COL_PRIX        = findCol(headers, 'Prix indicatif / mois', 'Prix indicatif', 'Prix / mois', 'Prix')
+  const COL_INTEGRATION = findCol(headers, 'Intégration logiciels France', 'Integration logiciels', 'Intégration', 'Integration')
+  const COL_POINTS_FORTS   = findCol(headers, 'Points forts', 'Points fort')
+  const COL_POINTS_FAIBLES = findCol(headers, 'Points faibles', 'Points faible')
+  const COL_SITE        = findCol(headers, 'Site web', 'Site internet', 'Site', 'Website', 'URL')
+
+  console.log('Mapping colonnes :')
+  console.log(`  Nom            : ${COL_NOM ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Pays           : ${COL_PAYS ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Fondée         : ${COL_FONDEE ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Audio          : ${COL_AUDIO ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Transcrit      : ${COL_TRANSCRIT ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Résumé         : ${COL_RESUME ?? '❌ NON TROUVÉ'}`)
+  console.log(`  RGPD           : ${COL_RGPD ?? '❌ NON TROUVÉ'}`)
+  console.log(`  HDS            : ${COL_HDS ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Souveraineté   : ${COL_SOUVERAINETE ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Freemium       : ${COL_FREEMIUM ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Prix           : ${COL_PRIX ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Intégration    : ${COL_INTEGRATION ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Points forts   : ${COL_POINTS_FORTS ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Points faibles : ${COL_POINTS_FAIBLES ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Site web       : ${COL_SITE ?? '❌ NON TROUVÉ'}\n`)
+
+  if (!COL_NOM) {
+    console.error('❌ Colonne "Nom" introuvable. Vérifiez le fichier Excel.')
+    process.exit(1)
+  }
+
   // 1. Catégorie
   const { data: categories } = await supabase.from('categories').select('id, nom, slug')
   let categorie = (categories ?? []).find(

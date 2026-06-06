@@ -12,14 +12,19 @@ const poppins = Poppins({
   display: "swap",
 });
 
+// Bretelle anti-indexation hors prod (en plus de robots.txt) : meta robots noindex
+// injecté dans toutes les pages des environnements preview/dev. Couvre
+// dev.100000medecins.org (VERCEL_ENV=preview) et toutes les URLs preview Vercel.
+const IS_PROD = process.env.VERCEL_ENV === 'production'
+
 export const metadata: Metadata = {
   title: {
-    default: "10000médecins.org — Mieux exercer, avec les bons outils",
-    template: "%s | 10000médecins.org",
+    default: "100 000 Médecins — Mieux exercer, avec les bons outils",
+    template: "%s | 100 000 Médecins",
   },
   description:
     "Trouvez les logiciels médicaux les plus adaptés à votre pratique grâce aux avis de vos confrères.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://10000medecins.org"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.100000medecins.org"),
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -31,8 +36,17 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    siteName: "10000médecins.org",
+    siteName: "100 000 Médecins",
   },
+  ...(IS_PROD ? {} : {
+    robots: {
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+      googleBot: { index: false, follow: false },
+    },
+  }),
 };
 
 export default function RootLayout({

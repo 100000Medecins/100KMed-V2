@@ -63,7 +63,7 @@ export default async function AboutMission() {
   }
 
   // Parser le titre : peut contenir du HTML simple (<span>)
-  const titreHtml = titre || '<span class="text-accent-blue">10000médecins.org</span>,<br class="hidden md:block" />pour vous accompagner dans l\'ère numérique.'
+  const titreHtml = titre || '<span class="text-accent-blue">100 000 Médecins</span>,<br class="hidden md:block" />pour vous accompagner dans l\'ère numérique.'
 
   return (
     <section className="pt-12 pb-2 md:pt-16 md:pb-4" id="about">

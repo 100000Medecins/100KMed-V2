@@ -91,12 +91,12 @@ export function generateWebSiteJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: '10000médecins.org',
-    url: 'https://10000medecins.org',
+    name: '100 000 Médecins',
+    url: 'https://www.100000medecins.org',
     description: 'Trouvez les logiciels médicaux les plus adaptés à votre pratique.',
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://10000medecins.org/solutions?q={search_term_string}',
+      target: 'https://www.100000medecins.org/solutions?q={search_term_string}',
       'query-input': 'required name=search_term_string',
     },
   }

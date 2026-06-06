@@ -349,7 +349,7 @@ export default function AdminIndexEditor({ config, pages, partenaires }: Props) 
       <Accordeon title="Section Articles (ordre des pages)">
         <RichField
           cle="section_articles_titre"
-          initialValue={config['section_articles_titre'] ?? '<p><span class="text-accent-blue">10000médecins.org</span>,<br>pour vous accompagner dans l\'ère numérique.</p>'}
+          initialValue={config['section_articles_titre'] ?? '<p><span class="text-accent-blue">100 000 Médecins</span>,<br>pour vous accompagner dans l\'ère numérique.</p>'}
           label="Titre de la section"
         />
         <div className="mt-4">

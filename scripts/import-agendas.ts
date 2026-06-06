@@ -16,11 +16,11 @@
  *   - Téléphone / Tel
  */
 
-import * as XLSX from 'xlsx'
 import * as path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as crypto from 'crypto'
+import { readExcelAsRows } from './lib/excel-helper'
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') })
 
@@ -77,79 +77,79 @@ function log(msg: string) {
   console.log(DRY_RUN ? `[DRY-RUN] ${msg}` : msg)
 }
 
-// ─── Lecture Excel ───────────────────────────────────────────────────────────
-
-const xlsxPath = path.join(process.cwd(), '2026 Listing agendas médicaux.xlsx')
-const workbook = XLSX.readFile(xlsxPath)
-const sheet = workbook.Sheets[workbook.SheetNames[0]]
-
-// Lire toutes les lignes comme tableaux bruts pour détecter la vraie ligne d'en-têtes
-const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
-
-// Trouver la première ligne qui contient "Solution" ou "Nom" (la vraie ligne d'en-têtes)
-const HEADER_CANDIDATES = ['solution', 'nom', 'nomsolution']
-const headerRowIndex = rawRows.findIndex((row) =>
-  Array.isArray(row) && row.some((cell) => HEADER_CANDIDATES.includes(normalizeKey(String(cell))))
-)
-
-if (headerRowIndex === -1) {
-  console.error('❌ Impossible de trouver la ligne d\'en-têtes (colonne "Nom" ou "Solution" introuvable).')
-  process.exit(1)
-}
-
-// Construire les en-têtes depuis la ligne détectée (ignorer les cellules vides)
-const headerRow = rawRows[headerRowIndex] as unknown[]
-const headers: string[] = headerRow.map((h) => String(h ?? '').trim())
-
-// Reconstruire les lignes de données avec ces en-têtes
-const dataRows = rawRows.slice(headerRowIndex + 1)
-const rows: Record<string, unknown>[] = dataRows.map((rawRow) => {
-  const arr = rawRow as unknown[]
-  const obj: Record<string, unknown> = {}
-  headers.forEach((h, i) => {
-    if (h) obj[h] = arr[i] ?? ''
-  })
-  return obj
-}).filter((r) => headers.some((h) => h && String(r[h] ?? '').trim() !== ''))
-
-if (rows.length === 0) {
-  console.error('❌ Aucune ligne de données trouvée dans le fichier Excel.')
-  process.exit(1)
-}
-
-console.log(`✅ ${rows.length} lignes trouvées (en-têtes ligne ${headerRowIndex + 1}). Colonnes : ${headers.filter(Boolean).join(', ')}\n`)
-
-const COL_NOM = findCol(headers, 'Nom', 'Solution', 'Nom solution')
-const COL_EDITEUR = findCol(headers, 'Editeur', 'Éditeur', 'Editeur logiciel')
-const COL_TYPE = findCol(headers, 'Type')
-const COL_SAS = findCol(headers, 'Interface SAS', 'Interfacé SAS', 'SAS', 'Interface SAS')
-const COL_DESCRIPTION = findCol(headers, 'Présentation', 'Presentation', 'Description')
-const COL_POINTS_FORTS = findCol(headers, 'Points forts', 'Points fort')
-const COL_POINTS_FAIBLES = findCol(headers, 'Points faibles', 'Points faible')
-const COL_SITE = findCol(headers, 'Site', 'Site internet', 'Site web', 'Website', 'URL', 'Lien', 'Web')
-const COL_CONTACT = findCol(headers, 'Contact', 'Email', 'Mail')
-const COL_TEL = findCol(headers, 'Téléphone', 'Telephone', 'Tel')
-
-console.log('Mapping colonnes :')
-console.log(`  Nom        : ${COL_NOM ?? '❌ NON TROUVÉ'}`)
-console.log(`  Éditeur    : ${COL_EDITEUR ?? '❌ NON TROUVÉ'}`)
-console.log(`  Type       : ${COL_TYPE ?? '❌ NON TROUVÉ'}`)
-console.log(`  SAS        : ${COL_SAS ?? '❌ NON TROUVÉ'}`)
-console.log(`  Description: ${COL_DESCRIPTION ?? '❌ NON TROUVÉ'}`)
-console.log(`  Pts forts  : ${COL_POINTS_FORTS ?? '❌ NON TROUVÉ'}`)
-console.log(`  Pts faibles: ${COL_POINTS_FAIBLES ?? '❌ NON TROUVÉ'}`)
-console.log(`  Site       : ${COL_SITE ?? '❌ NON TROUVÉ'}`)
-console.log(`  Contact    : ${COL_CONTACT ?? '❌ NON TROUVÉ'}`)
-console.log(`  Téléphone  : ${COL_TEL ?? '❌ NON TROUVÉ'}\n`)
-
-if (!COL_NOM) {
-  console.error('❌ Colonne "Nom" introuvable. Vérifiez le fichier Excel.')
-  process.exit(1)
-}
-
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // ─── Lecture Excel ─────────────────────────────────────────────────────────
+  // Déplacé dans main() depuis le top-level lors de la migration xlsx → exceljs
+  // (2026-06-06) car exceljs est async.
+
+  const xlsxPath = path.join(process.cwd(), '2026 Listing agendas médicaux.xlsx')
+  const rawRows = await readExcelAsRows(xlsxPath)
+
+  // Trouver la première ligne qui contient "Solution" ou "Nom" (la vraie ligne d'en-têtes)
+  const HEADER_CANDIDATES = ['solution', 'nom', 'nomsolution']
+  const headerRowIndex = rawRows.findIndex((row) =>
+    Array.isArray(row) && row.some((cell) => HEADER_CANDIDATES.includes(normalizeKey(String(cell))))
+  )
+
+  if (headerRowIndex === -1) {
+    console.error('❌ Impossible de trouver la ligne d\'en-têtes (colonne "Nom" ou "Solution" introuvable).')
+    process.exit(1)
+  }
+
+  // Construire les en-têtes depuis la ligne détectée (ignorer les cellules vides)
+  const headerRow = rawRows[headerRowIndex] as unknown[]
+  const headers: string[] = headerRow.map((h) => String(h ?? '').trim())
+
+  // Reconstruire les lignes de données avec ces en-têtes
+  const dataRows = rawRows.slice(headerRowIndex + 1)
+  const rows: Record<string, unknown>[] = dataRows.map((rawRow) => {
+    const arr = rawRow as unknown[]
+    const obj: Record<string, unknown> = {}
+    headers.forEach((h, i) => {
+      if (h) obj[h] = arr[i] ?? ''
+    })
+    return obj
+  }).filter((r) => headers.some((h) => h && String(r[h] ?? '').trim() !== ''))
+
+  if (rows.length === 0) {
+    console.error('❌ Aucune ligne de données trouvée dans le fichier Excel.')
+    process.exit(1)
+  }
+
+  console.log(`✅ ${rows.length} lignes trouvées (en-têtes ligne ${headerRowIndex + 1}). Colonnes : ${headers.filter(Boolean).join(', ')}\n`)
+
+  const COL_NOM = findCol(headers, 'Nom', 'Solution', 'Nom solution')
+  const COL_EDITEUR = findCol(headers, 'Editeur', 'Éditeur', 'Editeur logiciel')
+  const COL_TYPE = findCol(headers, 'Type')
+  const COL_SAS = findCol(headers, 'Interface SAS', 'Interfacé SAS', 'SAS', 'Interface SAS')
+  const COL_DESCRIPTION = findCol(headers, 'Présentation', 'Presentation', 'Description')
+  const COL_POINTS_FORTS = findCol(headers, 'Points forts', 'Points fort')
+  const COL_POINTS_FAIBLES = findCol(headers, 'Points faibles', 'Points faible')
+  const COL_SITE = findCol(headers, 'Site', 'Site internet', 'Site web', 'Website', 'URL', 'Lien', 'Web')
+  const COL_CONTACT = findCol(headers, 'Contact', 'Email', 'Mail')
+  const COL_TEL = findCol(headers, 'Téléphone', 'Telephone', 'Tel')
+
+  console.log('Mapping colonnes :')
+  console.log(`  Nom        : ${COL_NOM ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Éditeur    : ${COL_EDITEUR ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Type       : ${COL_TYPE ?? '❌ NON TROUVÉ'}`)
+  console.log(`  SAS        : ${COL_SAS ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Description: ${COL_DESCRIPTION ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Pts forts  : ${COL_POINTS_FORTS ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Pts faibles: ${COL_POINTS_FAIBLES ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Site       : ${COL_SITE ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Contact    : ${COL_CONTACT ?? '❌ NON TROUVÉ'}`)
+  console.log(`  Téléphone  : ${COL_TEL ?? '❌ NON TROUVÉ'}\n`)
+
+  if (!COL_NOM) {
+    console.error('❌ Colonne "Nom" introuvable. Vérifiez le fichier Excel.')
+    process.exit(1)
+  }
+
+  // ─── Suite : traitement des données ────────────────────────────────────────
+
   // 1. Récupérer ou créer la catégorie "Agendas médicaux"
   const { data: categories } = await supabase
     .from('categories')

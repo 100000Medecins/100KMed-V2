@@ -25,7 +25,7 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
-import * as XLSX from 'xlsx'
+import { createWorkbook, addSheetFromJson, writeWorkbook } from './lib/excel-helper'
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') })
 
@@ -202,17 +202,18 @@ async function main() {
   ]
 
   // ─── Construction du classeur ────────────────────────────
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lisezMoi), 'Lisez-moi')
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(usersRows), 'Users')
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(solutionsRows), 'Solutions')
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(editeursRows), 'Editeurs')
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(evalRows), 'Evaluations')
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(redirectionsRows), 'Redirections_URL')
+  // Migration xlsx → exceljs (2026-06-06) : API encapsulée dans excel-helper.
+  const wb = createWorkbook()
+  addSheetFromJson(wb, 'Lisez-moi', lisezMoi)
+  addSheetFromJson(wb, 'Users', usersRows)
+  addSheetFromJson(wb, 'Solutions', solutionsRows)
+  addSheetFromJson(wb, 'Editeurs', editeursRows)
+  addSheetFromJson(wb, 'Evaluations', evalRows)
+  addSheetFromJson(wb, 'Redirections_URL', redirectionsRows)
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-')
   const outPath = path.resolve(__dirname, `../docs/mapping-firebase-supabase-${ts}.xlsx`)
-  XLSX.writeFile(wb, outPath)
+  await writeWorkbook(wb, outPath)
 
   // ─── Récap console ───────────────────────────────────────
   const countMatch = (rows: any[]) => rows.filter((r) => String(r.statut).startsWith('MATCH')).length
