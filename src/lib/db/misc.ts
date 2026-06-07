@@ -122,8 +122,10 @@ export async function getVideos(options?: {
   const { data, error } = await query
 
   if (error) {
+    // Log + propagation pour que error.tsx se déclenche au lieu d'afficher
+    // « Aucune vidéo pour le moment » silencieusement (cf incident GRANT 2026-05-29).
     console.error('[getVideos] Supabase error:', error.message)
-    return []
+    throw error
   }
   return (data ?? []) as VideoRow[]
 }

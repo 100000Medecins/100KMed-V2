@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getPageBySlug } from '@/lib/db/pages'
+import { getPageBySlugOrNull } from '@/lib/db/pages'
 import PageStatique from '@/components/PageStatique'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPageBySlug('lancement-100k')
+  const page = await getPageBySlugOrNull('lancement-100k')
+  if (!page) return { title: 'Lancement 100K — 100 000 Médecins' }
   return {
     title: page.titre,
     description: page.meta_description,
@@ -12,12 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Lancement100K() {
-  let page
-  try {
-    page = await getPageBySlug('lancement-100k')
-  } catch {
-    notFound()
-  }
+  const page = await getPageBySlugOrNull('lancement-100k')
+  if (!page) notFound()
 
   return <PageStatique page={page} breadcrumbLabel="Lancement 100K" />
 }

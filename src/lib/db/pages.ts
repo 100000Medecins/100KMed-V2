@@ -26,6 +26,36 @@ export async function getPageBySlug(slug: string): Promise<PageStatique> {
   return data as PageStatique
 }
 
+/**
+ * Variante de `getPageBySlug` qui distingue les 2 cas d'échec :
+ *   - Page absente en BDD (code Supabase `PGRST116`) → renvoie `null` (l'appelant
+ *     peut alors `notFound()` proprement, c'est une 404 légitime).
+ *   - Autre erreur (BDD en panne, GRANT manquant, etc.) → propage l'exception
+ *     pour déclencher `error.tsx` (avec ref d'erreur pour diagnostic), au lieu
+ *     de masquer un problème système derrière un faux 404.
+ *
+ * Utiliser cette variante dans les pages publiques où on veut faire la
+ * distinction (qui-sommes-nous, lancement-100k, etc.) plutôt que `getPageBySlug`
+ * dans un `try { } catch { notFound() }` qui masque tout.
+ */
+export async function getPageBySlugOrNull(slug: string): Promise<PageStatique | null> {
+  const supabase = await createServerClient()
+
+  const { data, error } = await supabase
+    .from('pages_statiques')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  if (error) {
+    // PGRST116 = "no rows returned" : page légitimement absente, pas une erreur système.
+    if (error.code === 'PGRST116') return null
+    console.error(`[getPageBySlugOrNull] erreur Supabase pour slug='${slug}':`, error.message)
+    throw error
+  }
+  return data as PageStatique
+}
+
 export interface PageStatiqueHistoryEntry {
   id: string
   page_id: string
