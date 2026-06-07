@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
 import DraftBanner from '@/components/admin/DraftBanner'
+import DiffModal, { countDiffChars, MIN_DIFF_CHARS } from '@/components/admin/DiffModal'
 import { useDraft } from '@/lib/hooks/useDraft'
 import { ChevronDown, GripVertical, ImageIcon, Sparkles } from 'lucide-react'
 
@@ -168,12 +169,12 @@ export default function BlogForm({ page, action }: BlogFormProps) {
     )
   }
 
-  function handleSubmit(formData: FormData) {
-    formData.set('contenu', contenu)
-    formData.set('image_couverture', imageUrl)
-    if (isQuiSommesNous) {
-      formData.set('metadata', JSON.stringify(syndicats))
-    }
+  // Diff modal — confirmation avant écrasement si grosse modification.
+  // Voir DiffModal.tsx pour le seuil MIN_DIFF_CHARS (= 50 chars).
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
+  const oldContenu = page.contenu ?? ''
+
+  function submitToServer(formData: FormData) {
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) {
@@ -185,7 +186,38 @@ export default function BlogForm({ page, action }: BlogFormProps) {
     })
   }
 
+  function handleSubmit(formData: FormData) {
+    formData.set('contenu', contenu)
+    formData.set('image_couverture', imageUrl)
+    if (isQuiSommesNous) {
+      formData.set('metadata', JSON.stringify(syndicats))
+    }
+    // Si le contenu HTML a changé significativement, demander confirmation
+    // via la DiffModal (bretelle anti-écrasement involontaire, cf incident
+    // pages_statiques.contenu slug=transparence du 2026-05-29).
+    if (countDiffChars(oldContenu, contenu) >= MIN_DIFF_CHARS) {
+      setPendingFormData(formData)
+      return
+    }
+    submitToServer(formData)
+  }
+
   return (
+    <>
+    <DiffModal
+      open={pendingFormData !== null}
+      oldContent={oldContenu}
+      newContent={contenu}
+      onCancel={() => setPendingFormData(null)}
+      onConfirm={() => {
+        if (pendingFormData) {
+          submitToServer(pendingFormData)
+          setPendingFormData(null)
+        }
+      }}
+      title={`Confirmer les modifications — ${page.titre ?? page.slug}`}
+      pending={isPending}
+    />
     <form action={handleSubmit} className="space-y-5">
       {pendingDraft !== null && (
         <DraftBanner
@@ -492,5 +524,6 @@ export default function BlogForm({ page, action }: BlogFormProps) {
         )}
       </div>
     </form>
+    </>
   )
 }

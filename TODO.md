@@ -60,20 +60,23 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
-#### Supprimer les fallbacks silencieux des pages BDD (try/catch vide) — partiellement fait
+#### ~~Supprimer les fallbacks silencieux des pages BDD (try/catch vide)~~ [OK] Fait 2026-06-07
 
 - **Contexte (2026-05-29)** : les pages servies via `(static)/` (cgu, rgpd, transparence, contact, actualites, etc.) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui **avalait silencieusement** toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.
-- **Bug GRANT réparé** le 2026-05-29 (`GRANT SELECT TO anon` posé), mais le pattern lui-même reste dangereux.
-- ✅ **Fait 2026-05-31** sur `cgu/page.tsx`, `rgpd/page.tsx`, `transparence/page.tsx` : suppression des fallbacks hardcodés (~768 lignes mortes retirées), seule la BDD est lue. Ajout d'un `error.tsx` dans `(static)/` qui couvre toutes les pages du groupe (« Contenu temporairement indisponible » + bouton Réessayer + ref d'erreur).
-- **Reste à faire** : auditer les autres pages BDD (`contact`, `actualites`, `videos`, `cgu` racine si présente, etc.) — chercher tous les `try { } catch {}` vides et les remplacer (idéalement laisser propager pour que `error.tsx` se déclenche, ou logger explicitement).
+- ✅ **Fait 2026-05-31** sur `cgu/page.tsx`, `rgpd/page.tsx`, `transparence/page.tsx` : suppression des fallbacks hardcodés (~768 lignes mortes retirées), seule la BDD est lue. Ajout d'un `error.tsx` dans `(static)/` qui couvre toutes les pages du groupe.
+- ✅ **Audit complet 2026-06-07** :
+  - `(static)/actualites` et `(static)/videos` : pas de `try/catch` silencieux (propagent l'erreur → `error.tsx`).
+  - `getVideos()` modifié pour `throw error` au lieu de `return []` (évitait de masquer une panne BDD derrière "Aucune vidéo").
+  - 5 pages racine (`qui-sommes-nous`, `tous-ensemble`, `difficile-de-changer`, `lancement-100k`, `irritants-esante`) : remplacement de `try { getPageBySlug } catch { notFound() }` par `getPageBySlugOrNull` (nouvelle fonction qui distingue "page absente en BDD" → `null` → 404 légitime vs "erreur BDD" → `throw` → `error.tsx` avec log).
+  - `contact/page.tsx` : try/catch sur form submit (`sendContactMessage`), légitime.
 
-#### Versioning/audit des contenus admin (pages_statiques, articles, etc.)
+#### ~~Versioning/audit des contenus admin (pages_statiques, articles, etc.)~~ [OK] Fait 2026-06-03/07
 
-- **Contexte (2026-05-29)** : un écrasement involontaire de `pages_statiques.contenu` (slug=transparence) a fait perdre ~1600 caractères (toute la section "Déclarations publiques d'intérêt des représentants"). Seule la version backup quotidien Synology a permis de constater l'écart. Aucune trace en base de l'historique des modifications (juste le dernier `updated_at`).
-- **Idée 1 — table d'audit `pages_statiques_history`** : trigger PG qui INSERT l'ancienne version avant chaque UPDATE. Idem pour `articles`, `editeurs_edit_log` (qui existe déjà).
-- **Idée 2 — diff visuel dans l'admin** : avant de sauvegarder, montrer ce qui change vs version actuelle (vert/rouge).
-- **Idée 3 — autosave + brouillons** : éviter qu'une perte de focus efface le travail en cours.
-- À cadrer selon priorité.
+- **Contexte (2026-05-29)** : un écrasement involontaire de `pages_statiques.contenu` (slug=transparence) a fait perdre ~1600 caractères. Aucune trace en base de l'historique.
+- ✅ **Table d'audit `pages_statiques_history`** : trigger PG livré 2026-06-03 (commit `e6fadee feat(admin): versioning pages_statiques`).
+- ✅ **Autosave + brouillons** : hook `useDraft` + composant `DraftBanner` livrés 2026-06-03.
+- ✅ **Historique restaurable dans l'admin** : composants `PageHistoryButton` + `PageHistoryModal` livrés. Intégrés dans `BlogForm` (pages_statiques) et `ArticleForm` (articles, commit `212ce90`).
+- ✅ **Diff visuel avant sauvegarde** : composant `DiffModal` livré 2026-06-07. Inline (vert/rouge), seuil 50 caractères modifiés. Intégré dans `BlogForm`, `ArticleForm`, `TooltipNoteGlobaleForm`. Bretelle anti-écrasement en amont de la sauvegarde, complémente l'historique restaurable.
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
@@ -150,7 +153,9 @@ _(rien à faire pour l'instant)_
 #### Sitemap propre (demande Ben, 2026-05-28) — fait, en attente validation Google
 - ✅ **Sitemap dynamique** (`src/app/sitemap.ts`, `force-dynamic`) : recalculé à chaque requête HTTP. **Pas besoin de le régénérer manuellement** quand on crée/modifie un éditeur, une solution ou un article — le prochain GET sur `/sitemap.xml` reflète l'état BDD.
 - ✅ **Bug URLs éditeurs UUID brut** : résolu de facto par le passage en slug (2026-05-30). Le code ne génère plus jamais d'URL `/editeur/<uuid>`.
-- **À surveiller** : Search Console → propriété `100000medecins.org` → menu **Sitemaps** → vérifier que `https://www.100000medecins.org/sitemap.xml` passe en « Réussite ». Recrawl Google en cours.
+- ✅ **Sitemap-v2 alternatif soumis dans Search Console** (2026-06-07) : `https://www.100000medecins.org/sitemap-v2.xml` créé pour tenter de casser le cache négatif Google qui maintenait `/sitemap.xml` en erreur depuis le 27/05. Soumis dans Search Console.
+- ✅ **Indexation `dev.100000medecins.org` bloquée** (2026-06-07) : robots.txt `Disallow: /` + meta robots noindex + sitemap vide hors prod. Demande de suppression du préfixe `dev.*` soumise dans Search Console (effet ~6 mois, masquage Google immédiat).
+- **À surveiller** : Search Console → vérifier que `/sitemap.xml` OU `/sitemap-v2.xml` passe en « Réussite » (≈ 1-2 semaines après soumission v2). Surveiller aussi le déréférencement progressif de `dev.*`.
 
 ### Mises à jour techniques
 
