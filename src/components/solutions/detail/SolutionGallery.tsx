@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
 import type { GalerieItem } from '@/types/models'
 
@@ -37,6 +37,16 @@ interface SolutionGalleryProps {
 export default function SolutionGallery({ images }: SolutionGalleryProps) {
   const [current, setCurrent] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
+
+  // ESC ferme le zoom plein écran (en plus du clic backdrop déjà existant)
+  useEffect(() => {
+    if (!modalOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [modalOpen])
 
   if (images.length === 0) return null
 

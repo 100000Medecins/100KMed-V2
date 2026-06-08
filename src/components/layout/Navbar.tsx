@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, ChevronDown, LogOut, UserCircle, Search } from "lucide-react";
+import { Menu, X, ChevronDown, UserCircle, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { NavCategorie, NavResponse } from "@/app/api/nav-categories/route";
@@ -40,7 +40,7 @@ function buildGroupes(categories: NavCategorie[]): Groupe[] {
 }
 
 export default function Navbar() {
-  const { user, isEditeur, loading, signOut } = useAuth();
+  const { user, isEditeur, loading } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
@@ -54,10 +54,8 @@ export default function Navbar() {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isCommunauteMenuOpen, setIsCommunauteMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const communauteMenuRef = useRef<HTMLDivElement>(null);
-  const accountMenuRef = useRef<HTMLDivElement>(null);
   const communauteCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,9 +90,6 @@ export default function Navbar() {
       }
       if (communauteMenuRef.current && !communauteMenuRef.current.contains(e.target as Node)) {
         setIsCommunauteMenuOpen(false)
-      }
-      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
-        setIsAccountMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -334,38 +329,9 @@ export default function Navbar() {
                     Évaluer un logiciel
                   </Button>
                 )}
-                <div ref={accountMenuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsAccountMenuOpen((v) => !v)}
-                    className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm transition-all duration-300 border-2 border-white text-white hover:bg-white hover:text-navy ${darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}`}
-                  >
-                    Mon compte
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isAccountMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl overflow-hidden shadow-xl border border-white/10"
-                      style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.97) 0%, rgba(80,30,130,0.95) 55%, rgba(20,50,110,0.97) 100%)', backdropFilter: 'blur(8px)' }}>
-                      <a
-                        href="/mon-compte/profil"
-                        onClick={() => setIsAccountMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-white/85 hover:text-white hover:bg-white/10 transition-colors"
-                      >
-                        <UserCircle className="w-4 h-4" />
-                        Mon compte
-                      </a>
-                      <div className="border-t border-white/10" />
-                      <button
-                        type="button"
-                        onClick={() => { setIsAccountMenuOpen(false); signOut() }}
-                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white/85 hover:text-white hover:bg-white/10 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Se déconnecter
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <Button variant="white" href="/mon-compte/profil" leftIcon={<UserCircle className="w-4 h-4" />} className={darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}>
+                  Mon compte
+                </Button>
               </>
             ) : (
               <>
@@ -499,18 +465,9 @@ export default function Navbar() {
                       Évaluer un logiciel
                     </Button>
                   )}
-                  <Button variant="white" href="/mon-compte/profil" className="w-full justify-center" onClick={() => setIsMobileOpen(false)}>
-                    <UserCircle className="w-4 h-4" />
+                  <Button variant="white" href="/mon-compte/profil" leftIcon={<UserCircle className="w-4 h-4" />} className="w-full justify-center" onClick={() => setIsMobileOpen(false)}>
                     Mon compte
                   </Button>
-                  <button
-                    type="button"
-                    onClick={() => { setIsMobileOpen(false); signOut() }}
-                    className="inline-flex items-center justify-center gap-2 w-full px-7 py-3.5 rounded-button font-semibold text-sm transition-all duration-300 border-2 border-white/50 text-white/70 hover:border-white hover:text-white"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Se déconnecter
-                  </button>
                 </>
               ) : (
                 <>
