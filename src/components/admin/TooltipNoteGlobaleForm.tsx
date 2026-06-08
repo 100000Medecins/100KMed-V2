@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button'
 import Field from '@/components/ui/Field'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
+import DiffModal, { countDiffChars, MIN_DIFF_CHARS } from '@/components/admin/DiffModal'
 
 interface ParsedContenu {
   tooltip_court_legacy?: string
@@ -43,8 +44,12 @@ export default function TooltipNoteGlobaleForm({ initialContenu, action }: Props
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const handleSubmit = (formData: FormData) => {
-    setError(null)
+  // Diff modal — confirmation avant écrasement si grosse modification.
+  // Le diff porte sur le corps HTML détaillé (champ le plus long).
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
+  const oldCorps = parsed.tooltip_long_corps ?? ''
+
+  function submitToServer(formData: FormData) {
     startTransition(async () => {
       const result = await action(formData)
       if (result && 'error' in result && result.error) {
@@ -53,7 +58,31 @@ export default function TooltipNoteGlobaleForm({ initialContenu, action }: Props
     })
   }
 
+  const handleSubmit = (formData: FormData) => {
+    setError(null)
+    if (countDiffChars(oldCorps, corps) >= MIN_DIFF_CHARS) {
+      setPendingFormData(formData)
+      return
+    }
+    submitToServer(formData)
+  }
+
   return (
+    <>
+    <DiffModal
+      open={pendingFormData !== null}
+      oldContent={oldCorps}
+      newContent={corps}
+      onCancel={() => setPendingFormData(null)}
+      onConfirm={() => {
+        if (pendingFormData) {
+          submitToServer(pendingFormData)
+          setPendingFormData(null)
+        }
+      }}
+      title="Confirmer les modifications — Tooltip note globale"
+      pending={pending}
+    />
     <form action={handleSubmit} className="space-y-8">
       <div className="rounded-card border border-accent-blue/30 bg-accent-blue/5 p-4 text-sm text-gray-700">
         <p className="font-medium text-navy mb-1">À propos de cette tooltip</p>
@@ -163,5 +192,6 @@ export default function TooltipNoteGlobaleForm({ initialContenu, action }: Props
         </Button>
       </div>
     </form>
+    </>
   )
 }

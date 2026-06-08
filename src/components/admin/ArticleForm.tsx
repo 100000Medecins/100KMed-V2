@@ -8,6 +8,7 @@ import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
 import Select from '@/components/ui/Select'
 import DraftBanner from '@/components/admin/DraftBanner'
+import DiffModal, { countDiffChars, MIN_DIFF_CHARS } from '@/components/admin/DiffModal'
 import { useDraft } from '@/lib/hooks/useDraft'
 import { updateArticleImageCouverture } from '@/lib/actions/admin'
 import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
@@ -238,13 +239,11 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
     }
   }
 
-  function handleSubmit(formData: FormData) {
-    formData.set('titre', titre)
-    formData.set('extrait', extrait)
-    formData.set('meta_description', metaDescription)
-    formData.set('contenu', contenu)
-    formData.set('slug', slug)
-    formData.set('image_couverture', imageUrl)
+  // Diff modal — confirmation avant écrasement si grosse modification.
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
+  const oldContenu = article?.contenu ?? ''
+
+  function submitToServer(formData: FormData) {
     startTransition(async () => {
       const result = await action(formData)
       if (result?.error) {
@@ -256,7 +255,39 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
     })
   }
 
+  function handleSubmit(formData: FormData) {
+    formData.set('titre', titre)
+    formData.set('extrait', extrait)
+    formData.set('meta_description', metaDescription)
+    formData.set('contenu', contenu)
+    formData.set('slug', slug)
+    formData.set('image_couverture', imageUrl)
+    // Si modification existante (article?.id) ET contenu HTML changé significativement,
+    // demander confirmation via DiffModal (bretelle anti-écrasement). Sur création
+    // d'un nouvel article (pas d'article.id), pas de diff possible.
+    if (article?.id && countDiffChars(oldContenu, contenu) >= MIN_DIFF_CHARS) {
+      setPendingFormData(formData)
+      return
+    }
+    submitToServer(formData)
+  }
+
   return (
+    <>
+    <DiffModal
+      open={pendingFormData !== null}
+      oldContent={oldContenu}
+      newContent={contenu}
+      onCancel={() => setPendingFormData(null)}
+      onConfirm={() => {
+        if (pendingFormData) {
+          submitToServer(pendingFormData)
+          setPendingFormData(null)
+        }
+      }}
+      title={`Confirmer les modifications — ${titre || 'article'}`}
+      pending={isPending}
+    />
     <form action={handleSubmit} className="space-y-6">
       {pendingDraft !== null && (
         <DraftBanner
@@ -614,5 +645,6 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
         )}
       </div>
     </form>
+    </>
   )
 }

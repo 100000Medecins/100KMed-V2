@@ -26,6 +26,19 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Sécurité
 
+#### Migrer le flux « changement d'email » de Supabase Auth vers SendGrid (HMAC idempotent)
+- **Contexte (2026-06-08)** : signup (commit `ff1ef31`) et reset mdp (`4589f20`) ont déjà été migrés en mai vers des liens HMAC maison envoyés via SendGrid pour résister au pré-scan anti-phishing (Outlook Safe Links / Gmail consommaient les tokens OTP single-use avant le clic réel). Le **changement d'adresse email** est le **seul flux résiduel** qui utilise encore `supabase.auth.updateUser({ email })` ([src/app/mon-compte/profil/page.tsx](src/app/mon-compte/profil/page.tsx#L307)) → email natif Supabase, template hébergé dans le dashboard Supabase → Authentication → Email Templates → « Confirm Email Change » → **n'a pas le master_layout 3 lignes**.
+- **Décision 2026-06-08** : migrer ce flux pour (a) appliquer automatiquement le master_layout neuf, (b) gagner l'idempotence (résistance pré-scan), (c) devenir totalement indépendant de Supabase Auth pour les emails.
+- **Pattern envoi** : « envoyé à la nouvelle adresse pour validation » + « notification de courtoisie à l'ancienne ».
+- **Étapes (~1h30)** :
+  - Nouveau template `confirmation_changement_email` en BDD (fragment, hérite du master_layout)
+  - Helper `src/lib/email/email-change-token.ts` (copie de `reset-token.ts` : `generateEmailChangeToken({ uid, new_email })` + `verifyEmailChangeToken`)
+  - Server Action `requestEmailChange(newEmail)` qui envoie via SendGrid au lieu d'appeler `auth.updateUser({ email })`
+  - Page `/confirmer-changement-email?uid&iat&token` (Server Component, re-vérifie HMAC, appelle `admin.updateUserById(uid, { email })` via service_role → pas d'email natif)
+  - Email de courtoisie à l'ancienne adresse (template `notification_changement_email`) avec lien « ce n'était pas vous ? Contactez-nous »
+  - Remplacer `auth.updateUser({ email })` ligne 307 de `profil/page.tsx`
+  - Mettre à jour `docs/email-architecture.md` (retirer la dernière ligne du tableau « Emails natifs Supabase » et noter que tout passe désormais par SendGrid)
+
 #### Passer DMARC de `quarantine 50%` à `quarantine 100%` puis `reject`
 - ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
 - ✅ `pct=10` → `pct=50` fait le 2026-05-15 (rapports clean : 24 mails sur 3 semaines, 100 % DKIM/SPF aligné sur Gandi + SendGrid, 0 source inconnue)
@@ -60,34 +73,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Nettoyage
 
-#### Supprimer les fallbacks silencieux des pages BDD (try/catch vide) — partiellement fait
-
-- **Contexte (2026-05-29)** : les pages servies via `(static)/` (cgu, rgpd, transparence, contact, actualites, etc.) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui **avalait silencieusement** toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.
-- **Bug GRANT réparé** le 2026-05-29 (`GRANT SELECT TO anon` posé), mais le pattern lui-même reste dangereux.
-- ✅ **Fait 2026-05-31** sur `cgu/page.tsx`, `rgpd/page.tsx`, `transparence/page.tsx` : suppression des fallbacks hardcodés (~768 lignes mortes retirées), seule la BDD est lue. Ajout d'un `error.tsx` dans `(static)/` qui couvre toutes les pages du groupe (« Contenu temporairement indisponible » + bouton Réessayer + ref d'erreur).
-- **Reste à faire** : auditer les autres pages BDD (`contact`, `actualites`, `videos`, `cgu` racine si présente, etc.) — chercher tous les `try { } catch {}` vides et les remplacer (idéalement laisser propager pour que `error.tsx` se déclenche, ou logger explicitement).
-
-#### Versioning/audit des contenus admin (pages_statiques, articles, etc.)
-
-- **Contexte (2026-05-29)** : un écrasement involontaire de `pages_statiques.contenu` (slug=transparence) a fait perdre ~1600 caractères (toute la section "Déclarations publiques d'intérêt des représentants"). Seule la version backup quotidien Synology a permis de constater l'écart. Aucune trace en base de l'historique des modifications (juste le dernier `updated_at`).
-- **Idée 1 — table d'audit `pages_statiques_history`** : trigger PG qui INSERT l'ancienne version avant chaque UPDATE. Idem pour `articles`, `editeurs_edit_log` (qui existe déjà).
-- **Idée 2 — diff visuel dans l'admin** : avant de sauvegarder, montrer ce qui change vs version actuelle (vert/rouge).
-- **Idée 3 — autosave + brouillons** : éviter qu'une perte de focus efface le travail en cours.
-- À cadrer selon priorité.
-
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
 - **Cause principale** : schema drift (`actualites`, `documents` absentes des types Supabase auto-générés) → contournement légitime via `as any`. Le vrai remède = régénérer `src/types/database.ts` (`npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts`), pas du typage manuel.
 - **Pas de chantier dédié prévu** sauf si un jour on veut un lint propre en CI.
-
-#### ✅ Audit Firebase ↔ Supabase — TERMINÉ (2026-05-29)
-
-- **Contexte** : audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) appliqués.
-- ✅ **Fix #3 — FAIT** (vérifié 2026-05-29 : 0 éval en ancien format restante). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé (cf [docs/mapping-criteres-firebase-vers-supabase.md](docs/mapping-criteres-firebase-vers-supabase.md)).
-- ✅ **Fix #4 — SANS OBJET** (vérifié 2026-05-29 via le mapping Excel + dry-run du script). Sur les 718 évals Firebase : 656 déjà présentes, 15 sur des solutions non reprises au catalogue (Medaplix, OSOFT…), et **44 « absentes » qui sont en réalité des coquilles vides** (49 scores tous à 0, aucune note/date/commentaire = formulaire ouvert jamais rempli). Le garde-fou `isEmpty` du script `scripts/fix-import-evals-manquantes.ts` les skip à juste titre → **aucune vraie évaluation perdue, rien à importer**.
-- **560 users Firebase non migrés = profils dormants** (`isComplete=false`, pas d'email, jamais finalisés, dont 0 avec une vraie éval). **Décision : ne PAS les importer** — s'ils reviennent un jour, leur RPPS sera récupéré à l'inscription, ce qui évite des fusions de comptes.
-- Mapping de correspondance Firebase↔Supabase généré via `scripts/export-mapping-firebase-supabase.ts` (Excel local, non commité car données perso).
 
 #### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
 - `DROP TABLE evaluations_firebase_backup` (Supabase)
@@ -108,26 +98,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
-#### ~~URLs éditeurs en slug lisible (au lieu de l'UUID)~~ [OK] Fait 2026-05-30
-- ~~**Constat (2026-05-28)** : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly.~~
-- ~~**Chantier** : route `/editeur/[slug]` + redirections.~~
-- **Pas de redirection 301 UUID→slug nécessaire** : le format `/editeur/<uuid>` n'a quasiment jamais existé en prod (fenêtre courte entre la mise en ligne et la bascule en slug le 2026-05-30, peu de chances que des liens externes pointent dessus). Si Search Console signale des 404 dessus à l'avenir, on les ajoutera ponctuellement.
-
-#### ✅ Référencement éditeurs — livré (2026-05-30)
-- Nouvelle page publique `/editeurs/` (liste de tous les éditeurs) + composant `EditeursListClient`.
-- Formulaire public `EditeurReferencementForm` pour qu'un éditeur non référencé puisse demander son ajout au catalogue.
-- Côté admin : panneau `AdminEditeurDemandesRef` pour modérer les demandes + action server dans `src/lib/actions/admin.ts`.
-- Lien dans la Navbar vers `/editeurs`.
-
 #### Éditeurs orphelins (0 solution) — à conserver, fiches à créer
 - 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. **Conservés volontairement** — fiches solutions à créer prochainement pour chacun (décision 2026-06-02).
-
-#### ~~Logo condensé sur l'index — nouvel essai~~ [OK] Validé 2026-05-31
-- ~~Retenter une version condensée du logo sur la page d'accueil du site.~~ Le logo 3 lignes débordant dans la navbar (livré 2026-05-31) couvre le besoin.
-
-#### ~~Mettre le logo 3 lignes dans les templates emails~~ [OK] Fait 2026-06-01
-- ~~**Contexte (2026-05-31)** : la navbar utilise désormais le logo 3 lignes. Aligner les templates emails sur ce visuel.~~
-- ✅ **Fait 2026-06-01** : refonte complète du `master_layout` (logo 3 lignes débordant en haut à gauche + label à droite + footer simple avec logo 110px). 13 templates sur 14 migrés vers `<tr><td>` + master_layout. Nouvelle colonne BDD `email_templates.label` injectée via `{{label}}`. Bac à sable « 🧪 Master layout de test » ajouté dans `/admin/emails` pour itérer sur les layouts sans risque. Cf CHANGELOG 2026-06-01.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -150,7 +122,9 @@ _(rien à faire pour l'instant)_
 #### Sitemap propre (demande Ben, 2026-05-28) — fait, en attente validation Google
 - ✅ **Sitemap dynamique** (`src/app/sitemap.ts`, `force-dynamic`) : recalculé à chaque requête HTTP. **Pas besoin de le régénérer manuellement** quand on crée/modifie un éditeur, une solution ou un article — le prochain GET sur `/sitemap.xml` reflète l'état BDD.
 - ✅ **Bug URLs éditeurs UUID brut** : résolu de facto par le passage en slug (2026-05-30). Le code ne génère plus jamais d'URL `/editeur/<uuid>`.
-- **À surveiller** : Search Console → propriété `100000medecins.org` → menu **Sitemaps** → vérifier que `https://www.100000medecins.org/sitemap.xml` passe en « Réussite ». Recrawl Google en cours.
+- ✅ **Sitemap-v2 alternatif soumis dans Search Console** (2026-06-07) : `https://www.100000medecins.org/sitemap-v2.xml` créé pour tenter de casser le cache négatif Google qui maintenait `/sitemap.xml` en erreur depuis le 27/05. Soumis dans Search Console.
+- ✅ **Indexation `dev.100000medecins.org` bloquée** (2026-06-07) : robots.txt `Disallow: /` + meta robots noindex + sitemap vide hors prod. Demande de suppression du préfixe `dev.*` soumise dans Search Console (effet ~6 mois, masquage Google immédiat).
+- **À surveiller** : Search Console → vérifier que `/sitemap.xml` OU `/sitemap-v2.xml` passe en « Réussite » (≈ 1-2 semaines après soumission v2). Surveiller aussi le déréférencement progressif de `dev.*`.
 
 ### Mises à jour techniques
 

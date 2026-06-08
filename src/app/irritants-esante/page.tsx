@@ -1,27 +1,20 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getPageBySlug } from '@/lib/db/pages'
+import { getPageBySlugOrNull } from '@/lib/db/pages'
 import PageStatique from '@/components/PageStatique'
 
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const page = await getPageBySlug('irritants-esante')
-    return {
-      title: page.titre + ' — 100 000 Médecins',
-      description: page.meta_description,
-    }
-  } catch {
-    return { title: 'Les irritants de l\'e-santé — 100 000 Médecins' }
+  const page = await getPageBySlugOrNull('irritants-esante')
+  if (!page) return { title: 'Les irritants de l\'e-santé — 100 000 Médecins' }
+  return {
+    title: page.titre + ' — 100 000 Médecins',
+    description: page.meta_description,
   }
 }
 
 export default async function IrritantsEsante() {
-  let page
-  try {
-    page = await getPageBySlug('irritants-esante')
-  } catch {
-    notFound()
-  }
+  const page = await getPageBySlugOrNull('irritants-esante')
+  if (!page) notFound()
 
   return <PageStatique page={page} breadcrumbLabel="Les irritants de l'e-santé" />
 }

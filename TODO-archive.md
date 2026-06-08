@@ -5,6 +5,48 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-06-07**
+- [OK] 2026-06-07 : Supprimer les fallbacks silencieux des pages BDD (try/catch vide) (Nettoyage)
+  - Contexte (2026-05-29) : les pages `(static)/` (cgu, rgpd, transparence, contact, actualites…) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui avalait silencieusement toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.
+  - Fait 2026-05-31 sur `cgu/page.tsx`, `rgpd/page.tsx`, `transparence/page.tsx` : suppression des fallbacks hardcodés (~768 lignes mortes retirées), seule la BDD est lue. Ajout d'un `error.tsx` dans `(static)/` qui couvre toutes les pages du groupe.
+  - Audit complet 2026-06-07 : `(static)/actualites` et `(static)/videos` propagent l'erreur → `error.tsx`. `getVideos()` modifié pour `throw error` au lieu de `return []` (évitait de masquer une panne BDD derrière "Aucune vidéo"). 5 pages racine (`qui-sommes-nous`, `tous-ensemble`, `difficile-de-changer`, `lancement-100k`, `irritants-esante`) : remplacement de `try { getPageBySlug } catch { notFound() }` par `getPageBySlugOrNull` (distingue "page absente en BDD" → `null` → 404 légitime vs "erreur BDD" → `throw` → `error.tsx` avec log). `contact/page.tsx` : try/catch sur form submit (`sendContactMessage`), légitime.
+
+- [OK] 2026-06-07 : Versioning/audit des contenus admin (pages_statiques, articles, etc.) (Nettoyage)
+  - Contexte (2026-05-29) : écrasement involontaire de `pages_statiques.contenu` (slug=transparence) avait fait perdre ~1600 caractères. Aucune trace en base de l'historique.
+  - Table d'audit `pages_statiques_history` : trigger PG livré 2026-06-03 (commit `e6fadee feat(admin): versioning pages_statiques`).
+  - Autosave + brouillons : hook `useDraft` + composant `DraftBanner` livrés 2026-06-03.
+  - Historique restaurable dans l'admin : composants `PageHistoryButton` + `PageHistoryModal` livrés. Intégrés dans `BlogForm` (pages_statiques) et `ArticleForm` (articles, commit `212ce90`).
+  - Diff visuel avant sauvegarde : composant `DiffModal` livré 2026-06-07. Inline (vert/rouge), seuil 50 caractères modifiés. Intégré dans `BlogForm`, `ArticleForm`, `TooltipNoteGlobaleForm`. Bretelle anti-écrasement en amont de la sauvegarde, complémente l'historique restaurable.
+
+**2026-06-01**
+- [OK] 2026-06-01 : Mettre le logo 3 lignes dans les templates emails (UX / UI)
+  - Contexte (2026-05-31) : la navbar utilise désormais le logo 3 lignes. Aligner les templates emails sur ce visuel.
+  - Refonte complète du `master_layout` (logo 3 lignes débordant en haut à gauche + label à droite + footer simple avec logo 110px). 13 templates sur 14 migrés vers `<tr><td>` + master_layout. Nouvelle colonne BDD `email_templates.label` injectée via `{{label}}`. Bac à sable « 🧪 Master layout de test » ajouté dans `/admin/emails` pour itérer sur les layouts sans risque. Cf CHANGELOG 2026-06-01.
+
+**2026-05-31**
+- [OK] 2026-05-31 : Logo condensé sur l'index — nouvel essai (UX / UI)
+  - Retenter une version condensée du logo sur la page d'accueil du site. Le logo 3 lignes débordant dans la navbar (livré 2026-05-31) couvre le besoin.
+
+**2026-05-30**
+- [OK] 2026-05-30 : URLs éditeurs en slug lisible (au lieu de l'UUID) (UX / UI)
+  - Constat (2026-05-28) : les 55 éditeurs ont tous un `id` UUID → les URLs `/editeur/<uuid>` ne sont ni lisibles ni SEO-friendly.
+  - Chantier : route `/editeur/[slug]` + redirections.
+  - Pas de redirection 301 UUID→slug nécessaire : le format `/editeur/<uuid>` n'a quasiment jamais existé en prod (fenêtre courte entre la mise en ligne et la bascule en slug le 2026-05-30, peu de chances que des liens externes pointent dessus). Si Search Console signale des 404 dessus à l'avenir, on les ajoutera ponctuellement.
+
+- [OK] 2026-05-30 : Référencement éditeurs — livré (UX / UI)
+  - Nouvelle page publique `/editeurs/` (liste de tous les éditeurs) + composant `EditeursListClient`.
+  - Formulaire public `EditeurReferencementForm` pour qu'un éditeur non référencé puisse demander son ajout au catalogue.
+  - Côté admin : panneau `AdminEditeurDemandesRef` pour modérer les demandes + action server dans `src/lib/actions/admin.ts`.
+  - Lien dans la Navbar vers `/editeurs`.
+
+**2026-05-29**
+- [OK] 2026-05-29 : Audit Firebase ↔ Supabase (Nettoyage)
+  - Audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) appliqués.
+  - Fix #3 FAIT (vérifié 2026-05-29 : 0 éval en ancien format restante). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé.
+  - Fix #4 SANS OBJET (vérifié 2026-05-29 via le mapping Excel + dry-run du script). Sur les 718 évals Firebase : 656 déjà présentes, 15 sur des solutions non reprises au catalogue (Medaplix, OSOFT…), et 44 « absentes » qui sont en réalité des coquilles vides (49 scores tous à 0, aucune note/date/commentaire = formulaire ouvert jamais rempli). Le garde-fou `isEmpty` du script `scripts/fix-import-evals-manquantes.ts` les skip à juste titre.
+  - 560 users Firebase non migrés = profils dormants (`isComplete=false`, pas d'email, jamais finalisés, dont 0 avec une vraie éval). Décision : ne PAS les importer.
+  - Mapping de correspondance Firebase↔Supabase généré via `scripts/export-mapping-firebase-supabase.ts` (Excel local, non commité car données perso).
+
 **2026-05-25**
 - [OK] 2026-05-25 : Checklist technique passage en prod (www) (Déploiement final)
   - Vercel `NEXT_PUBLIC_SITE_URL` → `https://www.100000medecins.org` (Production redéployée).
