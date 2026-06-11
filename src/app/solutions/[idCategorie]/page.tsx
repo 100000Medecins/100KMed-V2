@@ -1,7 +1,7 @@
 export const revalidate = 300
 
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -41,6 +41,13 @@ const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
 export default async function SolutionsPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
+
+  // Ancien format Quasar : slug catégorie en CamelCase. Redirection 301 vers minuscules.
+  // Pour les vrais renommages (LogicielsMetiers → logiciels-metiers), cf next.config.mjs.
+  if (params.idCategorie !== params.idCategorie.toLowerCase()) {
+    redirect(`/solutions/${params.idCategorie.toLowerCase()}`)
+  }
+
   const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
   if (!categorie) notFound()
 

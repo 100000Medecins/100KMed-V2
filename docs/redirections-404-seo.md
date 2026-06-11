@@ -1,6 +1,7 @@
 # Plan de redirection 404 — ancien site Quasar → nouveau site Next.js
 
-> Diagnostic — **2026-05-28**
+> Diagnostic initial — **2026-05-28**
+> Mise à jour — **2026-06-11**
 > Contexte : des résultats Google encore indexés (ancien site) renvoient vers des 404 sur le nouveau site.
 > Ancien site : `c:\Users\david\Documents\ancien-site-frontend` (Quasar/Vue). Routes : `src/router/routes.ts`.
 
@@ -11,37 +12,82 @@
 La **majorité des URLs SEO-critiques garde le même schéma** entre l'ancien et le nouveau site :
 - `/`, `/contact`, `/rgpd`, `/cgu`, `/actualites`, `/videos`, `/transparence`
 - `/solutions`, `/solutions/:idCategorie`, `/solutions/:idCategorie/:idSolution`, `.../evaluations`
-- `/editeur/:idEditeur` (UUID des deux côtés)
+- `/editeur/:idEditeur` (anciennement UUID, désormais slug — résolu côté sitemap)
 
 → Si Google renvoie une 404 sur ces URLs, ce **n'est pas un problème de format** mais l'une de ces causes :
-1. La solution/catégorie est passée `actif=false` sur le nouveau site (ex. Téléconsultation, ou solutions dépubliées).
+1. La solution/catégorie est passée `actif=false` sur le nouveau site (ex. Téléconsultation, Téléexpertise, ou solutions dépubliées).
 2. Le `slug` a changé entre Firebase et Supabase.
-3. `archive.100000medecins.org` ne sert pas correctement le fallback (voir plus bas).
+3. `archive.100000medecins.org` ne sert pas correctement le fallback (résolu le 2026-05-28).
 4. **Le sitemap exposait les solutions inactives** (corrigé le 2026-05-28) → Google crawlait des pages menant à des 404.
 
-## Redirections 301 implémentées (next.config.mjs, 2026-05-28)
+## Redirections 301 implémentées (next.config.mjs)
 
 Cas certains (renommage camelCase → kebab-case + pages équivalentes) :
 
-| Ancienne URL | Nouvelle URL |
-|---|---|
-| `/difficileDeChanger` | `/difficile-de-changer` |
-| `/tousEnsemble` | `/tous-ensemble` |
-| `/lancement100k` | `/lancement-100k` |
-| `/monCompte` | `/mon-compte/profil` |
-| `/monCompte/mesFavoris` | `/mon-compte/mes-favoris` |
-| `/monCompte/mesPreferences` | `/mon-compte/mes-preferences` |
-| `/monCompte/MesOutils` | `/mon-compte/profil` |
-| `/connexion/creationCompte/identifiants` | `/inscription` |
-| `/connexion/creationCompte/donneesPerso` | `/inscription` |
+| Ancienne URL | Nouvelle URL | Date |
+|---|---|---|
+| `/difficileDeChanger` | `/difficile-de-changer` | 2026-05-28 |
+| `/tousEnsemble` | `/tous-ensemble` | 2026-05-28 |
+| `/lancement100k` | `/lancement-100k` | 2026-05-28 |
+| `/presentation100k` | `/qui-sommes-nous` | 2026-05-28 |
+| `/monCompte` | `/mon-compte/profil` | 2026-05-28 |
+| `/monCompte/mesFavoris` | `/mon-compte/mes-favoris` | 2026-05-28 |
+| `/monCompte/mesPreferences` | `/mon-compte/mes-preferences` | 2026-05-28 |
+| `/monCompte/MesOutils` | `/mon-compte/profil` | 2026-05-28 |
+| `/monCompte/mesEvaluations` | `/mon-compte/mes-evaluations` | **2026-06-11** |
+| `/connexion/creationCompte/identifiants` | `/inscription` | 2026-05-28 |
+| `/connexion/creationCompte/donneesPerso` | `/inscription` | 2026-05-28 |
+| `/solutions/LogicielsMetiers[/...]` | `/solutions/logiciels-metiers[/...]` | **2026-06-11** |
+| `/solutions/AgendasMedicaux[/...]` | `/solutions/agendas-medicaux[/...]` | **2026-06-11** |
+| `/solutions/IntelligenceArtificielleMedecine[/...]` | `/solutions/intelligence-artificielle-medecine[/...]` | **2026-06-11** |
+| `/solutions/IaDocumentaires[/...]` | `/solutions/ia-documentaires[/...]` | **2026-06-11** |
 
-## Cas à confirmer (PAS encore redirigés)
+## Redirections dynamiques (en code, pas en config)
 
-- **`/presentation100k`** → probablement `/qui-sommes-nous`, mais à confirmer (contenu pas vérifié). Non redirigé pour éviter une mauvaise cible.
-- **`/solutions/:cat/:left-vs-:right`** (comparaison ancienne, slugs dans le path) → la nouvelle route `/solutions/comparer?ids=uuid1,uuid2` attend des **UUID**, pas des slugs. Redirection statique impossible : il faudrait résoudre slug→UUID dynamiquement (middleware ou route handler). À traiter si Search Console montre du trafic sur ces URLs.
+- **`/solutions/:cat/:slugA-vs-:slugB`** : interception dans `src/app/solutions/[idCategorie]/[idSolution]/page.tsx` (ligne ~44). Résout les slugs en UUIDs via `getSolutionIdsBySlugs()` et redirige en 308 vers `/solutions/comparer?ids=uuid1,uuid2`. Vérifié 2026-06-11.
 
-## Reste à faire
+- **Normalisation casse `/solutions/:cat/:slug`** (**2026-06-11**) : interception en début de la page solution. Si `idSolution` ou `idCategorie` contient des majuscules (héritage Firebase `firebaseId` type `HelloDoc`, `AxiSante`…), redirection 308 vers la version minuscule. Couvre **toutes les solutions présentes et futures**.
+  - Idem pour la **page liste catégorie** (`/solutions/:idCategorie`) qui normalise aussi la casse en début de page.
+  - Cas réel résolu 2026-06-11 : Search Console remontait 6 URLs 404 `/solutions/logiciels-metiers/{HelloDoc,AxiSante,Medimust,Odaiji,Medicab,Crossway}`. Toutes routées vers leur slug minuscule existant.
 
-1. **Google Search Console** : exporter le rapport « Pages › Non indexées › 404 » pour obtenir la liste réelle des URLs en erreur, puis compléter le mapping ci-dessus.
-2. **`archive.100000medecins.org`** : le sous-domaine répond mais ne sert qu'un placeholder minimal (« 100000medecins »), pas l'ancien site Quasar (528 fichiers censés y avoir été copiés le 2026-05-25). À diagnostiquer côté Gandi (vhost / racine documentaire / cert HTTPS).
-3. **Sitemap éditeurs en UUID** : voir TODO « Sitemap propre + URLs éditeurs en UUID » — décider si on retire les éditeurs du sitemap ou si on leur ajoute un `slug`.
+## Cas volontairement non redirigés
+
+Routes Quasar **non SEO-critiques** (pages de test ou erreur interne) :
+- `/errorConnexion` → page d'erreur Quasar, pas indexable par Google de toute façon.
+- `/testFlex` → page de test interne, jamais référencée.
+- `/monCompte/mesDiscussions` → fonctionnalité non reprise (forum/Q&A archivé sans projet de revenir).
+
+## État du Reste à faire (2026-06-11)
+
+### ✅ Point 1 — `archive.100000medecins.org` (placeholder minimal)
+- **Résolu** : répond en HTTP 200 avec `Last-Modified: 2026-05-28 20:44:57`. Le réupload de `dist/spa/` (528 fichiers) a été appliqué.
+
+### ✅ Point 2 — `legacy.100000medecins.org` (déréférencement)
+- **Résolu** : `.htaccess` avec `X-Robots-Tag: noindex, follow` confirmé live (vérifié 2026-06-11). Le déréférencement progressif est en cours côté Google (effet ~3-6 mois).
+
+### ✅ Point 3 — Sitemap éditeurs en UUID
+- **Résolu** : `src/app/sitemap.ts:128` génère désormais `/editeur/${slug}` (et plus l'UUID). La migration vers les slugs éditeurs a été livrée le 30 mai.
+
+### ⏳ Point 4 — Sitemap Search Console (cache négatif Google)
+
+**Constat 2026-06-11** : les 2 sitemaps répondent en HTTP 200, XML valide, 138 URLs :
+- `https://www.100000medecins.org/sitemap.xml`
+- `https://www.100000medecins.org/sitemap-v2.xml` (soumis le 2026-06-07 pour casser le cache négatif)
+
+Mais Search Console garde un état d'erreur **collant** sur `/sitemap.xml` depuis le 27/05. Les pages sont **bien indexées par crawl direct** (cf Search Console > Pages indexées), donc **c'est cosmétique, pas bloquant pour le SEO**.
+
+Pistes (par ordre de préférence) :
+1. **Attendre** — un cache négatif Google se vide en 4-8 semaines en général.
+2. **Re-soumettre** `sitemap-v2.xml` dans Search Console, supprimer l'ancien `sitemap.xml`, attendre validation de v2 (1-2 semaines), puis re-soumettre `sitemap.xml`.
+3. (Si vraiment bloqué après 2 mois) renommer définitivement `sitemap.xml` en un nouveau path.
+
+### ⏳ Point 5 — Surveillance Google Search Console
+
+À refaire régulièrement (≈ une fois par semaine pendant la phase de transition) :
+- Search Console → **Pages › Non indexées › 404** → exporter la liste réelle
+- Comparer avec les redirections existantes → ajouter au mapping ci-dessus si nouvelles routes anciennes détectées
+- Surveiller le déréférencement progressif de `legacy.100000medecins.org`
+
+### ⏳ Point 6 — Mention `dev.100000medecins.org`
+
+Bloqué de l'indexation depuis le 2026-06-07 (`robots.txt` + meta robots `noindex` + sitemap vide hors prod). Demande de suppression du préfixe `dev.*` soumise dans Search Console (effet ~6 mois, masquage Google immédiat).
