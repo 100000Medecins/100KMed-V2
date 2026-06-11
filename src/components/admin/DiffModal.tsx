@@ -1,10 +1,13 @@
 /**
  * Modale de prévisualisation des changements avant sauvegarde.
  *
- * Affiche un diff inline (lignes ajoutées en vert, supprimées en rouge,
- * contexte en gris) entre l'ancien et le nouveau contenu, pour éviter
- * les écrasements involontaires comme celui de pages_statiques.contenu
- * slug=transparence le 2026-05-29 (~1600 caractères perdus).
+ * Diff inline mot par mot (diffWordsWithSpace) : le texte s'affiche dans son
+ * flux normal, seuls les mots ajoutés (vert) et supprimés (rouge barré) sont
+ * surlignés. Beaucoup plus lisible que diffLines pour de la prose / HTML
+ * éditorial où une ligne peut être longue et changer sur quelques mots.
+ *
+ * Mis en place après l'écrasement de pages_statiques.contenu slug=transparence
+ * le 2026-05-29 (~1600 caractères perdus silencieusement).
  *
  * Complète le versioning (table pages_statiques_history, autosave) en
  * agissant en amont de la sauvegarde plutôt qu'en réparation après coup.
@@ -17,7 +20,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { diffLines } from 'diff'
+import { diffWordsWithSpace } from 'diff'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 
@@ -45,7 +48,7 @@ interface DiffModalProps {
  */
 export function countDiffChars(oldContent: string, newContent: string): number {
   if (oldContent === newContent) return 0
-  const parts = diffLines(oldContent, newContent)
+  const parts = diffWordsWithSpace(oldContent, newContent)
   let total = 0
   for (const part of parts) {
     if (part.added || part.removed) {
@@ -66,7 +69,7 @@ export default function DiffModal({
 }: DiffModalProps) {
   const diffParts = useMemo(() => {
     if (!open) return []
-    return diffLines(oldContent, newContent)
+    return diffWordsWithSpace(oldContent, newContent)
   }, [open, oldContent, newContent])
 
   const stats = useMemo(() => {
@@ -97,20 +100,15 @@ export default function DiffModal({
           </span>
         </div>
 
-        <pre className="max-h-[55vh] overflow-y-auto rounded-card border border-gray-200 bg-gray-50 p-4 text-[12px] leading-relaxed font-mono whitespace-pre-wrap break-words">
+        <div className="max-h-[55vh] overflow-y-auto rounded-card border border-gray-200 bg-gray-50 p-4 text-[13px] leading-relaxed whitespace-pre-wrap break-words text-gray-700">
           {diffParts.map((part, i) => {
             if (part.added) {
               return (
                 <span
                   key={i}
-                  className="block bg-green-100 text-green-900 border-l-2 border-green-500 pl-2 -ml-2 my-0.5"
+                  className="bg-green-200/70 text-green-900 rounded px-0.5"
                 >
-                  {part.value.split('\n').map((line, j, arr) => (
-                    <span key={j}>
-                      {j < arr.length - 1 || line ? `+ ${line}` : ''}
-                      {j < arr.length - 1 && '\n'}
-                    </span>
-                  ))}
+                  {part.value}
                 </span>
               )
             }
@@ -118,42 +116,15 @@ export default function DiffModal({
               return (
                 <span
                   key={i}
-                  className="block bg-red-100 text-red-900 line-through border-l-2 border-red-500 pl-2 -ml-2 my-0.5"
+                  className="bg-red-200/70 text-red-900 line-through rounded px-0.5"
                 >
-                  {part.value.split('\n').map((line, j, arr) => (
-                    <span key={j}>
-                      {j < arr.length - 1 || line ? `- ${line}` : ''}
-                      {j < arr.length - 1 && '\n'}
-                    </span>
-                  ))}
+                  {part.value}
                 </span>
               )
             }
-            // Contexte inchangé : tronquer si trop long pour éviter une modale géante
-            // sur un changement minuscule au milieu d'un gros doc.
-            const lines = part.value.split('\n')
-            if (lines.length > 6) {
-              return (
-                <span key={i} className="block text-gray-500">
-                  {lines.slice(0, 2).map((l, j) => (
-                    <span key={j}>  {l}{'\n'}</span>
-                  ))}
-                  <span className="italic text-gray-400">  … {lines.length - 4} lignes inchangées …{'\n'}</span>
-                  {lines.slice(-2).map((l, j) => (
-                    <span key={j}>  {l}{j === 1 ? '' : '\n'}</span>
-                  ))}
-                </span>
-              )
-            }
-            return (
-              <span key={i} className="block text-gray-500">
-                {lines.map((l, j) => (
-                  <span key={j}>  {l}{j < lines.length - 1 && '\n'}</span>
-                ))}
-              </span>
-            )
+            return <span key={i}>{part.value}</span>
           })}
-        </pre>
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="ghost" onClick={onCancel} disabled={pending}>
