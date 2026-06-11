@@ -43,6 +43,66 @@ const nextConfig = {
       { source: '/solutions/IntelligenceArtificielleMedecine/:slug*', destination: '/solutions/intelligence-artificielle-medecine/:slug*', permanent: true },
       { source: '/solutions/IaDocumentaires', destination: '/solutions/ia-documentaires', permanent: true },
       { source: '/solutions/IaDocumentaires/:slug*', destination: '/solutions/ia-documentaires/:slug*', permanent: true },
+
+      // Catégorie Firebase "Agendas" renommée en Supabase "agendas-medicaux"
+      // (audit slugs Firebase ↔ Supabase 2026-06-11).
+      { source: '/solutions/Agendas', destination: '/solutions/agendas-medicaux', permanent: true },
+      { source: '/solutions/Agendas/:slug*', destination: '/solutions/agendas-medicaux/:slug*', permanent: true },
+      { source: '/solutions/agendas', destination: '/solutions/agendas-medicaux', permanent: true },
+      { source: '/solutions/agendas/:slug*', destination: '/solutions/agendas-medicaux/:slug*', permanent: true },
+
+      // Anciens slugs éditeurs Firebase renommés en Supabase (slugify du nom).
+      // Inclut le préfixe Quasar /editeur/ ET le préfixe pré-Quasar /editeurs/
+      // (audit 2026-06-11 : 12 éditeurs ont un firebaseId différent du slug Supabase).
+      // ── cegedim → cegedim-sante
+      { source: '/editeur/cegedim', destination: '/editeur/cegedim-sante', permanent: true },
+      { source: '/editeurs/cegedim', destination: '/editeur/cegedim-sante', permanent: true },
+      // ── cgm → compugroup-medical
+      { source: '/editeur/cgm', destination: '/editeur/compugroup-medical', permanent: true },
+      { source: '/editeurs/cgm', destination: '/editeur/compugroup-medical', permanent: true },
+      // ── openxtrem → xtrem-sante
+      { source: '/editeur/openxtrem', destination: '/editeur/xtrem-sante', permanent: true },
+      { source: '/editeurs/openxtrem', destination: '/editeur/xtrem-sante', permanent: true },
+      // ── adsion → a-d-sion
+      { source: '/editeur/adsion', destination: '/editeur/a-d-sion', permanent: true },
+      { source: '/editeurs/adsion', destination: '/editeur/a-d-sion', permanent: true },
+      // ── eigsante → eig-sante
+      { source: '/editeur/eigsante', destination: '/editeur/eig-sante', permanent: true },
+      { source: '/editeurs/eigsante', destination: '/editeur/eig-sante', permanent: true },
+      // ── rdservices → rd-services
+      { source: '/editeur/rdservices', destination: '/editeur/rd-services', permanent: true },
+      { source: '/editeurs/rdservices', destination: '/editeur/rd-services', permanent: true },
+      // ── almaPro → alma-pro
+      { source: '/editeur/almaPro', destination: '/editeur/alma-pro', permanent: true },
+      { source: '/editeurs/almaPro', destination: '/editeur/alma-pro', permanent: true },
+      // ── medextgroup → medext-group
+      { source: '/editeur/medextgroup', destination: '/editeur/medext-group', permanent: true },
+      { source: '/editeurs/medextgroup', destination: '/editeur/medext-group', permanent: true },
+      // ── ICTSolutions → ict-solutions
+      { source: '/editeur/ICTSolutions', destination: '/editeur/ict-solutions', permanent: true },
+      { source: '/editeurs/ICTSolutions', destination: '/editeur/ict-solutions', permanent: true },
+      // ── OuvrezLaBoite → ouvrez-la-boite
+      { source: '/editeur/OuvrezLaBoite', destination: '/editeur/ouvrez-la-boite', permanent: true },
+      { source: '/editeurs/OuvrezLaBoite', destination: '/editeur/ouvrez-la-boite', permanent: true },
+      // ── sephira → orisha (fusion d'entités, confirmé par David 2026-06-11)
+      { source: '/editeur/sephira', destination: '/editeur/orisha', permanent: true },
+      { source: '/editeurs/sephira', destination: '/editeur/orisha', permanent: true },
+      // ── odaiji : editeur racheté par MadeForMed (confirmé par David 2026-06-11)
+      { source: '/editeur/odaiji', destination: '/editeur/madeformed', permanent: true },
+      { source: '/editeurs/odaiji', destination: '/editeur/madeformed', permanent: true },
+
+      // Catch-all pluriel → singulier pour les éditeurs (préfixe pré-Quasar /editeurs/:slug
+      // → préfixe Quasar puis Next.js /editeur/:slug). Doit être APRÈS les renommages
+      // explicites ci-dessus (sephira, cgm, etc.) sinon /editeurs/cegedim serait redirigé
+      // ici vers /editeur/cegedim au lieu de /editeur/cegedim-sante.
+      // À ne PAS confondre avec la page liste /editeurs (sans rien après) qui existe.
+      { source: '/editeurs/:slug', destination: '/editeur/:slug', permanent: true },
+
+      // Pages HTML pré-Quasar (encore antérieures au site Vue/Quasar).
+      // URLs identifiées par David, source = liens externes (réseaux sociaux,
+      // articles, mails) qui pointent encore vers ces .html.
+      { source: '/manifeste.html', destination: '/tous-ensemble', permanent: true },
+      { source: '/communique.html', destination: '/lancement-100k', permanent: true },
     ];
   },
 };
