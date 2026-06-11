@@ -53,3 +53,9 @@ supabase/.temp/
 # Claude Code — config locale par développeur
 # Ne jamais committer : accumule des patterns de permissions pouvant contenir des secrets
 .claude/settings.local.json
+
+# Exports locaux (catalogues XLSX, fonds graphiques, captures kakemono…)
+# Peuvent contenir des données perso (emails éditeurs, coordonnées). Toujours en local.
+exports/
+captures-brutes/
+captures-encadrees/
