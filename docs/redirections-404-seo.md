@@ -41,6 +41,15 @@ Cas certains (renommage camelCase → kebab-case + pages équivalentes) :
 | `/solutions/AgendasMedicaux[/...]` | `/solutions/agendas-medicaux[/...]` | **2026-06-11** |
 | `/solutions/IntelligenceArtificielleMedecine[/...]` | `/solutions/intelligence-artificielle-medecine[/...]` | **2026-06-11** |
 | `/solutions/IaDocumentaires[/...]` | `/solutions/ia-documentaires[/...]` | **2026-06-11** |
+| `/solutions/Agendas[/...]` | `/solutions/agendas-medicaux[/...]` | **2026-06-11** |
+| `/solutions/agendas[/...]` | `/solutions/agendas-medicaux[/...]` | **2026-06-11** |
+| `/editeur/{cegedim,cgm,openxtrem,adsion,eigsante,rdservices,almaPro,medextgroup,ICTSolutions,OuvrezLaBoite}` | slug Supabase actuel | **2026-06-11** |
+| `/editeurs/<idem ci-dessus>` | slug Supabase actuel | **2026-06-11** |
+| `/editeur/sephira` et `/editeurs/sephira` | `/editeur/orisha` *(fusion d'entités)* | **2026-06-11** |
+| `/editeur/odaiji` et `/editeurs/odaiji` | `/editeur/madeformed` *(rachat)* | **2026-06-11** |
+| `/editeurs/:slug` *(catch-all pluriel→singulier)* | `/editeur/:slug` | **2026-06-11** |
+| `/manifeste.html` | `/tous-ensemble` | **2026-06-11** |
+| `/communique.html` | `/lancement-100k` | **2026-06-11** |
 
 ## Redirections dynamiques (en code, pas en config)
 
@@ -49,6 +58,19 @@ Cas certains (renommage camelCase → kebab-case + pages équivalentes) :
 - **Normalisation casse `/solutions/:cat/:slug`** (**2026-06-11**) : interception en début de la page solution. Si `idSolution` ou `idCategorie` contient des majuscules (héritage Firebase `firebaseId` type `HelloDoc`, `AxiSante`…), redirection 308 vers la version minuscule. Couvre **toutes les solutions présentes et futures**.
   - Idem pour la **page liste catégorie** (`/solutions/:idCategorie`) qui normalise aussi la casse en début de page.
   - Cas réel résolu 2026-06-11 : Search Console remontait 6 URLs 404 `/solutions/logiciels-metiers/{HelloDoc,AxiSante,Medimust,Odaiji,Medicab,Crossway}`. Toutes routées vers leur slug minuscule existant.
+
+## Audit slugs Firebase ↔ Supabase (2026-06-11)
+
+Audit lancé via `scripts/audit-slugs-firebase-vs-supabase.ts` après remarque collègue sur 4 cas restés non couverts. Bilan :
+
+- **Solutions Firebase → Supabase** : ✅ 24/24 OK (slug Supabase = firebaseId.toLowerCase()). Aucun renommage métier au sein de la collection solutions. La normalisation casse-only suffit.
+- **Catégories Firebase → Supabase** : ⚠️ 1 cas renommé sur 4. Firebase id="Agendas" → Supabase slug="agendas-medicaux". Redirections ajoutées dans `next.config.mjs`.
+- **Éditeurs Firebase → Supabase** : ⚠️ **12 cas renommés sur 19**, car le slug Supabase est généré via `slugify(nom)` au lieu de `firebaseId.toLowerCase()`. Map complète ajoutée dans `next.config.mjs` (préfixes `/editeur/` ET `/editeurs/` couverts).
+- **Cas particuliers éditeurs** :
+  - `sephira` → `orisha` (fusion d'entités confirmée par David)
+  - `odaiji` → `/editeur/madeformed` (Odaiji racheté par MadeForMed ; la solution Odaiji existe encore sous cet éditeur)
+- **Catch-all pluriel→singulier** : règle générique `/editeurs/:slug → /editeur/:slug` ajoutée en fin de liste pour couvrir tous les éditeurs **non renommés** (les renommés étant traités explicitement avant).
+- **Pages HTML pré-Quasar** : `/manifeste.html` et `/communique.html` identifiées par David comme étant des URLs encore référencées depuis l'extérieur (réseaux sociaux, mails, articles). Redirections ajoutées.
 
 ## Cas volontairement non redirigés
 
