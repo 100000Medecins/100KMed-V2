@@ -40,6 +40,19 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 export default async function SolutionPage(props: PageProps) {
   const params = await props.params;
 
+  // Ancien format Quasar : slug solution en CamelCase (ex. HelloDoc, AxiSante…),
+  // hérité de firebaseId. Redirection 301 vers la version minuscule (convention Supabase).
+  // Couvre aussi le slug catégorie si présent en CamelCase (rare, voir next.config.mjs
+  // pour les renommages catégorie qui ne sont pas une simple normalisation de casse).
+  if (
+    params.idSolution !== params.idSolution.toLowerCase() ||
+    params.idCategorie !== params.idCategorie.toLowerCase()
+  ) {
+    redirect(
+      `/solutions/${params.idCategorie.toLowerCase()}/${params.idSolution.toLowerCase()}`
+    )
+  }
+
   // Ancienne URL de comparaison Quasar `/solutions/:cat/:slugA-vs-:slugB` → redirige 301 vers /solutions/comparer?ids=
   if (params.idSolution.includes('-vs-')) {
     const [slugA, slugB] = params.idSolution.split('-vs-')
