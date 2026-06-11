@@ -13,6 +13,7 @@ import { getNoteGlobaleTooltip } from '@/lib/db/tooltips'
 import { getDisplayPrixFront, getDisplayContactsCommerciaux } from '@/lib/db/settings'
 import SolutionDetailPage from '@/components/solutions/SolutionDetailPage'
 import { generateSolutionJsonLd } from '@/lib/seo/jsonld'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 
 interface PageProps {
   params: Promise<{ idCategorie: string; idSolution: string }>
@@ -23,11 +24,15 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   try {
     const solution = await getSolutionBySlug(params.idSolution)
     const meta = solution.meta as Record<string, string | null> | null
+    const fallbackTitle = buildSolutionSeoTitle({
+      nom: solution.nom,
+      nom_seo: (solution as { nom_seo?: string | null }).nom_seo ?? null,
+    }).title
     return {
-      title: meta?.title || `${solution.nom} — Avis et évaluation`,
+      title: meta?.title || fallbackTitle,
       description: meta?.description || solution.description || `Découvrez les avis de médecins sur ${solution.nom}.`,
       openGraph: {
-        title: meta?.title || solution.nom,
+        title: meta?.title || fallbackTitle,
         description: meta?.description || solution.description || undefined,
         images: solution.logo_url ? [{ url: solution.logo_url }] : undefined,
       },

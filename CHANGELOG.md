@@ -5,6 +5,38 @@
 
 ---
 
+## [2026-06-12] — Bug fix cartes éditeur + nouveau pattern meta title SEO « Les avis de vos confrères sur … »
+
+### Fix — Cartes solutions sur fiche éditeur affichaient « Pas encore noté » à tort
+
+`/editeur/[slug]` listait toutes les solutions sans note alors que les évaluations existaient en BDD.
+
+- **Cause** : `getEditeurWithSolutions()` faisait `select('*, categorie:categories!inner(*)')` sans calculer les agrégats de notes. Le composant `SolutionList` attend `noteRedacBase5`, `noteUtilisateursBase5`, `nbNotesUtilisateurs` enrichis sur chaque solution (comme le fait la page comparatif catégorie) → `displayNote = null` → fallback « Pas encore noté ».
+- **Fix** :
+  - `src/lib/db/editeurs.ts` : après le fetch solutions, appel parallèle à `getNotesGlobalesRedac`, `getNotesUtilisateursGlobales`, `getNbNotesUtilisateurs` + map enrichi sur chaque solution.
+  - `src/app/editeur/[slug]/page.tsx` : passe `tri="note_utilisateurs"` et `displayPrixFront` à `<SolutionList>` — alignement total avec le rendu du comparatif catégorie.
+
+### SEO — Nouveau pattern meta title (`Les avis de vos confrères sur … - 100 000 Médecins`)
+
+Bascule de l'ancien pattern `<nom> — Avis médecins | <catégorie>` vers `Les avis de vos confrères sur <nom> - 100 000 Médecins` sur toutes les fiches solutions. Décision validée avec Ben : sur l'ancien site ce pattern performait mieux (CTR moderne > position-weighting brut, match longue traîne « avis confrères X », brand signal en fin de title).
+
+- **Helper unique** `src/lib/seo/title.ts` (`buildSolutionSeoTitle`) — source de vérité importée par l'API admin, le script standalone, le fallback runtime et le server action.
+- **Nouvelle colonne BDD** `solutions.nom_seo TEXT NULL` : nom court à injecter quand le nom complet déborde des 60 caractères (ex. `HelloDoc Assistant` → `HelloDoc`). Logique : `nom_seo ?? nom`. Types Supabase régénérés.
+- **API admin** `src/app/api/admin/generer-seo/route.ts` : title déterministe via helper (plus d'appel LLM, gain coût + prédictibilité), LLM réservé à la description. Renvoie 400 avec message clair si overflow.
+- **Fallback runtime** `src/app/solutions/[idCategorie]/[idSolution]/page.tsx` : utilise aussi le helper quand `meta.title` est null.
+- **Script standalone** `scripts/regenerate-seo-non-lgc.mjs` : aligné sur le helper, liste les solutions en overflow en fin de run.
+- **Server action** `src/lib/actions/admin.ts` : enregistre `nom_seo` au save. **Auto-recompute** de `meta.title` quand le title submitted suit un pattern auto-généré (actuel ou legacy `— Avis médecins | …`) → remplir `nom_seo` et sauver suffit, pas besoin de cliquer « Générer SEO » ni de relancer le script.
+- **Form admin** `src/components/admin/SolutionForm.tsx` : champ « Nom court pour SEO (optionnel) » sous le nom, aperçu live du `<title>` final + avertissement rose en cas d'overflow.
+- **Liste admin** `src/components/admin/AdminSolutionsTable.tsx` : filtre bouton « Nom SEO à fixer » avec compteur, badge `⚠️ Nom SEO` inline à côté des noms en overflow.
+- **Migration de masse** `scripts/migrate-meta-title-pattern.ts` (idempotent, dry-run par défaut, backup JSON auto avant écriture). **65 / 96 solutions** migrées au nouveau pattern ce soir, 31 restantes en overflow à traiter manuellement via le filtre admin.
+- **Pas d'action côté Google** : le sitemap.xml ne contient pas de `<title>`, rien à resoumettre. Recrawl passif sous 1-2 semaines.
+
+### TODO — Mises à jour
+- ✅ Bug cartes solutions sur fiche éditeur : corrigé.
+- 🔄 Pattern meta title SEO : plomberie + migration de masse livrées, reste 31 `nom_seo` à remplir manuellement (suivi dans TODO URGENT).
+
+---
+
 ## [2026-06-06] — Migration xlsx → exceljs : vulnérabilité high éliminée
 
 ### Sécurité — Désinstallation de `xlsx` et `xlsx-js-style`

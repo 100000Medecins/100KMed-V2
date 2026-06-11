@@ -37,6 +37,7 @@ interface SolutionFormProps {
     categorie_id?: string | null
     editeur_id?: string | null
     website_url?: string | null
+    nom_seo?: string | null
     meta_title?: string | null
     meta_description?: string | null
     meta_canonical?: string | null
@@ -94,6 +95,13 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [isPending, startTransition] = useTransition()
   const [metaTitle, setMetaTitle] = useState(solution?.meta_title ?? '')
   const [metaDescription, setMetaDescription] = useState(solution?.meta_description ?? '')
+  const [nom, setNom] = useState(solution?.nom ?? '')
+  const [nomSeo, setNomSeo] = useState(solution?.nom_seo ?? '')
+  const seoNameUsed = (nomSeo.trim() || nom).trim()
+  const seoTitlePreview = seoNameUsed
+    ? `Les avis de vos confrères sur ${seoNameUsed} - 100 000 Médecins`
+    : ''
+  const seoTitleOverflow = seoTitlePreview.length > 60
   const [isSeoGenerating, setIsSeoGenerating] = useState(false)
   const [galerie, setGalerie] = useState<GalerieImage[]>(
     solution?.galerie ?? []
@@ -262,10 +270,46 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             id="nom"
             type="text"
             name="nom"
-            defaultValue={solution?.nom ?? ''}
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
             required
             className={inputClass}
           />
+        </div>
+        <div>
+          <label htmlFor="nom_seo" className={labelClass}>
+            Nom court pour SEO <span className="text-gray-400 font-normal">(optionnel)</span>
+            {seoTitlePreview && (
+              <span className={`ml-2 text-xs font-normal ${seoTitleOverflow ? 'text-rose-600' : 'text-gray-400'}`}>
+                {seoTitlePreview.length}/60
+              </span>
+            )}
+          </label>
+          <input
+            id="nom_seo"
+            type="text"
+            name="nom_seo"
+            value={nomSeo}
+            onChange={(e) => setNomSeo(e.target.value)}
+            placeholder="Laisser vide si le nom complet tient dans le titre"
+            className={inputClass}
+          />
+          {seoTitleOverflow && (
+            <div className="mt-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800">
+              ⚠️ Le pattern SEO déborde : <span className="font-mono">{seoTitlePreview}</span> ({seoTitlePreview.length} chars).
+              Renseigne un nom plus court ci-dessus (ex. {seoNameUsed.split(' ')[0]}).
+            </div>
+          )}
+          {seoTitlePreview && !seoTitleOverflow && (
+            <p className="mt-1 text-xs text-gray-500">
+              Aperçu du <code className="text-[11px]">&lt;title&gt;</code> : <span className="font-mono text-gray-600">{seoTitlePreview}</span>
+            </p>
+          )}
+          <p className="mt-1 text-xs text-gray-500">
+            Utilisé seulement dans le <code className="text-[11px]">&lt;title&gt;</code> SEO si le nom complet
+            fait déborder les 60 caractères du pattern « Les avis de vos confrères sur … - 100 000 Médecins ».
+            Ex : <code className="text-[11px]">HelloDoc</code> au lieu de <code className="text-[11px]">HelloDoc Assistant</code>.
+          </p>
         </div>
         <div>
           <label htmlFor="slug" className={labelClass}>Slug (URL)</label>

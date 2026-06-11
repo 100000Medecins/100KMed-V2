@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 
 const ANTHROPIC_BODY = (prompt: string) => JSON.stringify({
   model: 'claude-haiku-4-5-20251001',
@@ -7,12 +8,12 @@ const ANTHROPIC_BODY = (prompt: string) => JSON.stringify({
   messages: [{ role: 'user', content: prompt }],
 })
 
-function parseAiText(text: string): { title: string; description: string } | null {
+function parseAiDescription(text: string): string | null {
   try {
-    // Retire les éventuels blocs markdown ```json ... ```
     const cleaned = text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
-    return JSON.parse(match ? match[0] : cleaned)
+    const obj = JSON.parse(match ? match[0] : cleaned)
+    return typeof obj.description === 'string' ? obj.description : null
   } catch {
     return null
   }
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   const { data: sol, error } = await supabase
     .from('solutions')
     .select(`
-      id, nom, description, meta,
+      id, nom, nom_seo, description, meta,
       evaluation_redac_points_forts,
       editeur:editeurs(nom),
       categorie:categories(nom)
@@ -52,6 +53,21 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error || !sol) return NextResponse.json({ error: 'Solution introuvable' }, { status: 404 })
+
+  // Title déterministe via le helper (pattern unique, pas d'appel LLM)
+  const { title, overflow } = buildSolutionSeoTitle({
+    nom: sol.nom as string,
+    nom_seo: (sol.nom_seo as string | null) ?? null,
+  })
+
+  if (overflow) {
+    return NextResponse.json(
+      {
+        error: `Le pattern SEO dépasse 60 caractères avec le nom "${sol.nom}" (title = ${title.length} chars). Renseigne le champ "Nom court SEO" sur la fiche solution avant de relancer.`,
+      },
+      { status: 400 }
+    )
+  }
 
   // Récupère les tags principaux pour contexte
   const { data: tagRows } = await supabase
@@ -79,17 +95,15 @@ export async function POST(request: NextRequest) {
     ? (sol.evaluation_redac_points_forts as string[]).slice(0, 3).join(', ')
     : ''
 
-  const prompt = `Tu génères des métadonnées SEO pour la page d'évaluation d'un outil numérique médical sur le site 100 000 Médecins, destiné aux médecins libéraux français.
+  const prompt = `Tu génères la meta description SEO pour la page d'évaluation d'un outil numérique médical sur le site 100 000 Médecins, destiné aux médecins libéraux français.
 
 Logiciel : ${sol.nom}
 Catégorie : ${categorie}${editeur ? `\nÉditeur : ${editeur}` : ''}${description ? `\nDescription : ${description.substring(0, 500)}` : ''}${tagNames.length > 0 ? `\nFonctionnalités clés : ${tagNames.join(', ')}` : ''}${pointsForts ? `\nPoints forts : ${pointsForts}` : ''}
 
-Génère :
-1. Un meta title (max 60 caractères) : doit contenir le nom du logiciel et les mots "avis" et "médecins". Utilise la catégorie réelle comme mot-clé (ex : "agenda médical", "IA scribe", "IA documentaire", "logiciel métier" uniquement si la catégorie l'est vraiment). Structure recommandée : "{Nom} — Avis médecins | {catégorie}". Adapte si le nom est long.
-2. Une meta description (max 155 caractères) : décrit l'outil en lien avec sa catégorie réelle, mentionne les avis authentiques de médecins et invite à consulter la fiche. N'utilise jamais "logiciel métier" ou "lgc" si la catégorie est une IA, un agenda, ou autre chose.
+Génère une meta description (max 155 caractères) : décrit l'outil en lien avec sa catégorie réelle, mentionne les avis authentiques de médecins et invite à consulter la fiche. N'utilise jamais "logiciel métier" ou "lgc" si la catégorie est une IA, un agenda, ou autre chose.
 
 Ne mentionne que des faits présents dans les données ci-dessus. Réponds UNIQUEMENT en JSON valide sans markdown :
-{"title": "...", "description": "..."}`
+{"description": "..."}`
 
   const apiKey = process.env.ANTHROPIC_API_KEY!
   let response = await callAnthropic(prompt, apiKey)
@@ -108,16 +122,16 @@ Ne mentionne que des faits présents dans les données ci-dessus. Réponds UNIQU
   const aiResult = await response.json()
   const text: string = aiResult.content?.[0]?.text ?? ''
 
-  const parsed = parseAiText(text)
-  if (!parsed?.title || !parsed?.description) {
+  const aiDescription = parseAiDescription(text)
+  if (!aiDescription) {
     return NextResponse.json({ error: 'Réponse IA non parseable', raw: text }, { status: 500 })
   }
 
   // Sauvegarde dans la colonne meta (JSON), en préservant le canonical existant
   const currentMeta = (sol.meta as Record<string, string | null> | null) ?? {}
-  const newMeta = { ...currentMeta, title: parsed.title, description: parsed.description }
+  const newMeta = { ...currentMeta, title, description: aiDescription }
 
   await supabase.from('solutions').update({ meta: newMeta }).eq('id', id)
 
-  return NextResponse.json({ title: parsed.title, description: parsed.description })
+  return NextResponse.json({ title, description: aiDescription })
 }

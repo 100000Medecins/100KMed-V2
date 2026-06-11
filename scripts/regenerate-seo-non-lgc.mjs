@@ -1,6 +1,7 @@
 /**
- * Régénère le SEO (meta title + description) pour toutes les solutions
- * dont la catégorie n'est PAS "logiciel métier" / "LGC".
+ * Régénère le SEO pour toutes les solutions dont la catégorie n'est PAS "logiciel métier" / "LGC".
+ * - title : généré par template déterministe (helper buildSolutionSeoTitle, miroir de src/lib/seo/title.ts)
+ * - description : générée par LLM (variation utile)
  * Usage : node scripts/regenerate-seo-non-lgc.mjs
  * Options : --dry-run (affiche sans sauvegarder), --categorie "agendas-medicaux" (une seule catégorie)
  */
@@ -28,6 +29,16 @@ const DELAY_MS = 1500 // entre chaque appel API pour éviter le rate-limit
 
 // Slugs de catégories à EXCLURE (= logiciels métier — déjà bien générés)
 const SLUGS_LGC = ['logiciels-metier', 'logiciel-metier', 'lgc']
+
+// Miroir de src/lib/seo/title.ts — pattern unique du <title> SEO des fiches solutions.
+function buildSolutionSeoTitle({ nom, nom_seo }) {
+  const display = (nom_seo && nom_seo.trim()) || nom
+  const title = `Les avis de vos confrères sur ${display} - 100 000 Médecins`
+  return { title, overflow: title.length > 60 }
+}
+
+// Solutions qui ont besoin d'un nom_seo (collectées pendant le run)
+const overflowList = []
 
 async function callAnthropic(prompt) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -61,6 +72,14 @@ function parseAI(text) {
 }
 
 async function processSolution(sol) {
+  // Title déterministe via le helper
+  const { title, overflow } = buildSolutionSeoTitle({ nom: sol.nom, nom_seo: sol.nom_seo })
+  if (overflow) {
+    console.log(`  ⚠️  ${sol.nom} — overflow (${title.length} chars). Skip jusqu'à remplissage de nom_seo.`)
+    overflowList.push({ nom: sol.nom, longueurTitle: title.length, slug: sol.slug })
+    return
+  }
+
   const categorie = sol.categorie?.nom ?? ''
   const editeur = sol.editeur?.nom ?? ''
   const description = sol.description ?? ''
@@ -84,34 +103,32 @@ async function processSolution(sol) {
     tagNames = (tagsData || []).map(t => t.nom_capital || t.nom_court).filter(Boolean)
   }
 
-  const prompt = `Tu génères des métadonnées SEO pour la page d'évaluation d'un outil numérique médical sur le site 100 000 Médecins, destiné aux médecins libéraux français.
+  const prompt = `Tu génères la meta description SEO pour la page d'évaluation d'un outil numérique médical sur le site 100 000 Médecins, destiné aux médecins libéraux français.
 
 Logiciel : ${sol.nom}
 Catégorie : ${categorie}${editeur ? `\nÉditeur : ${editeur}` : ''}${description ? `\nDescription : ${description.substring(0, 500)}` : ''}${tagNames.length > 0 ? `\nFonctionnalités clés : ${tagNames.join(', ')}` : ''}${pointsForts ? `\nPoints forts : ${pointsForts}` : ''}
 
-Génère :
-1. Un meta title (max 60 caractères) : doit contenir le nom du logiciel et les mots "avis" et "médecins". Utilise la catégorie réelle comme mot-clé (ex : "agenda médical", "IA scribe", "IA documentaire", "logiciel métier" uniquement si la catégorie l'est vraiment). Structure recommandée : "{Nom} — Avis médecins | {catégorie}". Adapte si le nom est long.
-2. Une meta description (max 155 caractères) : décrit l'outil en lien avec sa catégorie réelle, mentionne les avis authentiques de médecins et invite à consulter la fiche. N'utilise jamais "logiciel métier" ou "lgc" si la catégorie est une IA, un agenda, ou autre chose.
+Génère une meta description (max 155 caractères) : décrit l'outil en lien avec sa catégorie réelle, mentionne les avis authentiques de médecins et invite à consulter la fiche. N'utilise jamais "logiciel métier" ou "lgc" si la catégorie est une IA, un agenda, ou autre chose.
 
 Ne mentionne que des faits présents dans les données ci-dessus. Réponds UNIQUEMENT en JSON valide sans markdown :
-{"title": "...", "description": "..."}`
+{"description": "..."}`
 
   const text = await callAnthropic(prompt)
   const parsed = parseAI(text)
-  if (!parsed?.title || !parsed?.description) {
+  if (!parsed?.description) {
     console.error(`  ❌ Réponse non parseable pour ${sol.nom}:`, text)
     return
   }
 
   console.log(`  ✓ ${sol.nom}`)
-  console.log(`    Title: ${parsed.title}`)
+  console.log(`    Title: ${title}`)
   console.log(`    Desc:  ${parsed.description}`)
 
   if (!DRY_RUN) {
     const currentMeta = (sol.meta ?? {})
     await supabase
       .from('solutions')
-      .update({ meta: { ...currentMeta, title: parsed.title, description: parsed.description } })
+      .update({ meta: { ...currentMeta, title, description: parsed.description } })
       .eq('id', sol.id)
   }
 }
@@ -132,7 +149,7 @@ async function main() {
   // Fetch toutes les solutions avec leur catégorie
   let query = supabase
     .from('solutions')
-    .select('id, nom, description, meta, evaluation_redac_points_forts, editeur:editeurs(nom), categorie:categories(id, nom, slug)')
+    .select('id, nom, nom_seo, slug, description, meta, evaluation_redac_points_forts, editeur:editeurs(nom), categorie:categories(id, nom, slug)')
     .eq('actif', true)
 
   if (CATEGORIE_FILTER) {
@@ -164,6 +181,13 @@ async function main() {
   }
 
   console.log('\n✅ Terminé.')
+
+  if (overflowList.length > 0) {
+    console.log(`\n⚠️  ${overflowList.length} solution(s) en overflow — remplir nom_seo dans /admin/solutions/<id>/modifier :`)
+    for (const o of overflowList) {
+      console.log(`   - ${o.nom} (${o.longueurTitle} chars)  →  /admin/solutions  →  slug: ${o.slug}`)
+    }
+  }
 }
 
 main()

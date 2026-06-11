@@ -2,14 +2,16 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Pencil, Search, X } from 'lucide-react'
+import { Pencil, Search, X, AlertTriangle } from 'lucide-react'
 import DeleteSolutionButton from '@/components/admin/DeleteSolutionButton'
 import ToggleSolutionActif from '@/components/admin/ToggleSolutionActif'
 import { formatPrixCompact, computeSortValue, type PrixInput } from '@/lib/prix'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 
 type Solution = {
   id: string
   nom: string
+  nom_seo?: string | null
   actif: boolean | null
   categorie?: { id: string; nom: string } | null
   editeur?: { id: string; nom: string } | null
@@ -19,6 +21,10 @@ type Solution = {
   prix_devise?: string | null
   prix_frequence?: string | null
   prix_duree_engagement_mois?: number | null
+}
+
+function hasNomSeoOverflow(s: Solution): boolean {
+  return buildSolutionSeoTitle({ nom: s.nom, nom_seo: s.nom_seo ?? null }).overflow
 }
 
 function toPrixInput(s: Solution): PrixInput {
@@ -40,11 +46,14 @@ function hasPrix(s: Solution): boolean {
 export default function AdminSolutionsTable({ solutions }: { solutions: Solution[] }) {
   const [query, setQuery] = useState('')
   const [filterSansPrix, setFilterSansPrix] = useState(false)
+  const [filterNomSeo, setFilterNomSeo] = useState(false)
 
   const nbSansPrix = useMemo(() => solutions.filter((s) => !hasPrix(s)).length, [solutions])
+  const nbNomSeo = useMemo(() => solutions.filter((s) => hasNomSeoOverflow(s)).length, [solutions])
 
   const filtered = solutions
     .filter((s) => !filterSansPrix || !hasPrix(s))
+    .filter((s) => !filterNomSeo || hasNomSeoOverflow(s))
     .filter((s) =>
       !query.trim()
         ? true
@@ -92,6 +101,23 @@ export default function AdminSolutionsTable({ solutions }: { solutions: Solution
             {nbSansPrix}
           </span>
         </button>
+        <button
+          type="button"
+          onClick={() => setFilterNomSeo((v) => !v)}
+          className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl border transition-colors whitespace-nowrap ${
+            filterNomSeo
+              ? 'bg-rose-100 text-rose-800 border-rose-300'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-rose-300'
+          }`}
+          title={`${nbNomSeo} solution${nbNomSeo > 1 ? 's' : ''} dont le nom complet déborde des 60 chars du <title> SEO — remplir nom_seo`}
+        >
+          Nom SEO à fixer
+          <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+            filterNomSeo ? 'bg-rose-200 text-rose-900' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {nbNomSeo}
+          </span>
+        </button>
       </div>
 
       {/* Tableau */}
@@ -112,7 +138,18 @@ export default function AdminSolutionsTable({ solutions }: { solutions: Solution
               {filtered.map(solution => (
                 <tr key={solution.id} id={`solution-${solution.id}`} className="hover:bg-surface-light transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-medium text-navy text-sm">{solution.nom}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-navy text-sm">{solution.nom}</span>
+                      {hasNomSeoOverflow(solution) && (
+                        <span
+                          title="Le nom complet déborde des 60 caractères du <title> SEO. Renseigne « Nom court pour SEO » dans la fiche."
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200"
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          Nom SEO
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
                     {solution.categorie?.nom || '—'}
