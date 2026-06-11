@@ -16,7 +16,7 @@ export default function SoftwareCategories() {
         {/* Tab */}
         <div className="inline-flex items-center gap-2 bg-surface-light rounded-full px-5 py-2 mb-8">
           <div className="w-2 h-2 rounded-full bg-accent-blue" />
-          <span className="text-sm font-semibold text-navy">Logiciels métier</span>
+          <span className="text-sm font-semibold text-navy">Logiciel médical</span>
         </div>
 
         {/* Gradient title */}

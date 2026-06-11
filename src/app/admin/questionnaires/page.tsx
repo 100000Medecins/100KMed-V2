@@ -8,11 +8,11 @@ export default async function QuestionnairesAdminPage(
 ) {
   const searchParams = await props.searchParams;
   const allSlugs = await getAllSlugs()
-  const activeSlug = searchParams.slug || allSlugs[0] || 'logiciels-metiers'
+  const activeSlug = searchParams.slug || allSlugs[0] || 'logiciel-medical'
   const sections = await getSectionsForSlug(activeSlug)
 
   const slugLabels: Record<string, string> = {
-    'logiciels-metiers': 'Logiciels métier',
+    'logiciel-medical': 'Logiciel médical',
     'agendas-medicaux': 'Agenda médical',
     'intelligence-artificielle-medecine': 'IA Scribes',
     'ia-documentaires': 'IA Documentaires',
@@ -22,9 +22,9 @@ export default async function QuestionnairesAdminPage(
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-navy">Questionnaires d'évaluation</h1>
+        <h1 className="text-xl font-bold text-navy">Questionnaires d&apos;évaluation</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Gérez les questions détaillées du formulaire d'évaluation par catégorie.
+          Gérez les questions détaillées du formulaire d&apos;évaluation par catégorie.
         </p>
       </div>
 
