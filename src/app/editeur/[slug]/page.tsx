@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { getEditeurWithSolutions } from '@/lib/db/editeurs'
+import { getDisplayPrixFront } from '@/lib/db/settings'
 import { generateOrganizationJsonLd } from '@/lib/seo/jsonld'
 import SolutionList from '@/components/solutions/SolutionList'
 import { sanitizeHtml } from '@/lib/sanitize'
@@ -42,6 +43,8 @@ export default async function EditeurPage(props: PageProps) {
   } catch {
     notFound()
   }
+
+  const displayPrixFront = await getDisplayPrixFront()
 
   const jsonLd = generateOrganizationJsonLd(editeur)
 
@@ -116,7 +119,7 @@ export default async function EditeurPage(props: PageProps) {
           <h2 className="text-lg font-semibold text-navy mb-6">
             Solutions ({solutions.length})
           </h2>
-          <SolutionList solutions={solutions} />
+          <SolutionList solutions={solutions} tri="note_utilisateurs" displayPrixFront={displayPrixFront} />
         </section>
       </main>
       <Footer />

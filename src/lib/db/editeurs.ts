@@ -1,5 +1,6 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import type { Editeur } from '@/types/models'
+import { getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 
 /**
  * Slugifie un nom d'éditeur (cohérent avec la migration SQL 2026-05-29).
@@ -91,9 +92,24 @@ export async function getEditeurWithSolutions(slug: string) {
     .order('nom', { ascending: true })
   if (solErr) throw solErr
 
+  // Enrichir avec les notes (mêmes calculs que la page comparatif catégorie)
+  // pour que <SolutionList> affiche les vraies notes au lieu de "Pas encore noté".
+  const solutionIds = (solutions ?? []).map((s: { id: string }) => s.id)
+  const [notesRedac, notesUser, nbNotesMap] = await Promise.all([
+    getNotesGlobalesRedac(solutionIds),
+    getNotesUtilisateursGlobales(solutionIds),
+    getNbNotesUtilisateurs(solutionIds),
+  ])
+  const solutionsEnrichies = (solutions ?? []).map((s: Record<string, unknown>) => ({
+    ...s,
+    noteRedacBase5: notesRedac[s.id as string] ?? null,
+    noteUtilisateursBase5: notesUser[s.id as string] ?? null,
+    nbNotesUtilisateurs: nbNotesMap[s.id as string] ?? null,
+  }))
+
   return {
     editeur: editeurData as Editeur,
-    solutions,
+    solutions: solutionsEnrichies,
   }
 }
 

@@ -34,9 +34,15 @@ const nextConfig = {
       // La normalisation de casse pure est gérée dynamiquement dans
       // src/app/solutions/[idCategorie]/page.tsx — ces redirections ici couvrent
       // les renommages qui ne sont PAS une simple normalisation de casse
-      // (ex. LogicielsMetiers → logiciels-metiers avec tiret).
-      { source: '/solutions/LogicielsMetiers', destination: '/solutions/logiciels-metiers', permanent: true },
-      { source: '/solutions/LogicielsMetiers/:slug*', destination: '/solutions/logiciels-metiers/:slug*', permanent: true },
+      // (ex. LogicielsMetiers → logiciel-medical).
+
+      // Catégorie « Logiciels métier » renommée en « Logiciel médical » (2026-06-11).
+      // 4 redirects nécessaires : (1-2) ancien CamelCase Quasar, (3-4) ancien slug kebab
+      // pour préserver le SEO acquis sur logiciels-metiers.
+      { source: '/solutions/LogicielsMetiers', destination: '/solutions/logiciel-medical', permanent: true },
+      { source: '/solutions/LogicielsMetiers/:slug*', destination: '/solutions/logiciel-medical/:slug*', permanent: true },
+      { source: '/solutions/logiciels-metiers', destination: '/solutions/logiciel-medical', permanent: true },
+      { source: '/solutions/logiciels-metiers/:slug*', destination: '/solutions/logiciel-medical/:slug*', permanent: true },
       { source: '/solutions/AgendasMedicaux', destination: '/solutions/agendas-medicaux', permanent: true },
       { source: '/solutions/AgendasMedicaux/:slug*', destination: '/solutions/agendas-medicaux/:slug*', permanent: true },
       { source: '/solutions/IntelligenceArtificielleMedecine', destination: '/solutions/intelligence-artificielle-medecine', permanent: true },

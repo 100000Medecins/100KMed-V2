@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, ClipboardList, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays, Sparkles, MessageCircle, Settings } from 'lucide-react'
+import { useEffect } from 'react'
+import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays, Sparkles, MessageCircle, Settings, X } from 'lucide-react'
 import type { AdminBadges } from '@/lib/db/admin-badges'
+import { useAdminMobileNav } from '@/stores/useAdminMobileNav'
 
 type NavItem = {
   href: string
@@ -59,10 +61,13 @@ function Badge({ count }: { count: number }) {
   )
 }
 
-export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
+/**
+ * Liste de navigation extraite — rendue à la fois dans l'aside desktop
+ * et dans le drawer mobile pour éviter la duplication du code des liens.
+ */
+function NavList({ badges, onLinkClick }: { badges: AdminBadges; onLinkClick?: () => void }) {
   const pathname = usePathname()
 
-  // Le badge d'un parent agrège les badges de ses enfants
   const getBadgeForItem = (item: NavItem): number => {
     let total = item.badgeKey ? badges[item.badgeKey] : 0
     if (item.children) {
@@ -74,57 +79,131 @@ export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
   }
 
   return (
-    <aside className="w-64 flex-shrink-0 p-6 hidden md:block">
-      <nav className="bg-white rounded-card shadow-card p-4 space-y-1 sticky top-6">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const isActive = matchPath(pathname, item.href)
-          const isChildActive = item.children?.some((c) => matchPath(pathname, c.href))
-          const parentBadge = getBadgeForItem(item)
+    <nav className="bg-white rounded-card shadow-card p-4 space-y-1">
+      {navItems.map((item) => {
+        const Icon = item.icon
+        const isActive = matchPath(pathname, item.href)
+        const isChildActive = item.children?.some((c) => matchPath(pathname, c.href))
+        const parentBadge = getBadgeForItem(item)
 
-          return (
-            <div key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  isActive || isChildActive
-                    ? 'bg-accent-blue/10 text-accent-blue'
-                    : 'text-gray-600 hover:bg-surface-light hover:text-navy'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="flex-1">{item.label}</span>
-                <Badge count={parentBadge} />
-              </Link>
+        return (
+          <div key={item.href}>
+            <Link
+              href={item.href}
+              onClick={onLinkClick}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                isActive || isChildActive
+                  ? 'bg-accent-blue/10 text-accent-blue'
+                  : 'text-gray-600 hover:bg-surface-light hover:text-navy'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span className="flex-1">{item.label}</span>
+              <Badge count={parentBadge} />
+            </Link>
 
-              {item.children && (isActive || isChildActive) && (
-                <div className="ml-4 mt-0.5 pl-3 border-l-2 border-accent-blue/20 space-y-0.5">
-                  {item.children.map((child) => {
-                    const isChildCurrent = matchPath(pathname, child.href)
-                    const ChildIcon = child.icon
-                    const childBadge = child.badgeKey ? badges[child.badgeKey] : 0
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          isChildCurrent
-                            ? 'text-accent-blue bg-accent-blue/10'
-                            : 'text-gray-500 hover:text-navy hover:bg-surface-light'
-                        }`}
-                      >
-                        <ChildIcon className="w-3 h-3" />
-                        <span className="flex-1">{child.label}</span>
-                        <Badge count={childBadge} />
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
-    </aside>
+            {item.children && (isActive || isChildActive) && (
+              <div className="ml-4 mt-0.5 pl-3 border-l-2 border-accent-blue/20 space-y-0.5">
+                {item.children.map((child) => {
+                  const isChildCurrent = matchPath(pathname, child.href)
+                  const ChildIcon = child.icon
+                  const childBadge = child.badgeKey ? badges[child.badgeKey] : 0
+                  return (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={onLinkClick}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        isChildCurrent
+                          ? 'text-accent-blue bg-accent-blue/10'
+                          : 'text-gray-500 hover:text-navy hover:bg-surface-light'
+                      }`}
+                    >
+                      <ChildIcon className="w-3 h-3" />
+                      <span className="flex-1">{child.label}</span>
+                      <Badge count={childBadge} />
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </nav>
+  )
+}
+
+export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
+  const { isOpen, close } = useAdminMobileNav()
+  const pathname = usePathname()
+
+  // Auto-fermeture du drawer mobile à chaque changement de route.
+  useEffect(() => {
+    close()
+  }, [pathname, close])
+
+  // Bloquer le scroll body quand le drawer est ouvert.
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = ''
+      }
+    }
+  }, [isOpen])
+
+  // Fermer avec ESC.
+  useEffect(() => {
+    if (!isOpen) return
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isOpen, close])
+
+  return (
+    <>
+      {/* Sidebar desktop — sticky, inchangée */}
+      <aside className="w-64 flex-shrink-0 p-6 hidden md:block">
+        <div className="sticky top-6">
+          <NavList badges={badges} />
+        </div>
+      </aside>
+
+      {/* Backdrop mobile */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={close}
+        aria-hidden="true"
+      />
+
+      {/* Drawer mobile — slide-in depuis la gauche */}
+      <aside
+        className={`fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-surface-light z-50 md:hidden transform transition-transform shadow-2xl overflow-y-auto ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-label="Navigation admin"
+        aria-hidden={!isOpen}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Menu admin</span>
+          <button
+            type="button"
+            onClick={close}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-navy transition-colors"
+            aria-label="Fermer le menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4">
+          <NavList badges={badges} onLinkClick={close} />
+        </div>
+      </aside>
+    </>
   )
 }

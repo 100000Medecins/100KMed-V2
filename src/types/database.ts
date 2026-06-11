@@ -1389,6 +1389,7 @@ export type Database = {
           mot_editeur: string | null
           nb_discussions: number | null
           nom: string
+          nom_seo: string | null
           pays_origine: string | null
           prix_devise: string | null
           prix_duree_engagement_mois: number | null
@@ -1424,6 +1425,7 @@ export type Database = {
           mot_editeur?: string | null
           nb_discussions?: number | null
           nom: string
+          nom_seo?: string | null
           pays_origine?: string | null
           prix_devise?: string | null
           prix_duree_engagement_mois?: number | null
@@ -1459,6 +1461,7 @@ export type Database = {
           mot_editeur?: string | null
           nb_discussions?: number | null
           nom?: string
+          nom_seo?: string | null
           pays_origine?: string | null
           prix_devise?: string | null
           prix_duree_engagement_mois?: number | null
