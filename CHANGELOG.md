@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-06-13] — Clôture du chantier meta title SEO : 31 `nom_seo` remplis
+
+Fin du chantier ouvert le 2026-06-11. Les 31 solutions dont le nom complet débordait des 60 caractères du `<title>` ont leur champ `solutions.nom_seo` rempli manuellement via le filtre admin « Nom SEO à fixer ». Compteur ramené à **0** côté admin.
+
+- Aucun changement de code. Travail éditorial pur dans `/admin/solutions` (ouverture fiche par fiche, saisie du nom court, sauvegarde — auto-recompute du `meta.title` côté server action).
+- Pas d'action Google nécessaire (sitemap inchangé, recrawl passif sous 1-2 semaines).
+- Item TODO URGENT archivé.
+
+---
+
 ## [2026-06-12] — Bug fix cartes éditeur + nouveau pattern meta title SEO « Les avis de vos confrères sur … »
 
 ### Fix — Cartes solutions sur fiche éditeur affichaient « Pas encore noté » à tort
@@ -33,7 +43,7 @@ Bascule de l'ancien pattern `<nom> — Avis médecins | <catégorie>` vers `Les 
 
 ### TODO — Mises à jour
 - ✅ Bug cartes solutions sur fiche éditeur : corrigé.
-- 🔄 Pattern meta title SEO : plomberie + migration de masse livrées, reste 31 `nom_seo` à remplir manuellement (suivi dans TODO URGENT).
+- 🔄 Pattern meta title SEO : plomberie + migration de masse livrées, reste 31 `nom_seo` à remplir manuellement (suivi dans TODO URGENT). *(clôturé le 2026-06-13 — cf entrée du jour)*
 
 ---
 
