@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, X, ChevronDown, UserCircle, Search } from "lucide-react";
+import { Menu, X, ChevronDown, UserCircle, Search, LogOut } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { NavCategorie, NavResponse } from "@/app/api/nav-categories/route";
@@ -39,8 +39,17 @@ function buildGroupes(categories: NavCategorie[]): Groupe[] {
   return Array.from(map.values()).sort((a, b) => a.ordre - b.ordre)
 }
 
-export default function Navbar() {
-  const { user, isEditeur, loading } = useAuth();
+interface NavbarProps {
+  /**
+   * Mode minimal : masque tous les liens, mega-menus, CTAs et menu mobile.
+   * Affiche uniquement le logo + un bouton « Se déconnecter ».
+   * Logo non cliquable. Utilisé sur les flux contraints (ex. /completer-profil).
+   */
+  minimal?: boolean
+}
+
+export default function Navbar({ minimal = false }: NavbarProps) {
+  const { user, isEditeur, loading, signOut } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
@@ -66,6 +75,7 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    if (minimal) return
     fetch('/api/nav-categories')
       .then((r) => r.json())
       .then((data: NavResponse) => {
@@ -133,7 +143,11 @@ export default function Navbar() {
             vers le bas sans pousser les autres éléments.
           z-10 pour passer au-dessus du contenu de la page quand on scrolle.
         */}
-        <a href="/" className="relative z-10 shrink-0 flex items-center min-[1150px]:items-start min-[1150px]:self-start min-[1150px]:h-[72px] min-[1150px]:pt-1" aria-label="100 000 Médecins — accueil">
+        <a
+          href={minimal ? undefined : "/"}
+          className={`relative z-10 shrink-0 flex items-center min-[1150px]:items-start min-[1150px]:self-start min-[1150px]:h-[72px] min-[1150px]:pt-1 ${minimal ? 'pointer-events-none select-none' : ''}`}
+          aria-label={minimal ? "100 000 Médecins" : "100 000 Médecins — accueil"}
+        >
           <Image
             src="/logos/logo-principal-couleur.svg"
             alt="100 000 Médecins"
@@ -157,7 +171,8 @@ export default function Navbar() {
           />
         </a>
 
-        {/* Desktop Nav */}
+        {/* Desktop Nav — masqué en mode minimal */}
+        {!minimal && (
         <div className="hidden min-[1150px]:flex items-center justify-center gap-6 min-w-0">
           {/* Mega-menu Comparatifs */}
           <div
@@ -291,8 +306,19 @@ export default function Navbar() {
             <Search className="w-5 h-5" />
           </button>
         </div>
+        )}
 
-        {/* Col 3 : mobile (loupe + évaluer) / desktop (loupe + CTAs) */}
+        {/* Col 3 : mode minimal → bouton « Se déconnecter ». Sinon : mobile (loupe + évaluer) / desktop (loupe + CTAs) */}
+        {minimal ? (
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="justify-self-end inline-flex items-center gap-1.5 text-xs text-white/80 hover:text-white transition-colors px-3 py-1.5 rounded-full hover:bg-white/10"
+          >
+            <LogOut className="w-4 h-4" />
+            Se déconnecter
+          </button>
+        ) : (
         <div className="flex items-center gap-2 justify-self-end" style={{ transform: 'translateY(-2px)' }}>
           {/* Loupe mobile */}
           <button
@@ -345,10 +371,11 @@ export default function Navbar() {
             )}
           </div>
         </div>
+        )}
       </nav>
 
-      {/* Mobile menu */}
-      {isMobileOpen && (
+      {/* Mobile menu — masqué en mode minimal */}
+      {!minimal && isMobileOpen && (
         <div className="min-[1150px]:hidden border-t border-white/10 shadow-lg" style={{ background: 'linear-gradient(135deg, rgba(10,90,90,0.95) 0%, rgba(80,30,130,0.92) 55%, rgba(20,50,110,0.95) 100%)', backdropFilter: 'blur(16px)' }}>
           <div className="px-6 py-6 space-y-2">
             {/* Comparatifs accordion */}
@@ -484,7 +511,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
+      {!minimal && isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
     </header>
   );
 }

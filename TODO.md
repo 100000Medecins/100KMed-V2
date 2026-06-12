@@ -22,14 +22,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 #### ~~🐛 Cartes solutions sur fiche éditeur — « Pas encore de notes » alors qu'il y en a (2026-06-11)~~ [OK] Fait 2026-06-12 (cf CHANGELOG)
 
-#### Nouveau pattern meta title des fiches solutions — reste 31 nom_seo à remplir (2026-06-11)
-- **Plomberie livrée 2026-06-11** : nouveau pattern `Les avis de vos confrères sur <nom> - 100 000 Médecins` actif. Helper [src/lib/seo/title.ts](src/lib/seo/title.ts) source unique. API admin, script standalone, fallback runtime, server action (auto-recompute au save) tous alignés. Colonne `solutions.nom_seo` ajoutée pour les noms qui débordent. Migration de masse : 65/96 solutions migrées au nouveau pattern, backup `backups/meta-title-before-2026-06-11T22-12-58-926Z.json`.
-- **Reste à faire** : remplir le champ `nom_seo` pour **31 solutions** dont le nom complet déborde des 60 chars du `<title>`.
-  - Repérage : `/admin/solutions` → bouton **« Nom SEO à fixer »** (compteur 31). Filtre la liste sur les solutions concernées + badge `⚠️ Nom SEO` à côté du nom.
-  - Action par fiche : ouvrir, remplir « Nom court pour SEO » (l'aperçu live confirme quand ça passe sous 60 chars), sauver. L'auto-recompute met à jour `meta.title` instantanément, pas besoin de cliquer « Générer SEO » ni de relancer le script.
-  - Suggestions de noms courts : `Doctolib Assistant` → `Doctolib` ; `Heidi Health` → `Heidi` ; `Dragon Copilot` → `Dragon` ; `Microsoft Copilot` → `Copilot` ; `Google Gemini` → `Gemini` ; `Perplexity AI` → `Perplexity` ; `Citana (Anamnèse)` → `Citana`. Les noms vraiment longs (« RdvDocteur / DocRendezvous / DoctoDispo / DOC-RDV » 98 chars, « e-Agenda (prendreunrendezvous.fr) » 82 chars, « MadeForMed Téléconsultation » 76 chars) demandent un choix éditorial.
-- **Côté Google** : aucune action nécessaire. Le sitemap.xml ne contient pas de `<title>`, donc rien à resoumettre. Google recrawle tout seul (~1-2 semaines). Pour 1-2 pages clés, possible de forcer via Search Console > Inspection de l'URL > « Demander une indexation ».
-- **Quand le compteur arrive à 0** : archiver cette entrée, ajouter une ligne au CHANGELOG.
+#### ~~Nouveau pattern meta title des fiches solutions — reste 31 nom_seo à remplir (2026-06-11)~~ [OK] Fait 2026-06-13
 
 #### ~~Renommer la catégorie « Logiciels métier » → « Logiciel médical » + nouveau slug (2026-06-11)~~ [OK] Fait 2026-06-12 (commits `4bf4f62` rename + `62d3c44` redirects)
 
@@ -103,9 +96,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### UX / UI
 
-#### Changer le logo en haut de la page `/completer-profil` (2026-06-11)
-- **Contexte** : page affichée après login PSC quand le profil est incomplet (prénom/nom/spécialité/mode d'exercice à compléter). Le logo « 100 000 Médecins .org » actuel en haut à gauche est à revoir (visuel à harmoniser avec le reste du site, ou variante plus discrète sur cet écran de complétion).
-- **À cadrer** : variante exacte du logo à utiliser (taille, couleur, lockup) — voir ce qui existe déjà ailleurs sur le site avant d'en créer un nouveau.
+#### ~~Changer le logo en haut de la page `/completer-profil`~~ [OK] Fait 2026-06-13 (la page utilise déjà `<Navbar />` partagée → logo 3 lignes débordant unifié depuis la refonte navbar du 2026-05-31)
 
 #### Tooltip note globale — affiner après la livraison initiale (2026-05-30)
 
@@ -116,7 +107,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
 #### Éditeurs orphelins (0 solution) — à conserver, fiches à créer
-- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : `MediStory`, `Aatlantide`, `MEDEXT Group`, `Semble`. **Conservés volontairement** — fiches solutions à créer prochainement pour chacun (décision 2026-06-02).
+- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : ~~`MediStory`~~ [OK] Fait 2026-06-12, `Aatlantide`, `MEDEXT Group`, ~~`Semble`~~ [OK] Fait 2026-06-12. **Conservés volontairement** — fiches solutions à créer prochainement pour les 2 restants (décision 2026-06-02).
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.

@@ -1,20 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
+import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, getAvatars } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
-import { Check, Lock, LogOut, Mail } from 'lucide-react'
+import { Check, Lock, Mail } from 'lucide-react'
 
 const LIBRE_TEXTE_VALUE = '__libre_texte__'
 
 export default function CompleterProfilPage() {
-  const { user, loading: authLoading, signOut } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
@@ -179,46 +179,11 @@ export default function CompleterProfilPage() {
     }
   }
 
-  const MinimalHeader = () => (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 h-[72px]">
-      <div className="max-w-7xl mx-auto px-5 h-full flex items-center justify-between gap-4">
-        <div className="flex items-center shrink-0 select-none pointer-events-none">
-          <Image
-            src="/logos/logo-principal-couleur-trimmed.png"
-            alt="100 000 Médecins"
-            width={63}
-            height={44}
-            className="h-[44px] w-auto min-[1150px]:hidden"
-            priority
-            unoptimized
-          />
-          <Image
-            src="/logos/logo-secondaire-couleur-trimmed.png"
-            alt="100 000 Médecins"
-            width={400}
-            height={100}
-            className="h-[27px] w-auto hidden min-[1150px]:block"
-            priority
-            unoptimized
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-navy transition-colors"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          Se déconnecter
-        </button>
-      </div>
-    </header>
-  )
-
   if (authLoading || !profileLoaded) {
     return (
       <>
-        <MinimalHeader />
-        <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
+        <Navbar minimal />
+        <main className="pt-[72px] min-h-screen bg-surface-muted bg-dots flex items-center justify-center">
           <div className="animate-pulse text-gray-400">Chargement...</div>
         </main>
       </>
@@ -233,8 +198,8 @@ export default function CompleterProfilPage() {
   if (fusionEmailSent) {
     return (
       <>
-        <MinimalHeader />
-        <main className="pt-[72px] min-h-screen bg-surface-light flex items-center justify-center">
+        <Navbar minimal />
+        <main className="pt-[72px] min-h-screen bg-surface-muted bg-dots flex items-center justify-center">
           <div className="max-w-md mx-auto px-6 text-center py-16">
             <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center mx-auto mb-4">
               <Mail className="w-6 h-6 text-accent-blue" />
@@ -255,8 +220,8 @@ export default function CompleterProfilPage() {
 
   return (
     <>
-      <MinimalHeader />
-      <main className="pt-[72px] min-h-screen bg-surface-light">
+      <Navbar minimal />
+      <main className="pt-[72px] min-h-screen bg-surface-muted bg-dots">
         <div className="max-w-2xl mx-auto px-6 py-10">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-navy mb-2">Bienvenue sur 100&nbsp;000 Médecins</h1>
