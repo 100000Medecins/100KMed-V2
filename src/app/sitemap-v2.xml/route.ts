@@ -19,7 +19,9 @@
 
 import sitemapGenerator from '../sitemap'
 
-export const dynamic = 'force-dynamic'
+// Caché (ISR) comme /sitemap.xml : évite un hit Supabase à chaque GET Googlebot.
+// sitemapGenerator() porte déjà un repli try/catch (pas de 5xx si la BDD hoquette).
+export const revalidate = 3600
 
 export async function GET() {
   const urls = await sitemapGenerator()
@@ -42,7 +44,7 @@ ${urls
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml',
-      'Cache-Control': 'public, max-age=0, must-revalidate',
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
     },
   })
 }
