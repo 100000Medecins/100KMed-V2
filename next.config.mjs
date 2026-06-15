@@ -43,6 +43,10 @@ const nextConfig = {
       { source: '/solutions/LogicielsMetiers/:slug*', destination: '/solutions/logiciel-medical/:slug*', permanent: true },
       { source: '/solutions/logiciels-metiers', destination: '/solutions/logiciel-medical', permanent: true },
       { source: '/solutions/logiciels-metiers/:slug*', destination: '/solutions/logiciel-medical/:slug*', permanent: true },
+      // URL zombie pré-migration : le slug Firebase était l'URL brute « www.weda.fr ».
+      // Le vrai slug Supabase est « weda ». Cible le chemin catégorie canonique : le
+      // wildcard logiciels-metiers ci-dessus y mène déjà via une 2e redirection.
+      { source: '/solutions/logiciel-medical/www.weda.fr', destination: '/solutions/logiciel-medical/weda', permanent: true },
       { source: '/solutions/AgendasMedicaux', destination: '/solutions/agendas-medicaux', permanent: true },
       { source: '/solutions/AgendasMedicaux/:slug*', destination: '/solutions/agendas-medicaux/:slug*', permanent: true },
       { source: '/solutions/IntelligenceArtificielleMedecine', destination: '/solutions/intelligence-artificielle-medecine', permanent: true },
@@ -109,6 +113,8 @@ const nextConfig = {
       // articles, mails) qui pointent encore vers ces .html.
       { source: '/manifeste.html', destination: '/tous-ensemble', permanent: true },
       { source: '/communique.html', destination: '/lancement-100k', permanent: true },
+      // Fichier racine Firebase pré-Quasar — n'a jamais existé en Next.js (404 historique).
+      { source: '/index.html', destination: '/', permanent: true },
     ];
   },
 };

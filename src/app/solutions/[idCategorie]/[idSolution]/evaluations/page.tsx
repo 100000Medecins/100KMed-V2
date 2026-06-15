@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -28,6 +28,19 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 export default async function EvaluationsPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const params = await props.params;
+
+  // Ancien format Quasar : slug en CamelCase (ex. Odaiji, HelloDoc…) hérité de firebaseId.
+  // Redirection 301 vers la version minuscule (convention Supabase) — même logique que la
+  // page solution parente. Sans ça, /solutions/:cat/Odaiji/evaluations tombe en 404.
+  if (
+    params.idSolution !== params.idSolution.toLowerCase() ||
+    params.idCategorie !== params.idCategorie.toLowerCase()
+  ) {
+    redirect(
+      `/solutions/${params.idCategorie.toLowerCase()}/${params.idSolution.toLowerCase()}/evaluations`
+    )
+  }
+
   const [solution, categorie] = await Promise.all([
     getSolutionBySlug(params.idSolution).catch(() => null),
     getCategorieBySlug(params.idCategorie).catch(() => null),

@@ -5,6 +5,37 @@
 
 ---
 
+## [2026-06-15] — SEO : robustesse sitemap (5xx) + 404 résiduelles Search Console
+
+Suite à 2 emails Google Search Console (échec validation « Introuvable 404 » + nouveau motif « Erreur serveur 5xx ») et au statut collant « Impossible de récupérer le sitemap » sur `/sitemap.xml` ET `/sitemap-v2.xml`.
+
+### Diagnostic (vérifié live, pas sur mémoire)
+
+- Les 2 sitemaps répondent **200, XML valide, 139 URLs, < 0,5 s** au moment du diag. Le statut Search Console était soit du cache négatif collant (depuis le 27/05), soit des 5xx intermittents.
+- **Cause racine probable du « impossible à récupérer » + « 5xx »** : `src/app/sitemap.ts` était en `force-dynamic` → interrogeait Supabase à **chaque** hit Googlebot. Un cold-start / hoquet BDD = route 5xx, que Google journalise comme « Impossible de récupérer le sitemap ».
+- Les 3 URLs 404 du rapport (toutes redirigées 308 mais aboutissant en 404) :
+  - `…/logiciels-metiers/Odaiji/evaluations` → 404 car la **sous-page `/evaluations` ne normalisait pas la casse** (la page solution parente le fait, pas elle). `Odaiji` majuscule (propagé par le redirect wildcard `logiciels-metiers/:slug*`) → introuvable.
+  - `…/logiciels-metiers/www.weda.fr` → 404 : slug zombie pré-migration (URL brute comme firebaseId). Vrai slug = `weda`.
+  - `…/logiciels-metiers/Medaplix` → 404 **légitime** : Medaplix désactivée volontairement (absente du sitemap/BDD active). Pas d'action — Google la déréférencera seul.
+  - `/index.html` → 404 : fichier racine Firebase, n'a jamais existé en Next.js.
+
+### Correctifs
+
+- **`src/app/sitemap.ts`** : `force-dynamic` → **`revalidate = 3600`** (ISR caché 1 h). Pages statiques calculées hors BDD et **`try/catch`** autour du fetch Supabase → en cas d'erreur BDD, repli sur les pages statiques au lieu d'un 5xx. Garantit que Googlebot ne tombe **jamais** sur un sitemap en erreur serveur.
+- **`src/app/sitemap-v2.xml/route.ts`** (casseur de cache négatif créé le 07/06, distinct de l'ancien `sitemap_v2.xml` underscore) : aligné sur le même cache ISR (`revalidate = 3600`, `Cache-Control: max-age=3600`). Hérite déjà du repli try/catch via `sitemapGenerator()`.
+- **`src/app/solutions/[idCategorie]/[idSolution]/evaluations/page.tsx`** : ajout de la **normalisation de casse** (redirect 308 CamelCase → minuscule, suffixe `/evaluations` préservé) — même logique que la page solution. Corrige `Odaiji/evaluations` et tous les cas futurs.
+- **`next.config.mjs`** : 2 redirections 301 ajoutées :
+  - `/solutions/logiciel-medical/www.weda.fr` → `…/weda` (le wildcard `logiciels-metiers` y mène via une 2e redirection).
+  - `/index.html` → `/`.
+
+### Action côté Google (manuelle, après déploiement)
+
+- Relancer la validation du rapport « Introuvable (404) » une fois déployé (Odaiji/evaluations, www.weda.fr, index.html corrigés ; Medaplix restera en 404 légitime).
+- Exporter les **2 URLs exactes** du motif « Erreur serveur (5xx) » pour confirmer que c'était bien le sitemap (non présentes dans les CSV fournis).
+- Sitemaps : garder les 2 soumis tant que `/sitemap.xml` n'est pas repassé en « Réussite » ; v2 pourra être retiré ensuite.
+
+---
+
 ## [2026-06-13] — Clôture du chantier meta title SEO : 31 `nom_seo` remplis
 
 Fin du chantier ouvert le 2026-06-11. Les 31 solutions dont le nom complet débordait des 60 caractères du `<title>` ont leur champ `solutions.nom_seo` rempli manuellement via le filtre admin « Nom SEO à fixer ». Compteur ramené à **0** côté admin.

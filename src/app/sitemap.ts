@@ -3,8 +3,10 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
 
-// Le sitemap doit refléter l'état courant de la BDD à chaque requête.
-export const dynamic = 'force-dynamic'
+// Sitemap mis en cache (ISR), régénéré au plus une fois par heure. Évite d'interroger
+// Supabase à chaque hit de Googlebot : un hoquet BDD ferait 5xx la route, que Google
+// journalise comme « Impossible de récupérer le sitemap ». Cf docs/redirections-404-seo.md.
+export const revalidate = 3600
 
 // Bloquer le sitemap hors prod (cf robots.ts) : evite que Google decouvre
 // les URLs via le sitemap d'un environnement preview/dev.
@@ -41,6 +43,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Hors prod : sitemap vide (en complement du robots.txt qui Disallow: /)
   if (!IS_PROD) return []
 
+  const now = new Date()
+
+  // ─── Pages statiques (aucune dépendance BDD — toujours servies) ───
+  const staticPages: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
+    url: `${BASE_URL}${r.path}`,
+    lastModified: now,
+    changeFrequency: r.changeFrequency,
+    priority: r.priority,
+  }))
+
+  try {
   const supabase = createServiceRoleClient()
 
   const [categoriesRes, solutionsRes, articlesRes, editeursRes] = await Promise.all([
@@ -76,16 +89,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const editeursUniques = Array.from(
     new Map((editeurs as any[]).map((e) => [e.slug as string, e])).values()
   )
-
-  const now = new Date()
-
-  // ─── Pages statiques ───
-  const staticPages: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
-    url: `${BASE_URL}${r.path}`,
-    lastModified: now,
-    changeFrequency: r.changeFrequency,
-    priority: r.priority,
-  }))
 
   // ─── Pages catégories ───
   const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
@@ -131,5 +134,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }))
 
-  return [...staticPages, ...categoryPages, ...solutionPages, ...articlePages, ...editeurPages]
+    return [...staticPages, ...categoryPages, ...solutionPages, ...articlePages, ...editeurPages]
+  } catch (err) {
+    // Hoquet Supabase (cold start, réseau…) : ne JAMAIS 5xx — Googlebot le journaliserait
+    // comme « Impossible de récupérer le sitemap ». On sert au moins les pages statiques.
+    console.error('[sitemap] échec fetch BDD, repli sur les pages statiques :', err)
+    return staticPages
+  }
 }
