@@ -19,17 +19,19 @@ interface Editeur {
   nb_employes: number | null
   siret: string | null
   mot_editeur: string | null
+  parent_id?: string | null
 }
 
 interface Props {
   editeur: Editeur
+  parentOptions?: { id: string; nom: string }[]
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
 const inputClass =
   'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
 
-export default function EditeurWithSearch({ editeur, action }: Props) {
+export default function EditeurWithSearch({ editeur, parentOptions, action }: Props) {
   const [nom, setNom] = useState(editeur.nom ?? '')
   const [suggestion, setSuggestion] = useState<EditeurSuggestion | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -157,6 +159,7 @@ export default function EditeurWithSearch({ editeur, action }: Props) {
         key={formKey}
         editeur={editeur}
         initialValues={initialValues}
+        parentOptions={parentOptions}
         action={action}
       />
     </div>

@@ -147,14 +147,24 @@ export async function getEditeurDataForUser(userId: string) {
 
   if (!editeur) return null
 
-  // Récupérer les solutions de cet éditeur (avec prix, galerie, mot éditeur par solution, contacts par solution)
-  const { data: solutions } = await supabase
-    .from('solutions')
-    .select('id, nom, slug, logo_url, actif, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, contact_email, contact_telephone, support_email, support_telephone, support_website, galerie:solutions_galerie(id, url, titre, ordre, type)')
-    .eq('id_editeur', editeur.id)
+  // Maison-mère (Option A) : un compte rattaché à un éditeur parent gère aussi les
+  // solutions de ses filiales (éditeurs dont parent_id pointe vers lui).
+  const { data: filiales } = await supabase
+    .from('editeurs')
+    .select('id, nom, nom_commercial, logo_url, logo_titre, website, mot_editeur, contact_ville, contact_pays, nb_employes')
+    .eq('parent_id', editeur.id)
     .order('nom', { ascending: true })
 
-  return { editeur, solutions: solutions ?? [] }
+  const editeurIds = [editeur.id, ...(filiales ?? []).map((f) => f.id)]
+
+  // Récupérer les solutions du parent + des filiales (avec prix, galerie, mot éditeur par solution, contacts par solution)
+  const { data: solutions } = await supabase
+    .from('solutions')
+    .select('id, nom, slug, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, contact_email, contact_telephone, support_email, support_telephone, support_website, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .in('id_editeur', editeurIds)
+    .order('nom', { ascending: true })
+
+  return { editeur, solutions: solutions ?? [], filiales: filiales ?? [] }
 }
 
 /**
@@ -177,11 +187,18 @@ async function assertEditeurAccessToSolution(
     throw new Error('Non autorisé')
   }
 
+  // Maison-mère (Option A) : autoriser aussi les solutions des filiales du parent
+  const { data: filiales } = await supabase
+    .from('editeurs')
+    .select('id')
+    .eq('parent_id', userRow.editeur_id)
+  const editeurIds = [userRow.editeur_id, ...(filiales ?? []).map((f) => f.id)]
+
   const { data: solution } = await supabase
     .from('solutions')
     .select('id')
     .eq('id', solutionId)
-    .eq('id_editeur', userRow.editeur_id)
+    .in('id_editeur', editeurIds)
     .single()
 
   if (!solution) throw new Error('Solution non autorisée')
@@ -195,6 +212,7 @@ async function assertEditeurAccessToSolution(
  */
 export async function updateEditeurByUser(
   userId: string,
+  editeurId: string,
   fields: {
     nom_commercial?: string
     logo_url?: string
@@ -218,6 +236,18 @@ export async function updateEditeurByUser(
     throw new Error('Non autorisé')
   }
 
+  // Maison-mère (Option A) : l'utilisateur peut éditer son éditeur ET ses filiales.
+  // On vérifie que editeurId est soit son propre éditeur, soit une filiale (parent_id = son éditeur).
+  const editeurIdsAutorises = new Set<string>([userRow.editeur_id])
+  const { data: filiales } = await supabase
+    .from('editeurs')
+    .select('id')
+    .eq('parent_id', userRow.editeur_id)
+  for (const f of filiales ?? []) editeurIdsAutorises.add(f.id)
+  if (!editeurIdsAutorises.has(editeurId)) {
+    throw new Error('Éditeur non autorisé')
+  }
+
   // Filtrer les champs définis (undefined = pas touché)
   const requested = Object.entries(fields).filter(([, v]) => v !== undefined)
   if (requested.length === 0) return
@@ -228,7 +258,7 @@ export async function updateEditeurByUser(
   const { data: current } = await (supabase as any)
     .from('editeurs')
     .select(fieldsList)
-    .eq('id', userRow.editeur_id)
+    .eq('id', editeurId)
     .single()
 
   const updates: Record<string, string | null> = {}
@@ -241,7 +271,7 @@ export async function updateEditeurByUser(
       logRows.push({
         user_id: userId,
         table_cible: 'editeurs',
-        id_cible: userRow.editeur_id,
+        id_cible: editeurId,
         champ: key,
         ancienne_valeur: oldVal,
         nouvelle_valeur: newVal,
@@ -251,7 +281,7 @@ export async function updateEditeurByUser(
 
   if (Object.keys(updates).length === 0) return
 
-  await supabase.from('editeurs').update(updates).eq('id', userRow.editeur_id)
+  await supabase.from('editeurs').update(updates).eq('id', editeurId)
   if (logRows.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('editeurs_edit_log').insert(logRows)

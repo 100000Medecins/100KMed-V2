@@ -5,6 +5,48 @@
 
 ---
 
+## [2026-06-16] — Maison-mère (groupes d'éditeurs) + recherche sur la liste admin éditeurs
+
+### Feature — Un compte éditeur peut gérer plusieurs marques via une maison-mère (`editeurs.parent_id`)
+
+Besoin : une personne chez Equasens souhaite gérer les solutions de toutes les marques rachetées (Medistory, Prokov, Medilink, ICT Solutions…) depuis un seul compte. Or le lien compte ↔ éditeur était strictement 1→1 (`users.editeur_id` scalaire). Choix retenu : **Option A — notion de maison-mère** (hiérarchie d'éditeurs), plutôt qu'une table de jonction many-to-many (plus lourde) ou des comptes multiples.
+
+- **Migration BDD** : nouvelle colonne `editeurs.parent_id text NULL REFERENCES editeurs(id) ON DELETE SET NULL` + index `idx_editeurs_parent_id`. **Type `text`** (et non `uuid`) car `editeurs.id` est un `text` sur ce projet. Types Supabase régénérés.
+- **`src/lib/actions/admin-users.ts`** :
+  - `getEditeurDataForUser` : après le fetch du parent, récupère les filiales (`editeurs.parent_id = parent.id`) et agrège les solutions du parent **+ de toutes ses filiales** (`.in('id_editeur', editeurIds)`). Renvoie aussi `filiales` pour l'affichage. La solutions query inclut désormais `id_editeur`.
+  - `assertEditeurAccessToSolution` : autorise le save des solutions du parent **et** des filiales (sécurité alignée sur l'agrégation).
+- **`src/app/mon-compte/mon-espace-editeur/page.tsx`** : badge de marque (`Building2`) sur chaque carte solution quand l'éditeur a des filiales (multi-marque), pour distinguer à quelle marque chaque solution est rattachée.
+- **Admin** : nouveau sélecteur **« Maison-mère (groupe) »** sur la fiche éditeur (`EditeurForm.tsx` + threading via `EditeurWithSearch.tsx`, options = tous les autres éditeurs fournies par `modifier/page.tsx`). `createEditeur`/`updateEditeur` persistent `parent_id`.
+- **Procédure** : créer/avoir un éditeur Equasens → définir `parent_id = Equasens` sur chaque marque → rattacher le compte de la personne à Equasens (`users.editeur_id`) → son espace éditeur liste les solutions des 4 marques.
+
+### Feature — Édition des pages éditeur des filiales depuis l'espace maison-mère
+
+Extension de la maison-mère (livrée dans la foulée le même jour) : le compte rattaché au parent peut éditer la **page éditeur** de chaque filiale, pas seulement celle du parent.
+
+- **`src/lib/actions/admin-users.ts`** : `getEditeurDataForUser` remonte les champs éditables complets des filiales (logo, website, mot_editeur, localisation…). `updateEditeurByUser(userId, editeurId, fields)` prend désormais un `editeurId` explicite et **vérifie l'autorisation** (cible = éditeur du user OU une de ses filiales, sinon `Éditeur non autorisé`). Audit log avec le bon `id_cible`.
+- **`src/app/mon-compte/mon-espace-editeur/page.tsx`** : onglet « Page éditeur » avec un sélecteur de marque en pastilles (parent badgé « maison-mère » + filiales), affiché uniquement s'il y a des filiales. `EditeurInfoCard` re-monté par `key` au changement de marque, `onSaved` met à jour la bonne fiche en état.
+
+### Fix — Connexion par email cassée pour les casses différentes (+ diagnostic emails PSC)
+
+Investigation suite au constat de comptes `psc-…@psc.sante.fr` sans email réel + impossibilité de se connecter par email pour un compte pourtant présent. Détail complet dans [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md).
+
+- **Cause emails synthétiques** : PSC **production** (live depuis le 25/05) ne renvoie pas l'email des médecins (absent de l'annuaire RPPS) → repli `psc-{rpps}@psc.sante.fr`. ~90 % des inscriptions récentes, 89 comptes sans aucun email réel. Ce ne sont pas des inscriptions ratées : auth PSC OK, mais décrochage massif à `/completer-profil` (email + mot de passe imposés → 13/102 seulement complètent).
+- **Bug corrigé** : `check_auth_email_exists` fait un match exact sensible à la casse ; la page connexion passait l'email non normalisé → faux « Aucun compte trouvé » + redirection inscription pour toute casse différente. Correctif sans DDL (`auth.users.email` déjà en minuscules) : `checkEmailExists` (`src/lib/actions/user.ts`) et `signInWithEmail` (`src/components/providers/AuthProvider.tsx`) normalisent en `trim().toLowerCase()`.
+- **Pistes restantes non implémentées** (cf doc) : rendre le mot de passe optionnel à `/completer-profil` pour les PSC, afficher `contact_email` à côté de `email` dans l'admin utilisateurs.
+
+### Admin — Recherche + filtre sur la page liste éditeurs
+
+`/admin/editeurs` (60+ fiches) n'avait aucun filtre. Ajout d'une recherche calquée sur la liste solutions.
+
+- **Nouveau composant client** `src/components/admin/AdminEditeursTable.tsx` : barre de recherche (nom, nom commercial, ville, site web) + bouton-filtre **« À compléter »** (fiches sans logo/description/site) avec compteur, + compteur « X / N éditeurs » quand un filtre est actif.
+- **`src/app/admin/editeurs/page.tsx`** : tableau inline extrait vers ce composant. Onglet « Demandes » et fetch service-role inchangés.
+- À noter : `EditeurWithSearch.tsx` (recherche IA d'enrichissement dans le formulaire) n'a aucun rapport — le nom prêtait à confusion.
+
+### Divers
+- Fil de l'eau : 2 apostrophes non échappées corrigées dans `EditeurForm.tsx` (`react/no-unescaped-entities`).
+- `tsc --noEmit` : exit 0. Aucune nouvelle erreur lint.
+---
+
 ## [2026-06-15] — SEO : robustesse sitemap (5xx) + 404 résiduelles Search Console
 
 Suite à 2 emails Google Search Console (échec validation « Introuvable 404 » + nouveau motif « Erreur serveur 5xx ») et au statut collant « Impossible de récupérer le sitemap » sur `/sitemap.xml` ET `/sitemap-v2.xml`.

@@ -512,6 +512,7 @@ export type Database = {
           nb_employes: number | null
           nom: string | null
           nom_commercial: string | null
+          parent_id: string | null
           siret: string | null
           slug: string
           updated_at: string | null
@@ -532,6 +533,7 @@ export type Database = {
           nb_employes?: number | null
           nom?: string | null
           nom_commercial?: string | null
+          parent_id?: string | null
           siret?: string | null
           slug: string
           updated_at?: string | null
@@ -552,12 +554,21 @@ export type Database = {
           nb_employes?: number | null
           nom?: string | null
           nom_commercial?: string | null
+          parent_id?: string | null
           siret?: string | null
           slug?: string
           updated_at?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "editeurs_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "editeurs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       editeurs_edit_log: {
         Row: {
