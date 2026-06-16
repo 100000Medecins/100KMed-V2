@@ -772,6 +772,7 @@ export async function createEditeur(formData: FormData) {
     siret: (formData.get('siret') as string) || null,
     mot_editeur: (formData.get('mot_editeur') as string) || null,
     affiche_sur_index: formData.get('affiche_sur_index') === 'on',
+    parent_id: (formData.get('parent_id') as string) || null,
   }).select('id').single()
   if (error) return { error: error.message }
   revalidatePath('/admin/editeurs')
@@ -799,6 +800,7 @@ export async function updateEditeur(id: string, formData: FormData) {
     siret: (formData.get('siret') as string) || null,
     mot_editeur: (formData.get('mot_editeur') as string) || null,
     affiche_sur_index: formData.get('affiche_sur_index') === 'on',
+    parent_id: (formData.get('parent_id') as string) || null,
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/editeurs')

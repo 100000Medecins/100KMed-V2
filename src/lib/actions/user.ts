@@ -118,8 +118,12 @@ export async function getCurrentUserProfile() {
  */
 export async function checkEmailExists(email: string): Promise<boolean> {
   const supabase = createServiceRoleClient()
+  // auth.users.email est stocké en minuscules par GoTrue, mais la RPC fait un match exact
+  // sensible à la casse. On normalise l'entrée pour éviter les faux « compte introuvable »
+  // quand l'utilisateur tape une casse différente (ex. mobile en auto-majuscule).
+  const normalized = email.trim().toLowerCase()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any).rpc('check_auth_email_exists', { p_email: email })
+  const { data } = await (supabase as any).rpc('check_auth_email_exists', { p_email: normalized })
   return !!data
 }
 

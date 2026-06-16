@@ -33,15 +33,27 @@ async function getSolutionsSansEditeur(): Promise<SolutionLite[]> {
   return (data ?? []) as SolutionLite[]
 }
 
+// Options de maison-mère : tous les autres éditeurs (l'éditeur courant ne peut pas être son propre parent).
+async function getParentOptions(currentId: string): Promise<{ id: string; nom: string }[]> {
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('editeurs')
+    .select('id, nom, nom_commercial')
+    .neq('id', currentId)
+    .order('nom', { ascending: true })
+  return (data ?? []).map((e) => ({ id: e.id, nom: e.nom_commercial || e.nom || e.id }))
+}
+
 export default async function AdminModifierEditeurPage({ params }: PageProps) {
   const { id } = await params
   const supabase = createServiceRoleClient()
   const { data: editeur } = await supabase.from('editeurs').select('*').eq('id', id).single()
   if (!editeur) notFound()
 
-  const [solutions, solutionsSansEditeur] = await Promise.all([
+  const [solutions, solutionsSansEditeur, parentOptions] = await Promise.all([
     getEditeurSolutions(id),
     getSolutionsSansEditeur(),
+    getParentOptions(id),
   ])
   const boundAction = updateEditeur.bind(null, id)
 
@@ -65,7 +77,7 @@ export default async function AdminModifierEditeurPage({ params }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="bg-white rounded-card shadow-card p-6 md:p-8">
-            <EditeurWithSearch editeur={editeur as Editeur} action={boundAction} />
+            <EditeurWithSearch editeur={editeur as Editeur} parentOptions={parentOptions} action={boundAction} />
           </div>
         </div>
 

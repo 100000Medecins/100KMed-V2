@@ -21,11 +21,14 @@ interface Editeur {
   siret: string | null
   mot_editeur: string | null
   affiche_sur_index?: boolean | null
+  parent_id?: string | null
 }
 
 interface EditeurFormProps {
   editeur?: Editeur | null
   initialValues?: EditeurSuggestion
+  /** Liste des éditeurs sélectionnables comme maison-mère (déjà filtrée : exclut l'éditeur courant). */
+  parentOptions?: { id: string; nom: string }[]
   action: (formData: FormData) => Promise<{ error?: string } | void>
 }
 
@@ -46,7 +49,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export default function EditeurForm({ editeur, initialValues, action }: EditeurFormProps) {
+export default function EditeurForm({ editeur, initialValues, parentOptions, action }: EditeurFormProps) {
   const v = initialValues // alias court
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -210,7 +213,7 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
 
       <Section title="Informations complémentaires">
         <div>
-          <label htmlFor="nb_employes" className={labelClass}>Nombre d'employés</label>
+          <label htmlFor="nb_employes" className={labelClass}>Nombre d&apos;employés</label>
           <input
             id="nb_employes"
             type="number"
@@ -223,6 +226,29 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
 
       </Section>
 
+      {parentOptions && parentOptions.length > 0 && (
+        <Section title="Maison-mère (groupe)">
+          <div>
+            <label htmlFor="parent_id" className={labelClass}>Éditeur parent</label>
+            <select
+              id="parent_id"
+              name="parent_id"
+              defaultValue={editeur?.parent_id ?? ''}
+              className={inputClass}
+            >
+              <option value="">— Aucune (éditeur indépendant)</option>
+              {parentOptions.map((p) => (
+                <option key={p.id} value={p.id}>{p.nom}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1.5">
+              Si cet éditeur est une marque rachetée (ex. Prokov par Equasens), choisissez sa maison-mère.
+              Un compte éditeur rattaché à la maison-mère pourra gérer les solutions de toutes ses filiales.
+            </p>
+          </div>
+        </Section>
+      )}
+
       <Section title="Visibilité publique">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
@@ -234,7 +260,7 @@ export default function EditeurForm({ editeur, initialValues, action }: EditeurF
           <span className="text-sm text-gray-700">
             <span className="font-medium text-navy">Lister cet éditeur sur la page publique /editeurs</span>
             <span className="block text-xs text-gray-500 mt-0.5">
-              À activer une fois la fiche complète (logo, description, …). Décocher si la page éditeur n'est pas prête à être exposée.
+              À activer une fois la fiche complète (logo, description, …). Décocher si la page éditeur n&apos;est pas prête à être exposée.
             </span>
           </span>
         </label>

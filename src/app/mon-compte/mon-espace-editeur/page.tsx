@@ -17,6 +17,7 @@ type Solution = {
   slug: string | null
   logo_url: string | null
   actif: boolean | null
+  id_editeur: string | null
   mot_editeur: string | null
   prix_ttc: number | null
   prix_ttc_min: number | null
@@ -59,7 +60,8 @@ type Tab = 'editeur' | 'solutions'
 
 export default function MonEspaceEditeurPage() {
   const { user, userRole, loading } = useAuth()
-  const [data, setData] = useState<{ editeur: Editeur; solutions: Solution[] } | null>(null)
+  const [data, setData] = useState<{ editeur: Editeur; solutions: Solution[]; filiales: Editeur[] } | null>(null)
+  const [selectedEditeurId, setSelectedEditeurId] = useState<string | null>(null)
   const [fetching, setFetching] = useState(true)
   const [openSolutionId, setOpenSolutionId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('editeur')
@@ -72,7 +74,7 @@ export default function MonEspaceEditeurPage() {
       return
     }
     getEditeurDataForUser(user.id).then((d) => {
-      const typed = d as { editeur: Editeur; solutions: Solution[] } | null
+      const typed = d as { editeur: Editeur; solutions: Solution[]; filiales: Editeur[] } | null
       setData(typed)
       // Si l'éditeur n'a qu'une seule solution, on la déplie automatiquement
       if (typed && typed.solutions.length === 1) {
@@ -112,7 +114,32 @@ export default function MonEspaceEditeurPage() {
     )
   }
 
-  const { editeur, solutions } = data
+  const { editeur, solutions, filiales } = data
+
+  // Multi-marque : si l'éditeur a des filiales (maison-mère), on affiche sur chaque
+  // solution la marque à laquelle elle est rattachée pour s'y retrouver.
+  const multiMarque = filiales.length > 0
+  const nomById = new Map<string, string>([
+    [editeur.id, editeur.nom_commercial || editeur.nom || 'Éditeur'],
+    ...filiales.map((f) => [f.id, f.nom_commercial || f.nom || 'Filiale'] as [string, string]),
+  ])
+
+  // Maison-mère : le compte peut éditer la page de l'éditeur parent ET de ses filiales.
+  const editeursGeres: Editeur[] = [editeur, ...filiales]
+  const currentEditeurId = selectedEditeurId ?? editeur.id
+  const selectedEditeur = editeursGeres.find((e) => e.id === currentEditeurId) ?? editeur
+
+  const handleEditeurSaved = (updated: Partial<Editeur>) =>
+    setData((prev) => {
+      if (!prev) return prev
+      if (currentEditeurId === prev.editeur.id) {
+        return { ...prev, editeur: { ...prev.editeur, ...updated } }
+      }
+      return {
+        ...prev,
+        filiales: prev.filiales.map((f) => (f.id === currentEditeurId ? { ...f, ...updated } : f)),
+      }
+    })
 
   return (
     <div className="space-y-6">
@@ -125,11 +152,46 @@ export default function MonEspaceEditeurPage() {
       </div>
 
       {activeTab === 'editeur' ? (
-        <EditeurInfoCard
-          editeur={editeur}
-          userId={user!.id}
-          onSaved={(updated) => setData((prev) => (prev ? { ...prev, editeur: { ...prev.editeur, ...updated } } : prev))}
-        />
+        <div className="space-y-4">
+          {/* Sélecteur de marque (maison-mère + filiales) */}
+          {editeursGeres.length > 1 && (
+            <div className="bg-white rounded-card shadow-card p-4">
+              <p className="text-xs font-medium text-gray-500 mb-2">Page éditeur à modifier</p>
+              <div className="flex flex-wrap gap-2">
+                {editeursGeres.map((e) => {
+                  const isParent = e.id === editeur.id
+                  const active = e.id === currentEditeurId
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => setSelectedEditeurId(e.id)}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                        active
+                          ? 'bg-navy text-white border-navy'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
+                      }`}
+                    >
+                      {e.nom_commercial || e.nom}
+                      {isParent && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-accent-blue/10 text-accent-blue'}`}>
+                          maison-mère
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          <EditeurInfoCard
+            key={currentEditeurId}
+            editeur={selectedEditeur}
+            editeurId={currentEditeurId}
+            userId={user!.id}
+            onSaved={handleEditeurSaved}
+          />
+        </div>
       ) : solutions.length === 0 ? (
         <div className="bg-white rounded-card shadow-card p-8 text-center text-gray-400 text-sm">
           Aucune solution associée à votre éditeur.
@@ -141,6 +203,7 @@ export default function MonEspaceEditeurPage() {
               key={sol.id}
               solution={sol}
               userId={user!.id}
+              editeurLabel={multiMarque && sol.id_editeur ? nomById.get(sol.id_editeur) : undefined}
               isOpen={openSolutionId === sol.id}
               onToggle={() => setOpenSolutionId(openSolutionId === sol.id ? null : sol.id)}
               onSaved={(updatedSol) =>
@@ -192,10 +255,12 @@ function TabButton({
    ───────────────────────────────────────────────────────────────────────── */
 function EditeurInfoCard({
   editeur,
+  editeurId,
   userId,
   onSaved,
 }: {
   editeur: Editeur
+  editeurId: string
   userId: string
   onSaved: (fields: Partial<Editeur>) => void
 }) {
@@ -223,7 +288,7 @@ function EditeurInfoCard({
         contact_pays: pays,
         nb_employes: nbEmployes === '' ? null : Number(nbEmployes),
       }
-      await updateEditeurByUser(userId, fields)
+      await updateEditeurByUser(userId, editeurId, fields)
       onSaved(fields)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
@@ -340,12 +405,14 @@ type PrixMode = 'unique' | 'plage'
 function SolutionEditeurCard({
   solution,
   userId,
+  editeurLabel,
   isOpen,
   onToggle,
   onSaved,
 }: {
   solution: Solution
   userId: string
+  editeurLabel?: string
   isOpen: boolean
   onToggle: () => void
   onSaved: (s: Solution) => void
@@ -447,6 +514,12 @@ function SolutionEditeurCard({
           )}
           <div>
             <span className="font-semibold text-navy">{solution.nom}</span>
+            {editeurLabel && (
+              <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold bg-accent-blue/10 text-accent-blue px-2 py-0.5 rounded-full align-middle">
+                <Building2 className="w-2.5 h-2.5" />
+                {editeurLabel}
+              </span>
+            )}
             {solution.actif === false && (
               <span className="ml-2 text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Inactive</span>
             )}
