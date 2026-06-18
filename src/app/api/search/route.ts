@@ -3,14 +3,15 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim()
-  if (!q || q.length < 2) return NextResponse.json({ solutions: [], articles: [], categories: [], acronymes: [] })
+  if (!q || q.length < 2) return NextResponse.json({ solutions: [], editeurs: [], articles: [], categories: [], acronymes: [] })
 
   const supabase = createServiceRoleClient()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = supabase as any
-  const [solutionsRes, articlesRes, categoriesRes, acronymesRes] = await Promise.all([
+  const [solutionsRes, editeursRes, articlesRes, categoriesRes, acronymesRes] = await Promise.all([
     s.rpc('search_solutions', { query: q, max_results: 6 }),
+    s.rpc('search_editeurs', { query: q, max_results: 4 }),
     s.rpc('search_articles', { query: q, max_results: 4 }),
     s.rpc('search_categories', { query: q, max_results: 3 }),
     s
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     solutions: solutionsRes.data ?? [],
+    editeurs: editeursRes.data ?? [],
     articles: articlesRes.data ?? [],
     categories: categoriesRes.data ?? [],
     acronymes: acronymesRes.data ?? [],

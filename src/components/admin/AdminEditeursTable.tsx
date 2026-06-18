@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, X, Pencil, ExternalLink } from 'lucide-react'
 import DeleteEditeurButton from '@/components/admin/DeleteEditeurButton'
+import EditeurVisibilityToggle from '@/components/admin/EditeurVisibilityToggle'
 import type { Editeur } from '@/types/models'
 
 function isIncomplet(ed: Editeur): boolean {
@@ -24,7 +25,6 @@ export default function AdminEditeursTable({ editeurs }: { editeurs: Editeur[] }
       return (
         (ed.nom?.toLowerCase().includes(q) ?? false) ||
         (ed.nom_commercial?.toLowerCase().includes(q) ?? false) ||
-        (ed.contact_ville?.toLowerCase().includes(q) ?? false) ||
         (ed.website?.toLowerCase().includes(q) ?? false)
       )
     })
@@ -39,7 +39,7 @@ export default function AdminEditeursTable({ editeurs }: { editeurs: Editeur[] }
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher par nom, ville, site web…"
+            placeholder="Rechercher par nom, site web…"
             className="w-full pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50"
           />
           {query && (
@@ -78,7 +78,7 @@ export default function AdminEditeursTable({ editeurs }: { editeurs: Editeur[] }
           <thead className="bg-surface-light border-b border-gray-100">
             <tr>
               <th className="text-left px-6 py-3 font-medium text-gray-500">Éditeur</th>
-              <th className="text-left px-6 py-3 font-medium text-gray-500 hidden md:table-cell">Ville</th>
+              <th className="text-left px-6 py-3 font-medium text-gray-500">Visible</th>
               <th className="text-left px-6 py-3 font-medium text-gray-500 hidden lg:table-cell">Site web</th>
               <th className="px-6 py-3" />
             </tr>
@@ -112,8 +112,8 @@ export default function AdminEditeursTable({ editeurs }: { editeurs: Editeur[] }
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-500 hidden md:table-cell">
-                  {ed.contact_ville || '—'}
+                <td className="px-6 py-4">
+                  <EditeurVisibilityToggle id={ed.id} initial={ed.affiche_sur_index} />
                 </td>
                 <td className="px-6 py-4 hidden lg:table-cell">
                   {ed.website ? (

@@ -320,6 +320,7 @@ function extractCategorieFromFormData(formData: FormData) {
     slug,
     icon: (formData.get('icon') as string) || null,
     intro: (formData.get('intro') as string) || null,
+    meta_description: (formData.get('meta_description') as string)?.trim() || null,
     image_url: (formData.get('image_url') as string) || null,
     label_filtres: (formData.get('label_filtres') as string) || null,
     has_note_redac: formData.get('has_note_redac') !== 'false',
@@ -815,6 +816,26 @@ export async function deleteEditeur(id: string) {
   const supabase = createServiceRoleClient()
   await supabase.from('editeurs').delete().eq('id', id)
   revalidatePath('/admin/editeurs')
+}
+
+/**
+ * Bascule la visibilité publique d'un éditeur (champ `affiche_sur_index`)
+ * directement depuis la liste admin, sans ouvrir le formulaire d'édition.
+ * ON = listé sur /editeurs (et inclus dans le sitemap).
+ */
+export async function toggleEditeurAfficheSurIndex(id: string, value: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('editeurs')
+    .update({ affiche_sur_index: value })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/editeurs')
+  revalidatePath('/editeurs')
+  const { data: ed } = await supabase.from('editeurs').select('slug').eq('id', id).single()
+  if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
+  return { success: true as const }
 }
 
 /**

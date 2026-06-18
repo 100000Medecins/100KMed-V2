@@ -6,6 +6,7 @@ import { Search, X, ArrowRight } from 'lucide-react'
 
 type SearchResult = {
   solutions: { id: string; nom: string; slug: string; logo_url: string | null; categorie_nom: string | null; categorie_slug: string | null }[]
+  editeurs: { id: string; nom: string; nom_commercial: string | null; slug: string; logo_url: string | null }[]
   articles: { id: string; titre: string; slug: string; extrait: string | null; image_couverture: string | null }[]
   categories: { id: string; nom: string; slug: string; icon: string | null }[]
   acronymes: { sigle: string; definition: string }[]
@@ -69,6 +70,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
 
   const hasResults = results && (
     results.solutions.length > 0 ||
+    results.editeurs.length > 0 ||
     results.articles.length > 0 ||
     results.categories.length > 0 ||
     results.acronymes.length > 0
@@ -136,6 +138,31 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-navy truncate">{s.nom}</p>
                           {s.categorie_nom && <p className="text-xs text-gray-400 truncate">{s.categorie_nom}</p>}
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Éditeurs */}
+                {results.editeurs.length > 0 && (
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Éditeurs</p>
+                    {results.editeurs.map((e) => (
+                      <button
+                        key={e.id}
+                        onClick={() => navigate(`/editeur/${e.slug}`)}
+                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-surface-light flex items-center justify-center shrink-0 overflow-hidden">
+                          {e.logo_url
+                            ? <img src={e.logo_url} alt={e.nom_commercial || e.nom} className="w-full h-full object-contain p-1" />
+                            : <span className="text-xs font-bold text-accent-blue">{(e.nom_commercial || e.nom).substring(0, 2).toUpperCase()}</span>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-navy truncate">{e.nom_commercial || e.nom}</p>
                         </div>
                         <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
                       </button>
