@@ -5,6 +5,26 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-06-13**
+- [OK] 2026-06-13 : Nouveau pattern meta title des fiches solutions — reste 31 nom_seo à remplir (URGENT)
+  - Plomberie livrée 2026-06-11 : nouveau pattern `Les avis de vos confrères sur <nom> - 100 000 Médecins` actif. Helper [src/lib/seo/title.ts](src/lib/seo/title.ts) source unique. API admin, script standalone, fallback runtime, server action (auto-recompute au save) tous alignés. Colonne `solutions.nom_seo` ajoutée pour les noms qui débordent. Migration de masse : 65/96 solutions migrées au nouveau pattern, backup `backups/meta-title-before-2026-06-11T22-12-58-926Z.json`.
+  - Travail éditorial 2026-06-13 : les 31 solutions restantes ont leur champ `nom_seo` rempli manuellement via le filtre admin « Nom SEO à fixer ». Compteur ramené à 0 côté admin. Auto-recompute du `meta.title` côté server action. Cf CHANGELOG 2026-06-13.
+
+- [OK] 2026-06-13 : Changer le logo en haut de la page `/completer-profil` (UX / UI)
+  - Contexte : page affichée après login PSC quand le profil est incomplet (prénom/nom/spécialité/mode d'exercice à compléter). Le logo « 100 000 Médecins .org » actuel en haut à gauche était à revoir.
+  - Résolu via ajout d'un prop `minimal` à `<Navbar />` (commit `812bab7`) : masque liens / mega-menus / CTAs / search, garde uniquement logo + bouton « Se déconnecter », logo non cliquable. Utilisé sur `/completer-profil` qui remplace son `<MinimalHeader>` custom (~40 lignes) par `<Navbar minimal />` → bénéficie automatiquement du logo 3 lignes débordant unifié livré le 2026-05-31.
+
+**2026-06-12**
+- [OK] 2026-06-12 : Cartes solutions sur fiche éditeur — « Pas encore de notes » alors qu'il y en a (URGENT — bug fix)
+  - Symptôme : `/editeur/[slug]` listait toutes les solutions sans note alors que les évaluations existaient en BDD.
+  - Cause : `getEditeurWithSolutions()` faisait `select('*, categorie:categories!inner(*)')` sans calculer les agrégats de notes. Le composant `SolutionList` attend `noteRedacBase5`, `noteUtilisateursBase5`, `nbNotesUtilisateurs` enrichis sur chaque solution → `displayNote = null` → fallback « Pas encore noté ».
+  - Fix : `src/lib/db/editeurs.ts` enrichit avec `getNotesGlobalesRedac` + `getNotesUtilisateursGlobales` + `getNbNotesUtilisateurs` après le fetch. `src/app/editeur/[slug]/page.tsx` passe `tri="note_utilisateurs"` et `displayPrixFront` à `<SolutionList>`. Alignement total avec le rendu du comparatif catégorie. Cf CHANGELOG 2026-06-12.
+
+- [OK] 2026-06-12 : Renommer la catégorie « Logiciels métier » → « Logiciel médical » + nouveau slug (URGENT)
+  - Renommage de la catégorie de `Logiciels métier` → `Logiciel médical`, slug `logiciels-metiers` → `logiciel-medical` (singulier + nouveau mot).
+  - Plan complet exécuté (BDD `categories`, label hardcodé `SoftwareCategories.tsx`, redirections `next.config.mjs`, scripts d'import, admin, docs).
+  - Redirections SEO ajoutées (commit `62d3c44`) pour préserver l'ancien slug : `/solutions/logiciels-metiers` → `/solutions/logiciel-medical`.
+
 **2026-06-07**
 - [OK] 2026-06-07 : Supprimer les fallbacks silencieux des pages BDD (try/catch vide) (Nettoyage)
   - Contexte (2026-05-29) : les pages `(static)/` (cgu, rgpd, transparence, contact, actualites…) utilisaient un pattern `try { dbPage = await getPageBySlug(slug) } catch {}` qui avalait silencieusement toute erreur d'accès BDD (notamment l'absence de GRANT pour `anon` qui a pourri la situation pendant 2 mois). Conséquence : l'admin éditait, la BDD enregistrait, mais le front affichait toujours le fallback hardcodé de 2023.

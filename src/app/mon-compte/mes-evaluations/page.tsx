@@ -186,6 +186,8 @@ export default function MesEvaluationsPage() {
                           ? lastDate
                             ? `Évalué le ${new Date(lastDate).toLocaleDateString('fr-FR')}`
                             : 'Évaluation complète'
+                          : su.statut_evaluation === 'aCompleter'
+                          ? 'Note comptée — à compléter'
                           : su.statut_evaluation === 'instanciee'
                           ? 'En cours'
                           : su.statut_evaluation}

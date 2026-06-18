@@ -1,7 +1,7 @@
 # Méthodologie de notation — 100 000 Médecins
 
 > Document de référence sur le fonctionnement complet du système de notation.
-> Mis à jour : 2026-05-06
+> Mis à jour : 2026-06-18
 > À consulter avant toute intervention sur les évaluations, les notes ou les calculs associés.
 
 ---
@@ -132,12 +132,54 @@ Utilisateur → /solution/noter/[...slug]
               │
               ▼
     recalcResultatsPourSolution()        [src/lib/actions/evaluation.ts]
-      → recalcule resultats depuis TOUTES les évaluations statut='publiee'
+      → recalcule resultats depuis les évaluations statut='publiee' ET moyenne_utilisateur
+        IS NOT NULL (= les 5 critères principaux remplis ; écarte les brouillons partiels,
+        cf. §« Cycle de vie & comptabilisation »)
       → ⚠️ traite uniquement les critères avec parent_id IS NULL (les 5 critères principaux)
       → les scores de sous-critères (detail_*, agenda_*, docai_*…) sont stockés dans
         evaluations.scores mais NE sont PAS agrégés dans resultats
       → les lignes sous-critères dans resultats datent de la migration Firebase (valeurs figées)
 ```
+
+---
+
+## Cycle de vie & comptabilisation (décision produit 2026-06-18)
+
+**Règle fondamentale** : dès que les **5 critères principaux** sont remplis (chacun > 0),
+la note est **valide et doit être comptabilisée**, même si l'utilisateur ne va pas au bout
+des sous-critères (il ferme le navigateur). C'est la condition minimale de validation.
+
+Deux axes **indépendants** portent cet état :
+
+| Axe | Champ | Sert à |
+|---|---|---|
+| **Valide pour le calcul** | `evaluations.moyenne_utilisateur` + `last_date_note` (posés dès les 5 principaux) | compter dans la note globale, `nb_notes`, et les témoignages |
+| **Complétude (vue utilisateur)** | `solutions_utilisees.statut_evaluation` | afficher l'état dans « Mes évaluations » |
+
+Transitions de `statut_evaluation` :
+- `instanciee` → brouillon démarré, **moins de 5 principaux** → non compté.
+- `aCompleter` → **5 principaux remplis** : note **comptée**, mais sous-critères non finalisés → affichée « Note comptée — à compléter » avec un bouton « Compléter mon évaluation ».
+- `finalisee` → questionnaire complété via `submitEvaluation`.
+
+### Mécanisme (où c'est posé)
+- `saveDraftEvaluation` ([evaluation.ts]) est appelé **à chaque navigation d'étape**. Quand les
+  5 principaux sont présents, il pose `moyenne_utilisateur` (moyenne des 5, base 5) +
+  `last_date_note`, passe `statut_evaluation='aCompleter'`, et déclenche
+  `recalcResultatsPourSolution` → la note compte **immédiatement**.
+- `submitEvaluation` finalise : recalcule la moyenne raffinée (sous-critères) et pose
+  `statut_evaluation='finalisee'`.
+
+### ⚠️ Piège : DEFAULT `evaluations.statut = 'publiee'`
+La colonne `statut` a pour **DEFAULT `'publiee'`**. Un brouillon inséré sans statut explicite
+est donc « publié » d'emblée. Pour éviter que des brouillons *partiels* (< 5 principaux,
+sans `moyenne_utilisateur`) ne polluent les agrégats, **toute comptabilisation filtre sur
+`moyenne_utilisateur IS NOT NULL`** (et non sur le seul `statut='publiee'`) :
+- `recalcResultatsPourSolution` (agrégats `resultats` / `nb_notes`),
+- les témoignages (`getAvisUtilisateursPaginated`, via `last_date_note IS NOT NULL`).
+
+> Historique du bug corrigé le 2026-06-18 : avant, `nb_notes` (carte comparatif) comptait
+> tous les `statut='publiee'` y compris les brouillons sans moyenne → divergence visible
+> avec les témoignages (ex. carte « 9 avis » vs « Témoignages (8) »).
 
 ---
 
@@ -173,9 +215,12 @@ Toutes les évaluations sont désormais au format unifié 0-5 (migration Firebas
 evaluations
   id, user_id, solution_id
   scores (JSONB)              ← notes brutes + détail
-  moyenne_utilisateur         ← moyenne globale de l'avis (0-5), précalculée
-  statut                      ← 'publiee' | 'en_attente_psc'
-  last_date_note              ← date de finalisation
+  moyenne_utilisateur         ← moyenne globale de l'avis (0-5), précalculée.
+                                 NULL tant que les 5 critères principaux ne sont pas remplis.
+                                 NON NULL = note valide / comptabilisée (cf. §Cycle de vie).
+  statut                      ← 'publiee' | 'en_attente_psc'  (⚠️ DEFAULT = 'publiee')
+  last_date_note              ← posée dès que la note est valide (5 principaux), pas seulement
+                                 à la finalisation complète
 
 resultats
   id, solution_id, critere_id

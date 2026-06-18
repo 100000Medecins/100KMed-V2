@@ -20,12 +20,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
   - Vérifier sous ~1 semaine que `sitemap.xml` passe en « Réussite » (recrawl Google en cours ; l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections).
   - Surveiller le déréférencement progressif de `legacy.` dans les résultats Google.
 
-#### ~~🐛 Cartes solutions sur fiche éditeur — « Pas encore de notes » alors qu'il y en a (2026-06-11)~~ [OK] Fait 2026-06-12 (cf CHANGELOG)
-
-#### ~~Nouveau pattern meta title des fiches solutions — reste 31 nom_seo à remplir (2026-06-11)~~ [OK] Fait 2026-06-13
-
-#### ~~Renommer la catégorie « Logiciels métier » → « Logiciel médical » + nouveau slug (2026-06-11)~~ [OK] Fait 2026-06-12 (commits `4bf4f62` rename + `62d3c44` redirects)
-
 ---
 
 ## En attente / Idées
@@ -95,8 +89,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
 
 ### UX / UI
-
-#### ~~Changer le logo en haut de la page `/completer-profil`~~ [OK] Fait 2026-06-13 (la page utilise déjà `<Navbar />` partagée → logo 3 lignes débordant unifié depuis la refonte navbar du 2026-05-31)
 
 #### Tooltip note globale — affiner après la livraison initiale (2026-05-30)
 
