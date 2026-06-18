@@ -20,13 +20,15 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 async function searchAll(query: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
-  const [solutionsRes, articlesRes, categoriesRes] = await Promise.all([
+  const [solutionsRes, editeursRes, articlesRes, categoriesRes] = await Promise.all([
     supabase.rpc('search_solutions', { query, max_results: 20 }),
+    supabase.rpc('search_editeurs', { query, max_results: 12 }),
     supabase.rpc('search_articles', { query, max_results: 10 }),
     supabase.rpc('search_categories', { query, max_results: 6 }),
   ])
   return {
     solutions: solutionsRes.data ?? [],
+    editeurs: editeursRes.data ?? [],
     articles: articlesRes.data ?? [],
     categories: categoriesRes.data ?? [],
   }
@@ -36,7 +38,7 @@ export default async function RecherchePage(props: PageProps) {
   const searchParams = await props.searchParams;
   const q = searchParams.q?.trim() ?? ''
   const results = q.length >= 2 ? await searchAll(q) : null
-  const total = results ? results.solutions.length + results.articles.length + results.categories.length : 0
+  const total = results ? results.solutions.length + results.editeurs.length + results.articles.length + results.categories.length : 0
 
   return (
     <>
@@ -98,6 +100,32 @@ export default async function RecherchePage(props: PageProps) {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-navy group-hover:text-accent-blue transition-colors truncate">{s.nom}</p>
                       {s.categorie_nom && <p className="text-xs text-gray-400 truncate">{s.categorie_nom}</p>}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Éditeurs */}
+          {results && results.editeurs.length > 0 && (
+            <section>
+              <h2 className="text-lg font-bold text-navy mb-4">Éditeurs ({results.editeurs.length})</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {results.editeurs.map((e: any) => (
+                  <Link
+                    key={e.id}
+                    href={`/editeur/${e.slug}`}
+                    className="flex items-center gap-4 bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all p-4 group"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center shrink-0 overflow-hidden">
+                      {e.logo_url
+                        ? <img src={e.logo_url} alt={e.nom_commercial || e.nom} className="w-full h-full object-contain p-1.5" />
+                        : <span className="text-sm font-bold text-accent-blue">{(e.nom_commercial || e.nom).substring(0, 2).toUpperCase()}</span>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-navy group-hover:text-accent-blue transition-colors truncate">{e.nom_commercial || e.nom}</p>
                     </div>
                   </Link>
                 ))}

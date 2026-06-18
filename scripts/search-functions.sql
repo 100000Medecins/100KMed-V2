@@ -102,3 +102,46 @@ LANGUAGE sql STABLE AS $$
   ORDER BY similarity_score DESC, c.nom
   LIMIT max_results;
 $$;
+
+-- 5. Recherche éditeurs (ajout 2026-06-18)
+--    /!\ id en TEXT (IDs hérités Firebase, PAS uuid comme solutions.id).
+--    Filtré sur affiche_sur_index = true : un éditeur masqué ne doit pas remonter
+--    dans la recherche publique (cohérent avec /editeurs et le sitemap).
+CREATE INDEX IF NOT EXISTS idx_editeurs_nom_trgm ON editeurs USING gin (nom gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_editeurs_nom_commercial_trgm ON editeurs USING gin (nom_commercial gin_trgm_ops);
+
+CREATE OR REPLACE FUNCTION search_editeurs(query text, max_results int DEFAULT 4)
+RETURNS TABLE (
+  id text,
+  nom text,
+  nom_commercial text,
+  slug text,
+  logo_url text,
+  similarity_score float
+)
+LANGUAGE sql STABLE AS $$
+  SELECT
+    e.id,
+    e.nom,
+    e.nom_commercial,
+    e.slug,
+    e.logo_url,
+    GREATEST(
+      similarity(e.nom, query),
+      similarity(COALESCE(e.nom_commercial, ''), query),
+      similarity(COALESCE(e.description, ''), query) * 0.5
+    ) AS similarity_score
+  FROM editeurs e
+  WHERE
+    e.affiche_sur_index = true
+    AND e.slug IS NOT NULL
+    AND (
+      e.nom ILIKE '%' || query || '%'
+      OR e.nom_commercial ILIKE '%' || query || '%'
+      OR e.description ILIKE '%' || query || '%'
+      OR similarity(e.nom, query) > 0.15
+      OR similarity(COALESCE(e.nom_commercial, ''), query) > 0.15
+    )
+  ORDER BY similarity_score DESC, e.nom
+  LIMIT max_results;
+$$;
