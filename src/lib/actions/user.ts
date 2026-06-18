@@ -403,6 +403,75 @@ export async function completeProfile(data: {
   return { status: 'SUCCESS' }
 }
 
+/**
+ * Signalement d'une erreur dans les informations d'identité PSC (lecture seule).
+ * Les champs PSC viennent de l'annuaire RPPS et ne sont pas modifiables ici : ce
+ * signalement nous est envoyé par email pour triage (correction de mapping côté
+ * site, surcharge admin, ou orientation vers l'Ordre).
+ */
+export async function signalerErreurIdentite(input: {
+  champ: string
+  message: string
+  email: string
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const authClient = await createServerClient()
+  const {
+    data: { user },
+  } = await authClient.auth.getUser()
+  if (!user) return { ok: false, error: 'Non authentifié.' }
+
+  const email = input.email?.trim() ?? ''
+  if (!email.includes('@')) return { ok: false, error: 'Adresse email invalide.' }
+  if (!input.message?.trim()) return { ok: false, error: "Merci de préciser l'erreur." }
+
+  const supabase = createServiceRoleClient()
+  const { data: profile } = await supabase
+    .from('users')
+    .select('nom, prenom, specialite, mode_exercice, rpps')
+    .eq('id', user.id)
+    .single()
+
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('[signalerErreurIdentite] SENDGRID_API_KEY absente — non envoyé')
+    return { ok: false, error: 'Envoi indisponible pour le moment.' }
+  }
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+
+  const esc = (s: string | null | undefined) =>
+    (s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  const html = `
+    <h2>Signalement d'erreur d'identité (Pro Santé Connect)</h2>
+    <p><strong>Champ concerné :</strong> ${esc(input.champ)}</p>
+    <p><strong>Message du médecin :</strong><br/>${esc(input.message).replace(/\n/g, '<br/>')}</p>
+    <hr/>
+    <p><strong>Identité PSC enregistrée :</strong></p>
+    <ul>
+      <li>Prénom : ${esc(profile?.prenom)}</li>
+      <li>Nom : ${esc(profile?.nom)}</li>
+      <li>Spécialité : ${esc(profile?.specialite)}</li>
+      <li>Mode d'exercice : ${esc(profile?.mode_exercice)}</li>
+      <li>RPPS : ${esc(profile?.rpps)}</li>
+    </ul>
+    <p><strong>Email de contact fourni :</strong> ${esc(email)}</p>
+    <p><strong>User ID :</strong> ${esc(user.id)}</p>
+  `
+
+  try {
+    await sgMail.send({
+      to: 'david.azerad@100000medecins.org',
+      from: 'contact@100000medecins.org',
+      replyTo: email,
+      subject: `Signalement identité — ${esc(profile?.prenom)} ${esc(profile?.nom)} (RPPS ${esc(profile?.rpps)})`,
+      html,
+    })
+  } catch (e) {
+    console.error('[signalerErreurIdentite] envoi SendGrid échoué', e)
+    return { ok: false, error: "Erreur lors de l'envoi. Réessayez." }
+  }
+  return { ok: true }
+}
+
 export type EditeurClaimOption = {
   value: string  // 'editeur:uuid' ou 'solution:uuid'
   label: string
