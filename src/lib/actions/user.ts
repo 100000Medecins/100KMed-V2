@@ -372,12 +372,14 @@ export async function completeProfile(data: {
     .update({
       nom: data.nom,
       prenom: data.prenom,
-      pseudo: data.pseudo?.trim() || null,
       role: 'medecin',
       specialite: data.specialite,
       mode_exercice: data.mode_exercice,
       contact_email: data.contact_email,
-      portrait: data.portrait || null,
+      // pseudo/portrait : ne sont écrasés que s'ils sont explicitement fournis
+      // (l'écran de complétion ne les envoie plus — ils se règlent dans /mon-compte/profil)
+      ...(data.pseudo !== undefined ? { pseudo: data.pseudo.trim() || null } : {}),
+      ...(data.portrait !== undefined ? { portrait: data.portrait || null } : {}),
       is_complete: true,
     })
     .eq('id', user.id)
