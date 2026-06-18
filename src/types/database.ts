@@ -268,6 +268,7 @@ export type Database = {
           intro: string | null
           label_filtres: string | null
           label_fonctionnalites: string | null
+          meta_description: string | null
           nom: string
           position: number | null
           slug: string | null
@@ -283,6 +284,7 @@ export type Database = {
           intro?: string | null
           label_filtres?: string | null
           label_fonctionnalites?: string | null
+          meta_description?: string | null
           nom: string
           position?: number | null
           slug?: string | null
@@ -298,6 +300,7 @@ export type Database = {
           intro?: string | null
           label_filtres?: string | null
           label_fonctionnalites?: string | null
+          meta_description?: string | null
           nom?: string
           position?: number | null
           slug?: string | null
@@ -2068,6 +2071,17 @@ export type Database = {
           icon: string
           id: string
           nom: string
+          similarity_score: number
+          slug: string
+        }[]
+      }
+      search_editeurs: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          id: string
+          logo_url: string
+          nom: string
+          nom_commercial: string
           similarity_score: number
           slug: string
         }[]

@@ -320,6 +320,7 @@ function extractCategorieFromFormData(formData: FormData) {
     slug,
     icon: (formData.get('icon') as string) || null,
     intro: (formData.get('intro') as string) || null,
+    meta_description: (formData.get('meta_description') as string)?.trim() || null,
     image_url: (formData.get('image_url') as string) || null,
     label_filtres: (formData.get('label_filtres') as string) || null,
     has_note_redac: formData.get('has_note_redac') !== 'false',

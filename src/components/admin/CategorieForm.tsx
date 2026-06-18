@@ -5,10 +5,14 @@ import type { Database } from '@/types/database'
 import RichTextEditor from './RichTextEditor'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
 import Field from '@/components/ui/Field'
 import { updateCategorieImageUrl } from '@/lib/actions/admin'
 
-type Categorie = Database['public']['Tables']['categories']['Row'] & { has_note_redac?: boolean }
+type Categorie = Database['public']['Tables']['categories']['Row'] & {
+  has_note_redac?: boolean
+  meta_description?: string | null
+}
 
 interface CategorieFormProps {
   categorie?: Categorie | null
@@ -21,6 +25,7 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [intro, setIntro] = useState(categorie?.intro ?? '')
+  const [metaDescription, setMetaDescription] = useState(categorie?.meta_description ?? '')
   const [imageUrl, setImageUrl] = useState(categorie?.image_url ?? '')
   const [icon, setIcon] = useState(categorie?.icon ?? '')
   const [hasNoteRedac, setHasNoteRedac] = useState(categorie?.has_note_redac ?? true)
@@ -67,6 +72,7 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
 
   function handleSubmit(formData: FormData) {
     formData.set('intro', intro)
+    formData.set('meta_description', metaDescription)
     formData.set('image_url', imageUrl)
     formData.set('icon', icon)
     formData.set('has_note_redac', String(hasNoteRedac))
@@ -115,6 +121,24 @@ export default function CategorieForm({ categorie, action }: CategorieFormProps)
           onChange={setIntro}
           minHeight={150}
         />
+      </div>
+
+      <div>
+        <Field
+          label="Meta description (SEO)"
+          hint="Description affichée par Google sous le titre. Texte simple (sans mise en forme), ~150-160 caractères. Si vide, un extrait nettoyé de l'introduction est utilisé."
+        >
+          <Textarea
+            name="meta_description"
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value)}
+            rows={3}
+            placeholder="Ex. Logiciel médical (ou LGC) : dossier patient, agenda, FSE et télétransmission. Comparez les solutions les mieux notées par les médecins."
+          />
+        </Field>
+        <p className={`text-xs mt-1 text-right ${metaDescription.length > 165 ? 'text-amber-600' : 'text-gray-400'}`}>
+          {metaDescription.length} / ~160 caractères
+        </p>
       </div>
 
       {/* Image */}

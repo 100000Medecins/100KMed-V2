@@ -20,13 +20,41 @@ interface PageProps {
   searchParams: Promise<{ tags?: string; tri?: string; critere?: string; dir?: string }>
 }
 
+/**
+ * Transforme un fragment HTML (intro riche) en texte plat tronqué, utilisable
+ * comme meta description de secours quand `meta_description` n'est pas renseignée.
+ */
+function buildMetaFromHtml(raw: string, max = 160): string {
+  const text = raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x27;|&#39;|&rsquo;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (text.length <= max) return text
+  const cut = text.slice(0, max)
+  const lastSpace = cut.lastIndexOf(' ')
+  return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trim() + '…'
+}
+
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params;
   const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
   if (!categorie) return { title: 'Solutions' }
+  // meta_description : colonne dédiée (texte simple, contrôle SEO). Fallback :
+  // extrait nettoyé de l'intro HTML, puis phrase générique.
+  const metaDedie = (categorie as { meta_description?: string | null }).meta_description?.trim()
+  const description =
+    metaDedie ||
+    (categorie.intro ? buildMetaFromHtml(categorie.intro) : '') ||
+    `Comparez les meilleurs logiciels de ${categorie.nom} grâce aux avis de médecins.`
   return {
     title: `${categorie.nom} — Comparatif logiciels médicaux`,
-    description: categorie.intro || `Comparez les meilleurs logiciels de ${categorie.nom} grâce aux avis de médecins.`,
+    description,
   }
 }
 
