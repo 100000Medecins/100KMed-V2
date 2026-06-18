@@ -818,6 +818,26 @@ export async function deleteEditeur(id: string) {
 }
 
 /**
+ * Bascule la visibilité publique d'un éditeur (champ `affiche_sur_index`)
+ * directement depuis la liste admin, sans ouvrir le formulaire d'édition.
+ * ON = listé sur /editeurs (et inclus dans le sitemap).
+ */
+export async function toggleEditeurAfficheSurIndex(id: string, value: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('editeurs')
+    .update({ affiche_sur_index: value })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/editeurs')
+  revalidatePath('/editeurs')
+  const { data: ed } = await supabase.from('editeurs').select('slug').eq('id', id).single()
+  if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
+  return { success: true as const }
+}
+
+/**
  * Lie une solution sans éditeur à un éditeur depuis la page admin de l'éditeur.
  */
 export async function attachSolutionToEditeur(solutionId: string, editeurId: string) {
