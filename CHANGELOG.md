@@ -5,6 +5,44 @@
 
 ---
 
+## [2026-06-19] — Onboarding PSC allégé + signalement d'erreur d'identité
+
+### UX / UI — `/completer-profil` : moins de friction pour les comptes PSC
+- Mot de passe rendu **optionnel** (replié), **pseudo + avatar retirés** de l'écran (réglables dans `/mon-compte/profil`), **email toujours requis**. Cible le point de décrochage n°1 : ~85 % des comptes PSC s'arrêtaient sur cette page (vérifié en base : 104/122 inscrits PSC depuis le 25/05 non complétés).
+- `completeProfile` (`src/lib/actions/user.ts`) : `is_complete=true` même sans mot de passe ; `pseudo`/`portrait` non écrasés s'ils ne sont pas fournis (spread conditionnel) ; re-signin post-submit seulement si un mot de passe est défini (sinon la session PSC reste valide).
+- Sous-titre : « Vérifiez vos informations et indiquez juste votre email pour terminer. »
+- Commits `711e46f` (allègement) + `2642675` (signalement), mergés `main` (`b33c9ac`, `0571806`).
+
+### Feature — Signaler une erreur sur l'identité PSC (lecture seule)
+- Lien **« Une erreur ? »** + modale sur `/completer-profil` (info concernée, message, email requis). Server action `signalerErreurIdentite` → email à `david.azerad@100000medecins.org` (reply-to = médecin), identité PSC récapitulée.
+- **Option A (sans table)** : les champs PSC viennent de l'annuaire RPPS et ne sont pas modifiables → le signalement sert au triage manuel (correction de mapping côté site, surcharge admin, ou orientation vers l'Ordre).
+
+### Diagnostic — Emails PSC synthétiques (doc)
+- [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) : PSC production ne renvoie pas l'email des médecins (absent du RPPS) → repli `psc-{rpps}@psc.sante.fr` (~90 % des inscriptions récentes). Fix casse login (`checkEmailExists`/`signInWithEmail` normalisés) livré le 16/06.
+
+---
+
+## [2026-06-18] — Évaluations : comptabilisation dès les 5 critères principaux + fix étoiles par critère
+
+Doc de référence mise à jour : [docs/evaluation-scoring.md](docs/evaluation-scoring.md) (§« Cycle de vie & comptabilisation »).
+
+### Fix — Étoiles par critère affichées à moitié (carte témoignages)
+
+Sur les fiches solution, les étoiles par critère (Interface, Fonctionnalités…) s'affichaient à ~2,5/5 alors que la note globale était correcte. Cause : `getAvisUtilisateursPaginated` ([src/lib/db/evaluations.ts](src/lib/db/evaluations.ts)) divisait les scores par 2 (heuristique legacy « ancien format 0-10 sauf clés `detail_*` »), ce qui touchait les évals au nouveau format à préfixe catégorie (`agenda_*`, sans `detail_`). Vérifié : 0 score et 0 moyenne > 5 sur 689 évals → la conversion 0-10→0-5 est complète, la division par 2 était du code mort nuisible. Supprimée (scores **et** moyenne).
+
+### Fix — Incohérence du nombre d'avis (carte comparatif vs témoignages) + comptabilisation « 5 critères principaux = valide »
+
+Constat : carte comparatif « 9 avis » vs « Témoignages (8) » pour une même solution. Cause racine : la colonne `evaluations.statut` a pour **DEFAULT `'publiee'`** ; `saveDraftEvaluation` insère les brouillons **sans statut** → publiés d'emblée, mais sans `moyenne_utilisateur` ni `last_date_note`. Ces brouillons étaient comptés dans `nb_notes` (carte, filtre `statut='publiee'`) mais exclus de la note et des témoignages.
+
+**Décision produit** : remplir les **5 critères principaux** = condition minimale pour valider une note → elle **doit compter**, même si l'utilisateur ferme le navigateur avant de finaliser les sous-critères. Côté son compte, elle apparaît « Note comptée — à compléter ».
+
+- **`saveDraftEvaluation`** ([evaluation.ts](src/lib/actions/evaluation.ts)) : dès que les 5 principaux sont présents (> 0), pose `moyenne_utilisateur` (moyenne des 5, base 5) + `last_date_note`, passe `solutions_utilisees.statut_evaluation` à **`'aCompleter'`**, et déclenche `recalcResultatsPourSolution`.
+- **`recalcResultatsPourSolution`** : filtre désormais sur `statut='publiee'` **ET `moyenne_utilisateur IS NOT NULL`** → les brouillons partiels (< 5 principaux) ne polluent plus `nb_notes`/les moyennes.
+- **« Mes évaluations »** : statut `aCompleter` → libellé « Note comptée — à compléter » (le bouton « Compléter mon évaluation » existait déjà via `getEvaluationCompletionMap`).
+- **Backfill** des évals « page 1 remplie, jamais finalisées » (`scripts/backfill-evals-aCompleter.ts`, dry-run + backup) : 3 évals valides sur 2 solutions (Weda ×2, MadeForMed) ré-alignées (moyenne + last_date_note + `aCompleter`). 4 autres orphelines écartées (un critère principal à 0 → réellement incomplètes). Recalc déclenché via `POST /api/admin/recalc-solution`.
+
+---
+
 ## [2026-06-16] — Maison-mère (groupes d'éditeurs) + recherche sur la liste admin éditeurs
 
 ### Feature — Un compte éditeur peut gérer plusieurs marques via une maison-mère (`editeurs.parent_id`)

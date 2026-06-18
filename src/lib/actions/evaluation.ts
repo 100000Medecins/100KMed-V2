@@ -153,6 +153,10 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     .select('scores, user_id, created_at, moyenne_utilisateur')
     .eq('solution_id', solutionId)
     .eq('statut', 'publiee')
+    // Une note n'est comptabilisée que finalisée pour le calcul : moyenne posée
+    // (= 5 critères principaux remplis). Écarte les brouillons partiels qui héritent
+    // du DEFAULT statut='publiee'. Cf docs/evaluation-scoring.md.
+    .not('moyenne_utilisateur', 'is', null)
   if (isLegacy) {
     evalQuery = evalQuery.gte('created_at', DATE_MISE_EN_LIGNE)
   }
@@ -548,11 +552,34 @@ export async function reconfirmerEvaluation(solutionId: string) {
   return { status: 'SUCCESS' }
 }
 
+// Les 5 critères principaux = condition minimale pour qu'une note soit valide
+// et comptabilisée (cf docs/evaluation-scoring.md, « Cycle de vie & comptabilisation »).
+const CRITERES_PRINCIPAUX = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix'] as const
+
+/**
+ * Moyenne (base 5) des 5 critères principaux si TOUS sont présents et > 0.
+ * Retourne null sinon → la note n'est pas encore valide pour le calcul.
+ */
+function moyenneCriteresPrincipaux(scores: Record<string, number | string | null>): number | null {
+  const vals: number[] = []
+  for (const k of CRITERES_PRINCIPAUX) {
+    const raw = scores[k]
+    const n = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
+    if (isNaN(n) || n <= 0) return null
+    vals.push(n)
+  }
+  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100
+}
+
 /**
  * Sauvegarde un brouillon d'évaluation (scores partiels).
- * Crée solutions_utilisees (instanciee) + evaluations si inexistants,
- * puis met à jour evaluations.scores avec les données courantes.
  * Appelé silencieusement à chaque navigation entre étapes.
+ *
+ * Règle clé : dès que les 5 critères principaux sont remplis, la note devient
+ * **valide et comptabilisée** (moyenne_utilisateur + last_date_note posées,
+ * resultats recalculés), même si l'utilisateur ferme le navigateur ensuite.
+ * Elle reste affichée « À compléter » dans son compte (statut_evaluation =
+ * 'aCompleter') tant qu'il n'a pas finalisé les sous-critères via submitEvaluation.
  */
 export async function saveDraftEvaluation(
   solutionId: string,
@@ -564,24 +591,39 @@ export async function saveDraftEvaluation(
 
   const supabase = createServiceRoleClient()
 
-  // Créer solutions_utilisees si inexistant
+  const moyenne = moyenneCriteresPrincipaux(scores)
+  const estValide = moyenne != null
+
+  // ── solutions_utilisees : suivi de complétude côté utilisateur ──
   const { data: existingSU } = await supabase
     .from('solutions_utilisees')
-    .select('id')
+    .select('id, statut_evaluation')
     .eq('solution_id', solutionId)
     .eq('user_id', user.id)
     .limit(1)
 
-  if (!existingSU || existingSU.length === 0) {
+  const su = existingSU?.[0]
+  if (!su) {
     await supabase.from('solutions_utilisees').insert({
       user_id: user.id,
       solution_id: solutionId,
-      statut_evaluation: 'instanciee',
+      // 'aCompleter' = comptée mais sous-critères non finalisés ; sinon 'instanciee'.
+      statut_evaluation: estValide ? 'aCompleter' : 'instanciee',
       date_debut: new Date().toISOString().split('T')[0],
     })
+  } else if (estValide && su.statut_evaluation !== 'finalisee') {
+    // Promotion vers 'aCompleter' (ne jamais rétrograder une éval finalisée).
+    await supabase
+      .from('solutions_utilisees')
+      .update({ statut_evaluation: 'aCompleter' })
+      .eq('id', su.id)
   }
 
-  // Créer ou mettre à jour evaluations.scores
+  // ── evaluations : scores + finalisation du calcul si les 5 principaux sont là ──
+  const finalisationCalc = estValide
+    ? { moyenne_utilisateur: moyenne, last_date_note: new Date().toISOString() }
+    : {}
+
   const { data: existingEval } = await supabase
     .from('evaluations')
     .select('id')
@@ -594,13 +636,19 @@ export async function saveDraftEvaluation(
       user_id: user.id,
       solution_id: solutionId,
       scores,
+      ...finalisationCalc,
     })
   } else {
     await supabase
       .from('evaluations')
-      .update({ scores })
+      .update({ scores, ...finalisationCalc })
       .eq('solution_id', solutionId)
       .eq('user_id', user.id)
+  }
+
+  // Note valide → comptabilisée immédiatement (agrégats à jour), même si l'user part.
+  if (estValide) {
+    await recalcResultatsPourSolution(solutionId)
   }
 }
 
