@@ -1,0 +1,44 @@
+[
+  {
+    "id": "d9bc9487-9c7a-45c9-a3c5-f0b90b800985",
+    "slug": "objetsconnectes",
+    "nom": "Objets connectés",
+    "meta_description": null
+  },
+  {
+    "id": "6aa516d9-1d4a-4e2b-9d18-11e5cca62ebf",
+    "slug": "teleconsultation",
+    "nom": "Téléconsultation",
+    "meta_description": null
+  },
+  {
+    "id": "fe8ff7ea-0cdc-4e65-9626-14cd020c9d3d",
+    "slug": "ia-documentaires",
+    "nom": "IA Documentaires",
+    "meta_description": null
+  },
+  {
+    "id": "19d871c0-afda-41d8-85d8-0579f5e5dd8c",
+    "slug": "intelligence-artificielle-medecine",
+    "nom": "IA Scribes",
+    "meta_description": null
+  },
+  {
+    "id": "cf9b7b92-a2d5-4826-99e3-66ab8d63e6f3",
+    "slug": "agendas-medicaux",
+    "nom": "Agendas médicaux",
+    "meta_description": null
+  },
+  {
+    "id": "5d6902e0-33ae-43fd-9821-022b2a4d7b88",
+    "slug": "teletransmission",
+    "nom": "Télétransmission",
+    "meta_description": null
+  },
+  {
+    "id": "253b6516-0001-426e-8028-5abb5ea4dbbe",
+    "slug": "teleexpertise",
+    "nom": "Téléexpertise",
+    "meta_description": null
+  }
+]
