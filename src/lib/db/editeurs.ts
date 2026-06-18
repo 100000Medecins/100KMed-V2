@@ -94,11 +94,14 @@ export async function getEditeurWithSolutions(slug: string) {
 
   // Enrichir avec les notes (mêmes calculs que la page comparatif catégorie)
   // pour que <SolutionList> affiche les vraies notes au lieu de "Pas encore noté".
+  // IMPORTANT : passer le client service-role (cookies-free) aux helpers de notes.
+  // Sinon ils appellent createServerClient() → cookies() → la page éditeur (publique + ISR
+  // revalidate=3600) bascule « static → dynamic at runtime » → 500. cf editeurs.ts l.72-74.
   const solutionIds = (solutions ?? []).map((s: { id: string }) => s.id)
   const [notesRedac, notesUser, nbNotesMap] = await Promise.all([
-    getNotesGlobalesRedac(solutionIds),
-    getNotesUtilisateursGlobales(solutionIds),
-    getNbNotesUtilisateurs(solutionIds),
+    getNotesGlobalesRedac(solutionIds, supabase),
+    getNotesUtilisateursGlobales(solutionIds, supabase),
+    getNbNotesUtilisateurs(solutionIds, supabase),
   ])
   const solutionsEnrichies = (solutions ?? []).map((s: Record<string, unknown>) => ({
     ...s,

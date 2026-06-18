@@ -1,4 +1,4 @@
-import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export type AppSettingKey = 'display_prix_front' | 'display_contacts_commerciaux'
 
@@ -8,7 +8,11 @@ export type AppSettingKey = 'display_prix_front' | 'display_contacts_commerciaux
  */
 export async function getAppSetting<T = unknown>(key: AppSettingKey, fallback: T): Promise<T> {
   try {
-    const supabase = await createServerClient()
+    // Réglage global public (RLS autorise anon en SELECT). On utilise le service role
+    // plutôt que createServerClient afin de NE PAS lire cookies() : sinon une page
+    // publique en ISR (revalidate) qui appelle getDisplayPrixFront bascule
+    // « static → dynamic at runtime » → 500. Données identiques (table publique).
+    const supabase = createServiceRoleClient()
     const { data, error } = await supabase
       .from('app_settings')
       .select('value')
