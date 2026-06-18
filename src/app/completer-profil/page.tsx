@@ -5,11 +5,12 @@ import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
+import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, signalerErreurIdentite } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
-import { Lock, Mail } from 'lucide-react'
+import Modal from '@/components/ui/Modal'
+import { Lock, Mail, AlertCircle } from 'lucide-react'
 
 const LIBRE_TEXTE_VALUE = '__libre_texte__'
 
@@ -25,6 +26,35 @@ export default function CompleterProfilPage() {
 
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  // Signalement d'erreur sur l'identité PSC (lecture seule)
+  const [showErrModal, setShowErrModal] = useState(false)
+  const [errChamp, setErrChamp] = useState('Spécialité')
+  const [errMessage, setErrMessage] = useState('')
+  const [errEmail, setErrEmail] = useState('')
+  const [errSubmitting, setErrSubmitting] = useState(false)
+  const [errSent, setErrSent] = useState(false)
+  const [errError, setErrError] = useState<string | null>(null)
+
+  const openErrModal = () => {
+    setErrEmail(contactEmail)
+    setErrMessage('')
+    setErrSent(false)
+    setErrError(null)
+    setShowErrModal(true)
+  }
+
+  const submitErrSignalement = async () => {
+    setErrSubmitting(true)
+    setErrError(null)
+    try {
+      const res = await signalerErreurIdentite({ champ: errChamp, message: errMessage.trim(), email: errEmail.trim() })
+      if (res.ok) setErrSent(true)
+      else setErrError(res.error)
+    } finally {
+      setErrSubmitting(false)
+    }
+  }
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fusionEmailSent, setFusionEmailSent] = useState<string | null>(null)
@@ -220,7 +250,7 @@ export default function CompleterProfilPage() {
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-navy mb-2">Bienvenue sur 100&nbsp;000 Médecins</h1>
             <p className="text-sm text-gray-500">
-              Vérifiez vos informations et complétez votre profil pour continuer.
+              Vérifiez vos informations et indiquez juste votre email pour terminer.
             </p>
           </div>
 
@@ -380,6 +410,18 @@ export default function CompleterProfilPage() {
                   )}
                 </div>
               )}
+
+              {isFromPsc && (
+                <div className="pt-1 text-right">
+                  <button
+                    type="button"
+                    onClick={openErrModal}
+                    className="text-xs text-gray-400 hover:text-accent-blue underline"
+                  >
+                    Une erreur ?
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Coordonnées */}
@@ -458,6 +500,85 @@ export default function CompleterProfilPage() {
             </div>
           </form>
         </div>
+
+        {/* Modale : signaler une erreur sur l'identité PSC */}
+        <Modal open={showErrModal} onClose={() => setShowErrModal(false)} size="md">
+          <Modal.Header icon={<AlertCircle className="w-4 h-4" />} onClose={() => setShowErrModal(false)}>
+            Signaler une erreur
+          </Modal.Header>
+          {errSent ? (
+            <Modal.Body>
+              <p className="text-sm text-gray-700">
+                Merci, votre signalement a bien été transmis à notre équipe. Nous vous répondrons à l&apos;adresse indiquée.
+              </p>
+            </Modal.Body>
+          ) : (
+            <Modal.Body>
+              <p className="text-xs text-gray-500 mb-4">
+                Vos informations professionnelles proviennent de Pro Santé Connect (annuaire RPPS) et ne sont pas
+                modifiables ici. Indiquez l&apos;erreur ci-dessous : notre équipe vérifiera et reviendra vers vous.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Information concernée</label>
+                  <select
+                    value={errChamp}
+                    onChange={(e) => setErrChamp(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                  >
+                    <option>Spécialité</option>
+                    <option>Mode d&apos;exercice</option>
+                    <option>Nom / Prénom</option>
+                    <option>Autre</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Qu&apos;est-ce qui est incorrect ? <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={errMessage}
+                    onChange={(e) => setErrMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Décrivez l'erreur (ex. ma spécialité réelle est…)"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue resize-y"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Votre email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={errEmail}
+                    onChange={(e) => setErrEmail(e.target.value)}
+                    placeholder="votre@email.fr"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Pour que l&apos;on puisse vous répondre.</p>
+                </div>
+                {errError && <p className="text-sm text-red-600">{errError}</p>}
+              </div>
+            </Modal.Body>
+          )}
+          <Modal.Footer>
+            {errSent ? (
+              <Button variant="primary" onClick={() => setShowErrModal(false)}>Fermer</Button>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => setShowErrModal(false)}>Annuler</Button>
+                <Button
+                  variant="primary"
+                  loading={errSubmitting}
+                  disabled={!errMessage.trim() || !errEmail.includes('@')}
+                  onClick={submitErrSignalement}
+                >
+                  Envoyer
+                </Button>
+              </>
+            )}
+          </Modal.Footer>
+        </Modal>
       </main>
     </>
   )
