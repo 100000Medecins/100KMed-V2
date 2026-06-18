@@ -7,6 +7,8 @@ import { getDisplayPrixFront } from '@/lib/db/settings'
 import { generateOrganizationJsonLd } from '@/lib/seo/jsonld'
 import SolutionList from '@/components/solutions/SolutionList'
 import { sanitizeHtml } from '@/lib/sanitize'
+import Button from '@/components/ui/Button'
+import { ExternalLink } from 'lucide-react'
 
 export const revalidate = 3600 // ISR : 1 heure
 
@@ -74,28 +76,33 @@ export default async function EditeurPage(props: PageProps) {
                 </h1>
                 {editeur.description && (
                   <div
-                    className="prose-custom mt-2 max-w-2xl"
+                    className="prose-custom mt-5 max-w-2xl text-gray-600"
                     dangerouslySetInnerHTML={{ __html: editeur.description }}
                   />
                 )}
-                <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
-                  {editeur.nb_employes && (
-                    <span>{editeur.nb_employes} employés</span>
-                  )}
-                  {editeur.contact_ville && (
-                    <span>{editeur.contact_ville}, {editeur.contact_pays}</span>
-                  )}
-                  {editeur.website && (
-                    <a
-                      href={editeur.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent-blue hover:underline"
-                    >
-                      Site web →
-                    </a>
-                  )}
-                </div>
+                {(editeur.nb_employes || editeur.contact_ville) && (
+                  <div className="flex flex-wrap gap-4 mt-5 text-sm text-gray-500">
+                    {editeur.nb_employes && (
+                      <span>{editeur.nb_employes} employés</span>
+                    )}
+                    {editeur.contact_ville && (
+                      <span>{editeur.contact_ville}, {editeur.contact_pays}</span>
+                    )}
+                  </div>
+                )}
+                {editeur.website && (
+                  <Button
+                    href={editeur.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="outline"
+                    size="md"
+                    rightIcon={<ExternalLink className="w-4 h-4" />}
+                    className="mt-6"
+                  >
+                    Visiter le site web
+                  </Button>
+                )}
               </div>
             </div>
           </div>

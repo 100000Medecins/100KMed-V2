@@ -352,10 +352,13 @@ export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Reco
  * post-migration sans encore d'évaluations agrégées), on calcule la moyenne
  * des 5 critères majeurs comme avant.
  */
-export async function getNotesUtilisateursGlobales(solutionIds: string[]): Promise<Record<string, number>> {
+export async function getNotesUtilisateursGlobales(
+  solutionIds: string[],
+  client?: Awaited<ReturnType<typeof createServerClient>>,
+): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = await createServerClient()
+  const supabase = client ?? (await createServerClient())
 
   // Étape 1 : essayer de lire la ligne `type='moyenne'` pour chaque solution
   const { data: critereMoyenne } = await supabase
@@ -449,10 +452,13 @@ export async function getNotesCritere(
  * Récupère le nombre max de notes utilisateurs par solution.
  * Retourne un map solutionId -> nb_notes.
  */
-export async function getNbNotesUtilisateurs(solutionIds: string[]): Promise<Record<string, number>> {
+export async function getNbNotesUtilisateurs(
+  solutionIds: string[],
+  client?: Awaited<ReturnType<typeof createServerClient>>,
+): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = await createServerClient()
+  const supabase = client ?? (await createServerClient())
 
   const { data, error } = await supabase
     .from('resultats')
@@ -495,10 +501,13 @@ export async function getSiteStats(): Promise<{ nbSolutions: number; nbEvaluatio
   }
 }
 
-export async function getNotesGlobalesRedac(solutionIds: string[]): Promise<Record<string, number>> {
+export async function getNotesGlobalesRedac(
+  solutionIds: string[],
+  client?: Awaited<ReturnType<typeof createServerClient>>,
+): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = await createServerClient()
+  const supabase = client ?? (await createServerClient())
 
   const { data, error } = await supabase
     .from('solutions')
