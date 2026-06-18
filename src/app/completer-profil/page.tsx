@@ -5,11 +5,11 @@ import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, getAvatars } from '@/lib/actions/user'
+import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
-import { Check, Lock, Mail } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 
 const LIBRE_TEXTE_VALUE = '__libre_texte__'
 
@@ -22,11 +22,9 @@ export default function CompleterProfilPage() {
   const [modeExercice, setModeExercice] = useState('')
 
   const [contactEmail, setContactEmail] = useState('')
-  const [pseudo, setPseudo] = useState('')
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
-  const [avatars, setAvatars] = useState<Array<{ id: string; url: string }>>([])
 
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fusionEmailSent, setFusionEmailSent] = useState<string | null>(null)
@@ -67,8 +65,7 @@ export default function CompleterProfilPage() {
     if (!user) return
 
     async function loadProfile() {
-      const [profile, avatarList] = await Promise.all([getCurrentUserProfile(), getAvatars()])
-      setAvatars(avatarList)
+      const profile = await getCurrentUserProfile()
 
       const hasPsc = !!(profile?.rpps || user?.user_metadata?.provider === 'psc')
       setIsFromPsc(hasPsc)
@@ -77,8 +74,6 @@ export default function CompleterProfilPage() {
       setPrenom(profile?.prenom || String(user?.user_metadata?.given_name || ''))
       setSpecialite(profile?.specialite || String(user?.user_metadata?.specialite || ''))
       setModeExercice(prev => prev || profile?.mode_exercice || String(user?.user_metadata?.mode_exercice || ''))
-      if (profile?.pseudo) setPseudo(profile.pseudo)
-      if (profile?.portrait) setSelectedAvatar(profile.portrait)
 
       if (profile?.contact_email) {
         setContactEmail(profile.contact_email)
@@ -112,7 +107,6 @@ export default function CompleterProfilPage() {
     prenom.trim() &&
     modeExercice &&
     contactEmail.trim() &&
-    (!isFromPsc || password.length >= 6) &&
     (isEditeur ? claimFilled : !!specialite)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,9 +122,7 @@ export default function CompleterProfilPage() {
         specialite: isEditeur ? '' : specialite,
         mode_exercice: modeExercice,
         contact_email: contactEmail.trim(),
-        pseudo: pseudo.trim() || undefined,
-        portrait: selectedAvatar || undefined,
-        password: isFromPsc ? password : undefined,
+        password: isFromPsc && password ? password : undefined,
       })
 
       // L'email saisi appartient déjà à un autre compte → un lien de fusion a été envoyé
@@ -161,7 +153,9 @@ export default function CompleterProfilPage() {
         })
       }
 
-      if (isFromPsc) {
+      // Si un mot de passe a été défini, on rafraîchit la session sous le nouvel email.
+      // Sinon, la session PSC en cours reste valide (même user_id) → pas de re-signin.
+      if (isFromPsc && password) {
         const supabase = createClient()
         await supabase.auth.signInWithPassword({
           email: contactEmail.trim(),
@@ -417,74 +411,42 @@ export default function CompleterProfilPage() {
 
               {isFromPsc && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Mot de passe <span className="text-red-500">*</span>
-                  </label>
-                  <PasswordInput
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    placeholder="6 caractères minimum"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Vous permettra de vous reconnecter par email en plus de Pro Santé Connect.
-                  </p>
+                  {!showPassword ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(true)}
+                      className="text-sm text-accent-blue hover:underline"
+                    >
+                      + Définir un mot de passe (optionnel)
+                    </button>
+                  ) : (
+                    <>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Mot de passe <span className="text-gray-400 font-normal">(optionnel)</span>
+                      </label>
+                      <PasswordInput
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        minLength={6}
+                        placeholder="6 caractères minimum"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Optionnel : vous pourrez aussi vous reconnecter par email. Sinon, reconnectez-vous d&apos;un clic via Pro Santé Connect (vous pourrez le définir plus tard depuis votre profil).
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Pseudo <span className="text-gray-400 font-normal">(optionnel)</span>
-                </label>
-                <input
-                  type="text"
-                  value={pseudo}
-                  onChange={(e) => setPseudo(e.target.value)}
-                  placeholder={prenom ? `${prenom} ${nom.charAt(0)}.` : 'Ex : Dr Martin'}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Affiché à la place de votre nom sur vos avis. Si vide, nous utiliserons &laquo;&nbsp;{prenom || 'Prénom'} {nom.charAt(0) || 'N'}.&nbsp;&raquo;
-                </p>
-              </div>
             </div>
 
             {error && (
               <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
             )}
 
-            {/* Avatar */}
-            <div className="bg-white rounded-card shadow-card p-6 space-y-4">
-              <div>
-                <h2 className="text-sm font-semibold text-navy">Avatar <span className="text-gray-400 font-normal text-xs">(optionnel)</span></h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Image affichée à côté de vos avis.
-                </p>
-              </div>
-              <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
-                {avatars.map((avatar) => (
-                  <button
-                    key={avatar.id}
-                    type="button"
-                    onClick={() => setSelectedAvatar(selectedAvatar === avatar.id ? null : avatar.id)}
-                    className={`relative rounded-full overflow-hidden border-2 transition-all aspect-square ${
-                      selectedAvatar === avatar.id
-                        ? 'border-accent-blue ring-2 ring-accent-blue/30 scale-110'
-                        : 'border-transparent hover:border-gray-300'
-                    }`}
-                  >
-                    <img src={avatar.url} alt="" className="w-full h-full object-cover" />
-                    {selectedAvatar === avatar.id && (
-                      <div className="absolute inset-0 bg-accent-blue/20 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white drop-shadow" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="text-xs text-gray-400 text-center">
+              Pseudo et avatar sont facultatifs et se règlent à tout moment depuis votre profil.
+            </p>
 
             <div className="flex justify-end">
               <Button
