@@ -224,9 +224,9 @@ export async function getAvisUtilisateursPaginated(
       moyenne: (() => {
         const m = row.moyenne_utilisateur as number | null
         if (m == null) return null
-        // Si les scores sont ancien format, la moyenne stockée est sur 0-10
-        const isNewFormat = Object.keys((row.scores as Record<string, unknown>) || {}).some((k) => k.startsWith('detail_'))
-        return !isNewFormat && m > 5 ? Math.round((m / 2) * 10) / 10 : m
+        // Toutes les notes sont sur 0-5 depuis la conversion 2026-04-12 (vérifié :
+        // aucune moyenne ni score > 5 sur 689 évals). Plus de division par 2.
+        return Math.round(m * 10) / 10
       })(),
       date: row.last_date_note as string | null,
       commentaire,
@@ -244,11 +244,12 @@ export async function getAvisUtilisateursPaginated(
       ancienUtilisateur: ancienUtilisateurs[userId] ?? false,
       scores: (() => {
         const entries = Object.entries(scores).filter(([k]) => k !== 'commentaire')
-        // Détecte l'ancien format Firebase par la présence de clés detail_*
-        const isNewFormat = entries.some(([k]) => k.startsWith('detail_'))
-        const divisor = isNewFormat ? 1 : 2
+        // Toutes les notes sont sur 0-5 depuis la conversion 2026-04-12 (vérifié :
+        // aucun score > 5 sur 689 évals). On affiche la valeur brute, sans division.
+        // (L'ancienne heuristique divisait par 2 sauf clés detail_*, ce qui affichait
+        // à moitié les évals nouveau format à préfixe catégorie, ex. agenda_*.)
         return Object.fromEntries(
-          entries.map(([k, v]) => [k, typeof v === 'number' && v > 0 ? Math.round((v / divisor) * 10) / 10 : null])
+          entries.map(([k, v]) => [k, typeof v === 'number' && v > 0 ? Math.round(v * 10) / 10 : null])
         ) as Record<string, number | null>
       })(),
     }
