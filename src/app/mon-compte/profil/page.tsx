@@ -586,8 +586,11 @@ export default function ProfilPage() {
                 </p>
               </div>
 
-              {/* Email PSC technique, affiché uniquement s'il diffère du contact_email */}
-              {user?.email && contactEmail && user.email !== contactEmail && (
+              {/* Email PSC technique synthétique (psc-{rpps}@psc.sante.fr), affiché
+                  uniquement pour les comptes PSC sans vrai email côté auth. On gate sur le
+                  domaine synthétique (et non sur « ≠ contact_email ») pour ne pas réapparaître
+                  par effet de session périmée après un changement d'email. */}
+              {user?.email?.endsWith('@psc.sante.fr') && (
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">Email Pro Santé Connect</label>
                   <input
