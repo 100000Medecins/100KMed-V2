@@ -8,7 +8,6 @@ import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ShieldCheck, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
-import { checkEmailExists } from '@/lib/actions/user'
 
 function ConnexionContent() {
   const { signInWithPSC, signInWithEmail, resetPassword } = useAuth()
@@ -67,13 +66,10 @@ function ConnexionContent() {
       return
     }
 
-    // mode === 'login' : vérifier si l'email existe avant de tenter la connexion
-    const exists = await checkEmailExists(email)
-    if (!exists) {
-      window.location.href = `/inscription?email=${encodeURIComponent(email)}&from=login`
-      return
-    }
-
+    // mode === 'login' : on tente directement la connexion. En cas d'échec (email
+    // inconnu OU mot de passe erroné — le plus souvent une simple faute de frappe), on
+    // reste sur cette page avec un message ; le lien « Créer un compte » est disponible
+    // plus bas pour ceux qui n'ont effectivement pas de compte.
     const result = await signInWithEmail(email, password)
     if (result.error) {
       setError(result.error)

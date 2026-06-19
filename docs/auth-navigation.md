@@ -15,13 +15,13 @@
 ### 1. Connexion email/mdp (`/connexion`)
 
 ```
-User soumet formulaire
-  → checkEmailExists() [server action]
-    → email inexistant : window.location.href = '/inscription?email=...'
-    → email existant   : signInWithEmail() [supabase.auth.signInWithPassword]
-      → erreur         : setError(), setSubmitting(false)
-      → succès         : window.location.href = redirect || '/mon-compte/profil'
+User soumet formulaire (mode login)
+  → signInWithEmail() [supabase.auth.signInWithPassword]
+      → erreur (email inconnu OU mot de passe erroné) : setError() — on reste sur /connexion
+      → succès                                        : window.location.href = redirect || '/mon-compte/profil'
 ```
+
+> **Changement de comportement 2026-06-20** : on **ne pré-vérifie plus** l'email via `checkEmailExists()` et on **ne redirige plus** vers `/inscription` quand l'email est inconnu. Raison : c'est le plus souvent une **faute de frappe** (email OU mot de passe), et basculer brutalement vers la création de compte est désagréable. On reste désormais sur `/connexion` avec le message générique « Email ou mot de passe incorrect » (qui, en bonus, ne révèle pas si le compte existe — pas d'énumération d'emails). Le lien **« Créer un compte »** reste disponible sous le formulaire pour ceux qui n'ont effectivement pas de compte. `checkEmailExists` reste utilisée ailleurs si besoin, mais plus dans ce flux.
 
 **Pas de useEffect([user]) dans la page.** La redirection si déjà connecté est gérée côté serveur par le middleware.
 
