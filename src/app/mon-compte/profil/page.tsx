@@ -396,6 +396,12 @@ export default function ProfilPage() {
     return <div className="animate-pulse text-gray-400 py-8">Chargement du profil...</div>
   }
 
+  // L'email @psc.sante.fr est un placeholder technique fabriqué côté code (compte PSC sans
+  // email réel renvoyé par PSC) — jamais une vraie boîte mail → on ne l'affiche JAMAIS à
+  // l'utilisateur. emailReel = le vrai email s'il existe (contact_email puis auth non
+  // synthétique), sinon null (→ « Non renseignée »).
+  const emailReel = contactEmail || (user?.email?.endsWith('@psc.sante.fr') ? null : user?.email) || null
+
   return (
     <div>
       <h1 className="text-xl font-bold text-navy mb-6">Mon compte</h1>
@@ -586,21 +592,6 @@ export default function ProfilPage() {
                 </p>
               </div>
 
-              {/* Email PSC technique synthétique (psc-{rpps}@psc.sante.fr), affiché
-                  uniquement pour les comptes PSC sans vrai email côté auth. On gate sur le
-                  domaine synthétique (et non sur « ≠ contact_email ») pour ne pas réapparaître
-                  par effet de session périmée après un changement d'email. */}
-              {user?.email?.endsWith('@psc.sante.fr') && (
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Email Pro Santé Connect</label>
-                  <input
-                    type="text"
-                    value={user.email}
-                    readOnly
-                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
-                  />
-                </div>
-              )}
             </div>
           ) : (
             /* Formulaire éditable pour les non-PSC */
@@ -765,7 +756,9 @@ export default function ProfilPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm text-gray-500">
-                Email : <span className="font-semibold text-navy">{contactEmail || user?.email}</span>
+                Email : {emailReel
+                  ? <span className="font-semibold text-navy">{emailReel}</span>
+                  : <span className="italic text-gray-400">Non renseignée</span>}
               </p>
               {!showEmailForm && (
                 <button
@@ -840,14 +833,14 @@ export default function ProfilPage() {
                   </p>
                   {resetSent ? (
                     <p className="text-xs text-green-600">
-                      Email envoyé à <span className="font-medium">{contactEmail || user?.email}</span>. Vérifiez votre boîte mail.
+                      Email envoyé à <span className="font-medium">{emailReel}</span>. Vérifiez votre boîte mail.
                     </p>
                   ) : (
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={async () => {
-                          const email = contactEmail || user?.email
+                          const email = emailReel
                           if (!email) return
                           await resetPassword(email)
                           setResetSent(true)
@@ -890,13 +883,13 @@ export default function ProfilPage() {
                     />
                     {resetSent ? (
                       <p className="text-xs text-green-600 mt-1.5">
-                        Email de réinitialisation envoyé à <span className="font-medium">{contactEmail || user?.email}</span>.
+                        Email de réinitialisation envoyé à <span className="font-medium">{emailReel}</span>.
                       </p>
                     ) : (
                       <button
                         type="button"
                         onClick={async () => {
-                          const email = contactEmail || user?.email
+                          const email = emailReel
                           if (!email) return
                           await resetPassword(email)
                           setResetSent(true)
