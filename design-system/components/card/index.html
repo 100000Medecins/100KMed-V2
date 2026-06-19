@@ -1,0 +1,56 @@
+<!-- @dsCard group="Components" name="Card" subtitle="Paddings none/sm/md/lg/xl · hoverable" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Card — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --white: #F4F7FF; --navy: #1B2A4A; --navy-light: #2A3F66;
+    --radius-card: 16px;
+    --shadow-card: 0 4px 24px rgba(0,0,0,.06);
+    --shadow-card-hover: 0 8px 32px rgba(0,0,0,.10);
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .card { background: #fff; border-radius: var(--radius-card); box-shadow: var(--shadow-card); overflow: hidden; width: 240px; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+  .card p { margin: 0; font-size: 13px; color: var(--navy-light); }
+  .p-none { padding: 0; } .p-sm { padding: 20px; } .p-md { padding: 24px; } .p-lg { padding: 32px; } .p-xl { padding: 32px; }
+  .hoverable { transition: box-shadow .3s ease; cursor: pointer; }
+  .hoverable:hover { box-shadow: var(--shadow-card-hover); }
+  .tag { display:inline-block; font-size:11px; font-family:ui-monospace,monospace; color:var(--navy-light); background:#D8E6F8; padding:2px 8px; border-radius:999px; margin-bottom:10px; }
+  .imgbar { height: 80px; background: linear-gradient(135deg,#4A90D9,#1B2A4A); }
+</style>
+</head>
+<body>
+  <h1>Card</h1>
+  <p class="sub">Primitive partagée — <code>src/components/ui/Card.tsx</code>. <code>bg-white · rounded-card 16px · shadow-card</code></p>
+
+  <h2>Paddings</h2>
+  <div class="row">
+    <div class="card p-sm"><span class="tag">sm · 20px</span><h3>Carte sm</h3><p>Padding resserré.</p></div>
+    <div class="card p-md"><span class="tag">md · 24px (défaut)</span><h3>Carte md</h3><p>Padding par défaut.</p></div>
+    <div class="card p-xl"><span class="tag">xl · 32px</span><h3>Carte xl</h3><p>États vides, gros CTA.</p></div>
+  </div>
+
+  <h2>Padding « none » (image full-width + contenu)</h2>
+  <div class="row">
+    <div class="card p-none">
+      <div class="imgbar"></div>
+      <div style="padding:20px"><h3>Logiciel médical</h3><p>L'image gère sa propre largeur.</p></div>
+    </div>
+  </div>
+
+  <h2>Hoverable (carte cliquable — survole)</h2>
+  <div class="row">
+    <div class="card p-md hoverable"><span class="tag">hoverable</span><h3>Carte cliquable</h3><p>Ombre renforcée au survol.</p></div>
+  </div>
+</body>
+</html>

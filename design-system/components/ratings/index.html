@@ -1,0 +1,82 @@
+<!-- @dsCard group="Applicatifs" name="StarRating & RatingBadge" subtitle="Étoiles (gold/green, demi) · pastille note" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ratings — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --white:#F4F7FF; --navy:#1B2A4A; --navy-light:#2A3F66; --rating-green:#22C55E; --rating-star:#F5C518; }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .stars { display: inline-flex; align-items: center; gap: 2px; }
+  .label { font-size: 12px; color: var(--navy-light); width: 120px; }
+  .badge { display: inline-flex; align-items: center; background: var(--rating-green); color: #fff; font-weight: 700; border-radius: 999px; }
+  .b-sm { font-size: 10px; padding: 2px 6px; } .b-md { font-size: 12px; padding: 4px 10px; } .b-lg { font-size: 14px; padding: 6px 12px; }
+</style>
+</head>
+<body>
+  <h1>StarRating &amp; RatingBadge</h1>
+  <p class="sub">Affichage des notes — <code>StarRating.tsx</code> / <code>RatingBadge.tsx</code>. Note sur 5, demi-étoile dès +0.3.</p>
+
+  <h2>StarRating — gold (défaut)</h2>
+  <div class="row">
+    <span class="label">4.5 / 5</span>
+    <span class="stars" id="s45"></span>
+  </div>
+  <div class="row">
+    <span class="label">3.0 / 5</span>
+    <span class="stars" id="s30"></span>
+  </div>
+
+  <h2>StarRating — vert + tailles</h2>
+  <div class="row">
+    <span class="label">4.5 · sm (12px)</span><span class="stars" id="g_sm"></span>
+  </div>
+  <div class="row">
+    <span class="label">4.5 · lg (18px)</span><span class="stars" id="g_lg"></span>
+  </div>
+
+  <h2>RatingBadge</h2>
+  <div class="row">
+    <span class="badge b-sm">4.5</span>
+    <span class="badge b-md">4.5</span>
+    <span class="badge b-lg">4.5</span>
+  </div>
+
+  <h2>Combinés (comme dans une carte logiciel)</h2>
+  <div class="row">
+    <span class="badge b-md">4.5</span>
+    <span class="stars" id="combo"></span>
+    <span style="font-size:12px;color:#9CA3AF">(128)</span>
+  </div>
+
+<script>
+  function star(px, cls){ return '<svg width="'+px+'" height="'+px+'" viewBox="0 0 24 24" fill="'+cls+'" stroke="'+cls+'" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'; }
+  function halfStar(px, color){
+    return '<span style="position:relative;display:inline-block;width:'+px+'px;height:'+px+'px;line-height:0">'
+      + '<span style="position:absolute;inset:0">'+star(px,'#E5E7EB')+'</span>'
+      + '<span style="position:absolute;inset:0;width:'+(px/2)+'px;overflow:hidden">'+star(px,color)+'</span></span>';
+  }
+  function render(el, rating, px, color){
+    var full = Math.floor(rating), half = (rating-full)>=0.3, html='';
+    for (var i=0;i<5;i++){
+      if (i<full) html+=star(px,color);
+      else if (i===full && half) html+=halfStar(px,color);
+      else html+=star(px,'#E5E7EB');
+    }
+    document.getElementById(el).innerHTML = html;
+  }
+  render('s45',4.5,14,'#F5C518');
+  render('s30',3.0,14,'#F5C518');
+  render('g_sm',4.5,12,'#22C55E');
+  render('g_lg',4.5,18,'#22C55E');
+  render('combo',4.5,14,'#F5C518');
+</script>
+</body>
+</html>

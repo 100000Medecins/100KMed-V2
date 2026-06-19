@@ -1,0 +1,111 @@
+<!-- @dsCard group="Foundations" name="Tokens & couleurs" subtitle="Palette, radius, ombres, typographie" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tokens — 100000Médecins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --white: #F4F7FF;
+    --navy: #1B2A4A;
+    --navy-dark: #0F1B33;
+    --navy-light: #2A3F66;
+    --accent-yellow: #F5A623;
+    --accent-orange: #E8734A;
+    --accent-blue: #4A90D9;
+    --accent-pink: #FF6B9D;
+    --rating-green: #22C55E;
+    --rating-star: #F5C518;
+    --surface-light: #D8E6F8;
+    --surface-muted: #C6D5EE;
+    --hero-pink: #FDE8EF;
+    --hero-blue: #E0EAFF;
+    --hero-orange: #FFF0E6;
+    --radius-card: 16px;
+    --radius-button: 12px;
+    --shadow-card: 0 4px 24px rgba(0,0,0,.06);
+    --shadow-card-hover: 0 8px 32px rgba(0,0,0,.10);
+    --shadow-nav: 0 2px 12px rgba(0,0,0,.04);
+    --shadow-soft: 0 2px 8px rgba(0,0,0,.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Poppins", sans-serif;
+    margin: 0;
+    padding: 40px;
+    background: var(--white);
+    color: var(--navy);
+  }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 16px; font-weight: 600; margin: 32px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .swatch { border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-soft); background: #fff; }
+  .swatch .chip { height: 72px; }
+  .swatch .meta { padding: 10px 12px; }
+  .swatch .name { font-size: 13px; font-weight: 600; }
+  .swatch .hex { font-size: 12px; color: var(--navy-light); font-family: ui-monospace, monospace; }
+  .radii { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+  .radii .box { background: var(--surface-light); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--navy); width: 110px; height: 80px; }
+  .shadows { display: flex; gap: 24px; flex-wrap: wrap; }
+  .shadows .box { width: 150px; height: 90px; background: #fff; border-radius: var(--radius-card); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+  .type-row { display: flex; align-items: baseline; gap: 16px; margin: 8px 0; }
+  .type-row .w { font-size: 12px; color: var(--navy-light); width: 90px; font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+  <h1>Design tokens</h1>
+  <p class="sub">100000Médecins — source de vérité : <code>tailwind.config.ts</code></p>
+
+  <h2>Couleurs — marque</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#F4F7FF"></div><div class="meta"><div class="name">white</div><div class="hex">#F4F7FF</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#1B2A4A"></div><div class="meta"><div class="name">navy</div><div class="hex">#1B2A4A</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#0F1B33"></div><div class="meta"><div class="name">navy-dark</div><div class="hex">#0F1B33</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#2A3F66"></div><div class="meta"><div class="name">navy-light</div><div class="hex">#2A3F66</div></div></div>
+  </div>
+
+  <h2>Couleurs — accents</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#4A90D9"></div><div class="meta"><div class="name">accent-blue</div><div class="hex">#4A90D9</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#F5A623"></div><div class="meta"><div class="name">accent-yellow</div><div class="hex">#F5A623</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#E8734A"></div><div class="meta"><div class="name">accent-orange</div><div class="hex">#E8734A</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#FF6B9D"></div><div class="meta"><div class="name">accent-pink</div><div class="hex">#FF6B9D</div></div></div>
+  </div>
+
+  <h2>Couleurs — fonctionnelles & surfaces</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#22C55E"></div><div class="meta"><div class="name">rating-green</div><div class="hex">#22C55E</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#F5C518"></div><div class="meta"><div class="name">rating-star</div><div class="hex">#F5C518</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#D8E6F8"></div><div class="meta"><div class="name">surface-light</div><div class="hex">#D8E6F8</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#C6D5EE"></div><div class="meta"><div class="name">surface-muted</div><div class="hex">#C6D5EE</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#FDE8EF"></div><div class="meta"><div class="name">hero-pink</div><div class="hex">#FDE8EF</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#E0EAFF"></div><div class="meta"><div class="name">hero-blue</div><div class="hex">#E0EAFF</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#FFF0E6"></div><div class="meta"><div class="name">hero-orange</div><div class="hex">#FFF0E6</div></div></div>
+  </div>
+
+  <h2>Radius</h2>
+  <div class="radii">
+    <div><div class="box" style="border-radius:16px">card</div><div class="hex" style="text-align:center;margin-top:6px;font-size:12px;color:var(--navy-light)">16px</div></div>
+    <div><div class="box" style="border-radius:12px">button</div><div class="hex" style="text-align:center;margin-top:6px;font-size:12px;color:var(--navy-light)">12px</div></div>
+  </div>
+
+  <h2>Ombres</h2>
+  <div class="shadows">
+    <div class="box" style="box-shadow:var(--shadow-soft)">soft</div>
+    <div class="box" style="box-shadow:var(--shadow-nav)">nav</div>
+    <div class="box" style="box-shadow:var(--shadow-card)">card</div>
+    <div class="box" style="box-shadow:var(--shadow-card-hover)">card-hover</div>
+  </div>
+
+  <h2>Typographie — Poppins</h2>
+  <div class="type-row"><span class="w">400</span><span style="font-weight:400;font-size:18px">Regular — Le médecin évalue son logiciel</span></div>
+  <div class="type-row"><span class="w">500</span><span style="font-weight:500;font-size:18px">Medium — Le médecin évalue son logiciel</span></div>
+  <div class="type-row"><span class="w">600</span><span style="font-weight:600;font-size:18px">SemiBold — Le médecin évalue son logiciel</span></div>
+  <div class="type-row"><span class="w">700</span><span style="font-weight:700;font-size:18px">Bold — Le médecin évalue son logiciel</span></div>
+</body>
+</html>

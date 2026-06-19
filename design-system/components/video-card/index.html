@@ -1,0 +1,38 @@
+<!-- @dsCard group="Applicatifs" name="VideoCard" subtitle="Short YouTube 9/16 + titre majuscules" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VideoCard — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --white:#F4F7FF; --navy:#1B2A4A; --navy-light:#2A3F66; }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 28px; max-width: 620px; }
+  .thumb { position:relative; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.06); aspect-ratio:9/16; background:linear-gradient(160deg,#1B2A4A,#4A90D9); display:flex; align-items:center; justify-content:center; transition:box-shadow .3s; }
+  .thumb:hover { box-shadow:0 8px 32px rgba(0,0,0,.10); }
+  .play { width:56px; height:56px; border-radius:999px; background:rgba(255,255,255,.9); display:flex; align-items:center; justify-content:center; }
+  .play svg { margin-left:3px; }
+  .vtitle { margin:16px 0 0; font-size:12px; font-weight:700; letter-spacing:.15em; color:var(--navy); text-transform:uppercase; text-align:center; }
+</style>
+</head>
+<body>
+  <h1>VideoCard</h1>
+  <p class="sub">Short vidéo (YouTube embed 9/16) — <code>VideoCard.tsx</code>. Ici l'aperçu mocke l'embed ; en prod c'est un <code>&lt;iframe&gt;</code> YouTube.</p>
+
+  <div class="grid">
+    <div>
+      <div class="thumb"><div class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1B2A4A"><polygon points="6 4 20 12 6 20 6 4"/></svg></div></div>
+      <h4 class="vtitle">Témoignage cardiologue</h4>
+    </div>
+    <div>
+      <div class="thumb" style="background:linear-gradient(160deg,#E8734A,#F5A623)"><div class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1B2A4A"><polygon points="6 4 20 12 6 20 6 4"/></svg></div></div>
+      <h4 class="vtitle">Choisir son agenda</h4>
+    </div>
+  </div>
+</body>
+</html>

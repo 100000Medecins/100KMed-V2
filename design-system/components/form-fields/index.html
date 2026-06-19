@@ -1,0 +1,89 @@
+<!-- @dsCard group="Components" name="Form fields" subtitle="Input · Textarea · Select · Field (label/hint/error)" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Form fields — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --white: #F4F7FF; --navy: #1B2A4A; --navy-light: #2A3F66; --accent-blue: #4A90D9;
+    --radius-button: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 760px; }
+
+  /* control base (reproduit buildInputClasses) */
+  .ctrl {
+    width: 100%; border-radius: var(--radius-button); background: #fff;
+    border: 1px solid #E5E7EB; font-size: 14px; color: #374151; font-family: inherit;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .ctrl:focus { border-color: rgba(74,144,217,.5); box-shadow: 0 0 0 2px rgba(74,144,217,.3); }
+  .ctrl.sm { padding: 8px 12px; } .ctrl.md { padding: 12px 20px; }
+  .ctrl.error { border-color: #FCA5A5; }
+  .ctrl.error:focus { border-color: #F87171; box-shadow: 0 0 0 2px rgba(252,165,165,.4); }
+  textarea.ctrl { resize: vertical; }
+  select.ctrl { appearance: none; padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .75rem center; background-size: .65em; }
+
+  /* Field wrapper */
+  .field > label { display: block; font-size: 14px; font-weight: 500; color: var(--navy); margin-bottom: 6px; }
+  .field .req { color: #F87171; margin-left: 2px; }
+  .field .hint { font-size: 12px; color: #9CA3AF; margin: 6px 0 0; }
+  .field .err  { font-size: 12px; color: #EF4444; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+  <h1>Champs de formulaire</h1>
+  <p class="sub">Primitives — <code>Input</code> · <code>Textarea</code> · <code>Select</code> · <code>Field</code>. Radius <code>button 12px</code>, focus ring <code>accent-blue</code>.</p>
+
+  <h2>Tailles d'Input</h2>
+  <div class="grid">
+    <div class="field"><label>Input sm</label><input class="ctrl sm" placeholder="Recherche…" /></div>
+    <div class="field"><label>Input md (défaut)</label><input class="ctrl md" placeholder="exemple@domaine.fr" /></div>
+  </div>
+
+  <h2>Field complet (label + hint + erreur)</h2>
+  <div class="grid">
+    <div class="field">
+      <label>Email <span class="req">*</span></label>
+      <input class="ctrl md" type="email" placeholder="exemple@domaine.fr" />
+    </div>
+    <div class="field">
+      <label>Slug</label>
+      <input class="ctrl md" value="cardiologie" />
+      <p class="hint">Sans espaces ni accents.</p>
+    </div>
+    <div class="field">
+      <label>Mot de passe <span class="req">*</span></label>
+      <input class="ctrl md error" type="password" value="123" />
+      <p class="err">Au moins 8 caractères.</p>
+    </div>
+  </div>
+
+  <h2>Textarea</h2>
+  <div class="grid">
+    <div class="field"><label>Description</label><textarea class="ctrl md" rows="4">Logiciel de gestion de cabinet…</textarea></div>
+  </div>
+
+  <h2>Select</h2>
+  <div class="grid">
+    <div class="field">
+      <label>Catégorie</label>
+      <select class="ctrl md">
+        <option>— Aucune —</option>
+        <option>Agendas</option>
+        <option>Téléconsultation</option>
+        <option>Dossier patient</option>
+      </select>
+    </div>
+  </div>
+</body>
+</html>
