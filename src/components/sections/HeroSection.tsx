@@ -49,7 +49,7 @@ export default async function HeroSection({ nbSolutions = 0, nbEvaluations = 0, 
   const heroImage = config['hero_image'] ?? ''
 
   const nbEvaluationsLabel = nbEvaluations > 0
-    ? `${nbEvaluations.toLocaleString('fr-FR')} avis`
+    ? `${nbEvaluations.toLocaleString('fr-FR')} avis certifiés`
     : null
   const nbSolutionsLabel = nbSolutions > 0
     ? `${nbSolutions}+ logiciels`
