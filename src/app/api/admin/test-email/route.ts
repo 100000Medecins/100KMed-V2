@@ -41,6 +41,8 @@ const SAMPLE_VARS: Record<string, Record<string, string>> = {
   reinitialisation_mot_de_passe: { lien_reinitialisation: '#' },
   fusion_comptes: { lien_fusion: '#' },
   confirmation_inscription: { lien_confirmation: '#' },
+  confirmation_changement_email: { lien_confirmation: '#', nouvelle_adresse: 'nouvelle@email.com' },
+  notification_changement_email: { ancienne_adresse: 'ancienne@email.com', nouvelle_adresse: 'nouvelle@email.com', lien_contact: '#' },
   infos_mensuels: { nom: 'Dr. DUPONT', prenom: 'Marie', lien_desabonnement: '#' },
   lancement: {
     nom: 'Dr. DUPONT', prenom: 'Dr. DUPONT', solution_nom: 'MonLogiciel Pro',

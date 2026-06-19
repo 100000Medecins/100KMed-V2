@@ -1,22 +1,22 @@
 # Architecture emails — 100 000 Médecins
 
-*Dernière mise à jour : 2026-05-21*
+*Dernière mise à jour : 2026-06-20*
 
 ---
 
 ## Deux systèmes d'envoi coexistent
 
-### 1. Emails natifs Supabase (non personnalisables depuis le code)
+### 1. Emails natifs Supabase — PLUS AUCUN (depuis 2026-06-20)
 
-Ces emails sont envoyés automatiquement par Supabase via ses propres serveurs. Leurs templates sont configurés dans **Supabase Dashboard → Authentication → Email Templates**.
+**Aucun email transactionnel ne passe plus par Supabase.** Les trois flux qui en dépendaient ont été migrés vers des liens HMAC idempotents envoyés par SendGrid (les tokens OTP Supabase, à usage unique, étaient consommés par le pré-scan Outlook Safe Links / Gmail avant le clic réel → liens morts) :
 
-| Déclencheur code | Type Supabase | Template à éditer |
-|---|---|---|
-| `supabase.auth.updateUser({ email })` | Change email | "Change Email Address" |
+- inscription (2026-05-21) — `supabase.auth.signUp()` plus appelé,
+- réinitialisation mot de passe (2026-05-21) — `resetPasswordForEmail()` / `generateLink({ type: 'recovery' })` plus appelés,
+- **changement d'email (2026-06-20)** — `auth.updateUser({ email })` plus appelé (dernier flux migré).
 
-> Ces emails ne passent **pas** par SendGrid et ne sont **pas** liés aux templates en base de données. Pour les modifier, aller dans le dashboard Supabase.
-
-> **Confirmation d'inscription et reset mot de passe ne sont plus natifs** (depuis 2026-05-21). Les tokens OTP Supabase étant à usage unique, ils étaient « consommés » par le pré-scan des clients mail / antivirus avant le clic réel de l'utilisateur. Les deux flux utilisent désormais des liens HMAC maison idempotents envoyés via SendGrid (voir plus bas) — `supabase.auth.signUp()` et `admin.generateLink({ type: 'recovery' })` ne sont plus appelés. Seul le changement d'email reste un email natif Supabase.
+> ⚠️ **Les templates natifs du dashboard Supabase (Authentication → Email Templates : « Confirm signup », « Reset password », « Change Email Address »…) sont désormais MORTS** : aucun code ne les déclenche plus. **Ne pas les éditer en croyant agir sur les emails réels** — tout passe par les templates `email_templates` en BDD + SendGrid (section ci-dessous). On les laisse en place uniquement comme filet de sécurité au cas où un flux natif serait un jour réactivé.
+>
+> Note : Supabase Auth reste la source de vérité pour l'**identité**, les **sessions** et la **RLS** (on utilise toujours l'API admin : `createUser`, `updateUserById`, `generateLink`, `verifyOtp`). Seule la **couche d'envoi d'emails** a quitté Supabase.
 
 ---
 
@@ -28,6 +28,8 @@ Ces emails sont envoyés par le code, via SendGrid, avec des templates stockés 
 |---|---|---|
 | `confirmation_inscription` | Inscription email/mot de passe | `src/lib/actions/user.ts` → `registerWithEmail()` |
 | `reinitialisation_mot_de_passe` | Demande reset mdp | `src/lib/actions/user.ts` → `sendPasswordReset()` |
+| `confirmation_changement_email` | Demande de changement d'email (envoyé à la **nouvelle** adresse) | `src/lib/actions/user.ts` → `requestEmailChange()` |
+| `notification_changement_email` | Courtoisie après changement (envoyé à l'**ancienne** adresse) | `src/app/confirmer-changement-email/route.ts` |
 | `fusion_comptes` | Conflit d'email à la complétion de profil | `src/lib/actions/user.ts` → `completeProfile()` |
 | `relance_1an` | Cron automatique | `src/app/api/cron/relance-evaluations/route.ts` |
 | `relance_3mois` | Cron automatique | `src/app/api/cron/relance-evaluations/route.ts` |
@@ -70,7 +72,7 @@ Pour "migrer" un template vers le nouveau système (optionnel) :
 4. Conserver uniquement les balises internes : paragraphes, variables, boutons CTA
 5. Sauvegarder → `buildEmail()` encapsulera automatiquement dans le master layout
 
-⚠️ "Migrer" ne concerne **pas** les emails Supabase natifs (confirm signup, change email). Ceux-là ne passent pas par ce système.
+⚠️ Il n'y a **plus aucun email Supabase natif** (cf. §1) — tous les emails transactionnels passent par ce système de templates BDD + SendGrid.
 
 ### Modifier l'apparence globale de tous les emails
 
@@ -176,6 +178,37 @@ Server Component (`force-dynamic`). Lit `uid`, `iat`, `token` dans les `searchPa
 - token **expiré** / **invalide** → écran d'erreur + lien vers `/connexion`.
 
 Aucune session n'est ouverte, aucun `code` / `access_token` n'est échangé : la page ne fait que vérifier le HMAC et afficher un formulaire. La mise à jour réelle du mot de passe passe par l'action serveur `resetPasswordWithToken`.
+
+---
+
+## Flux de changement d'email (lien HMAC idempotent)
+
+> Migré le 2026-06-20. **N'utilise plus** `supabase.auth.updateUser({ email })` (qui envoyait un email natif Supabase + gérait un état « pending email » côté auth). Remplacé par un lien HMAC maison idempotent via SendGrid, sur le même modèle que le reset mot de passe.
+
+### Étapes
+
+1. Sur `/mon-compte/profil`, l'utilisateur saisit la nouvelle adresse → `requestEmailChange(newEmail)` (`src/lib/actions/user.ts`).
+2. L'action vérifie la session, le format, que l'adresse diffère de l'actuelle, et fait un **pré-check d'unicité** (`users.email` / `users.contact_email`).
+3. `generateEmailChangeToken(uid, newEmail)` (`src/lib/email/email-change-token.ts`) produit un HMAC `sha256(EMAIL_SECRET, "email-change:uid:newEmail:iat")`, TTL **1 heure**. **Le `newEmail` est signé** → un lien valide ne peut pas être rejoué vers une autre adresse.
+4. `buildEmail('confirmation_changement_email', { lien_confirmation, nouvelle_adresse }, siteUrl)` → SendGrid envoie le lien **à la nouvelle adresse**.
+5. L'utilisateur clique → `GET /confirmer-changement-email?uid&new_email&iat&token` (`src/app/confirmer-changement-email/route.ts`) re-vérifie le HMAC, puis :
+   - `admin.updateUserById(uid, { email: newEmail, email_confirm: true })` (le clic depuis la boîte prouve le contrôle de l'adresse) ;
+   - **synchronise `public.users.email`** (sinon `sendPasswordReset`, qui résout l'uid par `users.email`, casserait après un changement) ;
+   - envoie un **email de courtoisie à l'ancienne adresse** (`notification_changement_email`, « ce n'était pas vous ? ») ;
+   - redirige vers `/mon-compte/profil?email_changed=1`.
+
+### Choix & garde-fous
+
+- **`contact_email` n'est volontairement pas modifié** (sémantique PSC : il porte l'email réel des comptes PSC dont l'`auth.email` est synthétique). Le flux ne change que l'email de **connexion** (`auth.users.email`) + son miroir `public.users.email`.
+- **Idempotence** : le GET applique le changement mais le HMAC est rejouable jusqu'à expiration (re-confirmer un email déjà appliqué = quasi no-op) → résistant au pré-scan.
+- **Anti-rejeu** : le `newEmail` est dans la signature (cf. étape 3).
+- **Anti-prise-de-contrôle** : double notification (validation à la nouvelle adresse + courtoisie à l'ancienne).
+- Le bandeau « en attente » côté profil est un simple hint `localStorage` (`pendingEmail_<uid>`), nettoyé automatiquement quand `user.email` reflète la nouvelle adresse.
+
+### Configuration requise
+
+- Templates BDD `confirmation_changement_email` (avec `{{lien_confirmation}}`, `{{nouvelle_adresse}}`) et `notification_changement_email` (avec `{{ancienne_adresse}}`, `{{nouvelle_adresse}}`, `{{lien_contact}}`).
+- `EMAIL_SECRET` (ou `ADMIN_PASSWORD`), `NEXT_PUBLIC_SITE_URL`, `SENDGRID_API_KEY`.
 
 ---
 

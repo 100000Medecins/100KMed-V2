@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes, getAvatars, removeAvatar, deletePersonalAvatar } from '@/lib/actions/user'
+import { updateProfile, cancelEmailChange, requestEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes, getAvatars, removeAvatar, deletePersonalAvatar } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, SM_SPECIALITES } from '@/lib/constants/profil'
 import Button from '@/components/ui/Button'
@@ -304,10 +304,12 @@ export default function ProfilPage() {
     setEmailError(null)
     setSuccess(null)
     setEmailSubmitting(true)
-    const { error } = await supabaseRef.current.auth.updateUser({ email: newEmail })
+    // Lien HMAC idempotent via SendGrid (plus d'email natif Supabase). Le changement
+    // n'est appliqué qu'au clic depuis la nouvelle boîte (cf /confirmer-changement-email).
+    const { error } = await requestEmailChange(newEmail)
     setEmailSubmitting(false)
     if (error) {
-      setEmailError(error.message)
+      setEmailError(error)
     } else {
       localStorage.setItem(`pendingEmail_${user!.id}`, newEmail)
       setPendingEmail(newEmail)

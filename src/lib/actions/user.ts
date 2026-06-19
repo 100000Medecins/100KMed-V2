@@ -7,6 +7,7 @@ import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { generateConfirmToken } from '@/lib/email/confirm-token'
 import { generateResetToken, verifyResetToken } from '@/lib/email/reset-token'
+import { generateEmailChangeToken } from '@/lib/email/email-change-token'
 import { verifyTurnstileToken } from '@/lib/turnstile'
 import sgMail from '@sendgrid/mail'
 import sharp from 'sharp'
@@ -56,6 +57,65 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
     })
   } catch {
     return { error: 'Erreur lors de l\'envoi de l\'email.' }
+  }
+
+  return { error: null }
+}
+
+/**
+ * Demande un changement d'email : envoie un lien HMAC idempotent (via SendGrid) à la
+ * NOUVELLE adresse. Le changement n'est appliqué qu'au clic (cf /confirmer-changement-email),
+ * pas via `auth.updateUser` (email natif Supabase abandonné — résistance au pré-scan).
+ */
+export async function requestEmailChange(newEmail: string): Promise<{ error: string | null }> {
+  const normalized = newEmail.trim().toLowerCase()
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
+    return { error: 'Adresse email invalide.' }
+  }
+
+  const authClient = await createServerClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return { error: 'Non authentifié.' }
+  if (user.email?.toLowerCase() === normalized) {
+    return { error: "C'est déjà votre adresse email." }
+  }
+
+  const admin = createServiceRoleClient()
+  // Pré-check d'unicité best-effort (l'enforcement final est au confirm, via l'API admin).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (admin as any)
+    .from('users')
+    .select('id')
+    .or(`email.eq.${normalized},contact_email.eq.${normalized}`)
+    .neq('id', user.id)
+    .maybeSingle()
+  if (existing?.id) return { error: 'Cette adresse email est déjà utilisée.' }
+
+  const headersList = await headers()
+  const host = headersList.get('host') || 'www.100000medecins.org'
+  const proto = headersList.get('x-forwarded-proto') || 'https'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${proto}://${host}`
+
+  const { iat, token } = generateEmailChangeToken(user.id, normalized)
+  const lien = `${siteUrl}/confirmer-changement-email?uid=${user.id}&new_email=${encodeURIComponent(normalized)}&iat=${iat}&token=${token}`
+
+  const emailContent = await buildEmail(
+    'confirmation_changement_email',
+    { lien_confirmation: lien, nouvelle_adresse: normalized },
+    siteUrl,
+  )
+  if (!emailContent) return { error: 'Template email introuvable.' }
+
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+  try {
+    await sgMail.send({
+      to: normalized,
+      from: 'contact@100000medecins.org',
+      subject: emailContent.sujet,
+      html: emailContent.html,
+    })
+  } catch {
+    return { error: "Erreur lors de l'envoi de l'email." }
   }
 
   return { error: null }
