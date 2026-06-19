@@ -193,13 +193,13 @@ Aucune session n'est ouverte, aucun `code` / `access_token` n'est échangé : la
 4. `buildEmail('confirmation_changement_email', { lien_confirmation, nouvelle_adresse }, siteUrl)` → SendGrid envoie le lien **à la nouvelle adresse**.
 5. L'utilisateur clique → `GET /confirmer-changement-email?uid&new_email&iat&token` (`src/app/confirmer-changement-email/route.ts`) re-vérifie le HMAC, puis :
    - `admin.updateUserById(uid, { email: newEmail, email_confirm: true })` (le clic depuis la boîte prouve le contrôle de l'adresse) ;
-   - **synchronise `public.users.email`** (sinon `sendPasswordReset`, qui résout l'uid par `users.email`, casserait après un changement) ;
+   - **synchronise `public.users.email` ET `public.users.contact_email`** (= l'email réellement affiché/utilisé côté profil, surtout pour les comptes PSC qui priorisent `contact_email`). Les 3 valeurs alignées (auth + email + contact_email) ;
    - envoie un **email de courtoisie à l'ancienne adresse** (`notification_changement_email`, « ce n'était pas vous ? ») ;
-   - redirige vers `/mon-compte/profil?email_changed=1`.
+   - redirige vers `/mon-compte/profil?email_changed=1` (le profil rafraîchit alors la session pour afficher le nouvel email sans reconnexion).
 
 ### Choix & garde-fous
 
-- **`contact_email` n'est volontairement pas modifié** (sémantique PSC : il porte l'email réel des comptes PSC dont l'`auth.email` est synthétique). Le flux ne change que l'email de **connexion** (`auth.users.email`) + son miroir `public.users.email`.
+- **Les 3 emails sont alignés** (`auth.users.email`, `public.users.email`, `public.users.contact_email`). ⚠️ Décision corrigée le 2026-06-20 : la v1 ne touchait pas `contact_email`, ce qui laissait l'ancien email affiché pour les comptes PSC (qui priorisent `contact_email`) et faisait apparaître un faux champ « Email Pro Santé Connect ».
 - **Idempotence** : le GET applique le changement mais le HMAC est rejouable jusqu'à expiration (re-confirmer un email déjà appliqué = quasi no-op) → résistant au pré-scan.
 - **Anti-rejeu** : le `newEmail` est dans la signature (cf. étape 3).
 - **Anti-prise-de-contrôle** : double notification (validation à la nouvelle adresse + courtoisie à l'ancienne).

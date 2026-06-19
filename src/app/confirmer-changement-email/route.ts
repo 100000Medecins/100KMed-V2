@@ -42,10 +42,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/mon-compte/profil?email_error=${code}`)
   }
 
-  // 2) Synchro public.users.email (sendPasswordReset résout l'uid via users.email).
-  //    contact_email volontairement non touché (sémantique PSC, hors périmètre).
+  // 2) Synchro public.users : email (résolution d'uid par sendPasswordReset) ET
+  //    contact_email (l'email réellement affiché/utilisé côté profil, surtout pour les
+  //    comptes PSC où le profil priorise contact_email). Les 3 alignés (auth + email +
+  //    contact_email) → pas de champ « Email PSC » fantôme ni d'email périmé affiché.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any).from('users').update({ email: newEmail }).eq('id', uid)
+  await (admin as any).from('users').update({ email: newEmail, contact_email: newEmail }).eq('id', uid)
 
   // 3) Email de courtoisie à l'ancienne adresse.
   if (oldEmail && oldEmail.toLowerCase() !== newEmail) {

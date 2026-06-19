@@ -182,6 +182,28 @@ export default function ProfilPage() {
     }
   }, [user])
 
+  // Retour depuis /confirmer-changement-email : rafraîchir la session (pour que le
+  // nouvel email s'affiche sans déconnexion/reconnexion) + message, puis nettoyer l'URL.
+  useEffect(() => {
+    const changed = searchParams.get('email_changed')
+    const errCode = searchParams.get('email_error')
+    if (changed === '1') {
+      createClient().auth.refreshSession().finally(() => {
+        window.history.replaceState({}, '', '/mon-compte/profil')
+      })
+      setSuccess('Votre adresse email a été mise à jour.')
+      setTimeout(() => setSuccess(null), 5000)
+    } else if (errCode) {
+      setError(
+        errCode === 'expired' ? 'Le lien de changement d\'email a expiré. Relancez la demande.'
+          : errCode === 'taken' ? 'Cette adresse email est déjà utilisée par un autre compte.'
+          : 'Le changement d\'email a échoué. Veuillez réessayer.'
+      )
+      window.history.replaceState({}, '', '/mon-compte/profil')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Écoute les changements d'avatar effectués depuis d'autres composants (ex: bannière en haut de page)
   useEffect(() => {
     const handler = (e: Event) => {

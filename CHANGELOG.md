@@ -13,7 +13,8 @@ Dernier flux email qui dépendait de Supabase natif (`auth.updateUser({ email })
 
 - Token `src/lib/email/email-change-token.ts` : HMAC `sha256(EMAIL_SECRET, "email-change:uid:newEmail:iat")`, TTL 1h. Le **nouvel email est signé** → anti-rejeu (un lien valide ne peut pas être détourné vers une autre adresse).
 - `requestEmailChange(newEmail)` (`src/lib/actions/user.ts`) : pré-check d'unicité + envoi du lien via SendGrid à la **nouvelle** adresse.
-- `GET /confirmer-changement-email` : re-vérifie le HMAC → `admin.updateUserById({ email, email_confirm: true })` + **sync `public.users.email`** (sinon `sendPasswordReset`, qui résout l'uid par `users.email`, casserait après changement) + email de courtoisie à l'**ancienne** adresse. `contact_email` volontairement non touché (sémantique PSC).
+- `GET /confirmer-changement-email` : re-vérifie le HMAC → `admin.updateUserById({ email, email_confirm: true })` + **sync `public.users.email` ET `public.users.contact_email`** (les 3 alignés) + email de courtoisie à l'**ancienne** adresse. Au retour, le profil rafraîchit la session (nouvel email affiché sans reconnexion).
+- ⚠️ Fix de suivi (même jour) : la v1 ne mettait pas à jour `contact_email` → pour les comptes PSC (qui priorisent `contact_email`), l'ancien email restait affiché et un faux champ « Email Pro Santé Connect » apparaissait. Corrigé : `contact_email` aligné + refresh session sur `?email_changed=1`.
 - `profil/page.tsx` : `auth.updateUser` → `requestEmailChange`. Cancel/pending (hint `localStorage`) inchangés.
 - 2 templates BDD : `confirmation_changement_email`, `notification_changement_email`. `SAMPLE_VARS` admin complétés. Commit `8e21784`.
 - Doc : [docs/email-architecture.md](docs/email-architecture.md) — section « natifs Supabase = morts » + flux détaillé.
