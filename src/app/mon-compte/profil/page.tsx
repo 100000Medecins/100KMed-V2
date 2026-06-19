@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { updateProfile, cancelEmailChange, requestEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes, getAvatars, removeAvatar, deletePersonalAvatar } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, SM_SPECIALITES } from '@/lib/constants/profil'
+import { getDisplayName } from '@/lib/displayName'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
@@ -559,7 +560,7 @@ export default function ProfilPage() {
                   placeholder="Votre pseudo (optionnel)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Si laissé vide, vos avis publiés afficheront votre prénom suivi de l&apos;initiale de votre nom.
+                  Si laissé vide, vos avis publiés afficheront <span className="font-semibold text-navy">{getDisplayName({ prenom, nom })}</span>
                 </p>
               </div>
 
@@ -614,7 +615,7 @@ export default function ProfilPage() {
                   placeholder="Votre pseudo (optionnel)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Si laissé vide, vos avis publiés afficheront votre prénom suivi de l&apos;initiale de votre nom.
+                  Si laissé vide, vos avis publiés afficheront <span className="font-semibold text-navy">{getDisplayName({ prenom, nom })}</span>
                 </p>
               </div>
 
