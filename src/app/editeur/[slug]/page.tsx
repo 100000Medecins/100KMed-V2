@@ -80,16 +80,6 @@ export default async function EditeurPage(props: PageProps) {
                     dangerouslySetInnerHTML={{ __html: editeur.description }}
                   />
                 )}
-                {(editeur.nb_employes || editeur.contact_ville) && (
-                  <div className="flex flex-wrap gap-4 mt-5 text-sm text-gray-500">
-                    {editeur.nb_employes && (
-                      <span>{editeur.nb_employes} employés</span>
-                    )}
-                    {editeur.contact_ville && (
-                      <span>{editeur.contact_ville}, {editeur.contact_pays}</span>
-                    )}
-                  </div>
-                )}
                 {editeur.website && (
                   <Button
                     href={editeur.website}
