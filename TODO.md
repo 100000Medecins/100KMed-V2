@@ -26,7 +26,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Sécurité
 
-#### Migrer le flux « changement d'email » de Supabase Auth vers SendGrid (HMAC idempotent)
+#### ~~Migrer le flux « changement d'email » de Supabase Auth vers SendGrid (HMAC idempotent)~~ [OK] Fait 2026-06-20 (commit `8e21784` — token HMAC, `/confirmer-changement-email`, sync `public.users.email`, 2 templates BDD ; cf CHANGELOG)
 - **Contexte (2026-06-08)** : signup (commit `ff1ef31`) et reset mdp (`4589f20`) ont déjà été migrés en mai vers des liens HMAC maison envoyés via SendGrid pour résister au pré-scan anti-phishing (Outlook Safe Links / Gmail consommaient les tokens OTP single-use avant le clic réel). Le **changement d'adresse email** est le **seul flux résiduel** qui utilise encore `supabase.auth.updateUser({ email })` ([src/app/mon-compte/profil/page.tsx](src/app/mon-compte/profil/page.tsx#L307)) → email natif Supabase, template hébergé dans le dashboard Supabase → Authentication → Email Templates → « Confirm Email Change » → **n'a pas le master_layout 3 lignes**.
 - **Décision 2026-06-08** : migrer ce flux pour (a) appliquer automatiquement le master_layout neuf, (b) gagner l'idempotence (résistance pré-scan), (c) devenir totalement indépendant de Supabase Auth pour les emails.
 - **Pattern envoi** : « envoyé à la nouvelle adresse pour validation » + « notification de courtoisie à l'ancienne ».
@@ -179,6 +179,12 @@ _(rien à faire pour l'instant)_
 - **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 10 fiches
 - **Activer** (`actif=true`) la catégorie + les solutions quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
 
+#### Affichage des prix — plomberie livrée, remplissage en cours
+- **Plomberie livrée 2026-06-04** : helpers `src/lib/prix.ts`, table `app_settings` + toggle `/admin/parametres` (OFF par défaut), bloc Tarification fiche solution, indicateur €/€€/€€€/€€€€ + tri, colonne « Prix » + filtre admin, aperçu éditeur.
+- ~~Fix BDD préalable : `prix_ttc=0→NULL` + `prix_devise='€'→'EUR'`~~ [OK] Fait — vérifié le 2026-06-20 (0 prix à 0, 0 devise `€`, 102 solutions en `EUR`).
+- **En cours** : remplissage des prix par les éditeurs — **mails envoyés**. 24 solutions ont déjà un vrai prix au 2026-06-20 (scraping abandonné : sources tierces contradictoires/périmées).
+- **Reste** : une fois la masse critique atteinte, **activer le toggle** dans `/admin/parametres` + retirer le badge « Bientôt affiché sur le site » (`src/app/mon-compte/mon-espace-editeur/page.tsx`).
+
 ---
 
 ### Thèmes alternatifs du site
@@ -192,20 +198,6 @@ _(rien à faire pour l'instant)_
 - Piste 2 — fenêtre glissante : ne compter que les avis des N derniers mois (ex. 24 mois), afficher l'avertissement « basé sur X avis récents »
 - Piste 3 — badge "note ancienne" : si la dernière évaluation date de plus de 18 mois, afficher un indicateur visuel sur la fiche solution
 - À décider : seuil de decay, affichage ou non du détail dans l'UI, impact sur le classement de la page comparatif
-
-### Refaire le système d'affichage des prix — plomberie livrée 2026-06-04, en attente de remplissage
-- **Décisions cadrées 2026-06-03** : TTC uniquement, médiane pour les plages (`(min+max)/2`), affichage carte comparatif = chiffre brut + indicateur €/€€/€€€/€€€€ (couleur vs médiane catégorie).
-- ✅ **Livré 2026-06-04** :
-  - Helpers `src/lib/prix.ts` (formatPrix, computeCategoryMedian, computePriceTier) avec normalisation défensive (0 ou négatif = null, accepte `€`/`EUR` indifféremment)
-  - Table `app_settings` + page `/admin/parametres` (sous-menu Solutions) avec toggle global « Afficher les prix sur le front » (OFF par défaut)
-  - Bloc Tarification sur fiche solution (sidebar) gated derrière le toggle
-  - Indicateur €/€€/€€€/€€€€ + tri par prix sur `/solutions/[idCategorie]` gated derrière le toggle
-  - Colonne « Prix » + filtre « Sans prix » dans `/admin/solutions`
-  - Aperçu live du rendu dans le formulaire éditeur
-- ⏳ **Reste à faire — remplir les prix avant d'activer le toggle** :
-  - **Fix BDD préalable** : `UPDATE solutions SET prix_ttc=NULL WHERE prix_ttc=0;` (19 solutions parasites héritées Firebase) + `UPDATE solutions SET prix_devise='EUR' WHERE prix_devise='€';` (21 solutions, normalisation code ISO)
-  - **Stratégie remplissage 2026-06-04** : scraping abandonné (essai Hellodoc + Weda non concluant — pages tarifs officielles vides chez Weda, PDF Hellodoc obsolète 2007, sites tiers contradictoires entre 100 et 130 €/mois → risque éditorial + péremption). À la place : **mails aux éditeurs référencés** pour leur demander de saisir leurs prix dans l'espace éditeur. À planifier sur 3-5 éditeurs « amis » d'abord pour amorcer.
-  - **Une fois la masse critique atteinte** : activer le toggle dans `/admin/parametres` + retirer le badge « Bientôt affiché sur le site » du formulaire éditeur (`src/app/mon-compte/mon-espace-editeur/page.tsx` ligne ~494)
 
 ### ROR sur le site
 - Intégrer le ROR (Répertoire Opérationnel des Ressources) sur le site
