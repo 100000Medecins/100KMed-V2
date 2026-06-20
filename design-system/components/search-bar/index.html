@@ -1,0 +1,50 @@
+<!-- @dsCard group="Applicatifs" name="SearchBar" subtitle="Champ pilule + bouton rond + dropdown résultats" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SearchBar — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --white:#F4F7FF; --navy:#1B2A4A; --navy-dark:#0F1B33; --navy-light:#2A3F66; --accent-blue:#4A90D9; --surface-light:#D8E6F8; }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .wrap { position: relative; width: 100%; max-width: 420px; }
+  .input { width:100%; padding:16px 56px 16px 20px; border-radius:999px; background:#fff; box-shadow:0 4px 24px rgba(0,0,0,.06); border:1px solid #F3F4F6; font-size:14px; color:#374151; font-family:inherit; outline:none; }
+  .input:focus { border-color:rgba(74,144,217,.5); box-shadow:0 0 0 2px rgba(74,144,217,.3); }
+  .input::placeholder { color:#9CA3AF; }
+  .go { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:999px; background:var(--navy); border:0; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s; }
+  .go:hover { background:var(--navy-dark); }
+  .dropdown { margin-top:8px; background:#fff; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,.10); border:1px solid #F3F4F6; overflow:hidden; max-width:420px; }
+  .res { width:100%; display:flex; align-items:center; gap:12px; padding:12px 16px; border:0; background:transparent; cursor:pointer; text-align:left; transition:background .15s; }
+  .res:hover, .res.active { background:var(--surface-light); }
+  .ico { width:32px; height:32px; border-radius:8px; background:rgba(74,144,217,.1); color:var(--accent-blue); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0; }
+  .rn { font-size:14px; font-weight:500; color:var(--navy); }
+</style>
+</head>
+<body>
+  <h1>SearchBar</h1>
+  <p class="sub">Recherche globale — <code>SearchBar.tsx</code>. Champ pilule, bouton rond navy, dropdown résultats (clavier ↑↓↵).</p>
+
+  <h2>Champ seul</h2>
+  <div class="wrap">
+    <input class="input" placeholder="Recherchez un outil" />
+    <button class="go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+  </div>
+
+  <h2>Avec dropdown de résultats</h2>
+  <div class="wrap">
+    <input class="input" value="docto" />
+    <button class="go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+    <div class="dropdown">
+      <button class="res active"><span class="ico">DO</span><span class="rn">Doctolib</span></button>
+      <button class="res"><span class="ico">DO</span><span class="rn">Doctomatic</span></button>
+      <button class="res"><span class="ico">DR</span><span class="rn">DocteurSecu</span></button>
+    </div>
+  </div>
+</body>
+</html>

@@ -43,7 +43,7 @@ export default function HeroIllustration({ nbSolutionsLabel, nbEvaluationsLabel,
           className="bg-emerald-500/25 backdrop-blur border border-emerald-400/40 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-lg"
         >
           <span className="text-emerald-400 text-sm">✓</span>
-          <span className="text-white/90 text-xs font-medium">Ségur certifié</span>
+          <span className="text-white/90 text-xs font-medium">Labellisé Ségur</span>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export default function HeroIllustration({ nbSolutionsLabel, nbEvaluationsLabel,
           className="bg-blue-500/20 backdrop-blur border border-blue-400/30 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-lg"
         >
           <span className="text-blue-300 text-sm">⚡</span>
-          <span className="text-white/90 text-xs font-medium">RPPS connecté</span>
+          <span className="text-white/90 text-xs font-medium">Connexion PSC</span>
         </div>
       </div>
 

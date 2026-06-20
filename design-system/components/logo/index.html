@@ -1,0 +1,52 @@
+<!-- @dsCard group="Applicatifs" name="Logo" subtitle="principal/secondaire × couleur/nb (SVG réels)" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Logo — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --white:#F4F7FF; --navy:#1B2A4A; --navy-light:#2A3F66; }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; max-width:820px; }
+  .slot { border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,.04); background:#fff; padding:28px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; min-height:160px; }
+  .slot.dark { background:var(--navy); }
+  .slot img { max-width:100%; height:auto; }
+  .name { font-size:12px; font-family:ui-monospace,monospace; color:var(--navy-light); }
+  .slot.dark .name { color:rgba(255,255,255,.7); }
+</style>
+</head>
+<body>
+  <h1>Logo</h1>
+  <p class="sub">Logo — <code>Logo.tsx</code>. 2 variantes × 2 colorimétries. Source : <code>public/logos/</code>.</p>
+
+  <h2>Sur fond clair — couleur</h2>
+  <div class="grid">
+    <div class="slot">
+      <img src="assets/logo-principal-couleur.svg" alt="Logo principal couleur" style="height:96px" />
+      <span class="name">principal · couleur</span>
+    </div>
+    <div class="slot">
+      <img src="assets/logo-secondaire-couleur.svg" alt="Logo secondaire couleur" style="height:54px" />
+      <span class="name">secondaire · couleur</span>
+    </div>
+  </div>
+
+  <h2>Sur fond sombre — n&amp;b (blanc)</h2>
+  <div class="grid">
+    <div class="slot dark">
+      <img src="assets/logo-principal-nb.svg" alt="Logo principal blanc" style="height:96px" />
+      <span class="name">principal · nb</span>
+    </div>
+    <div class="slot dark">
+      <img src="assets/logo-secondaire-nb.svg" alt="Logo secondaire blanc" style="height:54px" />
+      <span class="name">secondaire · nb</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,10 +1,13 @@
 import QuestionnaireTheseForm from '@/components/mon-compte/QuestionnaireTheseForm'
+import EditeurRedirectGuard from '@/components/mon-compte/EditeurRedirectGuard'
 
 export const dynamic = 'force-dynamic'
 
 export default function ProposerQuestionnaireThesePage() {
   return (
     <div>
+      {/* Réservé aux médecins : un éditeur arrivant par URL directe est redirigé. */}
+      <EditeurRedirectGuard to="/mon-compte/proposer/idee" />
       <p className="text-sm text-gray-500 mb-6">
         Vous menez une thèse en lien avec l&apos;e-santé ? Déposez votre questionnaire ici pour qu&apos;il soit relayé auprès des médecins inscrits.
       </p>

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { updateProfile, cancelEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes, getAvatars, removeAvatar, deletePersonalAvatar } from '@/lib/actions/user'
+import { updateProfile, cancelEmailChange, requestEmailChange, getEditeurClaimOptions, createEditeurClaim, rattacherEvalsAnonymes, getAvatars, removeAvatar, deletePersonalAvatar } from '@/lib/actions/user'
 import type { EditeurClaimOption } from '@/lib/actions/user'
 import { SPECIALITES, MODES_EXERCICE, SM_SPECIALITES } from '@/lib/constants/profil'
+import { getDisplayName } from '@/lib/displayName'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import DeleteAccountModal from '@/components/mon-compte/DeleteAccountModal'
@@ -173,12 +174,47 @@ export default function ProfilPage() {
     const key = `pendingEmail_${user.id}`
     const stored = localStorage.getItem(key)
     if (!stored) return
-    // Si l'email actuel correspond déjà → confirmation faite, nettoyer
-    if (user.email === stored) {
+    // Changement appliqué dès que l'email RÉEL (contact_email, lu frais en BDD) OU la
+    // session reflète l'adresse en attente → on nettoie la bannière. On compare avec
+    // contact_email pour être indépendant de la fraîcheur du JWT de session (souvent en
+    // retard après un changement d'email côté serveur).
+    if (stored === contactEmail || user.email === stored) {
       localStorage.removeItem(key)
+      setPendingEmail(null)
     } else {
       setPendingEmail(stored)
     }
+  }, [user, contactEmail])
+
+  // Retour depuis /confirmer-changement-email : le changement vient d'être confirmé.
+  // On retire IMMÉDIATEMENT la bannière « en attente » (sans attendre la synchro
+  // session/BDD), on rafraîchit la session pour l'affichage, on montre un message, puis on
+  // nettoie l'URL. On attend que `user` soit chargé pour nettoyer le hint localStorage, et
+  // un ref garantit un seul passage (refreshSession change `user` → sinon boucle).
+  const emailFlowHandledRef = useRef(false)
+  useEffect(() => {
+    if (!user || emailFlowHandledRef.current) return
+    const changed = searchParams.get('email_changed')
+    const errCode = searchParams.get('email_error')
+    if (changed !== '1' && !errCode) return
+    emailFlowHandledRef.current = true
+    if (changed === '1') {
+      localStorage.removeItem(`pendingEmail_${user.id}`)
+      setPendingEmail(null)
+      setSuccess('Votre adresse email a été mise à jour.')
+      setTimeout(() => setSuccess(null), 5000)
+      createClient().auth.refreshSession().finally(() => {
+        window.history.replaceState({}, '', '/mon-compte/profil')
+      })
+    } else {
+      setError(
+        errCode === 'expired' ? 'Le lien de changement d\'email a expiré. Relancez la demande.'
+          : errCode === 'taken' ? 'Cette adresse email est déjà utilisée par un autre compte.'
+          : 'Le changement d\'email a échoué. Veuillez réessayer.'
+      )
+      window.history.replaceState({}, '', '/mon-compte/profil')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Écoute les changements d'avatar effectués depuis d'autres composants (ex: bannière en haut de page)
@@ -304,10 +340,12 @@ export default function ProfilPage() {
     setEmailError(null)
     setSuccess(null)
     setEmailSubmitting(true)
-    const { error } = await supabaseRef.current.auth.updateUser({ email: newEmail })
+    // Lien HMAC idempotent via SendGrid (plus d'email natif Supabase). Le changement
+    // n'est appliqué qu'au clic depuis la nouvelle boîte (cf /confirmer-changement-email).
+    const { error } = await requestEmailChange(newEmail)
     setEmailSubmitting(false)
     if (error) {
-      setEmailError(error.message)
+      setEmailError(error)
     } else {
       localStorage.setItem(`pendingEmail_${user!.id}`, newEmail)
       setPendingEmail(newEmail)
@@ -370,6 +408,12 @@ export default function ProfilPage() {
   if (loading) {
     return <div className="animate-pulse text-gray-400 py-8">Chargement du profil...</div>
   }
+
+  // L'email @psc.sante.fr est un placeholder technique fabriqué côté code (compte PSC sans
+  // email réel renvoyé par PSC) — jamais une vraie boîte mail → on ne l'affiche JAMAIS à
+  // l'utilisateur. emailReel = le vrai email s'il existe (contact_email puis auth non
+  // synthétique), sinon null (→ « Non renseignée »).
+  const emailReel = contactEmail || (user?.email?.endsWith('@psc.sante.fr') ? null : user?.email) || null
 
   return (
     <div>
@@ -557,22 +601,10 @@ export default function ProfilPage() {
                   placeholder="Votre pseudo (optionnel)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Si laissé vide, vos avis publiés afficheront votre prénom suivi de l&apos;initiale de votre nom.
+                  Si laissé vide, vos avis publiés afficheront <span className="font-semibold text-navy">{getDisplayName({ prenom, nom })}</span>
                 </p>
               </div>
 
-              {/* Email PSC technique, affiché uniquement s'il diffère du contact_email */}
-              {user?.email && contactEmail && user.email !== contactEmail && (
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Email Pro Santé Connect</label>
-                  <input
-                    type="text"
-                    value={user.email}
-                    readOnly
-                    className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
-                  />
-                </div>
-              )}
             </div>
           ) : (
             /* Formulaire éditable pour les non-PSC */
@@ -612,7 +644,7 @@ export default function ProfilPage() {
                   placeholder="Votre pseudo (optionnel)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Si laissé vide, vos avis publiés afficheront votre prénom suivi de l&apos;initiale de votre nom.
+                  Si laissé vide, vos avis publiés afficheront <span className="font-semibold text-navy">{getDisplayName({ prenom, nom })}</span>
                 </p>
               </div>
 
@@ -737,7 +769,9 @@ export default function ProfilPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm text-gray-500">
-                Email : <span className="font-semibold text-navy">{contactEmail || user?.email}</span>
+                Email : {emailReel
+                  ? <span className="font-semibold text-navy">{emailReel}</span>
+                  : <span className="italic text-gray-400">Non renseignée</span>}
               </p>
               {!showEmailForm && (
                 <button
@@ -812,14 +846,14 @@ export default function ProfilPage() {
                   </p>
                   {resetSent ? (
                     <p className="text-xs text-green-600">
-                      Email envoyé à <span className="font-medium">{contactEmail || user?.email}</span>. Vérifiez votre boîte mail.
+                      Email envoyé à <span className="font-medium">{emailReel}</span>. Vérifiez votre boîte mail.
                     </p>
                   ) : (
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={async () => {
-                          const email = contactEmail || user?.email
+                          const email = emailReel
                           if (!email) return
                           await resetPassword(email)
                           setResetSent(true)
@@ -862,13 +896,13 @@ export default function ProfilPage() {
                     />
                     {resetSent ? (
                       <p className="text-xs text-green-600 mt-1.5">
-                        Email de réinitialisation envoyé à <span className="font-medium">{contactEmail || user?.email}</span>.
+                        Email de réinitialisation envoyé à <span className="font-medium">{emailReel}</span>.
                       </p>
                     ) : (
                       <button
                         type="button"
                         onClick={async () => {
-                          const email = contactEmail || user?.email
+                          const email = emailReel
                           if (!email) return
                           await resetPassword(email)
                           setResetSent(true)

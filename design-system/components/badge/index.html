@@ -1,0 +1,62 @@
+<!-- @dsCard group="Components" name="Badge" subtitle="6 variantes · 2 tailles · dot indicator" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Badge — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --white: #F4F7FF; --navy: #1B2A4A; --navy-light: #2A3F66; }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--navy-light); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  .badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+  .md { padding: 4px 10px; font-size: 12px; }
+  .sm { padding: 2px 8px; font-size: 10px; }
+  .info    { background: rgba(74,144,217,.1); color: #4A90D9; border-color: rgba(74,144,217,.2); }
+  .warning { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+  .success { background: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
+  .danger  { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+  .neutral { background: #F3F4F6; color: #4B5563; border-color: #E5E7EB; }
+  .dark    { background: #374151; color: #fff; border-color: #374151; }
+  .dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
+  .dot-info{background:#4A90D9} .dot-warning{background:#F59E0B} .dot-success{background:#22C55E}
+  .dot-danger{background:#EF4444} .dot-neutral{background:#9CA3AF} .dot-dark{background:#fff}
+</style>
+</head>
+<body>
+  <h1>Badge</h1>
+  <p class="sub">Primitive partagée — <code>src/components/ui/Badge.tsx</code>. Chips, tags, statuts.</p>
+
+  <h2>Variantes (md)</h2>
+  <div class="row">
+    <span class="badge md info">Cardiologie</span>
+    <span class="badge md warning">En attente</span>
+    <span class="badge md success">Validé</span>
+    <span class="badge md danger">Erreur</span>
+    <span class="badge md neutral">Désactivé</span>
+    <span class="badge md dark">Hors spécialité</span>
+  </div>
+
+  <h2>Taille sm</h2>
+  <div class="row">
+    <span class="badge sm info">Cardiologie</span>
+    <span class="badge sm warning">En attente</span>
+    <span class="badge sm success">Validé</span>
+    <span class="badge sm dark">Hors spécialité</span>
+  </div>
+
+  <h2>Avec dot (status indicator)</h2>
+  <div class="row">
+    <span class="badge md info"><span class="dot dot-info"></span>Connecté</span>
+    <span class="badge md warning"><span class="dot dot-warning"></span>En cours</span>
+    <span class="badge md success"><span class="dot dot-success"></span>Actif</span>
+    <span class="badge md neutral"><span class="dot dot-neutral"></span>Inactif</span>
+  </div>
+</body>
+</html>

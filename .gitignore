@@ -43,6 +43,11 @@ tmp/
 # Backups JSON générés par les scripts de fix (lourds, locaux)
 # Les backups commités explicitement le 2026-05-28 sont conservés.
 docs/backup-fix-*.json
+docs/backup-backfill-*.json
+backups/
+
+# Gabarits de marque Office (gros binaires .pptx/.docx — gérés hors repo)
+brand-templates/
 
 # Supabase CLI — fichiers temporaires auto-générés (version du CLI, etc.)
 supabase/.temp/

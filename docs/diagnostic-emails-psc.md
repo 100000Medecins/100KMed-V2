@@ -80,6 +80,24 @@ minuscules, normaliser l'entrée suffit) :
 - `src/components/providers/AuthProvider.tsx` `signInWithEmail` : idem avant
   `signInWithPassword`.
 
+## 6bis. Règle : ne JAMAIS afficher l'email synthétique `@psc.sante.fr` (2026-06-20)
+
+L'adresse `psc-{rpps}@psc.sante.fr` est un **placeholder technique fabriqué par notre code**
+(cf §1) : ce n'est **pas une vraie boîte mail**, personne ne reçoit rien dessus, l'utilisateur
+se connecte via PSC (OIDC), jamais via cet email. **Il ne doit jamais être présenté à
+l'utilisateur** (confusant — il ressemble à un vrai email).
+
+Implémentation côté profil (`src/app/mon-compte/profil/page.tsx`) :
+- helper `emailReel = contact_email || (auth.email non synthétique) || null` ;
+- l'« Email » des identifiants affiche `emailReel`, sinon **« Non renseignée »** (le bouton
+  « Changer » permet d'en saisir un vrai via le flux HMAC) ;
+- le **champ « Email Pro Santé Connect » a été supprimé** (il n'exposait que le synthétique) ;
+- les messages de reset mdp utilisent aussi `emailReel`.
+
+Discriminant : `email.endsWith('@psc.sante.fr')` (placeholder), comme déjà fait dans
+`AdminUtilisateursClient.tsx` (`hasRealEmail`) et `psc-callback` (`hasFakeEmail`). À réutiliser
+partout où un email PSC peut s'afficher.
+
 ## 6. Pistes restantes (non implémentées)
 
 2. **Réduire la friction PSC** : rendre le mot de passe **optionnel** à `/completer-profil`

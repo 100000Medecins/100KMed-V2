@@ -1,0 +1,46 @@
+<!-- @dsCard group="Applicatifs" name="MissionCard" subtitle="Carte article — visuel + titre + pastille CTA" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MissionCard — 100000Médecins</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --white:#F4F7FF; --navy:#1B2A4A; --navy-dark:#0F1B33; --navy-light:#2A3F66; --accent-blue:#4A90D9; }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: var(--navy-light); margin: 0 0 32px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 28px; max-width: 760px; }
+  .visual { width:100%; aspect-ratio:4/3; border-radius:16px; margin-bottom:20px; overflow:hidden; background-image:linear-gradient(135deg, rgba(255,255,255,.25), transparent); }
+  .title { font-size:16px; font-weight:600; color:var(--navy); margin:0 0 8px; }
+  .desc { font-size:14px; color:#6B7280; line-height:1.6; margin:0 0 16px; }
+  .pill { display:inline-flex; align-items:center; gap:8px; background:var(--navy); color:#fff; font-size:14px; font-weight:600; padding:10px 20px; border-radius:999px; transition:background .3s; cursor:pointer; }
+  .pill:hover { background:var(--accent-blue); }
+</style>
+</head>
+<body>
+  <h1>MissionCard</h1>
+  <p class="sub">Carte éditoriale / article — <code>MissionCard.tsx</code>. Visuel coloré (ou image), titre, description, pastille « Lire l'article ».</p>
+
+  <div class="grid">
+    <div>
+      <div class="visual" style="background-color:#FDE8EF"></div>
+      <h3 class="title">Notre mission</h3>
+      <p class="desc">Aider 100 000 médecins à choisir les bons outils numériques pour leur pratique.</p>
+      <span class="pill">Lire l'article
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </span>
+    </div>
+    <div>
+      <div class="visual" style="background-color:#E0EAFF"></div>
+      <h3 class="title">Comment on évalue</h3>
+      <p class="desc">Une méthodologie transparente fondée sur les retours des professionnels de santé.</p>
+      <span class="pill">Lire l'article
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </span>
+    </div>
+  </div>
+</body>
+</html>

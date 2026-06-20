@@ -28,7 +28,8 @@ export default function AdminHeader() {
             alt="100 000 Médecins"
             width={220}
             height={52}
-            className="h-[40px] md:h-[52px] w-auto"
+            className="h-[40px] md:h-[52px]"
+            style={{ width: 'auto' }}
             priority
             unoptimized
           />

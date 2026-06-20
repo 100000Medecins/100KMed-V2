@@ -5,6 +5,34 @@
 
 ---
 
+## [2026-06-20] — Changement d'email migré vers SendGrid (dernier flux natif Supabase éliminé)
+
+### Email — Migration du changement d'adresse email vers un lien HMAC idempotent
+
+Dernier flux email qui dépendait de Supabase natif (`auth.updateUser({ email })`), migré sur le modèle signup/reset. **Plus aucun email natif Supabase.**
+
+- Token `src/lib/email/email-change-token.ts` : HMAC `sha256(EMAIL_SECRET, "email-change:uid:newEmail:iat")`, TTL 1h. Le **nouvel email est signé** → anti-rejeu (un lien valide ne peut pas être détourné vers une autre adresse).
+- `requestEmailChange(newEmail)` (`src/lib/actions/user.ts`) : pré-check d'unicité + envoi du lien via SendGrid à la **nouvelle** adresse.
+- `GET /confirmer-changement-email` : re-vérifie le HMAC → `admin.updateUserById({ email, email_confirm: true })` + **sync `public.users.email` ET `public.users.contact_email`** (les 3 alignés) + email de courtoisie à l'**ancienne** adresse. Au retour, le profil rafraîchit la session (nouvel email affiché sans reconnexion).
+- ⚠️ Fix de suivi (même jour) : la v1 ne mettait pas à jour `contact_email` → pour les comptes PSC (qui priorisent `contact_email`), l'ancien email restait affiché et un faux champ « Email Pro Santé Connect » apparaissait. Corrigé : `contact_email` aligné + refresh session sur `?email_changed=1`.
+- `profil/page.tsx` : `auth.updateUser` → `requestEmailChange`. Cancel/pending (hint `localStorage`) inchangés.
+- 2 templates BDD : `confirmation_changement_email`, `notification_changement_email`. `SAMPLE_VARS` admin complétés. Commit `8e21784`.
+- Doc : [docs/email-architecture.md](docs/email-architecture.md) — section « natifs Supabase = morts » + flux détaillé.
+
+### UX / UI — Warning next/image (logo en-tête admin)
+- `w-auto` déplacé de la className vers `style` inline (Next 16/Turbopack lit le style inline) → silence le warning aspect-ratio. Cosmétique, dev-only. Commit `2a622f2`.
+
+### Infrastructure — WIP de l'autre poste committé (kakemono, design-system, fiche éditeur)
+- `feat(print)` : route `src/app/print/kakemono-collage/` + scripts (`applique-cadre`, `export-kakemono-collage`, `generate-fond-png`) + dépendance `puppeteer`.
+- `chore(design-system)` : aperçus HTML du design system pour la skill `/design-sync` (Claude Design).
+- `fix(editeur)` : retrait du bloc « employés / ville » de la fiche éditeur publique.
+- `.gitignore` étendu : `backups/`, `brand-templates/` (gros binaires Office), `docs/backup-*.json`.
+
+### TODO — Mises à jour
+- Barré : « Migrer le flux changement d'email vers SendGrid » (fait 2026-06-20).
+
+---
+
 ## [2026-06-19] — Onboarding PSC allégé + signalement d'erreur d'identité
 
 ### UX / UI — `/completer-profil` : moins de friction pour les comptes PSC

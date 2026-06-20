@@ -1,0 +1,117 @@
+<!-- @dsCard group="Components" name="Button" subtitle="7 variantes · 3 tailles · loading / disabled / icônes" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Button — 100000Médecins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --white: #F4F7FF;
+    --navy: #1B2A4A;
+    --navy-dark: #0F1B33;
+    --accent-blue: #4A90D9;
+    --accent-yellow: #F5A623;
+    --surface-light: #D8E6F8;
+    --red-500: #EF4444;
+    --red-600: #DC2626;
+    --radius-button: 12px;
+    --shadow-soft: 0 2px 8px rgba(0,0,0,.04);
+    --shadow-card: 0 4px 24px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Poppins", sans-serif; margin: 0; padding: 40px; background: var(--white); color: var(--navy); }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: #2A3F66; margin: 0 0 32px; font-size: 14px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 30px 0 12px; text-transform: uppercase; letter-spacing: .04em; color: #2A3F66; }
+  .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .panel-dark { background: var(--navy); padding: 20px; border-radius: 16px; }
+
+  /* ---- Button base (reproduit Button.tsx) ---- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border-radius: var(--radius-button); font-weight: 600; font-family: inherit;
+    border: 0; cursor: pointer; line-height: 1;
+    transition: all .3s ease;
+  }
+  .btn svg { display: block; }
+  /* sizes */
+  .sm { padding: 6px 12px; font-size: 12px; }
+  .md { padding: 10px 20px; font-size: 14px; }
+  .lg { padding: 14px 28px; font-size: 14px; }
+  /* variants */
+  .primary { background: var(--navy); color: var(--white); box-shadow: var(--shadow-soft); }
+  .primary:hover { background: var(--navy-dark); box-shadow: var(--shadow-card); }
+  .secondary { background: var(--accent-blue); color: var(--white); }
+  .secondary:hover { background: rgba(74,144,217,.9); }
+  .outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+  .outline:hover { background: var(--navy); color: var(--white); }
+  .ghost { background: transparent; color: var(--navy); }
+  .ghost:hover { background: var(--surface-light); }
+  .danger { background: var(--red-500); color: #fff; }
+  .danger:hover { background: var(--red-600); }
+  .white { background: transparent; color: #fff; border: 2px solid #fff; }
+  .white:hover { background: #fff; color: var(--navy); }
+  .cta { background: var(--accent-yellow); border: 2px solid var(--accent-yellow); color: var(--navy); font-weight: 700; box-shadow: var(--shadow-md); }
+  .cta:hover { filter: brightness(1.1); }
+  /* states */
+  .btn:disabled, .is-disabled { opacity: .5; cursor: not-allowed; pointer-events: none; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <h1>Button</h1>
+  <p class="sub">Primitive partagée — <code>src/components/ui/Button.tsx</code>. Défaut : <code>variant="primary"</code>, <code>size="lg"</code>.</p>
+
+  <h2>Variantes (taille lg)</h2>
+  <div class="row">
+    <button class="btn lg primary">Primary</button>
+    <button class="btn lg secondary">Secondary</button>
+    <button class="btn lg outline">Outline</button>
+    <button class="btn lg ghost">Ghost</button>
+    <button class="btn lg danger">Danger</button>
+    <button class="btn lg cta">CTA</button>
+  </div>
+
+  <h2>Variante « white » (sur fond sombre)</h2>
+  <div class="panel-dark">
+    <div class="row">
+      <button class="btn lg white">White</button>
+      <button class="btn md white">White md</button>
+    </div>
+  </div>
+
+  <h2>Tailles (variant primary)</h2>
+  <div class="row">
+    <button class="btn sm primary">Small</button>
+    <button class="btn md primary">Medium</button>
+    <button class="btn lg primary">Large</button>
+  </div>
+
+  <h2>États</h2>
+  <div class="row">
+    <button class="btn lg primary">
+      <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      Chargement…
+    </button>
+    <button class="btn lg primary is-disabled">Désactivé</button>
+  </div>
+
+  <h2>Avec icônes</h2>
+  <div class="row">
+    <button class="btn lg outline">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Retour
+    </button>
+    <button class="btn lg primary">
+      S'inscrire
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+</body>
+</html>
