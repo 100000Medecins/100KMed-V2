@@ -186,18 +186,27 @@ export default function ProfilPage() {
     }
   }, [user, contactEmail])
 
-  // Retour depuis /confirmer-changement-email : rafraîchir la session (pour que le
-  // nouvel email s'affiche sans déconnexion/reconnexion) + message, puis nettoyer l'URL.
+  // Retour depuis /confirmer-changement-email : le changement vient d'être confirmé.
+  // On retire IMMÉDIATEMENT la bannière « en attente » (sans attendre la synchro
+  // session/BDD), on rafraîchit la session pour l'affichage, on montre un message, puis on
+  // nettoie l'URL. On attend que `user` soit chargé pour nettoyer le hint localStorage, et
+  // un ref garantit un seul passage (refreshSession change `user` → sinon boucle).
+  const emailFlowHandledRef = useRef(false)
   useEffect(() => {
+    if (!user || emailFlowHandledRef.current) return
     const changed = searchParams.get('email_changed')
     const errCode = searchParams.get('email_error')
+    if (changed !== '1' && !errCode) return
+    emailFlowHandledRef.current = true
     if (changed === '1') {
+      localStorage.removeItem(`pendingEmail_${user.id}`)
+      setPendingEmail(null)
+      setSuccess('Votre adresse email a été mise à jour.')
+      setTimeout(() => setSuccess(null), 5000)
       createClient().auth.refreshSession().finally(() => {
         window.history.replaceState({}, '', '/mon-compte/profil')
       })
-      setSuccess('Votre adresse email a été mise à jour.')
-      setTimeout(() => setSuccess(null), 5000)
-    } else if (errCode) {
+    } else {
       setError(
         errCode === 'expired' ? 'Le lien de changement d\'email a expiré. Relancez la demande.'
           : errCode === 'taken' ? 'Cette adresse email est déjà utilisée par un autre compte.'
@@ -206,7 +215,7 @@ export default function ProfilPage() {
       window.history.replaceState({}, '', '/mon-compte/profil')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [user])
 
   // Écoute les changements d'avatar effectués depuis d'autres composants (ex: bannière en haut de page)
   useEffect(() => {
