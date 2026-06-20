@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Lightbulb, AlertTriangle, Video, BookOpen, FileText } from 'lucide-react'
+import { useAuth } from '@/components/providers/AuthProvider'
 
-const tabs = [
+const allTabs = [
   { href: '/mon-compte/proposer/idee', label: 'Une idée', icon: Lightbulb },
   { href: '/mon-compte/proposer/correction', label: 'Une correction', icon: AlertTriangle },
   { href: '/mon-compte/proposer/video', label: 'Une vidéo', icon: Video },
@@ -14,11 +15,18 @@ const tabs = [
 
 export default function ProposerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { isEditeur } = useAuth()
+  // L'onglet « questionnaire de thèse » (objet académique) est masqué pour les éditeurs.
+  const tabs = isEditeur
+    ? allTabs.filter((t) => t.href !== '/mon-compte/proposer/questionnaire-these')
+    : allTabs
   return (
     <div>
       <h1 className="text-2xl font-bold text-navy mb-2">Proposer</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Une idée, une correction, une vidéo, un acronyme à ajouter au glossaire, un questionnaire de thèse à diffuser — tout est bon à prendre.
+        {isEditeur
+          ? 'Une idée, une correction, une vidéo, un acronyme à ajouter au glossaire — tout est bon à prendre.'
+          : 'Une idée, une correction, une vidéo, un acronyme à ajouter au glossaire, un questionnaire de thèse à diffuser — tout est bon à prendre.'}
       </p>
 
       <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-100">

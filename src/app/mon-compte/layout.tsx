@@ -40,7 +40,9 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
     ...(!isEditeur && (hasQuestionnaires || pathname.startsWith('/mon-compte/mes-questionnaires-these'))
       ? [{ href: '/mon-compte/mes-questionnaires-these', label: 'Mes questionnaires de thèse', icon: GraduationCap }]
       : []),
-    ...(isEditeur ? [] : [{ href: '/mon-compte/proposer', label: 'Proposer', icon: Sparkles }]),
+    // « Proposer » est ouvert à tous (éditeurs inclus) — l'onglet « questionnaire de thèse »
+    // y est masqué pour les éditeurs (cf proposer/layout.tsx).
+    { href: '/mon-compte/proposer', label: 'Proposer', icon: Sparkles },
   ]
 
   if (loading) {
