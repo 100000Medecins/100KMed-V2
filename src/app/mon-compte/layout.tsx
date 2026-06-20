@@ -62,8 +62,10 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
       <main className="pt-[72px] min-h-screen bg-surface-light">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar */}
-            <aside className="md:w-64 flex-shrink-0">
+            {/* Sidebar — décalée vers le bas (desktop) pour aligner son haut avec la
+                première carte de contenu (le titre h1 ~52px occupe la colonne de droite)
+                et dégager le logo qui déborde de la navbar. */}
+            <aside className="md:w-64 flex-shrink-0 md:mt-[52px]">
               <nav className="bg-white rounded-card shadow-card p-4 space-y-1">
                 {navItems.map((item) => {
                   const Icon = item.icon
