@@ -174,13 +174,17 @@ export default function ProfilPage() {
     const key = `pendingEmail_${user.id}`
     const stored = localStorage.getItem(key)
     if (!stored) return
-    // Si l'email actuel correspond déjà → confirmation faite, nettoyer
-    if (user.email === stored) {
+    // Changement appliqué dès que l'email RÉEL (contact_email, lu frais en BDD) OU la
+    // session reflète l'adresse en attente → on nettoie la bannière. On compare avec
+    // contact_email pour être indépendant de la fraîcheur du JWT de session (souvent en
+    // retard après un changement d'email côté serveur).
+    if (stored === contactEmail || user.email === stored) {
       localStorage.removeItem(key)
+      setPendingEmail(null)
     } else {
       setPendingEmail(stored)
     }
-  }, [user])
+  }, [user, contactEmail])
 
   // Retour depuis /confirmer-changement-email : rafraîchir la session (pour que le
   // nouvel email s'affiche sans déconnexion/reconnexion) + message, puis nettoyer l'URL.
