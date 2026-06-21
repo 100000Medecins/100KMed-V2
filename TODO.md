@@ -98,8 +98,8 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
-#### Éditeurs orphelins (0 solution) — à conserver, fiches à créer
-- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : ~~`MediStory`~~ [OK] Fait 2026-06-12, `Aatlantide`, `MEDEXT Group`, ~~`Semble`~~ [OK] Fait 2026-06-12. **Conservés volontairement** — fiches solutions à créer prochainement pour les 2 restants (décision 2026-06-02).
+#### ~~Éditeurs orphelins (0 solution) — à conserver, fiches à créer~~ [OK] Fait 2026-06-21
+- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : ~~`MediStory`~~ [OK] Fait 2026-06-12, ~~`Aatlantide`~~ [OK] Fait 2026-06-21, ~~`MEDEXT Group`~~ [OK] Fait 2026-06-21, ~~`Semble`~~ [OK] Fait 2026-06-12. **Conservés volontairement** — toutes les fiches solutions sont désormais créées.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -181,7 +181,7 @@ _(rien à faire pour l'instant)_
 
 #### Téléconsultation — finitions après seeding initial (2026-05-25)
 - Seeding fait : 7 nouveaux éditeurs, 19 tags (4 séparateurs + 15 toggles), 15 solutions (toutes en `actif=false`), 90 liaisons tags, 7 liens vers solutions existantes. Mapping détaillé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md).
-- **Concevoir le questionnaire d'évaluation pour la catégorie Téléconsultation** (équivalent du chantier livré pour Télétransmission le 2026-05-17 — brouillon à démarrer dans `docs/teleconsultation-questionnaire.md`)
+- ~~**Concevoir le questionnaire d'évaluation pour la catégorie Téléconsultation**~~ [OK] Fait — 18 questions / 3 sections en BDD (`questionnaire_sections` + `questionnaire_questions`, préfixe `tlc_*`). Doc : [docs/teleconsultation-questionnaire.md](docs/teleconsultation-questionnaire.md).
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
 - **Uploader les logos** des 15 solutions via l'admin
 - **Compléter les 7 nouveaux éditeurs** (Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, Solutions régionales) : website (URLs devinées à valider), description, logo
@@ -190,13 +190,22 @@ _(rien à faire pour l'instant)_
 
 #### Téléexpertise — finitions après seeding initial (2026-06-04)
 - Seeding fait : 1 catégorie (inactive), 5 nouveaux éditeurs (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc), 22 tags (4 séparateurs + 18 toggles), 10 solutions (toutes en `actif=false`), 79 liaisons tags (24 tags principaux). Mapping détaillé dans [docs/teleexpertise-import.md](docs/teleexpertise-import.md). Une solution sans éditeur : « Plateformes régionales (marchés GRADeS) » → `id_editeur=NULL` (volontaire, concept regroupant les marchés régionaux, pas de page éditeur publique).
-- **Concevoir le questionnaire d'évaluation pour la catégorie Téléexpertise** (équivalent du chantier livré pour Télétransmission le 2026-05-17 — brouillon à démarrer dans `docs/teleexpertise-questionnaire.md`)
+- ~~**Concevoir le questionnaire d'évaluation pour la catégorie Téléexpertise**~~ [OK] Fait 2026-06-21 — 17 questions / 3 sections en BDD (préfixe `tle_*`). Les 3 catégories (Télétransmission, Téléconsultation, Téléexpertise) ont désormais leur questionnaire. Doc : [docs/teleexpertise-questionnaire.md](docs/teleexpertise-questionnaire.md).
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, points forts/faibles)
 - **Uploader les logos** des 10 solutions via l'admin
 - **Compléter les 5 nouveaux éditeurs** (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc) : description, logo. URLs devinées par convention à valider/corriger. Avisdoc → site NULL pour l'instant.
 - **Instruire Avisdoc** : entretien éditeur pour compléter la fiche (tarifs, conformité, fonctionnalités précises). Fiche actuelle indique « en cours d'instruction » dans le descriptif.
 - **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 10 fiches
 - **Activer** (`actif=true`) la catégorie + les solutions quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
+
+#### Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (2026-06-21)
+- **Quand** : une fois le questionnaire Téléexpertise créé (les 3 questionnaires prêts).
+- **Quoi** : dérouler le parcours complet de notation pour Télétransmission, Téléconsultation et Téléexpertise — étape 1 (5 critères majeurs) + étape 2 (questions détaillées BDD), vérifier que les sous-questions s'affichent, sont skippables, et que la note se calcule.
+- **Où** : URL directe `/solution/noter/[catégorie]/[solution]` (le parcours ne vérifie pas `actif`, donc testable catégories inactives). Exemples :
+  - `/solution/noter/teletransmission/acteurfr-teletransmission`
+  - `/solution/noter/teleconsultation/clickdoc-teleconsultation`
+  - `/solution/noter/teleexpertise/<slug-solution>` (après création du questionnaire)
+- **Note** : rien n'est visible en navigation normale tant que les catégories sont `actif=false` — ce test passe par l'URL directe.
 
 #### Affichage des prix — plomberie livrée, remplissage en cours
 - **Plomberie livrée 2026-06-04** : helpers `src/lib/prix.ts`, table `app_settings` + toggle `/admin/parametres` (OFF par défaut), bloc Tarification fiche solution, indicateur €/€€/€€€/€€€€ + tri, colonne « Prix » + filtre admin, aperçu éditeur.
