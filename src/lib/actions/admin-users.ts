@@ -2,7 +2,17 @@
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { logActivity, ACTIVITY_TYPES, type ActivityDiff } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
+
+/** Construit un diff `{ champ: { avant, apres } }` à partir des lignes d'audit éditeur. */
+function diffFromLogRows(
+  logRows: Array<{ champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }>
+): ActivityDiff {
+  const diff: ActivityDiff = {}
+  for (const r of logRows) diff[r.champ] = { avant: r.ancienne_valeur, apres: r.nouvelle_valeur }
+  return diff
+}
 
 /**
  * Met à jour un champ texte d'un utilisateur (nom, prenom, email).
@@ -62,6 +72,16 @@ export async function deleteUser(userId: string) {
 
   const { error } = await supabase.auth.admin.deleteUser(userId)
   if (error) throw new Error(error.message)
+
+  // Flux de supervision admin : suppression de compte par un administrateur
+  await logActivity({
+    type: ACTIVITY_TYPES.ADMIN_SUPPRESSION,
+    acteurType: 'admin',
+    acteurLabel: 'Admin',
+    cibleType: 'user',
+    cibleId: userId,
+    cibleLabel: [profile?.prenom, profile?.nom].filter(Boolean).join(' ') || 'Compte supprimé',
+  })
 
   // Recalculer les résultats des solutions dont les évaluations ont été supprimées
   for (const solutionId of solutionIds) {
@@ -228,7 +248,7 @@ export async function updateEditeurByUser(
 
   const { data: userRow } = await supabase
     .from('users')
-    .select('role, editeur_id')
+    .select('role, editeur_id, prenom, nom')
     .eq('id', userId)
     .single()
 
@@ -285,6 +305,23 @@ export async function updateEditeurByUser(
   if (logRows.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('editeurs_edit_log').insert(logRows)
+
+    // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
+    const { data: ed } = await supabase
+      .from('editeurs')
+      .select('nom_commercial')
+      .eq('id', editeurId)
+      .single()
+    await logActivity({
+      type: ACTIVITY_TYPES.EDITEUR_MODIF_FICHE,
+      acteurType: 'editeur',
+      acteurId: userId,
+      acteurLabel: [userRow.prenom, userRow.nom].filter(Boolean).join(' ') || null,
+      cibleType: 'editeur',
+      cibleId: editeurId,
+      cibleLabel: ed?.nom_commercial ?? null,
+      diff: diffFromLogRows(logRows),
+    })
   }
 }
 
@@ -350,6 +387,22 @@ export async function updateSolutionByEditeur(
   if (logRows.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('editeurs_edit_log').insert(logRows)
+
+    // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
+    const [{ data: u }, { data: sol }] = await Promise.all([
+      supabase.from('users').select('prenom, nom').eq('id', userId).single(),
+      supabase.from('solutions').select('nom').eq('id', solutionId).single(),
+    ])
+    await logActivity({
+      type: ACTIVITY_TYPES.EDITEUR_MODIF_SOLUTION,
+      acteurType: 'editeur',
+      acteurId: userId,
+      acteurLabel: [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
+      cibleType: 'solution',
+      cibleId: solutionId,
+      cibleLabel: sol?.nom ?? null,
+      diff: diffFromLogRows(logRows),
+    })
   }
 }
 

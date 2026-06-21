@@ -7,6 +7,7 @@ export type AdminBadges = {
   videos: number
   propositions: number
   communautes: number
+  activite: number
 }
 
 /**
@@ -23,7 +24,7 @@ export async function getAdminBadges(): Promise<AdminBadges> {
   const supabase = createServiceRoleClient()
   const now = new Date().toISOString()
 
-  const [editeurClaims, editeurDemandes, etudes, questionnaires, emails, videos, propositions, communautes] = await Promise.all([
+  const [editeurClaims, editeurDemandes, etudes, questionnaires, emails, videos, propositions, communautes, activite] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from('editeur_claims')
@@ -64,6 +65,10 @@ export async function getAdminBadges(): Promise<AdminBadges> {
       .from('solution_communautes')
       .select('id', { count: 'exact', head: true })
       .eq('statut', 'en_attente'),
+    supabase
+      .from('activity_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('lu', false),
   ])
 
   return {
@@ -73,5 +78,6 @@ export async function getAdminBadges(): Promise<AdminBadges> {
     videos: videos.count ?? 0,
     propositions: propositions.count ?? 0,
     communautes: communautes.count ?? 0,
+    activite: activite.count ?? 0,
   }
 }

@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUniqueEditeurSlug } from '@/lib/db/editeurs'
 import { buildSolutionSeoTitle } from '@/lib/seo/title'
+import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 
 // ────────────────────────────────────────────
 // Auth
@@ -1681,6 +1682,17 @@ export async function suggestEditeurReferencement(formData: FormData) {
     message,
   })
   if (error) return { error: error.message }
+
+  // Flux de supervision admin : demande de référencement à traiter
+  await logActivity({
+    type: ACTIVITY_TYPES.DEMANDE_REFERENCEMENT,
+    acteurType: 'systeme',
+    acteurLabel: `${nomEditeur} (${emailContact})`,
+    cibleType: 'editeur',
+    cibleLabel: nomSolution || nomEditeur,
+    diff: message ? { message: { avant: null, apres: message } } : null,
+    gravite: 'a_moderer',
+  })
 
   // Envoi des emails (non-bloquant : si SendGrid plante, on retourne quand même success)
   try {

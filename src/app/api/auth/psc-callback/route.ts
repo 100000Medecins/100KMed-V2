@@ -4,6 +4,7 @@ import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } f
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { resolveSpecialite } from '@/lib/constants/profil'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
+import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
   const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeSavoirFaire?: string; codeTypeSavoirFaire?: string }> } | undefined
@@ -285,6 +286,19 @@ export async function GET(request: Request) {
           await recalcResultatsPourSolution(ev.solution_id)
         }
       }
+    }
+
+    // Flux de supervision admin : nouvelle inscription via Pro Santé Connect
+    if (isNewUser && userId) {
+      await logActivity({
+        type: ACTIVITY_TYPES.INSCRIPTION_PSC,
+        acteurType: 'medecin',
+        acteurId: userId,
+        acteurLabel: [prenom, nom].filter(Boolean).join(' ') || rpps || userEmail || null,
+        cibleType: 'user',
+        cibleId: userId,
+        diff: specialite ? { specialite: { avant: null, apres: specialite } } : null,
+      })
     }
 
     // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)

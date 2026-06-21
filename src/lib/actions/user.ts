@@ -8,6 +8,7 @@ import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { generateConfirmToken } from '@/lib/email/confirm-token'
 import { generateResetToken, verifyResetToken } from '@/lib/email/reset-token'
 import { generateEmailChangeToken } from '@/lib/email/email-change-token'
+import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { verifyTurnstileToken } from '@/lib/turnstile'
 import sgMail from '@sendgrid/mail'
 import sharp from 'sharp'
@@ -319,6 +320,16 @@ export async function registerWithEmail(input: {
     console.error('[registerWithEmail] createUserProfile failed:', e)
   }
 
+  // Flux de supervision admin : nouvelle inscription email
+  await logActivity({
+    type: ACTIVITY_TYPES.INSCRIPTION_EMAIL,
+    acteurType: 'medecin',
+    acteurId: userId,
+    acteurLabel: email,
+    cibleType: 'user',
+    cibleId: userId,
+  })
+
   // Envoi de l'email de confirmation HMAC idempotent (best-effort)
   try {
     const sent = await sendConfirmationEmail(userId, email, input.signupType)
@@ -597,6 +608,28 @@ export async function createEditeurClaim(params: {
   })
 
   if (error) return { error: error.message }
+
+  // Flux de supervision admin : revendication d'espace éditeur à modérer
+  const { data: claimUser } = await supabase
+    .from('users')
+    .select('prenom, nom, contact_email, email')
+    .eq('id', user.id)
+    .single()
+  await logActivity({
+    type: ACTIVITY_TYPES.REVENDICATION,
+    acteurType: 'medecin',
+    acteurId: user.id,
+    acteurLabel:
+      [claimUser?.prenom, claimUser?.nom].filter(Boolean).join(' ') ||
+      claimUser?.contact_email ||
+      claimUser?.email ||
+      null,
+    cibleType: 'editeur',
+    cibleId: params.editeur_id || null,
+    cibleLabel: params.libre_texte || params.editeur_id || params.solution_id || 'Revendication',
+    gravite: 'a_moderer',
+  })
+
   return { error: null }
 }
 

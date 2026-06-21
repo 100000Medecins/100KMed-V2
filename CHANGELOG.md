@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-06-21] — Supervision admin : flux d'activité du site + digest hebdo
+
+### Admin — Journal d'activité unifié (`activity_log`)
+
+Nouveau flux de supervision pour l'admin : voir inscriptions, évaluations et modifications sensibles des éditeurs sans fouiller table par table. Doc de référence : [docs/supervision-activite.md](docs/supervision-activite.md).
+
+- **Table `activity_log`** (append-only) : 1 ligne = 1 événement, avec diff `{ champ: { avant, apres } }`, gravité (`info`/`a_moderer`), `lu`. RLS activée **sans policy** (inaccessible hors `service_role`) ; `claude_readonly` en SELECT pour le MCP. `cible_id` en **text** (ids Firebase). GRANTs explicites (anticipation 2026-10-30).
+- **Helper `logActivity()`** ([src/lib/activity/log.ts](src/lib/activity/log.ts)) : point d'entrée unique, **ne fait jamais échouer l'action métier** (erreur avalée). Catalogue `ACTIVITY_TYPES`.
+- **12 événements branchés** sur les server actions : inscriptions email (`registerWithEmail`) + PSC (callback, création seule via `isNewUser`), évals publiée/en attente PSC (`submitEvaluation`, création seule) + à compléter (`saveDraftEvaluation`, 1re bascule), modifs éditeur fiche+solution (`admin-users.ts`, événement résumé en plus du `editeurs_edit_log` champ par champ existant), propositions, revendications, demandes de référencement, suppression & paramètre admin (`setSiteConfig`, si valeur change).
+- **Page [/admin/activite](src/app/admin/activite/page.tsx)** : flux des 200 derniers, filtres (Tous / À modérer / Inscriptions / Évaluations / Modifs éditeur), non-lus surlignés, diff avant→après, bouton « Tout marquer comme lu » (`actions/activity.ts`). Badge non-lus intégré à `AdminBadges` (clé `activite`).
+- **Digest hebdo** [/api/cron/digest-activite](src/app/api/cron/digest-activite/route.ts) : cron Vercel lundi 7h30, récap 7 jours → `david.azerad@100000medecins.org`. N'envoie rien si période vide. **Non gaté** par le kill-switch des relances (email interne admin, pas une relance utilisateur).
+
+### UX / UI — Sidebar admin
+- « Communautés » déplacée en **sous-page de « Solutions »** (retirée du niveau racine ; son badge remonte sur le parent).
+- Nouvelle entrée « Activité » au-dessus de « Utilisateurs ».
+
+### TODO — Mises à jour
+- Implémenté : « Supervision admin — notifications d'activité du site » (cadré puis livré le 2026-06-21).
+
+---
+
 ## [2026-06-20] — Changement d'email migré vers SendGrid (dernier flux natif Supabase éliminé)
 
 ### Email — Migration du changement d'adresse email vers un lien HMAC idempotent

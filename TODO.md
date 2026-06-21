@@ -144,6 +144,25 @@ _(rien à faire pour l'instant)_
 - ~~**1 high — `xlsx`** (Prototype Pollution + ReDoS)~~ **[OK] Fait 2026-06-06** : migration vers `exceljs` (4 scripts migrés via helper `scripts/lib/excel-helper.ts`). 5ᵉ script `export-catalogue-editeurs.ts` désactivé proprement (réutilisera `xlsx-js-style` au moment du besoin, à réinstaller ou à migrer alors).
 - ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux (downgraderait Next 16 → 9).
 
+### Supervision admin — notifications d'activité du site
+
+#### Flux d'activité + alertes admin (idée 2026-06-21)
+- **Besoin** : que l'admin voie en quasi temps réel ce qui se passe (inscriptions, évaluations) **et** les modifications de contenu sensibles faites par les éditeurs (prix, texte, image, paramètres), pour modérer/surveiller sans fouiller.
+- **Événements à tracer (1er jet)** :
+  - Inscriptions (email + PSC), comptes incomplets / décrocheurs PSC
+  - Nouvelles évaluations (publiées / en attente PSC / partielles « à compléter »)
+  - Modifs éditeur sur leur fiche & solutions : prix, description, logo/image, coordonnées, mot de l'éditeur, toggles (visibilité…)
+  - Propositions (idée/correction/vidéo/acronyme) à modérer ; revendications de fiche ; demandes de référencement
+  - Changements admin sensibles (toggles globaux, suppressions)
+- **Pistes techniques** : table `activity_log` append-only (acteur, type, cible, **diff avant/après**, date) alimentée par les server actions ; page `/admin/activite` (flux filtrable, badges « non lu ») ; **digest email hebdomadaire** (SendGrid + master_layout).
+- **Cadrage figé (2026-06-21)** :
+  - **Périmètre** : événements *sensibles* uniquement (= crée/modifie/supprime une donnée métier OU attend une action admin). Hors périmètre : lectures, navigation, recherches, brouillons intermédiaires.
+  - **Diff** : avant/après **champ par champ**, on ne loggue que les champs modifiés.
+  - **Canaux** : in-app (`/admin/activite` + badge non-lus) **+ digest hebdo**. **Pas de mail immédiat** (mail à la suppression déjà en place ; alerte prix non souhaitée).
+  - **Rétention** : aucune purge (volume négligeable, ~10 Mo/an ; sert aussi de trace d'audit).
+- ✅ **Implémenté (2026-06-21)** : table `activity_log` (GRANTs + RLS), helper `logActivity()` ([src/lib/activity/log.ts](src/lib/activity/log.ts)), 12 événements branchés (inscriptions email/PSC, évals publiée/en attente/à compléter, modifs éditeur fiche+solution avec diff, propositions, revendications, demandes de référencement, suppression & paramètre admin), page [/admin/activite](src/app/admin/activite/page.tsx) (flux filtrable + badge non-lus + « tout marquer comme lu »), digest hebdo [/api/cron/digest-activite](src/app/api/cron/digest-activite/route.ts) (lundi 7h30 → david.azerad@). Doc : [docs/supervision-activite.md](docs/supervision-activite.md).
+  - **Reste éventuel** : tester en conditions réelles ; gater le digest si besoin (clé `digest_activite_actif`) — non fait, volontaire.
+
 ### Déploiement final
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
