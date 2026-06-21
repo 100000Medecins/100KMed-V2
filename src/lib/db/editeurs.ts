@@ -2,6 +2,9 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import type { Editeur } from '@/types/models'
 import { getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 
+/** Infos minimales de la maison-mère affichées sur la fiche éditeur. */
+export type EditeurParent = Pick<Editeur, 'id' | 'nom' | 'nom_commercial' | 'slug' | 'logo_url' | 'logo_titre'>
+
 /**
  * Slugifie un nom d'éditeur (cohérent avec la migration SQL 2026-05-29).
  * Translit accents, garde alphanum + tirets, en minuscules.
@@ -80,6 +83,19 @@ export async function getEditeurWithSolutions(slug: string) {
   const { data: editeurData, error: editeurErr } = await editeurReq
   if (editeurErr) throw editeurErr
 
+  // Maison-mère (groupe) : si cet éditeur est une marque rachetée, on récupère
+  // les infos minimales de son parent pour afficher une carte « fait partie du groupe ».
+  let parent: EditeurParent | null = null
+  if (editeurData.parent_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: parentData } = await (supabase as any)
+      .from('editeurs')
+      .select('id, nom, nom_commercial, slug, logo_url, logo_titre')
+      .eq('id', editeurData.parent_id)
+      .single()
+    parent = (parentData as EditeurParent | null) ?? null
+  }
+
   // Ne lister que les solutions actives ET dont la catégorie est active.
   // INNER JOIN PostgREST via `categories!inner` pour que le filtre sur categorie.actif
   // exclue effectivement les lignes (sinon LEFT JOIN par défaut → solution gardée même si cat inactive).
@@ -113,6 +129,7 @@ export async function getEditeurWithSolutions(slug: string) {
   return {
     editeur: editeurData as Editeur,
     solutions: solutionsEnrichies,
+    parent,
   }
 }
 

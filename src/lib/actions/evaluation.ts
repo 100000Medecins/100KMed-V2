@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
@@ -603,6 +604,9 @@ export async function saveDraftEvaluation(
     .limit(1)
 
   const su = existingSU?.[0]
+  // L'éval « devient » à compléter (5 critères principaux atteints) la 1re fois seulement :
+  // soit nouvelle, soit promue depuis 'instanciee' (jamais re-loggée si déjà aCompleter/finalisee).
+  const devientACompleter = estValide && (!su || (su.statut_evaluation !== 'finalisee' && su.statut_evaluation !== 'aCompleter'))
   if (!su) {
     await supabase.from('solutions_utilisees').insert({
       user_id: user.id,
@@ -649,6 +653,24 @@ export async function saveDraftEvaluation(
   // Note valide → comptabilisée immédiatement (agrégats à jour), même si l'user part.
   if (estValide) {
     await recalcResultatsPourSolution(solutionId)
+  }
+
+  // Flux de supervision admin : éval « à compléter » (5 critères principaux, sous-critères en attente)
+  if (devientACompleter) {
+    const [{ data: u }, { data: sol }] = await Promise.all([
+      supabase.from('users').select('prenom, nom, pseudo').eq('id', user.id).single(),
+      supabase.from('solutions').select('nom').eq('id', solutionId).single(),
+    ])
+    await logActivity({
+      type: ACTIVITY_TYPES.EVALUATION_A_COMPLETER,
+      acteurType: 'medecin',
+      acteurId: user.id,
+      acteurLabel: u?.pseudo || [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
+      cibleType: 'solution',
+      cibleId: solutionId,
+      cibleLabel: sol?.nom ?? null,
+      diff: moyenne != null ? { note: { avant: null, apres: moyenne } } : null,
+    })
   }
 }
 
@@ -752,6 +774,26 @@ export async function submitEvaluation(
 
   if (statut === 'publiee') {
     await recalcResultatsPourSolution(solutionId)
+  }
+
+  // Flux de supervision admin : nouvelle évaluation (création uniquement, pas les mises à jour)
+  if (!existingEval) {
+    const [{ data: u }, { data: sol }] = await Promise.all([
+      supabase.from('users').select('prenom, nom, pseudo').eq('id', user.id).single(),
+      supabase.from('solutions').select('nom').eq('id', solutionId).single(),
+    ])
+    await logActivity({
+      type: statut === 'publiee'
+        ? ACTIVITY_TYPES.EVALUATION_PUBLIEE
+        : ACTIVITY_TYPES.EVALUATION_EN_ATTENTE_PSC,
+      acteurType: 'medecin',
+      acteurId: user.id,
+      acteurLabel: u?.pseudo || [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
+      cibleType: 'solution',
+      cibleId: solutionId,
+      cibleLabel: sol?.nom ?? null,
+      diff: { note: { avant: null, apres: Math.round(moyenne * 100) / 100 } },
+    })
   }
 
   revalidatePath('/solutions')

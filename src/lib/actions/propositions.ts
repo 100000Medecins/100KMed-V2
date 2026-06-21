@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
 
@@ -54,6 +55,23 @@ export async function submitProposition(input: {
     url_concernee: urlConcernee,
   })
   if (error) return { status: 'ERROR', message: error.message }
+
+  // Flux de supervision admin : proposition à modérer
+  const { data: prof } = await admin
+    .from('users')
+    .select('prenom, nom, pseudo')
+    .eq('id', user.id)
+    .single()
+  await logActivity({
+    type: ACTIVITY_TYPES.PROPOSITION,
+    acteurType: 'medecin',
+    acteurId: user.id,
+    acteurLabel: prof?.pseudo || [prof?.prenom, prof?.nom].filter(Boolean).join(' ') || null,
+    cibleType: 'proposition',
+    cibleLabel: titre,
+    diff: { type: { avant: null, apres: input.type } },
+    gravite: 'a_moderer',
+  })
 
   // Notification admin par email (best-effort, ne bloque pas la soumission)
   try {

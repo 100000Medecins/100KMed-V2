@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_log: {
+        Row: {
+          acteur_id: string | null
+          acteur_label: string | null
+          acteur_type: string | null
+          cible_id: string | null
+          cible_label: string | null
+          cible_type: string | null
+          created_at: string
+          diff: Json | null
+          gravite: string
+          id: string
+          lu: boolean
+          type: string
+        }
+        Insert: {
+          acteur_id?: string | null
+          acteur_label?: string | null
+          acteur_type?: string | null
+          cible_id?: string | null
+          cible_label?: string | null
+          cible_type?: string | null
+          created_at?: string
+          diff?: Json | null
+          gravite?: string
+          id?: string
+          lu?: boolean
+          type: string
+        }
+        Update: {
+          acteur_id?: string | null
+          acteur_label?: string | null
+          acteur_type?: string | null
+          cible_id?: string | null
+          cible_label?: string | null
+          cible_type?: string | null
+          created_at?: string
+          diff?: Json | null
+          gravite?: string
+          id?: string
+          lu?: boolean
+          type?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           description: string | null

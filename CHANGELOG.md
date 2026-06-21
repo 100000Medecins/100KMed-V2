@@ -5,6 +5,42 @@
 
 ---
 
+## [2026-06-22] — Logo animé « frappe au clavier » (navbar au survol + GIF e-mail)
+
+### UX / UI — Logo animé dans la navbar (au survol)
+- Survol du logo → frappe en cascade (100 000 → Médecins → .org) + « clic » localisé par touche (seul le liseré de la touche concernée s'éclaircit via clone clippé `<use>` + `clip-path` ; les touches vides ne bougent pas). Au repos = logo identique à la marque.
+- `src/components/ui/LogoAnime.tsx` (client) inline le SVG (un `<img>`/`<object>` ne reçoit pas le hover / casserait le lien cliquable) ; SVG embarqué dans `src/components/ui/logoAnimeSvg.ts` (régénéré depuis `public/logos/logo-anime-hero.svg`). `Navbar.tsx` : les 2 `<Image>` du logo remplacés par `<LogoAnime>`. Respecte `prefers-reduced-motion`.
+- Sources : `public/logos/logo-anime.svg` (boucle, source du GIF) et `logo-anime-hero.svg` (survol, scopé `svg:hover`).
+
+### Email — Logo d'en-tête animé (GIF)
+- En-tête du master_layout : PNG statique → GIF animé **transparent rogné** (`logo-anime-transparent-trim.gif`, 480×289, lecture unique, 1ʳᵉ frame = logo complet pour le fallback Outlook). Le logo du **footer reste statique** (inchangé). GIF hébergé sur Supabase Storage (`images/logos/`).
+- Génération `scripts/gen-logo-gif.mjs` (puppeteer fige l'animation frame par frame via Web Animations API, encodage `gifenc` ; options `--transparent --trim --loop=-1 --width --frames --matte`). Dép. dev `gifenc` ajoutée.
+- Déploiement `scripts/upload-logo-gif.ts` (upload Storage) + `scripts/swap-master-layout-logo.ts` (remplace l'en-tête uniquement, backup auto, footer préservé). Appliqués en prod (BDD + storage).
+- Signature Thunderbird : pointer l'`<img>` vers l'URL Storage du GIF.
+
+---
+
+## [2026-06-21] — Supervision admin : flux d'activité du site + digest hebdo
+
+### Admin — Journal d'activité unifié (`activity_log`)
+
+Nouveau flux de supervision pour l'admin : voir inscriptions, évaluations et modifications sensibles des éditeurs sans fouiller table par table. Doc de référence : [docs/supervision-activite.md](docs/supervision-activite.md).
+
+- **Table `activity_log`** (append-only) : 1 ligne = 1 événement, avec diff `{ champ: { avant, apres } }`, gravité (`info`/`a_moderer`), `lu`. RLS activée **sans policy** (inaccessible hors `service_role`) ; `claude_readonly` en SELECT pour le MCP. `cible_id` en **text** (ids Firebase). GRANTs explicites (anticipation 2026-10-30).
+- **Helper `logActivity()`** ([src/lib/activity/log.ts](src/lib/activity/log.ts)) : point d'entrée unique, **ne fait jamais échouer l'action métier** (erreur avalée). Catalogue `ACTIVITY_TYPES`.
+- **12 événements branchés** sur les server actions : inscriptions email (`registerWithEmail`) + PSC (callback, création seule via `isNewUser`), évals publiée/en attente PSC (`submitEvaluation`, création seule) + à compléter (`saveDraftEvaluation`, 1re bascule), modifs éditeur fiche+solution (`admin-users.ts`, événement résumé en plus du `editeurs_edit_log` champ par champ existant), propositions, revendications, demandes de référencement, suppression & paramètre admin (`setSiteConfig`, si valeur change).
+- **Page [/admin/activite](src/app/admin/activite/page.tsx)** : flux des 200 derniers, filtres (Tous / À modérer / Inscriptions / Évaluations / Modifs éditeur), non-lus surlignés, diff avant→après, bouton « Tout marquer comme lu » (`actions/activity.ts`). Badge non-lus intégré à `AdminBadges` (clé `activite`).
+- **Digest hebdo** [/api/cron/digest-activite](src/app/api/cron/digest-activite/route.ts) : cron Vercel lundi 7h30, récap 7 jours → `david.azerad@100000medecins.org`. N'envoie rien si période vide. **Non gaté** par le kill-switch des relances (email interne admin, pas une relance utilisateur).
+
+### UX / UI — Sidebar admin
+- « Communautés » déplacée en **sous-page de « Solutions »** (retirée du niveau racine ; son badge remonte sur le parent).
+- Nouvelle entrée « Activité » au-dessus de « Utilisateurs ».
+
+### TODO — Mises à jour
+- Implémenté : « Supervision admin — notifications d'activité du site » (cadré puis livré le 2026-06-21).
+
+---
+
 ## [2026-06-20] — Changement d'email migré vers SendGrid (dernier flux natif Supabase éliminé)
 
 ### Email — Migration du changement d'adresse email vers un lien HMAC idempotent

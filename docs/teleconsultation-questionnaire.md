@@ -1,8 +1,21 @@
 # Questionnaire d'évaluation — Catégorie Téléconsultation
 
-> Brouillon initial — **2026-06-09**
-> Statut : **proposition à valider**, pas encore implémenté en BDD.
+> Proposé le **2026-06-09** — **implémenté en BDD** (vérifié le 2026-06-21).
 > Modèle : calqué sur `docs/teletransmission-questionnaire.md` (livré 2026-05-17).
+
+## Statut : implémenté ✅
+
+Tables BDD peuplées :
+- `questionnaire_sections` : 3 lignes pour `categorie_slug = 'teleconsultation'`
+- `questionnaire_questions` : 18 lignes rattachées à ces sections (préfixe `tlc_*`)
+
+Le questionnaire est servi automatiquement par `getSectionsForSlug('teleconsultation')` sur les pages `/solution/noter/teleconsultation/[idSolution]`. Aucune modif de code nécessaire.
+
+**Vérifier / éditer dans l'admin** : `/admin/questionnaires?slug=teleconsultation`
+
+⚠️ La catégorie est encore `actif=false` → invisible en navigation publique. Le parcours de notation reste testable via l'URL directe ci-dessus.
+
+Le contenu détaillé ci-dessous correspond à ce qui est réellement en base.
 
 ---
 
@@ -101,12 +114,10 @@ Distribution équilibrée vs Télétransmission qui était à 20 questions (dont
 
 ---
 
-## Implémentation BDD (à faire après validation)
+## Implémentation BDD — faite ✅ (vérifiée 2026-06-21)
 
-Mêmes 2 tables que Télétransmission :
+Mêmes 2 tables que Télétransmission, peuplées :
 - `questionnaire_sections` → 3 lignes pour `categorie_slug = 'teleconsultation'`
 - `questionnaire_questions` → 18 lignes rattachées
 
-Le questionnaire sera servi automatiquement par `getSectionsForSlug('teleconsultation')` sur `/solution/noter/teleconsultation/[idSolution]`. Pas de modif de code nécessaire.
-
-SQL inline à livrer en bloc unique après validation des questions.
+Le questionnaire est servi automatiquement par `getSectionsForSlug('teleconsultation')` sur `/solution/noter/teleconsultation/[idSolution]`. Aucune modif de code n'a été nécessaire.
