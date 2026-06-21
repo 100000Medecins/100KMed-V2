@@ -49,6 +49,7 @@
     "autoprefixer": "^10.4.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
+    "gifenc": "^1.0.3",
     "postcss": "^8.4.0",
     "puppeteer": "^25.1.0",
     "supabase": "^2.98.2",

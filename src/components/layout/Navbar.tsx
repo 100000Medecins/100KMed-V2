@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
+import LogoAnime from "@/components/ui/LogoAnime";
 import { Menu, X, ChevronDown, UserCircle, Search, LogOut } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -148,26 +148,13 @@ export default function Navbar({ minimal = false }: NavbarProps) {
           className={`relative z-10 shrink-0 flex items-center min-[1150px]:items-start min-[1150px]:self-start min-[1150px]:h-[72px] min-[1150px]:pt-1 ${minimal ? 'pointer-events-none select-none' : ''}`}
           aria-label={minimal ? "100 000 Médecins" : "100 000 Médecins — accueil"}
         >
-          <Image
-            src="/logos/logo-principal-couleur.svg"
-            alt="100 000 Médecins"
-            width={200}
-            height={140}
-            priority
-            unoptimized
+          <LogoAnime
             style={{ height: `${LOGO_HEIGHT_MOBILE}px`, transform: 'translateY(-1px)' }}
-            className="w-auto min-[1150px]:!hidden"
+            className="inline-block w-auto min-[1150px]:!hidden"
           />
-          <Image
-            src="/logos/logo-principal-couleur.svg"
-            alt=""
-            aria-hidden="true"
-            width={200}
-            height={140}
-            priority
-            unoptimized
+          <LogoAnime
             style={{ height: `${LOGO_HEIGHT_DESKTOP}px` }}
-            className="w-auto hidden min-[1150px]:!block"
+            className="hidden w-auto min-[1150px]:!inline-block"
           />
         </a>
 

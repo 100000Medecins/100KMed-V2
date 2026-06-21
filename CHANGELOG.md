@@ -5,6 +5,21 @@
 
 ---
 
+## [2026-06-22] — Logo animé « frappe au clavier » (navbar au survol + GIF e-mail)
+
+### UX / UI — Logo animé dans la navbar (au survol)
+- Survol du logo → frappe en cascade (100 000 → Médecins → .org) + « clic » localisé par touche (seul le liseré de la touche concernée s'éclaircit via clone clippé `<use>` + `clip-path` ; les touches vides ne bougent pas). Au repos = logo identique à la marque.
+- `src/components/ui/LogoAnime.tsx` (client) inline le SVG (un `<img>`/`<object>` ne reçoit pas le hover / casserait le lien cliquable) ; SVG embarqué dans `src/components/ui/logoAnimeSvg.ts` (régénéré depuis `public/logos/logo-anime-hero.svg`). `Navbar.tsx` : les 2 `<Image>` du logo remplacés par `<LogoAnime>`. Respecte `prefers-reduced-motion`.
+- Sources : `public/logos/logo-anime.svg` (boucle, source du GIF) et `logo-anime-hero.svg` (survol, scopé `svg:hover`).
+
+### Email — Logo d'en-tête animé (GIF)
+- En-tête du master_layout : PNG statique → GIF animé **transparent rogné** (`logo-anime-transparent-trim.gif`, 480×289, lecture unique, 1ʳᵉ frame = logo complet pour le fallback Outlook). Le logo du **footer reste statique** (inchangé). GIF hébergé sur Supabase Storage (`images/logos/`).
+- Génération `scripts/gen-logo-gif.mjs` (puppeteer fige l'animation frame par frame via Web Animations API, encodage `gifenc` ; options `--transparent --trim --loop=-1 --width --frames --matte`). Dép. dev `gifenc` ajoutée.
+- Déploiement `scripts/upload-logo-gif.ts` (upload Storage) + `scripts/swap-master-layout-logo.ts` (remplace l'en-tête uniquement, backup auto, footer préservé). Appliqués en prod (BDD + storage).
+- Signature Thunderbird : pointer l'`<img>` vers l'URL Storage du GIF.
+
+---
+
 ## [2026-06-21] — Supervision admin : flux d'activité du site + digest hebdo
 
 ### Admin — Journal d'activité unifié (`activity_log`)
