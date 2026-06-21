@@ -1,4 +1,5 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { previewInactive } from '@/lib/preview'
 import type { SolutionWithRelations, SolutionWithResultat } from '@/types/models'
 
 /**
@@ -20,8 +21,8 @@ export async function getSolutions(options?: {
   let query = supabase
     .from('solutions')
     .select(`*, editeur:editeurs(*), ${categorieJoin}`)
-    .eq('actif', true)
     .order('nom', { ascending: true })
+  if (!previewInactive()) query = query.eq('actif', true)
 
   if (options?.categorieId) {
     query = query.eq('categorie.id', options.categorieId)
@@ -221,13 +222,14 @@ export async function getSolutionsByTags(categorieId: string, tagIds: string[]) 
 
   if (solutionIds.length === 0) return []
 
-  const { data, error } = await supabase
+  let listQuery = supabase
     .from('solutions')
     .select(`*, editeur:editeurs(*), categorie:categories!inner(*)`)
     .eq('categorie.id', categorieId)
-    .eq('actif', true)
     .in('id', solutionIds)
     .order('nom', { ascending: true })
+  if (!previewInactive()) listQuery = listQuery.eq('actif', true)
+  const { data, error } = await listQuery
 
   if (error) throw error
   return data as unknown as SolutionWithResultat[]

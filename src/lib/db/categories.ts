@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { previewInactive } from '@/lib/preview'
 import type { Categorie } from '@/types/models'
 
 export type Groupe = { id: string; nom: string; ordre: number }
@@ -11,11 +12,12 @@ export type Groupe = { id: string; nom: string; ordre: number }
 export async function getCategories() {
   const supabase = await createServerClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('categories')
     .select('*')
-    .eq('actif', true)
     .order('position', { ascending: true })
+  if (!previewInactive()) query = query.eq('actif', true)
+  const { data, error } = await query
 
   if (error) throw error
   return data as Categorie[]
@@ -104,11 +106,12 @@ export async function getGroupes(): Promise<Groupe[]> {
  */
 export async function getCategoriesAvecGroupe() {
   const supabase = await createServerClient()
-  const { data, error } = await (supabase as any)
+  let query = (supabase as any)
     .from('categories')
     .select('nom, slug, groupe_id, groupes_categories(id, nom, ordre)')
-    .eq('actif', true)
     .order('position', { ascending: true })
+  if (!previewInactive()) query = query.eq('actif', true)
+  const { data, error } = await query
   if (error) throw error
   return (data ?? []) as Array<{
     nom: string
@@ -124,10 +127,11 @@ export async function getCategoriesAvecGroupe() {
 export async function getAllCategorieIds() {
   const supabase = await createServerClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('categories')
     .select('id')
-    .eq('actif', true)
+  if (!previewInactive()) query = query.eq('actif', true)
+  const { data, error } = await query
 
   if (error) throw error
   return data.map((c) => c.id)
