@@ -701,33 +701,6 @@ export async function updateProfile(userData: {
 }
 
 /**
- * Données pour la bannière "Nouveaux avatars disponibles" :
- * - shouldShow : true si l'user est connecté ET n'a pas encore choisi de portrait
- * - avatars : catalogue trié (médicaux puis décalés)
- * Le cookie de dismiss est géré côté client.
- */
-export async function getNouveauxAvatarsBannerData(): Promise<{
-  shouldShow: boolean
-  avatars: Array<{ id: string; url: string; isPersonal: boolean }>
-}> {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { shouldShow: false, avatars: [] }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('portrait')
-    .eq('id', user.id)
-    .single()
-
-  const shouldShow = !profile?.portrait
-  if (!shouldShow) return { shouldShow: false, avatars: [] }
-
-  const avatars = await getAvatars()
-  return { shouldShow: true, avatars }
-}
-
-/**
  * Liste les avatars disponibles : catalogue public + avatars personnels de l'user connecté.
  * Les avatars perso sont placés en tête de liste (priorité visuelle).
  * Chaque item est annoté avec isPersonal pour permettre l'affichage par section côté UI.
