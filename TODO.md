@@ -26,19 +26,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Sécurité
 
-#### ~~Migrer le flux « changement d'email » de Supabase Auth vers SendGrid (HMAC idempotent)~~ [OK] Fait 2026-06-20 (commit `8e21784` — token HMAC, `/confirmer-changement-email`, sync `public.users.email`, 2 templates BDD ; cf CHANGELOG)
-- **Contexte (2026-06-08)** : signup (commit `ff1ef31`) et reset mdp (`4589f20`) ont déjà été migrés en mai vers des liens HMAC maison envoyés via SendGrid pour résister au pré-scan anti-phishing (Outlook Safe Links / Gmail consommaient les tokens OTP single-use avant le clic réel). Le **changement d'adresse email** est le **seul flux résiduel** qui utilise encore `supabase.auth.updateUser({ email })` ([src/app/mon-compte/profil/page.tsx](src/app/mon-compte/profil/page.tsx#L307)) → email natif Supabase, template hébergé dans le dashboard Supabase → Authentication → Email Templates → « Confirm Email Change » → **n'a pas le master_layout 3 lignes**.
-- **Décision 2026-06-08** : migrer ce flux pour (a) appliquer automatiquement le master_layout neuf, (b) gagner l'idempotence (résistance pré-scan), (c) devenir totalement indépendant de Supabase Auth pour les emails.
-- **Pattern envoi** : « envoyé à la nouvelle adresse pour validation » + « notification de courtoisie à l'ancienne ».
-- **Étapes (~1h30)** :
-  - Nouveau template `confirmation_changement_email` en BDD (fragment, hérite du master_layout)
-  - Helper `src/lib/email/email-change-token.ts` (copie de `reset-token.ts` : `generateEmailChangeToken({ uid, new_email })` + `verifyEmailChangeToken`)
-  - Server Action `requestEmailChange(newEmail)` qui envoie via SendGrid au lieu d'appeler `auth.updateUser({ email })`
-  - Page `/confirmer-changement-email?uid&iat&token` (Server Component, re-vérifie HMAC, appelle `admin.updateUserById(uid, { email })` via service_role → pas d'email natif)
-  - Email de courtoisie à l'ancienne adresse (template `notification_changement_email`) avec lien « ce n'était pas vous ? Contactez-nous »
-  - Remplacer `auth.updateUser({ email })` ligne 307 de `profil/page.tsx`
-  - Mettre à jour `docs/email-architecture.md` (retirer la dernière ligne du tableau « Emails natifs Supabase » et noter que tout passe désormais par SendGrid)
-
 #### Passer DMARC de `quarantine 50%` à `quarantine 100%` puis `reject`
 - ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
 - ✅ `pct=10` → `pct=50` fait le 2026-05-15 (rapports clean : 24 mails sur 3 semaines, 100 % DKIM/SPF aligné sur Gandi + SendGrid, 0 source inconnue)
@@ -97,9 +84,6 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
-
-#### ~~Éditeurs orphelins (0 solution) — à conserver, fiches à créer~~ [OK] Fait 2026-06-21
-- 4 éditeurs sans aucune solution rattachée au 2026-05-28 : ~~`MediStory`~~ [OK] Fait 2026-06-12, ~~`Aatlantide`~~ [OK] Fait 2026-06-21, ~~`MEDEXT Group`~~ [OK] Fait 2026-06-21, ~~`Semble`~~ [OK] Fait 2026-06-12. **Conservés volontairement** — toutes les fiches solutions sont désormais créées.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.

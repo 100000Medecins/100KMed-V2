@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-06-23] — Questionnaires télémédecine, maison-mère sur fiche éditeur, easter egg logo & confort admin
+
+### Module — Questionnaires d'évaluation Téléconsultation & Téléexpertise (+ affichage détaillé)
+- **Téléconsultation** : questionnaire déjà en BDD (3 sections / 18 questions, préfixe `tlc_*`) — confirmé et documenté ([docs/teleconsultation-questionnaire.md](docs/teleconsultation-questionnaire.md)).
+- **Téléexpertise** : questionnaire créé (3 sections / 17 questions, préfixe `tle_*`), servi automatiquement par `getSectionsForSlug('teleexpertise')` ([docs/teleexpertise-questionnaire.md](docs/teleexpertise-questionnaire.md)). Aucune modif de code (lecture BDD).
+- **Affichage « Comparatif détaillé » câblé pour les 3 catégories télémédecine** : les sous-questions vivaient seulement dans `questionnaire_questions` (notation), pas dans `criteres` (affichage par sous-critère). Insertion des sous-critères enfants (`is_enfant=true`, `parent_id` = critère majeur) dans `criteres` : `tt_*` (20), `tlc_*` (18), `tle_*` (17). `recalcResultatsPourSolution` les agrège désormais dans `resultats` → l'accordéon détaillé les affiche (comme logiciel métier / agendas / IA). Se peuple au 1ᵉʳ recalcul d'éval d'une solution.
+
+### Feature — Maison-mère affichée sur la page éditeur publique (commit `f6f38d4`)
+- Sur `/editeur/[slug]`, si l'éditeur a un `parent_id`, carte cliquable « Fait partie du groupe » vers la fiche de la maison-mère (à droite du texte en desktop, dessous en mobile). `getEditeurWithSolutions` récupère le parent (type `EditeurParent`) ; rendu dans `page.tsx`.
+
+### UX / UI — Easter egg du logo (navbar)
+- Survoler volontairement le logo affiche des messages par paliers cumulés (5 / 20 / 40 / 60 / 80 survols), compteur sans reset (remis à zéro au changement de page). Bulle auto-disparaissante dans `Navbar.tsx` ; keyframe `fadeIn` ajoutée au thème Tailwind. Desktop only (déclenché au survol).
+
+### Admin — Conserver le filtre catégorie au retour (confort de saisie des fiches)
+- Après validation (`updateSolution`) ou suppression depuis la liste (`deleteSolution`), retour sur `/admin/solutions?categorie=<catégorie de la solution>` (+ `scroll` sur la fiche éditée) au lieu de perdre le filtre → permet d'enchaîner les fiches d'une même catégorie.
+
+### Infrastructure — Flag preview (commit `af94fc1`)
+- Flag d'env pour afficher les catégories/solutions inactives en environnement de dev.
+
+### TODO — Mises à jour
+- Terminé : questionnaires Téléconsultation & Téléexpertise ; éditeurs orphelins (fiches Aatlantide + MEDEXT Group créées).
+- Ajout : tester le parcours de notation des 3 catégories télémédecine quand tout est prêt.
+- Archivés vers TODO-archive.md : migration changement d'email (HMAC), éditeurs orphelins.
+
+---
+
 ## [2026-06-22] — Logo animé « frappe au clavier » (navbar au survol + GIF e-mail)
 
 ### UX / UI — Logo animé dans la navbar (au survol)
