@@ -287,13 +287,25 @@ export async function updateSolution(id: string, formData: FormData) {
 
   revalidatePath('/admin', 'layout')
   revalidatePath('/solutions', 'layout')
-  redirect(`/admin/solutions?scroll=${id}`)
+  // Retour à la liste en conservant le filtre catégorie (= celle de la solution)
+  // + scroll sur la solution éditée, pour enchaîner les fiches d'une même catégorie.
+  const params = new URLSearchParams()
+  if (data.id_categorie) params.set('categorie', data.id_categorie)
+  params.set('scroll', id)
+  redirect(`/admin/solutions?${params.toString()}`)
 }
 
 export async function deleteSolution(id: string) {
   await assertAdmin()
 
   const supabase = createServiceRoleClient()
+
+  // Récupérer la catégorie avant suppression pour revenir sur la liste filtrée.
+  const { data: sol } = await supabase
+    .from('solutions')
+    .select('id_categorie')
+    .eq('id', id)
+    .single()
 
   const { error } = await supabase
     .from('solutions')
@@ -306,7 +318,8 @@ export async function deleteSolution(id: string) {
 
   revalidatePath('/admin', 'layout')
   revalidatePath('/solutions', 'layout')
-  redirect('/admin/solutions')
+  const categorieId = (sol as { id_categorie: string | null } | null)?.id_categorie
+  redirect(categorieId ? `/admin/solutions?categorie=${categorieId}` : '/admin/solutions')
 }
 
 // ────────────────────────────────────────────

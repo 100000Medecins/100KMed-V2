@@ -21,6 +21,15 @@ type Groupe = {
 const LOGO_HEIGHT_DESKTOP = 120
 const LOGO_HEIGHT_MOBILE = 80
 
+// Easter egg : paliers de messages selon le nombre de survols « volontaires » du logo.
+const LOGO_EGG_MESSAGES: Record<number, string> = {
+  5: "C'est fou ce qu'on peut faire des fois, seul devant son écran…",
+  20: "Bon ça va là ? T'as pas autre chose à faire ??",
+  40: "Non mais ça va pas ? 😭",
+  60: "Toi, tu dois avoir vécu les débuts de l'internet pour continuer encore et encore à faire un truc qui sert objectivement à rien, non ?",
+  80: "Bon, pour de vrai on adore cette vibe sinon on aurait pas codé cet easter-egg (ni les autres). Pour te récompenser, écris-nous un petit message dans la rubrique « contact » avec marqué « L'easter-egg le plus c@n du monde » on verra bien ce qui se passera ;)",
+}
+
 function buildGroupes(categories: NavCategorie[]): Groupe[] {
   const map = new Map<string, Groupe>()
 
@@ -67,6 +76,32 @@ export default function Navbar({ minimal = false }: NavbarProps) {
   const communauteMenuRef = useRef<HTMLDivElement>(null);
   const communauteCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Easter egg : survols « volontaires » du logo (= rejeux de l'animation). Des
+  // paliers de plus en plus taquins s'affichent à 5, 20, 40 et 60 survols. Le
+  // compteur (en ref, pas de re-render) s'accumule sans reset (remis à zéro
+  // uniquement au changement de page, la Navbar étant re-montée).
+  const logoHoverCount = useRef(0);
+  const logoEggTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [logoEggMessage, setLogoEggMessage] = useState<string | null>(null);
+
+  function handleLogoHover() {
+    if (minimal) return;
+    logoHoverCount.current += 1;
+    const message = LOGO_EGG_MESSAGES[logoHoverCount.current];
+    if (message) {
+      setLogoEggMessage(message);
+      if (logoEggTimer.current) clearTimeout(logoEggTimer.current);
+      // Le dernier palier (80) reste affiché plus longtemps (consigne à lire).
+      const duree = logoHoverCount.current >= 80 ? 14000 : 6000;
+      logoEggTimer.current = setTimeout(() => setLogoEggMessage(null), duree);
+    }
+  }
+
+  // Purge du timer de l'easter egg au démontage.
+  useEffect(() => () => {
+    if (logoEggTimer.current) clearTimeout(logoEggTimer.current);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -145,6 +180,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
         */}
         <a
           href={minimal ? undefined : "/"}
+          onMouseEnter={handleLogoHover}
           className={`relative z-10 shrink-0 flex items-center min-[1150px]:items-start min-[1150px]:self-start min-[1150px]:h-[72px] min-[1150px]:pt-1 ${minimal ? 'pointer-events-none select-none' : ''}`}
           aria-label={minimal ? "100 000 Médecins" : "100 000 Médecins — accueil"}
         >
@@ -360,6 +396,15 @@ export default function Navbar({ minimal = false }: NavbarProps) {
         </div>
         )}
       </nav>
+
+      {/* Easter egg logo : messages par paliers (5 / 20 / 40 / 60 survols) */}
+      {logoEggMessage && (
+        <div className="pointer-events-none absolute left-4 min-[1150px]:left-6 top-[68px] z-[60]">
+          <div key={logoEggMessage} className="rounded-2xl bg-white text-navy text-sm font-medium px-4 py-2.5 shadow-lg max-w-xs animate-fadeIn">
+            {logoEggMessage}
+          </div>
+        </div>
+      )}
 
       {/* Mobile menu — masqué en mode minimal */}
       {!minimal && isMobileOpen && (

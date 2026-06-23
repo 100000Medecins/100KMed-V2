@@ -48,6 +48,15 @@ const config: Config = {
         nav: "0 2px 12px rgba(0, 0, 0, 0.04)",
         soft: "0 2px 8px rgba(0, 0, 0, 0.04)",
       },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0", transform: "translateY(-4px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        fadeIn: "fadeIn 0.25s ease-out",
+      },
     },
   },
   plugins: [],

@@ -47,6 +47,11 @@ const nextConfig = {
       // Le vrai slug Supabase est « weda ». Cible le chemin catégorie canonique : le
       // wildcard logiciels-metiers ci-dessus y mène déjà via une 2e redirection.
       { source: '/solutions/logiciel-medical/www.weda.fr', destination: '/solutions/logiciel-medical/weda', permanent: true },
+      // Ancienne fiche « Medaplix » : solution jamais migrée depuis Firebase (n'existe pas
+      // en BDD → 404). Même pattern que www.weda.fr ci-dessus : le wildcard logiciels-metiers
+      // convertit d'abord le slug catégorie, cette règle renvoie ensuite vers la liste
+      // catégorie (pas de fiche de remplacement, donc on retombe sur /solutions/logiciel-medical).
+      { source: '/solutions/logiciel-medical/Medaplix', destination: '/solutions/logiciel-medical', permanent: true },
       { source: '/solutions/AgendasMedicaux', destination: '/solutions/agendas-medicaux', permanent: true },
       { source: '/solutions/AgendasMedicaux/:slug*', destination: '/solutions/agendas-medicaux/:slug*', permanent: true },
       { source: '/solutions/IntelligenceArtificielleMedecine', destination: '/solutions/intelligence-artificielle-medecine', permanent: true },

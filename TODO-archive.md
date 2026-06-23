@@ -5,6 +5,21 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-06-21**
+- [OK] 2026-06-21 : Éditeurs orphelins (0 solution) — à conserver, fiches à créer (UX / UI)
+  - 4 éditeurs sans aucune solution rattachée au 2026-05-28 : MediStory (fait 2026-06-12), Aatlantide (fait 2026-06-21), MEDEXT Group (fait 2026-06-21), Semble (fait 2026-06-12). Conservés volontairement — toutes les fiches solutions sont désormais créées.
+
+---
+
+**2026-06-20**
+- [OK] 2026-06-20 : Migrer le flux « changement d'email » de Supabase Auth vers SendGrid (HMAC idempotent) (Sécurité)
+  - Commit `8e21784` — token HMAC, page `/confirmer-changement-email`, sync `public.users.email`, 2 templates BDD (cf CHANGELOG).
+  - Contexte (2026-06-08) : signup (`ff1ef31`) et reset mdp (`4589f20`) déjà migrés en mai vers liens HMAC maison via SendGrid pour résister au pré-scan anti-phishing (Outlook Safe Links / Gmail consommaient les tokens OTP single-use). Le changement d'adresse email était le seul flux résiduel utilisant encore `supabase.auth.updateUser({ email })` → email natif Supabase sans master_layout 3 lignes.
+  - Décision : migrer pour appliquer le master_layout neuf, gagner l'idempotence, devenir indépendant de Supabase Auth pour les emails.
+  - Étapes livrées : template `confirmation_changement_email` en BDD, helper `src/lib/email/email-change-token.ts`, server action `requestEmailChange(newEmail)`, page `/confirmer-changement-email?uid&iat&token` (re-vérif HMAC + `admin.updateUserById`), email de courtoisie à l'ancienne adresse, remplacement de `auth.updateUser({ email })` dans `profil/page.tsx`, mise à jour `docs/email-architecture.md`.
+
+---
+
 **2026-06-13**
 - [OK] 2026-06-13 : Nouveau pattern meta title des fiches solutions — reste 31 nom_seo à remplir (URGENT)
   - Plomberie livrée 2026-06-11 : nouveau pattern `Les avis de vos confrères sur <nom> - 100 000 Médecins` actif. Helper [src/lib/seo/title.ts](src/lib/seo/title.ts) source unique. API admin, script standalone, fallback runtime, server action (auto-recompute au save) tous alignés. Colonne `solutions.nom_seo` ajoutée pour les noms qui débordent. Migration de masse : 65/96 solutions migrées au nouveau pattern, backup `backups/meta-title-before-2026-06-11T22-12-58-926Z.json`.
