@@ -30,7 +30,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
 - ✅ `pct=10` → `pct=50` fait le 2026-05-15 (rapports clean : 24 mails sur 3 semaines, 100 % DKIM/SPF aligné sur Gandi + SendGrid, 0 source inconnue)
 - ✅ `pct=50` → `pct=100` fait le 2026-06-04 (rapports clean du 26 au 30/05 : 7 mails sur 5 jours, 100 % DKIM/SPF aligné, seulement Gandi `gm1` + SendGrid `s1` via `em1895`, aucune source inconnue)
-- **Étape finale (~2026-06-25 à 2026-07-02)** : passer à `p=reject` après 2-3 semaines à `pct=100` clean. Modifier `_dmarc.100000medecins.org` chez Gandi → remplacer `p=quarantine; pct=100` par `p=reject` (et garder le reste : `sp`, `np`, `adkim=r`, `aspf=r`, `fo=0`, `rua`).
+- ✅ **`p=reject` fait le 2026-06-25** — déploiement final terminé. Rapports du ~18-24/06 (Google ×3, Outlook ×2) confirment 100 % du trafic légitime aligné DKIM+SPF (SendGrid `s1`/`em1895` + Gandi `gm1`). Seul échec : 1 mail `callibri.fr` usurpant `header_from`, déjà quarantiné par Outlook (non lié à notre infra). Enregistrement live vérifié : `v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:david.azerad@100000medecins.org`. **Item clos.**
 
 ### Communication
 
