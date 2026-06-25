@@ -5,6 +5,22 @@
 
 ---
 
+## [2026-06-26] — Passe d'ergonomie mobile (accueil, blog, acronymes, catalogue, évaluation)
+
+### UX / UI — Corrections d'affichage mobile
+- **Accueil, boutons de catégories** ([RecommendedSoftware.tsx](src/components/sections/RecommendedSoftware.tsx)) : « IA Documentaires » passait sur 2 lignes. `whitespace-nowrap` + `px-3 sm:px-4` + `text-[13px] sm:text-sm` → libellés longs sur une seule ligne sur mobile, desktop inchangé.
+- **Article de blog, fil d'Ariane** ([blog/[slug]/page.tsx](src/app/blog/[slug]/page.tsx)) : le titre complet de l'article était répété en dernier item du fil d'Ariane et se superposait au hero sur mobile. Suppression de cet item → le fil s'arrête sur la catégorie (Accueil › Blog › Actualités), tous cliquables, sur une ligne.
+- **Catalogue, cartes solutions** ([SolutionList.tsx](src/components/solutions/SolutionList.tsx)) : noms longs type « Téléconsultation » coupés en plein milieu (« Téléconsultatio/n ») sur mobile. Plus de largeur utile (`gap-3`, `p-3`) + `hyphens-auto` (au lieu de `break-words`) + `text-sm sm:text-base` → le mot tient entier ; si vraiment trop étroit (≤320px), césure correcte « Télé-consultation » (page en `lang="fr"`). Desktop inchangé.
+- **Évaluation, sélecteur de note** ([solution/noter/[...slug]/page.tsx](src/app/solution/noter/[...slug]/page.tsx)) : le label « Non concerné » débordait/était rogné quand NC était coché sur mobile. Conteneur en `flex-wrap`, étoiles `w-6 sm:w-7`, label `whitespace-nowrap` → tout reste visible (label sous les étoiles si besoin sur écran étroit). Desktop inchangé.
+
+### Acronymes — Infobulle au clic/tap (commit `b61183d`)
+- Nouveau composant [AcronymPopover.tsx](src/components/AcronymPopover.tsx) monté dans le layout racine : gestionnaire de clic unique par délégation, ciblant tous les `<abbr data-acronym>` (générés React via `AcronymText` ou injectés HTML via `injectAcronymsInHtml`). Le `title` natif (survol desktop) ne marchait pas sur tactile → tap affiche désormais une popover navy avec la définition + lien discret « Voir dans le glossaire → » (`/glossaire#SIGLE`). Ferme au clic ailleurs / scroll / resize / Échap.
+
+### Fix — Spinner bloqué à la soumission d'évaluation (commit `8899ec5`)
+- Le spinner restait affiché après l'envoi d'une évaluation.
+
+---
+
 ## [2026-06-25] — DMARC `p=reject` (déploiement final email)
 
 ### Sécurité email — Passage de la politique DMARC à `reject`
