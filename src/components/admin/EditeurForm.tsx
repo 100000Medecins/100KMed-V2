@@ -131,32 +131,42 @@ export default function EditeurForm({ editeur, initialValues, parentOptions, act
             className="hidden"
             onChange={handleFileChange}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             {logoUrl && (
               <img
                 src={logoUrl}
                 alt="Aperçu"
-                className="h-14 max-w-[140px] object-contain rounded-xl border border-gray-200 bg-white p-2"
+                className="h-14 max-w-[140px] object-contain rounded-xl border border-gray-200 bg-white p-2 flex-shrink-0"
               />
             )}
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
-              >
-                {uploading ? 'Upload...' : logoUrl ? 'Changer le logo' : 'Uploader un logo'}
-              </button>
-              {logoUrl && (
+            <div className="flex-1 space-y-2">
+              {/* Champ URL (coller un lien externe) — en miroir de la fiche solution. */}
+              <input
+                type="text"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://... ou coller une URL"
+                className={inputClass}
+              />
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setLogoUrl('')}
-                  className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
                 >
-                  Supprimer
+                  {uploading ? 'Upload...' : logoUrl ? 'Changer le logo' : 'Uploader un logo'}
                 </button>
-              )}
+                {logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoUrl('')}
+                    className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
+                  >
+                    Supprimer
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
