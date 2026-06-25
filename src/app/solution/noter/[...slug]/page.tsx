@@ -87,7 +87,7 @@ function StarSelector({
   const isNC = value === null
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {/* Bouton NC */}
       <button
         type="button"
@@ -114,7 +114,7 @@ function StarSelector({
             className="p-0.5 transition-transform hover:scale-110"
           >
             <Star
-              className={`w-7 h-7 transition-colors ${
+              className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
                 !isNC && star <= (hover || (value ?? 0))
                   ? 'text-rating-star fill-rating-star'
                   : 'text-gray-200 fill-gray-200'
@@ -126,7 +126,7 @@ function StarSelector({
 
       {/* Label */}
       {isNC && (
-        <span className="text-xs font-medium text-gray-400">Non concerné</span>
+        <span className="text-xs font-medium text-gray-400 whitespace-nowrap">Non concerné</span>
       )}
       {!isNC && typeof value === 'number' && value > 0 && (
         <span className="text-sm font-bold text-navy">{value}/5</span>

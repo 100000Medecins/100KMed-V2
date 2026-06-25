@@ -39,7 +39,7 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
   const median = displayPrixFront ? computeCategoryMedian(solutions.map(asPrixInput)) : null
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+    <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
       {solutions.map((solution) => {
         const catSlug = categorieSlug || solution.categorie?.slug
         const href = catSlug
@@ -50,7 +50,7 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
           <Link
             key={solution.id}
             href={href}
-            className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-4 sm:p-6 flex flex-col group min-w-0"
+            className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-6 flex flex-col group min-w-0"
           >
             {/* Logo */}
             <div className="w-full h-24 rounded-xl bg-surface-light flex items-center justify-center mb-4 overflow-hidden">
@@ -71,7 +71,7 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
             </div>
 
             {/* Nom */}
-            <h3 className="font-semibold text-navy group-hover:text-accent-blue transition-colors mb-3">
+            <h3 className="text-sm sm:text-base font-semibold text-navy group-hover:text-accent-blue transition-colors mb-3 hyphens-auto">
               {solution.nom}
             </h3>
 
