@@ -122,12 +122,21 @@ export default function SolutionHero({
                     {solution.editeur && (
                       <div className="flex items-center gap-1 mt-1 text-gray-500 text-sm">
                         Edité par{' '}
-                        <Link
-                          href={`/editeur/${solution.editeur.slug}`}
-                          className="hover:text-navy hover:underline ml-1"
-                        >
-                          {solution.editeur.nom_commercial || solution.editeur.nom}
-                        </Link>
+                        {/* Lien vers la fiche éditeur seulement si l'éditeur est visible
+                            (toggle admin `affiche_sur_index`). Sinon : nom en texte simple,
+                            pour ne pas exposer une fiche masquée de l'annuaire. */}
+                        {solution.editeur.affiche_sur_index ? (
+                          <Link
+                            href={`/editeur/${solution.editeur.slug}`}
+                            className="hover:text-navy hover:underline ml-1"
+                          >
+                            {solution.editeur.nom_commercial || solution.editeur.nom}
+                          </Link>
+                        ) : (
+                          <span className="ml-1">
+                            {solution.editeur.nom_commercial || solution.editeur.nom}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
