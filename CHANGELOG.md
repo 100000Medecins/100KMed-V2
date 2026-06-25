@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-06-25] — DMARC `p=reject` (déploiement final email)
+
+### Sécurité email — Passage de la politique DMARC à `reject`
+- **Changement DNS** (Gandi, `_dmarc.100000medecins.org`) : `p=quarantine; pct=100` → **`p=reject`**, avec `sp=reject` et `np=reject` (verrouillage complet org + sous-domaines + domaines inexistants). Relaxed conservé (`adkim=r; aspf=r`) — indispensable pour l'alignement SPF de SendGrid via le sous-domaine `em1895`. Enregistrement final : `v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:david.azerad@100000medecins.org`. Propagation vérifiée en live (DNS Google `8.8.8.8`).
+- **Décision fondée sur les rapports agrégés (~18-24/06/2026)** : 5 rapports (Google ×3, Enterprise/Outlook.com ×2). 100 % du trafic légitime aligné DKIM **et** SPF — seules sources réelles : SendGrid (`s1` / `em1895`) et Gandi (`gm1`). Unique échec : 1 mail depuis `callibri.fr` usurpant `header_from=100000medecins.org` (DKIM+SPF fail), déjà quarantiné par Outlook → non lié à notre infra, exactement la cible de `reject`.
+- **Aboutissement de la montée progressive** : `p=none` (2026-05-03) → `quarantine pct=10` → `pct=50` (2026-05-15) → `pct=100` (2026-06-04) → `reject` (2026-06-25). Item TODO « Déploiement final » clos.
+
+---
+
 ## [2026-06-23] — Questionnaires télémédecine, maison-mère sur fiche éditeur, easter egg logo & confort admin
 
 ### Module — Questionnaires d'évaluation Téléconsultation & Téléexpertise (+ affichage détaillé)

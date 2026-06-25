@@ -66,6 +66,10 @@ const nextConfig = {
       { source: '/solutions/agendas', destination: '/solutions/agendas-medicaux', permanent: true },
       { source: '/solutions/agendas/:slug*', destination: '/solutions/agendas-medicaux/:slug*', permanent: true },
 
+      // Fiche e-Agenda : slug raccourci e-agenda-prendreunrendezvous-fr → e-agenda
+      // (2026-06-25). Préserve le SEO de l'ancienne URL indexée.
+      { source: '/solutions/agendas-medicaux/e-agenda-prendreunrendezvous-fr', destination: '/solutions/agendas-medicaux/e-agenda', permanent: true },
+
       // Anciens slugs éditeurs Firebase renommés en Supabase (slugify du nom).
       // Inclut le préfixe Quasar /editeur/ ET le préfixe pré-Quasar /editeurs/
       // (audit 2026-06-11 : 12 éditeurs ont un firebaseId différent du slug Supabase).

@@ -30,11 +30,23 @@ const DELAY_MS = 1500 // entre chaque appel API pour éviter le rate-limit
 // Slugs de catégories à EXCLURE (= logiciels métier — déjà bien générés)
 const SLUGS_LGC = ['logiciels-metier', 'logiciel-metier', 'lgc']
 
-// Miroir de src/lib/seo/title.ts — pattern unique du <title> SEO des fiches solutions.
+// Miroir de src/lib/seo/title.ts — accroche adaptative du <title> SEO.
 function buildSolutionSeoTitle({ nom, nom_seo }) {
-  const display = (nom_seo && nom_seo.trim()) || nom
-  const title = `Les avis de vos confrères sur ${display} - 100 000 Médecins`
-  return { title, overflow: title.length > 60 }
+  const SUFFIX = ' - 100 000 Médecins'
+  const LEAD_LONG = 'Les avis de vos confrères sur '
+  const LEAD_SHORT = 'Les avis sur '
+  const MAX_LEN = 60
+  const bestForName = (name) => {
+    const long = `${LEAD_LONG}${name}${SUFFIX}`
+    if (long.length <= MAX_LEN) return { title: long, overflow: false }
+    const short = `${LEAD_SHORT}${name}${SUFFIX}`
+    return { title: short, overflow: short.length > MAX_LEN }
+  }
+  const full = bestForName(nom)
+  if (!full.overflow) return full
+  const short = nom_seo && nom_seo.trim()
+  if (short) return bestForName(short)
+  return full
 }
 
 // Solutions qui ont besoin d'un nom_seo (collectées pendant le run)
