@@ -554,13 +554,18 @@ export default function NoterPage(props: PageProps) {
         dateDebut || null,
         plusUtilise ? (dateFin || null) : null
       )
-      router.push('/mon-compte/mes-evaluations')
     } catch (err) {
       console.error('Erreur soumission:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
-    } finally {
       setSubmitting(false)
+      return
     }
+
+    // Succès : on arrête le spinner immédiatement (feedback instantané) AVANT la navigation,
+    // pour ne pas dépendre uniquement du router.push — la route /mon-compte est protégée et
+    // rendue côté serveur, donc peut tarder. La confirmation = l'arrivée sur « Mes évaluations ».
+    setSubmitting(false)
+    router.push('/mon-compte/mes-evaluations')
   }
 
   const handleSubmitAnonyme = async () => {
