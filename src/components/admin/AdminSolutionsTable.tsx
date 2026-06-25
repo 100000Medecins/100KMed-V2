@@ -12,6 +12,8 @@ type Solution = {
   id: string
   nom: string
   nom_seo?: string | null
+  logo_url?: string | null
+  logo_titre?: string | null
   actif: boolean | null
   categorie?: { id: string; nom: string } | null
   editeur?: { id: string; nom: string } | null
@@ -138,17 +140,28 @@ export default function AdminSolutionsTable({ solutions }: { solutions: Solution
               {filtered.map(solution => (
                 <tr key={solution.id} id={`solution-${solution.id}`} className="hover:bg-surface-light transition-colors">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-navy text-sm">{solution.nom}</span>
-                      {hasNomSeoOverflow(solution) && (
-                        <span
-                          title="Le nom complet déborde des 60 caractères du <title> SEO. Renseigne « Nom court pour SEO » dans la fiche."
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200"
-                        >
-                          <AlertTriangle className="w-3 h-3" />
-                          Nom SEO
-                        </span>
+                    <div className="flex items-center gap-3">
+                      {solution.logo_url ? (
+                        <img
+                          src={solution.logo_url}
+                          alt={solution.logo_titre || solution.nom}
+                          className="h-8 w-16 object-contain rounded bg-gray-50 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-8 w-16 rounded bg-gray-100 flex-shrink-0" />
                       )}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-navy text-sm">{solution.nom}</span>
+                        {hasNomSeoOverflow(solution) && (
+                          <span
+                            title="Le nom complet déborde des 60 caractères du <title> SEO. Renseigne « Nom court pour SEO » dans la fiche."
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200"
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                            Nom SEO
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
