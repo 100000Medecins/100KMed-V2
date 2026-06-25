@@ -40,7 +40,7 @@ export function injectAcronymsInHtml(html: string, acronymes: Acronyme[]): strin
         ? matches[0].definition
         : matches.map((m, idx) => `${idx + 1}) ${m.definition}`).join(' • ')
       const title = raw.replace(/"/g, '&quot;')
-      return `<abbr title="${title}" style="text-decoration:underline dotted #9ca3af;cursor:help">${sigle}</abbr>`
+      return `<abbr data-acronym title="${title}" style="text-decoration:underline dotted #9ca3af;cursor:help">${sigle}</abbr>`
     })
   }).join('')
 }

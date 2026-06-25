@@ -86,7 +86,6 @@ export default async function ArticlePage({ params }: PageProps) {
               { label: 'Accueil', href: '/' },
               { label: 'Blog', href: '/blog' },
               ...(cat?.nom ? [{ label: cat.nom, href: `/blog?categorie=${cat.slug}` }] : []),
-              { label: article.titre },
             ]} variant="light" />
           </div>
           <div className="absolute bottom-0 left-0 right-0 max-w-3xl mx-auto px-6 pb-10">

@@ -60,7 +60,7 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
                 <button
                   key={cat.id}
                   onClick={() => setActiveIndex(i)}
-                  className={`text-sm font-medium px-4 py-2 rounded-full border transition-colors text-left ${
+                  className={`text-[13px] sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-full border transition-colors text-left whitespace-nowrap ${
                     activeIndex === i
                       ? 'bg-navy text-white border-navy'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-navy'

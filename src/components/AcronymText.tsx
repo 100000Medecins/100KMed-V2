@@ -23,6 +23,7 @@ function highlight(text: string, acronymes: Acronyme[]): React.ReactNode {
     parts.push(
       <abbr
         key={match.index}
+        data-acronym=""
         title={buildTooltip(all)}
         style={{ textDecoration: 'underline dotted #9ca3af', cursor: 'help' }}
       >
