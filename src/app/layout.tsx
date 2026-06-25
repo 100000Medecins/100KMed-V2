@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import AuthProvider from "@/components/providers/AuthProvider";
 import ScrollRestoration from "@/components/providers/ScrollRestoration";
 import KonamiGame from "@/components/easter-egg/KonamiGame";
+import AcronymPopover from "@/components/AcronymPopover";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -59,6 +60,7 @@ export default function RootLayout({
       <body className="overflow-x-hidden">
         <ScrollRestoration />
         <AuthProvider>{children}</AuthProvider>
+        <AcronymPopover />
         <KonamiGame />
       </body>
     </html>

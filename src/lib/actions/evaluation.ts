@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
@@ -650,28 +651,37 @@ export async function saveDraftEvaluation(
       .eq('user_id', user.id)
   }
 
-  // Note valide → comptabilisée immédiatement (agrégats à jour), même si l'user part.
-  if (estValide) {
-    await recalcResultatsPourSolution(solutionId)
-  }
+  // Traitements lourds déportés APRÈS la réponse via after() : recalcul des agrégats et
+  // journal admin. Les scores sont déjà persistés ci-dessus — on priorise l'écriture et on
+  // libère vite la réponse (sauvegarde silencieuse appelée à chaque étape / au beforeunload).
+  // La note reste comptabilisée (agrégats à jour) quelques instants après, en arrière-plan.
+  after(async () => {
+    try {
+      if (estValide) {
+        await recalcResultatsPourSolution(solutionId)
+      }
 
-  // Flux de supervision admin : éval « à compléter » (5 critères principaux, sous-critères en attente)
-  if (devientACompleter) {
-    const [{ data: u }, { data: sol }] = await Promise.all([
-      supabase.from('users').select('prenom, nom, pseudo').eq('id', user.id).single(),
-      supabase.from('solutions').select('nom').eq('id', solutionId).single(),
-    ])
-    await logActivity({
-      type: ACTIVITY_TYPES.EVALUATION_A_COMPLETER,
-      acteurType: 'medecin',
-      acteurId: user.id,
-      acteurLabel: u?.pseudo || [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
-      cibleType: 'solution',
-      cibleId: solutionId,
-      cibleLabel: sol?.nom ?? null,
-      diff: moyenne != null ? { note: { avant: null, apres: moyenne } } : null,
-    })
-  }
+      // Flux de supervision admin : éval « à compléter » (5 critères principaux, sous-critères en attente)
+      if (devientACompleter) {
+        const [{ data: u }, { data: sol }] = await Promise.all([
+          supabase.from('users').select('prenom, nom, pseudo').eq('id', user.id).single(),
+          supabase.from('solutions').select('nom').eq('id', solutionId).single(),
+        ])
+        await logActivity({
+          type: ACTIVITY_TYPES.EVALUATION_A_COMPLETER,
+          acteurType: 'medecin',
+          acteurId: user.id,
+          acteurLabel: u?.pseudo || [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
+          cibleType: 'solution',
+          cibleId: solutionId,
+          cibleLabel: sol?.nom ?? null,
+          diff: moyenne != null ? { note: { avant: null, apres: moyenne } } : null,
+        })
+      }
+    } catch (e) {
+      console.error('[saveDraftEvaluation] post-traitement échoué (ignoré):', e)
+    }
+  })
 }
 
 /**
@@ -772,31 +782,43 @@ export async function submitEvaluation(
     if (error) throw new Error(error.message)
   }
 
-  if (statut === 'publiee') {
-    await recalcResultatsPourSolution(solutionId)
-  }
+  // Traitements lourds déportés APRÈS la réponse via after() : recalcul des agrégats
+  // (dizaines de requêtes séquentielles), journal admin et revalidation. L'évaluation
+  // est déjà persistée ci-dessus — ces étapes n'impactent que l'affichage public des
+  // moyennes. Les garder synchrones bloquait le client (spinner « dans le vide »), voire
+  // dépassait le timeout serverless → promesse jamais résolue. cf docs/evaluation-scoring.md.
+  after(async () => {
+    try {
+      if (statut === 'publiee') {
+        await recalcResultatsPourSolution(solutionId)
+      }
 
-  // Flux de supervision admin : nouvelle évaluation (création uniquement, pas les mises à jour)
-  if (!existingEval) {
-    const [{ data: u }, { data: sol }] = await Promise.all([
-      supabase.from('users').select('prenom, nom, pseudo').eq('id', user.id).single(),
-      supabase.from('solutions').select('nom').eq('id', solutionId).single(),
-    ])
-    await logActivity({
-      type: statut === 'publiee'
-        ? ACTIVITY_TYPES.EVALUATION_PUBLIEE
-        : ACTIVITY_TYPES.EVALUATION_EN_ATTENTE_PSC,
-      acteurType: 'medecin',
-      acteurId: user.id,
-      acteurLabel: u?.pseudo || [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
-      cibleType: 'solution',
-      cibleId: solutionId,
-      cibleLabel: sol?.nom ?? null,
-      diff: { note: { avant: null, apres: Math.round(moyenne * 100) / 100 } },
-    })
-  }
+      // Flux de supervision admin : nouvelle évaluation (création uniquement, pas les mises à jour)
+      if (!existingEval) {
+        const [{ data: u }, { data: sol }] = await Promise.all([
+          supabase.from('users').select('prenom, nom, pseudo').eq('id', user.id).single(),
+          supabase.from('solutions').select('nom').eq('id', solutionId).single(),
+        ])
+        await logActivity({
+          type: statut === 'publiee'
+            ? ACTIVITY_TYPES.EVALUATION_PUBLIEE
+            : ACTIVITY_TYPES.EVALUATION_EN_ATTENTE_PSC,
+          acteurType: 'medecin',
+          acteurId: user.id,
+          acteurLabel: u?.pseudo || [u?.prenom, u?.nom].filter(Boolean).join(' ') || null,
+          cibleType: 'solution',
+          cibleId: solutionId,
+          cibleLabel: sol?.nom ?? null,
+          diff: { note: { avant: null, apres: Math.round(moyenne * 100) / 100 } },
+        })
+      }
 
-  revalidatePath('/solutions')
+      revalidatePath('/solutions')
+    } catch (e) {
+      console.error('[submitEvaluation] post-traitement échoué (ignoré):', e)
+    }
+  })
+
   return { status: 'SUCCESS' }
 }
 
