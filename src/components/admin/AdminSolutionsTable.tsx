@@ -109,7 +109,7 @@ export default function AdminSolutionsTable({ solutions }: { solutions: Solution
               ? 'bg-rose-100 text-rose-800 border-rose-300'
               : 'bg-white text-gray-600 border-gray-200 hover:border-rose-300'
           }`}
-          title={`${nbNomSeo} solution${nbNomSeo > 1 ? 's' : ''} dont le nom complet déborde des 60 chars du <title> SEO — remplir nom_seo`}
+          title={`${nbNomSeo} solution${nbNomSeo > 1 ? 's' : ''} dont le nom déborde des 60 chars du <title> SEO même avec l'accroche courte — remplir nom_seo`}
         >
           Nom SEO à fixer
           <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${

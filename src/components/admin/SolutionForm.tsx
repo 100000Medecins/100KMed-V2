@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Play, Sparkles } fr
 import type { Database } from '@/types/database'
 import type { TagForSolution } from '@/lib/db/admin-solutions'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
 import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
 import VideosLieesManager from '@/components/admin/VideosLieesManager'
@@ -97,11 +98,14 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [metaDescription, setMetaDescription] = useState(solution?.meta_description ?? '')
   const [nom, setNom] = useState(solution?.nom ?? '')
   const [nomSeo, setNomSeo] = useState(solution?.nom_seo ?? '')
-  const seoNameUsed = (nomSeo.trim() || nom).trim()
-  const seoTitlePreview = seoNameUsed
-    ? `Les avis de vos confrères sur ${seoNameUsed} - 100 000 Médecins`
-    : ''
-  const seoTitleOverflow = seoTitlePreview.length > 60
+  // Title SEO calculé par le helper (accroche adaptative). Le nom complet est
+  // utilisé tel quel ; nom_seo n'est utile que si le nom déborde même en court.
+  const seoPreview = buildSolutionSeoTitle({ nom: nom.trim(), nom_seo: nomSeo.trim() || null })
+  const seoNomDeborde = buildSolutionSeoTitle({ nom: nom.trim(), nom_seo: null }).overflow
+  const seoTitlePreview = nom.trim() ? seoPreview.title : ''
+  const seoTitleOverflow = seoPreview.overflow
+  // Champ nom_seo affiché seulement si nécessaire (nom trop long) ou déjà rempli.
+  const showNomSeoField = seoNomDeborde || nomSeo.trim().length > 0
   const [isSeoGenerating, setIsSeoGenerating] = useState(false)
   const [galerie, setGalerie] = useState<GalerieImage[]>(
     solution?.galerie ?? []
@@ -277,39 +281,48 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           />
         </div>
         <div>
-          <label htmlFor="nom_seo" className={labelClass}>
-            Nom court pour SEO <span className="text-gray-400 font-normal">(optionnel)</span>
+          <label className={labelClass}>
+            Titre SEO <span className="text-gray-400 font-normal">(&lt;title&gt; généré automatiquement)</span>
             {seoTitlePreview && (
               <span className={`ml-2 text-xs font-normal ${seoTitleOverflow ? 'text-rose-600' : 'text-gray-400'}`}>
                 {seoTitlePreview.length}/60
               </span>
             )}
           </label>
-          <input
-            id="nom_seo"
-            type="text"
-            name="nom_seo"
-            value={nomSeo}
-            onChange={(e) => setNomSeo(e.target.value)}
-            placeholder="Laisser vide si le nom complet tient dans le titre"
-            className={inputClass}
-          />
-          {seoTitleOverflow && (
-            <div className="mt-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800">
-              ⚠️ Le pattern SEO déborde : <span className="font-mono">{seoTitlePreview}</span> ({seoTitlePreview.length} chars).
-              Renseigne un nom plus court ci-dessus (ex. {seoNameUsed.split(' ')[0]}).
-            </div>
-          )}
-          {seoTitlePreview && !seoTitleOverflow && (
-            <p className="mt-1 text-xs text-gray-500">
-              Aperçu du <code className="text-[11px]">&lt;title&gt;</code> : <span className="font-mono text-gray-600">{seoTitlePreview}</span>
-            </p>
+          {seoTitlePreview && (
+            <p className="text-xs font-mono text-gray-600 break-all">{seoTitlePreview}</p>
           )}
           <p className="mt-1 text-xs text-gray-500">
-            Utilisé seulement dans le <code className="text-[11px]">&lt;title&gt;</code> SEO si le nom complet
-            fait déborder les 60 caractères du pattern « Les avis de vos confrères sur … - 100 000 Médecins ».
-            Ex : <code className="text-[11px]">HelloDoc</code> au lieu de <code className="text-[11px]">HelloDoc Assistant</code>.
+            Accroche adaptative : « Les avis de vos confrères sur … », raccourcie en
+            « Les avis sur … » si le nom est long. Aucune saisie nécessaire dans la plupart des cas.
           </p>
+
+          {showNomSeoField && (
+            <div className="mt-3">
+              <label htmlFor="nom_seo" className={labelClass}>
+                Nom court pour SEO <span className="text-gray-400 font-normal">(optionnel)</span>
+              </label>
+              <input
+                id="nom_seo"
+                type="text"
+                name="nom_seo"
+                value={nomSeo}
+                onChange={(e) => setNomSeo(e.target.value)}
+                placeholder="Laisser vide si le nom complet tient dans le titre"
+                className={inputClass}
+              />
+              {seoTitleOverflow && (
+                <div className="mt-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800">
+                  ⚠️ Même en accroche courte, le titre déborde ({seoTitlePreview.length} chars).
+                  Renseigne un nom plus court ci-dessus (ex. {nom.trim().split(' ')[0]}).
+                </div>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Utilisé uniquement si le nom complet déborde des 60 caractères <em>même</em> avec
+                l&apos;accroche courte « Les avis sur … - 100 000 Médecins ».
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <label htmlFor="slug" className={labelClass}>Slug (URL)</label>
