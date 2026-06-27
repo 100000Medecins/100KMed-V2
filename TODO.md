@@ -6,7 +6,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## URGENT
 
-#### ⚠️ Résultats Google → 404 : plan de redirection (2026-05-28)
+#### ~~⚠️ Résultats Google → 404 : plan de redirection (2026-05-28)~~ [OK] Fait — barré 2026-06-27 (gros du travail livré ; le suivi Search Console / déréférencement `legacy.*` est doublonné dans la section SEO ci-dessous)
 - **Symptôme** : les URLs de l'ancien site encore indexées dans Google renvoient vers une 404 sur le nouveau site.
 - **Diagnostic complet** dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md). Constat clé : la plupart des URLs SEO (solutions, catégories, éditeurs) gardent le même schéma → les 404 viennent surtout de solutions/catégories passées `actif=false`, de slugs changés (Firebase→Supabase), et du sitemap qui exposait les pages inactives.
 - ✅ **Fait le 2026-05-28/29** :
@@ -23,6 +23,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 ---
 
 ## En attente / Idées
+
+### Suivi PSC — vérifier la mesure du handoff de session (à partir du 2026-07-03)
+- **Contexte** : ~28 % des inscriptions PSC n'établissent jamais de session (`verifyOtp` client jamais abouti) et ~48 % atteignent `/completer-profil` sans saisir d'email. Mesure déployée le 2026-06-26 (table `psc_session_events`, commit `c4eeab6`) pour trancher « échec `verifyOtp` » (réparable par correctif serveur = piste A) vs « abandon avant l'issue ».
+- **À faire le 2026-07-03 (~1 semaine)** : vérifier qu'assez d'inscriptions PSC ont été collectées pour être significatif, puis rejouer la requête d'entonnoir (réussis / échec verifyOtp / abandon avant issue) → décider de la piste A.
+- **Outils** : requête d'entonnoir sur `psc_session_events` (rejouable via MCP), script `scripts/diag-psc-parcours.ts`, doc [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) (à actualiser).
 
 ### Sécurité
 
@@ -156,14 +161,14 @@ _(rien à faire pour l'instant)_
 
 ### Nouvelles catégories de solutions (en cours)
 
-#### Télétransmission — finitions après seeding initial (2026-05-17)
+#### ~~Télétransmission — finitions après seeding initial (2026-05-17)~~ [OK] Fait — vérifié 2026-06-27 (catégorie active, 19 solutions actives, 0 sans logo/SEO, 4 éditeurs complets)
 - Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
 - **Uploader les logos** des 20 solutions via l'admin
 - **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
 
-#### Téléconsultation — finitions après seeding initial (2026-05-25)
+#### ~~Téléconsultation — finitions après seeding initial (2026-05-25)~~ [OK] Fait — vérifié 2026-06-27 (catégorie active, 15 solutions actives, 0 sans logo/SEO, 7 éditeurs complets)
 - Seeding fait : 7 nouveaux éditeurs, 19 tags (4 séparateurs + 15 toggles), 15 solutions (toutes en `actif=false`), 90 liaisons tags, 7 liens vers solutions existantes. Mapping détaillé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md).
 - ~~**Concevoir le questionnaire d'évaluation pour la catégorie Téléconsultation**~~ [OK] Fait — 18 questions / 3 sections en BDD (`questionnaire_sections` + `questionnaire_questions`, préfixe `tlc_*`). Doc : [docs/teleconsultation-questionnaire.md](docs/teleconsultation-questionnaire.md).
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
@@ -172,7 +177,7 @@ _(rien à faire pour l'instant)_
 - **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 15 fiches
 - **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
 
-#### Téléexpertise — finitions après seeding initial (2026-06-04)
+#### ~~Téléexpertise — finitions après seeding initial (2026-06-04)~~ [OK] Fait — vérifié 2026-06-27 (catégorie active, 10 solutions actives, 0 sans logo/SEO, 5 éditeurs complets dont Avisdoc instruit)
 - Seeding fait : 1 catégorie (inactive), 5 nouveaux éditeurs (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc), 22 tags (4 séparateurs + 18 toggles), 10 solutions (toutes en `actif=false`), 79 liaisons tags (24 tags principaux). Mapping détaillé dans [docs/teleexpertise-import.md](docs/teleexpertise-import.md). Une solution sans éditeur : « Plateformes régionales (marchés GRADeS) » → `id_editeur=NULL` (volontaire, concept regroupant les marchés régionaux, pas de page éditeur publique).
 - ~~**Concevoir le questionnaire d'évaluation pour la catégorie Téléexpertise**~~ [OK] Fait 2026-06-21 — 17 questions / 3 sections en BDD (préfixe `tle_*`). Les 3 catégories (Télétransmission, Téléconsultation, Téléexpertise) ont désormais leur questionnaire. Doc : [docs/teleexpertise-questionnaire.md](docs/teleexpertise-questionnaire.md).
 - **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, points forts/faibles)
