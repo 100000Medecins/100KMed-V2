@@ -250,7 +250,9 @@ export default function CompleterProfilPage() {
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-navy mb-2">Bienvenue sur 100&nbsp;000 Médecins</h1>
             <p className="text-sm text-gray-500">
-              Vérifiez vos informations et indiquez juste votre email pour terminer.
+              {isFromPsc
+                ? 'Vos informations professionnelles sont déjà vérifiées via Pro Santé Connect. Il ne manque que votre email pour terminer.'
+                : 'Vérifiez vos informations pour terminer votre inscription.'}
             </p>
           </div>
 
@@ -446,7 +448,7 @@ export default function CompleterProfilPage() {
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   {isFromPsc
-                    ? 'Utilisé pour les notifications et la récupération de compte.'
+                    ? 'Pour vous prévenir si un éditeur répond à votre avis ou si une solution que vous avez notée évolue — et pour récupérer votre compte. Jamais de spam, jamais transmis à un éditeur.'
                     : 'Adresse confirmée — utilisée pour les notifications et la récupération de compte.'}
                 </p>
               </div>
@@ -495,7 +497,7 @@ export default function CompleterProfilPage() {
                 variant="primary"
                 className={!isValid || submitting ? 'opacity-50 pointer-events-none' : ''}
               >
-                {submitting ? 'Enregistrement...' : 'Accéder à mon compte'}
+                {submitting ? 'Enregistrement...' : 'Terminer mon inscription'}
               </Button>
             </div>
           </form>
