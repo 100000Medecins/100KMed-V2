@@ -428,8 +428,19 @@ export async function GET(request: Request) {
         ? '/mon-compte/mes-evaluations?evaluation=publiee'
         : '/mon-compte/profil'
 
+    // Mesure (additive, jamais bloquante) : marquer le début du handoff de session.
+    // L'issue (verify_success/error/timeout) est loggée côté client via /api/psc-session-event
+    // avec le même correlation_id → permet de quantifier les pertes au verifyOtp.
+    const correlationId = crypto.randomUUID()
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabaseAdmin as any)
+        .from('psc_session_events')
+        .insert({ correlation_id: correlationId, step: 'handoff_start', user_id: userId })
+    } catch { /* jamais bloquant */ }
+
     return NextResponse.redirect(
-      `${origin}/auth/psc-session?token=${tokenHash}&next=${encodeURIComponent(next)}`
+      `${origin}/auth/psc-session?token=${tokenHash}&next=${encodeURIComponent(next)}&cid=${correlationId}`
     )
 
   } catch (err) {
