@@ -6,19 +6,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## URGENT
 
-#### ~~⚠️ Résultats Google → 404 : plan de redirection (2026-05-28)~~ [OK] Fait — barré 2026-06-27 (gros du travail livré ; le suivi Search Console / déréférencement `legacy.*` est doublonné dans la section SEO ci-dessous)
-- **Symptôme** : les URLs de l'ancien site encore indexées dans Google renvoient vers une 404 sur le nouveau site.
-- **Diagnostic complet** dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md). Constat clé : la plupart des URLs SEO (solutions, catégories, éditeurs) gardent le même schéma → les 404 viennent surtout de solutions/catégories passées `actif=false`, de slugs changés (Firebase→Supabase), et du sitemap qui exposait les pages inactives.
-- ✅ **Fait le 2026-05-28/29** :
-  - Sitemap corrigé (filtre `actif` + catégorie active + fix typo `BASE_URL`, refonte complète : éditeurs actifs dédoublonnés, articles de blog, `force-dynamic`).
-  - 10 redirections 301 dans `next.config.mjs` (camelCase→kebab : `difficileDeChanger`, `tousEnsemble`, `lancement100k`, `monCompte/*`, `connexion/creationCompte/*` + `presentation100k`→`qui-sommes-nous`).
-  - **Comparaison `slug-vs-slug`** → interception dans la page solution + résolution slugs→UUIDs (`getSolutionIdsBySlugs`) → redirect 301 vers `/solutions/comparer?ids=`.
-  - **`archive.100000medecins.org` réparé** : page blanche due à un mismatch de build (`index.html` demandait des hash js absents). Réupload cohérent de `dist/spa/`. Rôle = transfert SEO uniquement (noindex + canonical).
-  - **`legacy.100000medecins.org`** mis en noindex (`.htaccess` avec `X-Robots-Tag: noindex, follow`, vérifié live) pour le déréférencer de Google.
-- ✅ Sitemap fantôme `sitemap_v2.xml` supprimé de Search Console (2026-05-29).
-- **Reste à faire (suivi)** :
-  - Vérifier sous ~1 semaine que `sitemap.xml` passe en « Réussite » (recrawl Google en cours ; l'erreur « impossible de récupérer » du 27/05 était antérieure aux corrections).
-  - Surveiller le déréférencement progressif de `legacy.` dans les résultats Google.
+_(rien d'urgent pour l'instant)_
 
 ---
 
@@ -31,11 +19,7 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ### Sécurité
 
-#### Passer DMARC de `quarantine 50%` à `quarantine 100%` puis `reject`
-- ✅ `p=none` → `p=quarantine pct=10` fait le 2026-05-03
-- ✅ `pct=10` → `pct=50` fait le 2026-05-15 (rapports clean : 24 mails sur 3 semaines, 100 % DKIM/SPF aligné sur Gandi + SendGrid, 0 source inconnue)
-- ✅ `pct=50` → `pct=100` fait le 2026-06-04 (rapports clean du 26 au 30/05 : 7 mails sur 5 jours, 100 % DKIM/SPF aligné, seulement Gandi `gm1` + SendGrid `s1` via `em1895`, aucune source inconnue)
-- ✅ **`p=reject` fait le 2026-06-25** — déploiement final terminé. Rapports du ~18-24/06 (Google ×3, Outlook ×2) confirment 100 % du trafic légitime aligné DKIM+SPF (SendGrid `s1`/`em1895` + Gandi `gm1`). Seul échec : 1 mail `callibri.fr` usurpant `header_from`, déjà quarantiné par Outlook (non lié à notre infra). Enregistrement live vérifié : `v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:david.azerad@100000medecins.org`. **Item clos.**
+_(rien en cours)_
 
 ### Communication
 
@@ -89,6 +73,11 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 - ~~**Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur).~~ [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
+
+#### Carrousel de citations — édition en admin (passage en base)
+- ✅ **v1 livrée (2026-06-30)** : carrousel discret en tête du catalogue (`/solutions/[idCategorie]`), composant [src/components/CitationCarousel.tsx](src/components/CitationCarousel.tsx) (tirage aléatoire, auto-rotation 8 s, pause au survol, `prefers-reduced-motion`), corpus en **constante front** [src/lib/constants/citations.ts](src/lib/constants/citations.ts) (37 citations). Corpus d'origine archivé : [docs/citations-ancien-site.md](docs/citations-ancien-site.md).
+- **Reste à faire — éditer les citations depuis l'admin** : migrer la constante vers une **table `citations` Supabase** (CRUD admin), avec GRANTs explicites + RLS (lecture publique `anon`, écriture admin/`service_role`). Garder la constante actuelle comme **seed initial**.
+- **À cadrer** : page admin dédiée (liste + ajout/édition/suppression ; champs `text`, `auteur`, `actif`, `ordre` ?), lecture côté composant (server fetch + cache/ISR), tri/aléatoire.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
@@ -160,32 +149,6 @@ _(rien à faire pour l'instant)_
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
 ### Nouvelles catégories de solutions (en cours)
-
-#### ~~Télétransmission — finitions après seeding initial (2026-05-17)~~ [OK] Fait — vérifié 2026-06-27 (catégorie active, 19 solutions actives, 0 sans logo/SEO, 4 éditeurs complets)
-- Seeding fait : 1 catégorie (inactive), 4 éditeurs créés, 23 tags, 20 solutions, 203 liaisons
-- **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
-- **Uploader les logos** des 20 solutions via l'admin
-- **Compléter les 4 nouveaux éditeurs** (Aatlantide, Olaqin, VITALONLINE, Calimed Santé) : website, description, logo
-- **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
-
-#### ~~Téléconsultation — finitions après seeding initial (2026-05-25)~~ [OK] Fait — vérifié 2026-06-27 (catégorie active, 15 solutions actives, 0 sans logo/SEO, 7 éditeurs complets)
-- Seeding fait : 7 nouveaux éditeurs, 19 tags (4 séparateurs + 15 toggles), 15 solutions (toutes en `actif=false`), 90 liaisons tags, 7 liens vers solutions existantes. Mapping détaillé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md).
-- ~~**Concevoir le questionnaire d'évaluation pour la catégorie Téléconsultation**~~ [OK] Fait — 18 questions / 3 sections en BDD (`questionnaire_sections` + `questionnaire_questions`, préfixe `tlc_*`). Doc : [docs/teleconsultation-questionnaire.md](docs/teleconsultation-questionnaire.md).
-- **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, prix retenus)
-- **Uploader les logos** des 15 solutions via l'admin
-- **Compléter les 7 nouveaux éditeurs** (Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, Solutions régionales) : website (URLs devinées à valider), description, logo
-- **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 15 fiches
-- **Activer** (`actif=true`) la catégorie quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
-
-#### ~~Téléexpertise — finitions après seeding initial (2026-06-04)~~ [OK] Fait — vérifié 2026-06-27 (catégorie active, 10 solutions actives, 0 sans logo/SEO, 5 éditeurs complets dont Avisdoc instruit)
-- Seeding fait : 1 catégorie (inactive), 5 nouveaux éditeurs (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc), 22 tags (4 séparateurs + 18 toggles), 10 solutions (toutes en `actif=false`), 79 liaisons tags (24 tags principaux). Mapping détaillé dans [docs/teleexpertise-import.md](docs/teleexpertise-import.md). Une solution sans éditeur : « Plateformes régionales (marchés GRADeS) » → `id_editeur=NULL` (volontaire, concept regroupant les marchés régionaux, pas de page éditeur publique).
-- ~~**Concevoir le questionnaire d'évaluation pour la catégorie Téléexpertise**~~ [OK] Fait 2026-06-21 — 17 questions / 3 sections en BDD (préfixe `tle_*`). Les 3 catégories (Télétransmission, Téléconsultation, Téléexpertise) ont désormais leur questionnaire. Doc : [docs/teleexpertise-questionnaire.md](docs/teleexpertise-questionnaire.md).
-- **Vérifier dans l'admin** : 1-2 solutions au hasard (description, tags, points forts/faibles)
-- **Uploader les logos** des 10 solutions via l'admin
-- **Compléter les 5 nouveaux éditeurs** (Omnidoc, Rofim, Conex Santé, GCS Sara, Avisdoc) : description, logo. URLs devinées par convention à valider/corriger. Avisdoc → site NULL pour l'instant.
-- **Instruire Avisdoc** : entretien éditeur pour compléter la fiche (tarifs, conformité, fonctionnalités précises). Fiche actuelle indique « en cours d'instruction » dans le descriptif.
-- **Renseigner le SEO** (`meta.title`, `meta.description`) pour les 10 fiches
-- **Activer** (`actif=true`) la catégorie + les solutions quand tout le reste est OK (questionnaire prêt, logos uploadés, éditeurs complétés)
 
 #### Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (2026-06-21)
 - **Quand** : une fois le questionnaire Téléexpertise créé (les 3 questionnaires prêts).

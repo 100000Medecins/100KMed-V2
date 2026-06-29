@@ -5,6 +5,25 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-06-27**
+- [OK] 2026-06-27 : Résultats Google → 404 : plan de redirection (URGENT)
+  - Diagnostic dans docs/redirections-404-seo.md. Fait 2026-05-28/29 : sitemap corrigé (filtre actif + catégorie active + fix BASE_URL, éditeurs dédoublonnés, articles, force-dynamic), 10 redirections 301 dans next.config.mjs, comparaison slug-vs-slug → redirect /solutions/comparer, archive.* réparé, legacy.* en noindex, sitemap fantôme supprimé.
+  - Suivi résiduel conservé dans la section SEO de TODO.md : vérifier sitemap.xml en « Réussite » + déréférencement legacy.*.
+- [OK] 2026-06-27 : Télétransmission — finitions après seeding initial (Nouvelles catégories)
+  - Seeding : 1 catégorie, 4 éditeurs, 23 tags, 20 solutions, 203 liaisons. Vérifié 2026-06-27 : catégorie active, 19 solutions actives, 0 sans logo/SEO, 4 éditeurs complets (Aatlantide, Olaqin, VITALONLINE, Calimed Santé).
+- [OK] 2026-06-27 : Téléconsultation — finitions après seeding initial (Nouvelles catégories)
+  - Seeding : 7 éditeurs, 19 tags, 15 solutions, 90 liaisons, 7 liens. Questionnaire (18 questions / 3 sections, tlc_*) fait. Vérifié 2026-06-27 : catégorie active, 15 solutions actives, 0 sans logo/SEO, 7 éditeurs complets (Qare, Livi, MEDADOM, Tessan, MédecinDirect, Globule, Solutions régionales).
+- [OK] 2026-06-27 : Téléexpertise — finitions après seeding initial (Nouvelles catégories)
+  - Seeding : 1 catégorie, 5 éditeurs, 22 tags, 10 solutions, 79 liaisons. Solution sans éditeur « Plateformes régionales (marchés GRADeS) » (volontaire). Questionnaire (17 questions / 3 sections, tle_*) fait 2026-06-21. Vérifié 2026-06-27 : catégorie active, 10 solutions actives, 0 sans logo/SEO, 5 éditeurs complets dont Avisdoc instruit.
+
+---
+
+**2026-06-25**
+- [OK] 2026-06-25 : Passer DMARC de quarantine 50% → reject (Sécurité)
+  - Progression : p=none → quarantine pct=10 (2026-05-03), pct=50 (2026-05-15), pct=100 (2026-06-04), p=reject (2026-06-25). Rapports clean (Google ×3, Outlook ×2, ~18-24/06) : 100 % du trafic légitime aligné DKIM+SPF (SendGrid s1/em1895 + Gandi gm1). Seul échec : 1 mail callibri.fr usurpant header_from, déjà quarantiné par Outlook. Enregistrement live : v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:david.azerad@100000medecins.org. Item clos.
+
+---
+
 **2026-06-21**
 - [OK] 2026-06-21 : Éditeurs orphelins (0 solution) — à conserver, fiches à créer (UX / UI)
   - 4 éditeurs sans aucune solution rattachée au 2026-05-28 : MediStory (fait 2026-06-12), Aatlantide (fait 2026-06-21), MEDEXT Group (fait 2026-06-21), Semble (fait 2026-06-12). Conservés volontairement — toutes les fiches solutions sont désormais créées.

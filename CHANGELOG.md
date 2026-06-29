@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-06-30] — Carrousel de citations aléatoires (catalogue)
+
+### Feature — Carrousel de citations en tête du catalogue
+- Réintroduction du système de citations aléatoires de l'ancien site Quasar, en tête de la page catalogue ([solutions/[idCategorie]/page.tsx](src/app/solutions/[idCategorie]/page.tsx), entre le hero et la liste). Composant [CitationCarousel.tsx](src/components/CitationCarousel.tsx) : tirage aléatoire au montage (sans mismatch SSR), auto-rotation 8 s, pause au survol, navigation aux flèches, respect de `prefers-reduced-motion`. Rendu volontairement discret (ligne italique estompée, sans carte). `/solutions` redirigeant vers la catégorie par défaut, le carrousel couvre de fait toutes les pages catalogue.
+- Corpus en constante front [citations.ts](src/lib/constants/citations.ts) : 37 citations (36 issues de l'ancien front `ancien-site-frontend` + « Le prix s'oublie, la qualité reste » sans auteur). Vérifié : aucune citation en base Firebase (corpus hardcodé côté front à l'époque). Corpus + traçabilité dans [docs/citations-ancien-site.md](docs/citations-ancien-site.md).
+
+### TODO — Mises à jour
+- Archivés (→ TODO-archive.md) : redirections 404/SEO, finitions Télétransmission / Téléconsultation / Téléexpertise (vérifiées en base), DMARC `p=reject`.
+- Ajouté : « Carrousel de citations — édition en admin (passage en base) » (v1 front livrée ; reste le CRUD admin via table Supabase, constante actuelle = seed).
+
+---
+
 ## [2026-06-26] — Passe d'ergonomie mobile (accueil, blog, acronymes, catalogue, évaluation)
 
 ### UX / UI — Corrections d'affichage mobile
