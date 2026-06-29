@@ -14,6 +14,7 @@ import { computeSortValue } from '@/lib/prix'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
 import SolutionSortBar from '@/components/solutions/SolutionSortBar'
+import CitationCarousel from '@/components/CitationCarousel'
 
 interface PageProps {
   params: Promise<{ idCategorie: string }>
@@ -194,6 +195,11 @@ export default async function SolutionsPage(props: PageProps) {
               )}
             </div>
           </div>
+        </section>
+
+        {/* Citation aléatoire (carrousel) */}
+        <section className="max-w-7xl mx-auto px-6 pt-4 md:pt-6">
+          <CitationCarousel />
         </section>
 
         {/* Filtres + liste */}
