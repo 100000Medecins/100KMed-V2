@@ -18,13 +18,35 @@ type LogRow = {
 
 async function getLogs(): Promise<LogRow[]> {
   const supabase = createServiceRoleClient()
+
+  // Pas d'embed PostgREST `user:users(...)` ici : la FK de `editeurs_edit_log.user_id`
+  // pointe vers `auth.users` (pas `public.users`), donc PostgREST ne sait pas résoudre la
+  // relation et la requête entière échouerait → page vide alors que les lignes existent.
+  // On récupère donc les users séparément et on fusionne en JS.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data: logs } = await (supabase as any)
     .from('editeurs_edit_log')
-    .select('id, user_id, table_cible, id_cible, champ, ancienne_valeur, nouvelle_valeur, created_at, user:users(nom, prenom, contact_email)')
+    .select('id, user_id, table_cible, id_cible, champ, ancienne_valeur, nouvelle_valeur, created_at')
     .order('created_at', { ascending: false })
     .limit(200)
-  return (data ?? []) as LogRow[]
+
+  const rows = (logs ?? []) as LogRow[]
+  if (rows.length === 0) return rows
+
+  const userIds = Array.from(
+    new Set(rows.map((r) => r.user_id).filter((id): id is string => !!id))
+  )
+  if (userIds.length > 0) {
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, nom, prenom, contact_email')
+      .in('id', userIds)
+    const byId = new Map((users ?? []).map((u) => [u.id, u]))
+    for (const r of rows) {
+      r.user = r.user_id ? byId.get(r.user_id) ?? null : null
+    }
+  }
+  return rows
 }
 
 function truncate(s: string | null, max = 80): string {
