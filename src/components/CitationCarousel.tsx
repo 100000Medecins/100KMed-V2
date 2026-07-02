@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { CITATIONS, type Citation } from '@/lib/constants/citations'
 
-const ROTATION_MS = 8000
+const ROTATION_MS = 14000
 
 /**
  * Carrousel de citations aléatoires affiché en tête du catalogue Solutions.
