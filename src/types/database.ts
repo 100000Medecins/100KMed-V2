@@ -360,6 +360,44 @@ export type Database = {
           },
         ]
       }
+      citations: {
+        Row: {
+          auteur: string | null
+          created_at: string
+          id: string
+          propose_par: string | null
+          statut: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          auteur?: string | null
+          created_at?: string
+          id?: string
+          propose_par?: string | null
+          statut?: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          auteur?: string | null
+          created_at?: string
+          id?: string
+          propose_par?: string | null
+          statut?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citations_propose_par_fkey"
+            columns: ["propose_par"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compte_suppressions: {
         Row: {
           avec_suppression_avis: boolean
@@ -1137,6 +1175,33 @@ export type Database = {
           type?: string
           updated_at?: string
           url_concernee?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      psc_session_events: {
+        Row: {
+          correlation_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          step: string
+          user_id: string | null
+        }
+        Insert: {
+          correlation_id: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          step: string
+          user_id?: string | null
+        }
+        Update: {
+          correlation_id?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          step?: string
           user_id?: string | null
         }
         Relationships: []

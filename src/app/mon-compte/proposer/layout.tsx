@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Lightbulb, AlertTriangle, Video, BookOpen, FileText } from 'lucide-react'
+import { Lightbulb, AlertTriangle, Video, BookOpen, FileText, Quote } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 const allTabs = [
@@ -10,6 +10,7 @@ const allTabs = [
   { href: '/mon-compte/proposer/correction', label: 'Une correction', icon: AlertTriangle },
   { href: '/mon-compte/proposer/video', label: 'Une vidéo', icon: Video },
   { href: '/mon-compte/proposer/acronyme', label: 'Un acronyme', icon: BookOpen },
+  { href: '/mon-compte/proposer/citation', label: 'Une citation', icon: Quote },
   { href: '/mon-compte/proposer/questionnaire-these', label: 'Un questionnaire de thèse', icon: FileText },
 ]
 

@@ -10,6 +10,7 @@ import { getCategorieBySlug } from '@/lib/db/categories'
 import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import { getDisplayPrixFront } from '@/lib/db/settings'
+import { getCitationsActives } from '@/lib/db/citations'
 import { computeSortValue } from '@/lib/prix'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
@@ -99,12 +100,13 @@ export default async function SolutionsPage(props: PageProps) {
   const needsUserNotes = tri === 'note_utilisateurs'
   const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
 
-  const [tags, criteresMajeurs, notesRedac, nbNotesMap, displayPrixFront] = await Promise.all([
+  const [tags, criteresMajeurs, notesRedac, nbNotesMap, displayPrixFront, citations] = await Promise.all([
     getTags(categorie.id),
     getCriteresMajeurs(categorie.id),
     needsRedacNotes ? getNotesGlobalesRedac(solutionIds) : Promise.resolve({} as Record<string, number>),
     getNbNotesUtilisateurs(solutionIds),
     getDisplayPrixFront(),
+    getCitationsActives(),
   ])
 
   const [notesUtilisateurs, notesCritere] = await Promise.all([
@@ -199,7 +201,7 @@ export default async function SolutionsPage(props: PageProps) {
 
         {/* Citation aléatoire (carrousel) */}
         <section className="max-w-7xl mx-auto px-6 pt-4 md:pt-6">
-          <CitationCarousel />
+          <CitationCarousel citations={citations} />
         </section>
 
         {/* Filtres + liste */}
