@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { CITATIONS } from '@/lib/constants/citations'
+import { CITATIONS, type Citation } from '@/lib/constants/citations'
 
-const ROTATION_MS = 8000
+const ROTATION_MS = 14000
 
 /**
  * Carrousel de citations aléatoires affiché en tête du catalogue Solutions.
@@ -15,7 +15,10 @@ const ROTATION_MS = 8000
  * - navigation manuelle au clic (flèches ‹ ›)
  * Données : src/lib/constants/citations.ts
  */
-export default function CitationCarousel() {
+export default function CitationCarousel({ citations }: { citations?: Citation[] }) {
+  // Données fournies par le serveur (table `citations`) ; fallback sur la constante front.
+  const list = citations && citations.length > 0 ? citations : CITATIONS
+
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const reducedMotion = useRef(false)
@@ -23,21 +26,21 @@ export default function CitationCarousel() {
   // Tirage aléatoire au montage uniquement (évite le mismatch SSR/CSR).
   useEffect(() => {
     reducedMotion.current = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-    setIndex(Math.floor(Math.random() * CITATIONS.length))
-  }, [])
+    setIndex(Math.floor(Math.random() * list.length))
+  }, [list.length])
 
   // Auto-rotation : relancée à chaque changement d'index → cadence régulière de 8 s
   // après une navigation manuelle comme automatique.
   useEffect(() => {
     if (paused || reducedMotion.current) return
-    const id = setInterval(() => setIndex((i) => (i + 1) % CITATIONS.length), ROTATION_MS)
+    const id = setInterval(() => setIndex((i) => (i + 1) % list.length), ROTATION_MS)
     return () => clearInterval(id)
-  }, [index, paused])
+  }, [index, paused, list.length])
 
   const go = (delta: number) =>
-    setIndex((i) => (i + delta + CITATIONS.length) % CITATIONS.length)
+    setIndex((i) => (i + delta + list.length) % list.length)
 
-  const citation = CITATIONS[index]
+  const citation = list[index]
 
   return (
     <div

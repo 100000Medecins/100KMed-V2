@@ -61,6 +61,14 @@ export default function Navbar({ minimal = false }: NavbarProps) {
   const { user, isEditeur, loading, signOut } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
+
+  // Bouton « Évaluer » contextuel : sur une page solution (/solutions/{cat}/{sol}),
+  // pointer vers l'évaluation de CETTE solution ; ailleurs (accueil, catégories,
+  // comparatifs…), parcours générique de sélection. Seule la cible change, pas le libellé.
+  const solutionMatch = pathname.match(/^\/solutions\/([^/]+)\/([^/]+)$/);
+  const evaluerHref = solutionMatch
+    ? `/solution/noter/${solutionMatch[1]}/${solutionMatch[2]}`
+    : '/solution/noter';
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(true);
@@ -355,7 +363,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
           {/* Bouton Évaluer mobile — masqué pour les éditeurs */}
           {!isEditeur && (
             <div className="min-[1150px]:hidden">
-              <Button variant="white" href="/solution/noter" className="text-xs py-1.5 px-3">
+              <Button variant="white" href={evaluerHref} className="text-xs py-1.5 px-3">
                 Évaluer
               </Button>
             </div>
@@ -374,7 +382,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
             {!loading && user ? (
               <>
                 {!isEditeur && (
-                  <Button variant="primary" href="/solution/noter" className="border-2 border-white">
+                  <Button variant="primary" href={evaluerHref} className="border-2 border-white">
                     Évaluer un logiciel
                   </Button>
                 )}
@@ -384,7 +392,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
               </>
             ) : (
               <>
-                <Button variant="primary" href="/solution/noter" className="border-2 border-white">
+                <Button variant="primary" href={evaluerHref} className="border-2 border-white">
                   Évaluer un logiciel
                 </Button>
                 <Button variant="white" href="/connexion" className={darkNav ? '' : '!border-navy !text-navy hover:!bg-navy hover:!text-white'}>
@@ -520,7 +528,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
               {!loading && user ? (
                 <>
                   {!isEditeur && (
-                    <Button variant="primary" href="/solution/noter" className="w-full justify-center border border-white/40">
+                    <Button variant="primary" href={evaluerHref} className="w-full justify-center border border-white/40">
                       Évaluer un logiciel
                     </Button>
                   )}
@@ -530,7 +538,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
                 </>
               ) : (
                 <>
-                  <Button variant="primary" href="/solution/noter" className="w-full justify-center border border-white/40">
+                  <Button variant="primary" href={evaluerHref} className="w-full justify-center border border-white/40">
                     Évaluer un logiciel
                   </Button>
                   <Button variant="white" href="/connexion" className="w-full justify-center">

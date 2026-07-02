@@ -10,6 +10,7 @@ import { getCategorieBySlug } from '@/lib/db/categories'
 import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere, getNbNotesUtilisateurs } from '@/lib/db/solutions'
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import { getDisplayPrixFront } from '@/lib/db/settings'
+import { getCitationsActives } from '@/lib/db/citations'
 import { computeSortValue } from '@/lib/prix'
 import SolutionList from '@/components/solutions/SolutionList'
 import SolutionFilters from '@/components/solutions/SolutionFilters'
@@ -99,12 +100,13 @@ export default async function SolutionsPage(props: PageProps) {
   const needsUserNotes = tri === 'note_utilisateurs'
   const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
 
-  const [tags, criteresMajeurs, notesRedac, nbNotesMap, displayPrixFront] = await Promise.all([
+  const [tags, criteresMajeurs, notesRedac, nbNotesMap, displayPrixFront, citations] = await Promise.all([
     getTags(categorie.id),
     getCriteresMajeurs(categorie.id),
     needsRedacNotes ? getNotesGlobalesRedac(solutionIds) : Promise.resolve({} as Record<string, number>),
     getNbNotesUtilisateurs(solutionIds),
     getDisplayPrixFront(),
+    getCitationsActives(),
   ])
 
   const [notesUtilisateurs, notesCritere] = await Promise.all([
@@ -199,29 +201,18 @@ export default async function SolutionsPage(props: PageProps) {
 
         {/* Citation aléatoire (carrousel) */}
         <section className="max-w-7xl mx-auto px-6 pt-4 md:pt-6">
-          <CitationCarousel />
+          <CitationCarousel citations={citations} />
         </section>
 
         {/* Filtres + liste */}
         <section className="max-w-7xl mx-auto px-6 pt-4 pb-10 md:py-10">
-          <div className="grid grid-cols-1 md:grid-cols-[13rem_1fr] gap-3 md:gap-x-8 md:gap-y-3">
-            {/* Trier par : mobile = en haut, desktop = colonne droite ligne 1 */}
-            <div className="md:col-start-2 md:row-start-1">
-              <SolutionSortBar
-                criteresMajeurs={criteresMajeurs}
-                currentTri={tri}
-                currentCritere={critereId}
-                currentDir={dir}
-                selectedTagIds={selectedTagIds}
-                count={solutionsAvecNotes.length}
-                hideNoteRedac={!(categorie as any).has_note_redac}
-                showPrixOption={displayPrixFront}
-              />
-            </div>
-
-            {/* Sidebar filtres : mobile = milieu, desktop = colonne gauche ligne 2 (aligné avec la 1ère tuile) */}
+          {/* Layout flex d'origine : le bandeau de tri vit dans la colonne haute (flex-1)
+              qui contient aussi la liste → son `sticky top-[80px]` a la plage de défilement
+              nécessaire pour rester collé en haut. */}
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Sidebar filtres (tags uniquement) */}
             {tags.length > 0 && (
-              <aside className="md:col-start-1 md:row-start-2 mb-2 md:mb-0">
+              <aside className="w-full md:w-52 shrink-0">
                 <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
                   <SolutionFilters
                     tags={tags}
@@ -235,8 +226,18 @@ export default async function SolutionsPage(props: PageProps) {
               </aside>
             )}
 
-            {/* Liste solutions : mobile = bas, desktop = colonne droite ligne 2 */}
-            <div className="md:col-start-2 md:row-start-2 min-w-0">
+            {/* Colonne solutions : bandeau de tri (sticky) + liste */}
+            <div className="flex-1 min-w-0">
+              <SolutionSortBar
+                criteresMajeurs={criteresMajeurs}
+                currentTri={tri}
+                currentCritere={critereId}
+                currentDir={dir}
+                selectedTagIds={selectedTagIds}
+                count={solutionsAvecNotes.length}
+                hideNoteRedac={!(categorie as any).has_note_redac}
+                showPrixOption={displayPrixFront}
+              />
               <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} displayPrixFront={displayPrixFront} />
             </div>
           </div>

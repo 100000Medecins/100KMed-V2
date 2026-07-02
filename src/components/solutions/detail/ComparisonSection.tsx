@@ -157,7 +157,8 @@ export default function ComparisonSection({
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [comparisons, setComparisons] = useState<ComparisonData[]>([])
-  const [noteMode, setNoteMode] = useState<NoteMode>(hasNoteRedac ? 'redac' : 'utilisateurs')
+  // Défaut : radar des notes utilisateurs (le bouton « Rédaction » reste dispo si la catégorie en a).
+  const [noteMode, setNoteMode] = useState<NoteMode>('utilisateurs')
   const [detailExpanded, setDetailExpanded] = useState(false)
   const [expandedCriteres, setExpandedCriteres] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()

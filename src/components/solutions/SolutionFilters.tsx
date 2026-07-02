@@ -115,7 +115,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-x-3 sm:block">
+      <div className="grid grid-cols-2 gap-x-3 md:block">
       {groups.map((group) => {
         const hasSelected = group.items.some((t) => selectedTagIds.includes(t.id))
         const isOpen = openGroups[group.id] ?? false
@@ -127,7 +127,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
               <button
                 type="button"
                 onClick={() => toggleGroup(group.id)}
-                className="flex items-start gap-1.5 w-full pt-3 pb-1 text-left sm:cursor-default"
+                className="flex items-start gap-1.5 w-full pt-3 pb-1 text-left md:cursor-default"
               >
                 <p className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5 flex-wrap leading-tight">
                   {group.label}
@@ -136,13 +136,13 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
                   )}
                 </p>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 sm:hidden shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 md:hidden shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`}
                 />
               </button>
             )}
 
             {/* Items — toujours visibles sur desktop, accordéon sur mobile */}
-            <div className={`mt-1 flex flex-col gap-1 sm:gap-1.5 ${group.label ? (!isOpen ? 'hidden sm:flex' : '') : ''}`}>
+            <div className={`mt-1 flex flex-col gap-1 md:gap-1.5 ${group.label ? (!isOpen ? 'hidden md:flex' : '') : ''}`}>
               {group.items.map((tag) => {
                 const isSelected = selectedTagIds.includes(tag.id)
                 const isImplied = impliedParentIds.has(tag.id)

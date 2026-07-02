@@ -5,6 +5,30 @@
 
 ---
 
+## [2026-07-03] — Citations en base + admin, radar utilisateurs, fix sticky comparatifs
+
+### Feature — Citations éditables en base (admin + proposition médecin)
+- Le carrousel de citations passe de la constante front à une table Supabase `citations` (statut `en_attente`/`publiee`/`refusee`, `propose_par`). Lecture publique via `getCitationsActives()` (service-role, ISR) avec fallback sur la constante si table vide/erreur. Seed initial [scripts/seed-citations.ts](scripts/seed-citations.ts) (37 citations).
+- Admin [/admin/citations](src/app/admin/citations/page.tsx) : ajout, filtres (à modérer/publiées/refusées), publier/refuser, édition inline, suppression. Item + badge « à modérer » dans la sidebar admin.
+- Proposition médecin : onglet « Une citation » sur [/mon-compte/proposer](src/app/mon-compte/proposer/citation/page.tsx) (texte requis + auteur facultatif) → `statut=en_attente`, notif admin + journal d'activité. Actions dans [src/lib/actions/citations.ts](src/lib/actions/citations.ts). GRANTs explicites + RLS, types régénérés.
+
+### UX / UI — Radar, filtres, carrousel
+- Radar comparatif ([ComparisonSection.tsx](src/components/solutions/detail/ComparisonSection.tsx)) : ouverture par défaut sur les notes utilisateurs (au lieu de la rédaction) sur toutes les fiches ; bouton « Rédaction » toujours dispo.
+- Filtres catalogue ([SolutionFilters.tsx](src/components/solutions/SolutionFilters.tsx)) : accordéon (chevrons) conservé jusqu'à `md` au lieu de `sm` → fini le passage « liste déployée pleine largeur » en tablette.
+- Carrousel citations : rotation ralentie de 8 s à 14 s.
+
+### Feature — Navbar : bouton « Évaluer » contextuel
+- Sur une fiche solution, « Évaluer » pointe vers l'évaluation de cette solution ; ailleurs, parcours générique. ([Navbar.tsx](src/components/layout/Navbar.tsx))
+
+### Fix — Bandeau de tri sticky cassé sur les comparatifs
+- Cause : `overflow-x: hidden` sur `<html>`/`<body>` ([layout.tsx](src/app/layout.tsx)) forçait `overflow-y` à `auto` → racine transformée en conteneur de défilement → tous les `position: sticky` neutralisés (pas seulement le bandeau de tri). Le layout n'était pas en cause.
+- Fix : `overflow-x: hidden` → `overflow-x: clip` (coupe le débordement horizontal sans créer de scroll container). Restaure le sticky du bandeau de tri (et les autres sticky du site). Layout catalogue remis en flex (bandeau + liste dans la colonne haute).
+
+### TODO — Mises à jour
+- Terminé : « Carrousel de citations — édition en admin (passage en base) » (table + admin CRUD/modération + proposition médecin livrés).
+
+---
+
 ## [2026-06-30] — Carrousel de citations aléatoires (catalogue)
 
 ### Feature — Carrousel de citations en tête du catalogue

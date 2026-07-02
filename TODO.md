@@ -74,10 +74,8 @@ _(rien en cours)_
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
-#### Carrousel de citations — édition en admin (passage en base)
-- ✅ **v1 livrée (2026-06-30)** : carrousel discret en tête du catalogue (`/solutions/[idCategorie]`), composant [src/components/CitationCarousel.tsx](src/components/CitationCarousel.tsx) (tirage aléatoire, auto-rotation 8 s, pause au survol, `prefers-reduced-motion`), corpus en **constante front** [src/lib/constants/citations.ts](src/lib/constants/citations.ts) (37 citations). Corpus d'origine archivé : [docs/citations-ancien-site.md](docs/citations-ancien-site.md).
-- **Reste à faire — éditer les citations depuis l'admin** : migrer la constante vers une **table `citations` Supabase** (CRUD admin), avec GRANTs explicites + RLS (lecture publique `anon`, écriture admin/`service_role`). Garder la constante actuelle comme **seed initial**.
-- **À cadrer** : page admin dédiée (liste + ajout/édition/suppression ; champs `text`, `auteur`, `actif`, `ordre` ?), lecture côté composant (server fetch + cache/ISR), tri/aléatoire.
+#### ~~Carrousel de citations — édition en admin (passage en base)~~ [OK] Fait 2026-07-03
+- Table Supabase `citations` (statut en_attente/publiee/refusee, propose_par) + GRANTs/RLS + seed. Lecture front `getCitationsActives()` (fallback constante). Admin `/admin/citations` (CRUD + modération + badge sidebar). Proposition médecin via onglet « Une citation » sur `/mon-compte/proposer`. Cf CHANGELOG 2026-07-03.
 
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
