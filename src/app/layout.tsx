@@ -55,9 +55,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // overflow-x: clip (et non hidden) sur html/body : coupe le débordement horizontal SANS
+  // créer de conteneur de défilement — `overflow-x: hidden` force overflow-y à `auto` et
+  // casse tous les `position: sticky` (bandeau de tri des comparatifs, etc.).
   return (
-    <html lang="fr" className={`${poppins.variable} overflow-x-hidden`}>
-      <body className="overflow-x-hidden">
+    <html lang="fr" className={`${poppins.variable} overflow-x-clip`}>
+      <body className="overflow-x-clip">
         <ScrollRestoration />
         <AuthProvider>{children}</AuthProvider>
         <AcronymPopover />

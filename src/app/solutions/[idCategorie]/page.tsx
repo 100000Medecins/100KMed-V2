@@ -206,24 +206,13 @@ export default async function SolutionsPage(props: PageProps) {
 
         {/* Filtres + liste */}
         <section className="max-w-7xl mx-auto px-6 pt-4 pb-10 md:py-10">
-          <div className="grid grid-cols-1 md:grid-cols-[13rem_1fr] gap-3 md:gap-x-8 md:gap-y-3">
-            {/* Trier par : mobile = en haut, desktop = colonne droite ligne 1 */}
-            <div className="md:col-start-2 md:row-start-1">
-              <SolutionSortBar
-                criteresMajeurs={criteresMajeurs}
-                currentTri={tri}
-                currentCritere={critereId}
-                currentDir={dir}
-                selectedTagIds={selectedTagIds}
-                count={solutionsAvecNotes.length}
-                hideNoteRedac={!(categorie as any).has_note_redac}
-                showPrixOption={displayPrixFront}
-              />
-            </div>
-
-            {/* Sidebar filtres : mobile = milieu, desktop = colonne gauche ligne 2 (aligné avec la 1ère tuile) */}
+          {/* Layout flex d'origine : le bandeau de tri vit dans la colonne haute (flex-1)
+              qui contient aussi la liste → son `sticky top-[80px]` a la plage de défilement
+              nécessaire pour rester collé en haut. */}
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Sidebar filtres (tags uniquement) */}
             {tags.length > 0 && (
-              <aside className="md:col-start-1 md:row-start-2 mb-2 md:mb-0">
+              <aside className="w-full md:w-52 shrink-0">
                 <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
                   <SolutionFilters
                     tags={tags}
@@ -237,8 +226,18 @@ export default async function SolutionsPage(props: PageProps) {
               </aside>
             )}
 
-            {/* Liste solutions : mobile = bas, desktop = colonne droite ligne 2 */}
-            <div className="md:col-start-2 md:row-start-2 min-w-0">
+            {/* Colonne solutions : bandeau de tri (sticky) + liste */}
+            <div className="flex-1 min-w-0">
+              <SolutionSortBar
+                criteresMajeurs={criteresMajeurs}
+                currentTri={tri}
+                currentCritere={critereId}
+                currentDir={dir}
+                selectedTagIds={selectedTagIds}
+                count={solutionsAvecNotes.length}
+                hideNoteRedac={!(categorie as any).has_note_redac}
+                showPrixOption={displayPrixFront}
+              />
               <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} displayPrixFront={displayPrixFront} />
             </div>
           </div>

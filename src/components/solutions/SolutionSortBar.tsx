@@ -150,7 +150,7 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
   const mobileHasSingleSort = mobileOptions.length === 1
 
   return (
-    <div ref={sortBarRef} className="sticky top-[80px] z-10 bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-card py-3 px-4 mb-0 md:mb-6">
+    <div ref={sortBarRef} className="sticky top-[80px] z-20 bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-card py-3 px-4 mb-4 md:mb-6">
 
       {/* MOBILE */}
       <div className="sm:hidden">
