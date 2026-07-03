@@ -13,6 +13,7 @@ export const SPECIALITES = [
   'Gynécologie',
   'Hématologie',
   'Infectiologie',
+  'Interne',
   'Médecine du travail',
   "Médecine d'urgence",
   'Médecine générale',

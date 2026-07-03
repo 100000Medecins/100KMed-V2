@@ -567,7 +567,9 @@ export default function ProfilPage() {
                   />
                 </div>
               )}
-              {specialite && (
+              {/* Spécialité : lecture seule si fournie par PSC, éditable sinon (ex. interne
+                  via CPF sans spécialité renvoyée) — sinon champ requis invisible = blocage. */}
+              {specialite ? (
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
                   <input
@@ -577,8 +579,24 @@ export default function ProfilPage() {
                     className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
                   />
                 </div>
+              ) : !isEditeur && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500 font-bold">*</span></label>
+                  <select
+                    value={specialite}
+                    onChange={(e) => setSpecialite(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+                  >
+                    <option value="">Sélectionnez votre spécialité</option>
+                    {SPECIALITES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
               )}
-              {modeExercice && (
+              {/* Mode d'exercice : idem — éditable si PSC ne l'a pas fourni (Éditeur exclu). */}
+              {modeExercice ? (
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
                   <input
@@ -587,6 +605,26 @@ export default function ProfilPage() {
                     readOnly
                     className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
                   />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice <span className="text-red-500 font-bold">*</span></label>
+                  <div className="flex flex-wrap gap-2">
+                    {MODES_EXERCICE.filter((mode) => mode !== 'Éditeur').map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setModeExercice(mode)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                          modeExercice === mode
+                            ? 'bg-navy text-white border-navy'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-navy'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {/* Pseudo — éditable même pour les comptes PSC */}
