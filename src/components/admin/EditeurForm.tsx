@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition } from 'react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Field from '@/components/ui/Field'
+import ImageUploadField from '@/components/ui/ImageUploadField'
 import type { EditeurSuggestion } from '@/lib/actions/searchEditeur'
 
 interface Editeur {
@@ -55,29 +56,6 @@ export default function EditeurForm({ editeur, initialValues, parentOptions, act
   const [isPending, startTransition] = useTransition()
   const [description, setDescription] = useState(v?.description ?? editeur?.description ?? '')
   const [logoUrl, setLogoUrl] = useState(v?.logo_url ?? editeur?.logo_url ?? '')
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    setUploadError(null)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      const json = await res.json()
-      if (!res.ok) { setUploadError(json.error ?? 'Erreur upload'); return }
-      setLogoUrl(json.url)
-    } catch {
-      setUploadError('Erreur réseau')
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
 
   function handleSubmit(formData: FormData) {
     formData.set('description', description)
@@ -124,52 +102,7 @@ export default function EditeurForm({ editeur, initialValues, parentOptions, act
 
         <div>
           <label className={labelClass}>Logo</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <div className="flex items-start gap-3">
-            {logoUrl && (
-              <img
-                src={logoUrl}
-                alt="Aperçu"
-                className="h-14 max-w-[140px] object-contain rounded-xl border border-gray-200 bg-white p-2 flex-shrink-0"
-              />
-            )}
-            <div className="flex-1 space-y-2">
-              {/* Champ URL (coller un lien externe) — en miroir de la fiche solution. */}
-              <input
-                type="text"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://... ou coller une URL"
-                className={inputClass}
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {uploading ? 'Upload...' : logoUrl ? 'Changer le logo' : 'Uploader un logo'}
-                </button>
-                {logoUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setLogoUrl('')}
-                    className="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
-                  >
-                    Supprimer
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
+          <ImageUploadField value={logoUrl} onChange={setLogoUrl} inputClassName={inputClass} />
           <div className="mt-3">
             <label htmlFor="logo_titre" className={labelClass}>Texte alternatif du logo</label>
             <input

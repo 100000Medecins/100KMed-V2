@@ -3,9 +3,11 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { getEditeurWithSolutions } from '@/lib/db/editeurs'
+import { getCommunautesPubliques } from '@/lib/db/solution-communautes'
 import { getDisplayPrixFront } from '@/lib/db/settings'
 import { generateOrganizationJsonLd } from '@/lib/seo/jsonld'
 import SolutionList from '@/components/solutions/SolutionList'
+import EditeurCommunautes, { type EditeurCommunautesGroup } from '@/components/solutions/detail/EditeurCommunautes'
 import { sanitizeHtml } from '@/lib/sanitize'
 import Button from '@/components/ui/Button'
 import { ExternalLink, ArrowRight } from 'lucide-react'
@@ -47,6 +49,21 @@ export default async function EditeurPage(props: PageProps) {
   const { editeur, solutions, parent } = result
 
   const displayPrixFront = await getDisplayPrixFront()
+
+  // Communautés d'utilisateurs agrégées depuis le module solution_communautes
+  // (communautés approuvées de chaque solution de l'éditeur).
+  const communautesGroups: EditeurCommunautesGroup[] = await Promise.all(
+    solutions.map(async (s) => {
+      const sol = s as unknown as { id: string; nom: string | null; slug: string | null; categorie?: { slug?: string | null } | null }
+      const communautes = await getCommunautesPubliques(sol.id)
+      const catSlug = sol.categorie?.slug
+      return {
+        solutionNom: sol.nom || 'Solution',
+        solutionHref: catSlug && sol.slug ? `/solutions/${catSlug}/${sol.slug}` : null,
+        communautes,
+      }
+    })
+  )
 
   const jsonLd = generateOrganizationJsonLd(editeur)
 
@@ -149,6 +166,9 @@ export default async function EditeurPage(props: PageProps) {
           </h2>
           <SolutionList solutions={solutions} tri="note_utilisateurs" displayPrixFront={displayPrixFront} />
         </section>
+
+        {/* Communautés d'utilisateurs (agrégées des solutions de l'éditeur) */}
+        <EditeurCommunautes groups={communautesGroups} />
       </main>
       <Footer />
     </>

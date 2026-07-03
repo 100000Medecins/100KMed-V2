@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { getEditeurDataForUser, updateEditeurByUser, updateSolutionByEditeur, syncGalerieByEditeur } from '@/lib/actions/admin-users'
-import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase, Euro } from 'lucide-react'
+import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase, Euro, Users } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { buildPrixDisplay } from '@/lib/prix'
+import ImageUploadField from '@/components/ui/ImageUploadField'
+import ProposeCommunauteModal from '@/components/solutions/detail/ProposeCommunauteModal'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
@@ -313,13 +315,13 @@ function EditeurInfoCard({
       {/* Logo + titre */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
-          <label className="block text-sm font-semibold text-navy mb-1.5">Logo entreprise (URL)</label>
-          <div className="flex gap-3 items-start">
-            {logoUrl && (
-              <img src={logoUrl} alt="" className="w-16 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
-            )}
-            <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-          </div>
+          <label className="block text-sm font-semibold text-navy mb-1.5">Logo entreprise</label>
+          <ImageUploadField
+            value={logoUrl}
+            onChange={setLogoUrl}
+            inputClassName={inputClass}
+            previewClassName="w-16 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0"
+          />
         </div>
         <div>
           <label className="block text-sm font-semibold text-navy mb-1.5">Titre du logo</label>
@@ -436,6 +438,8 @@ function SolutionEditeurCard({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const { user } = useAuth()
+  const [communauteModalOpen, setCommunauteModalOpen] = useState(false)
 
   const handleSave = async () => {
     setSaving(true)
@@ -533,13 +537,13 @@ function SolutionEditeurCard({
 
           {/* Logo solution */}
           <div>
-            <label className="block text-sm font-semibold text-navy mb-1.5">Logo solution (URL)</label>
-            <div className="flex gap-3 items-start">
-              {logoUrl && (
-                <img src={logoUrl} alt="" className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0" />
-              )}
-              <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-            </div>
+            <label className="block text-sm font-semibold text-navy mb-1.5">Logo solution</label>
+            <ImageUploadField
+              value={logoUrl}
+              onChange={setLogoUrl}
+              inputClassName={inputClass}
+              previewClassName="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0"
+            />
           </div>
 
           {/* Mot de l'éditeur (page solution) */}
@@ -743,6 +747,25 @@ function SolutionEditeurCard({
             </div>
           </div>
 
+          {/* Communauté utilisateurs */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-accent-blue" />
+              <p className="text-sm font-semibold text-navy">Communauté utilisateurs</p>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Proposez un groupe d&apos;utilisateurs de cette solution (WhatsApp, Discord, forum…). Après validation par notre équipe, il apparaîtra sur la fiche solution et sur votre page éditeur.
+            </p>
+            <button
+              type="button"
+              onClick={() => setCommunauteModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent-blue border border-accent-blue/30 rounded-lg hover:bg-accent-blue/5 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Proposer une communauté
+            </button>
+          </div>
+
           {/* Galerie */}
           <div className="pt-3 border-t border-gray-100">
             <label className="block text-sm font-semibold text-navy mb-3">Galerie</label>
@@ -856,6 +879,14 @@ function SolutionEditeurCard({
           </div>
         </div>
       )}
+
+      <ProposeCommunauteModal
+        open={communauteModalOpen}
+        onClose={() => setCommunauteModalOpen(false)}
+        solutionId={solution.id}
+        solutionNom={solution.nom}
+        userEmail={user?.email ?? null}
+      />
     </div>
   )
 }
