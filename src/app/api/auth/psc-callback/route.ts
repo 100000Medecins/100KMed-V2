@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { resolveSpecialite } from '@/lib/constants/profil'
@@ -18,6 +18,43 @@ function extractModeExercice(userInfo: Record<string, unknown>): string | null {
   const code = ref?.exercices?.[0]?.activities?.[0]?.codeModeExercice
   const map: Record<string, string> = { L: 'Libéral', S: 'Salarié', B: 'Bénévole' }
   return map[code ?? ''] ?? null
+}
+
+/** Log non bloquant d'une étape du handoff de session PSC (table `psc_session_events`). */
+async function logHandoff(
+  admin: ReturnType<typeof createServiceRoleClient>,
+  correlationId: string,
+  userId: string | null,
+  step: string,
+  detail?: string,
+) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('psc_session_events').insert({
+      correlation_id: correlationId,
+      step,
+      user_id: userId,
+      detail: detail ? detail.slice(0, 500) : null,
+    })
+  } catch { /* jamais bloquant */ }
+}
+
+/**
+ * Établit la session PSC CÔTÉ SERVEUR : verifyOtp via le client SSR (adaptateur
+ * cookies), de sorte que les cookies de session soient attachés à la redirection.
+ * Supprime la dépendance au JS client (/auth/psc-session) qui perdait ~16 % des
+ * sessions au retour de l'app mobile PSC. Modèle : src/app/auth/confirm/route.ts.
+ */
+async function establishPscSession(
+  tokenHash: string,
+  correlationId: string,
+  admin: ReturnType<typeof createServiceRoleClient>,
+  userId: string | null,
+): Promise<boolean> {
+  const supabase = await createServerClient()
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' })
+  await logHandoff(admin, correlationId, userId, error ? 'verify_error' : 'verify_success', error?.message)
+  return !error
 }
 
 /**
@@ -159,9 +196,13 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
       }
       const assocTokenHash = linkData.properties.hashed_token
-      return NextResponse.redirect(
-        `${origin}/auth/psc-session?token=${assocTokenHash}&next=${encodeURIComponent('/mon-compte/profil?psc=associe')}`
-      )
+      const assocCid = crypto.randomUUID()
+      await logHandoff(supabaseAdmin, assocCid, currentUserId, 'handoff_start')
+      const assocOk = await establishPscSession(assocTokenHash, assocCid, supabaseAdmin, currentUserId)
+      if (!assocOk) {
+        return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
+      }
+      return NextResponse.redirect(`${origin}/mon-compte/profil?psc=associe`)
     }
 
     // 3b. MODE STANDARD : connexion PSC classique (nouveau compte ou reconnexion)
@@ -428,20 +469,16 @@ export async function GET(request: Request) {
         ? '/mon-compte/mes-evaluations?evaluation=publiee'
         : '/mon-compte/profil'
 
-    // Mesure (additive, jamais bloquante) : marquer le début du handoff de session.
-    // L'issue (verify_success/error/timeout) est loggée côté client via /api/psc-session-event
-    // avec le même correlation_id → permet de quantifier les pertes au verifyOtp.
+    // Établir la session côté serveur puis rediriger directement vers la destination.
+    // Plus de roundtrip client (/auth/psc-session) : la session ne dépend plus de
+    // l'exécution du JS au retour de l'app mobile PSC (cf. ~16 % d'abandons silencieux).
     const correlationId = crypto.randomUUID()
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabaseAdmin as any)
-        .from('psc_session_events')
-        .insert({ correlation_id: correlationId, step: 'handoff_start', user_id: userId })
-    } catch { /* jamais bloquant */ }
-
-    return NextResponse.redirect(
-      `${origin}/auth/psc-session?token=${tokenHash}&next=${encodeURIComponent(next)}&cid=${correlationId}`
-    )
+    await logHandoff(supabaseAdmin, correlationId, userId, 'handoff_start')
+    const sessionOk = await establishPscSession(tokenHash, correlationId, supabaseAdmin, userId)
+    if (!sessionOk) {
+      return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
+    }
+    return NextResponse.redirect(`${origin}${next}`)
 
   } catch (err) {
     console.error('[PSC] callback exception:', err)
