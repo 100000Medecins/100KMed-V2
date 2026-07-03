@@ -251,7 +251,9 @@ export default function CompleterProfilPage() {
             <h1 className="text-2xl font-bold text-navy mb-2">Bienvenue sur 100&nbsp;000 Médecins</h1>
             <p className="text-sm text-gray-500">
               {isFromPsc
-                ? 'Vos informations professionnelles sont déjà vérifiées via Pro Santé Connect. Il ne manque que votre email pour terminer.'
+                ? (specialite && modeExercice
+                    ? 'Vos informations professionnelles sont déjà vérifiées via Pro Santé Connect. Il ne manque que votre email pour terminer.'
+                    : 'Certaines informations n’ont pas pu être récupérées via Pro Santé Connect (fréquent pour les internes). Complétez-les pour terminer votre inscription.')
                 : 'Vérifiez vos informations pour terminer votre inscription.'}
             </p>
           </div>
@@ -306,7 +308,10 @@ export default function CompleterProfilPage() {
               {!isEditeur && (
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500">*</span></label>
-                  {isFromPsc ? (
+                  {/* Verrouillé uniquement si PSC a fourni la spécialité. Sinon (ex. interne
+                      via CPF, spécialité absente du retour PSC) → sélecteur éditable pour
+                      ne pas bloquer la validation. */}
+                  {isFromPsc && specialite ? (
                     <input
                       type="text"
                       value={specialite}
@@ -331,7 +336,9 @@ export default function CompleterProfilPage() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice <span className="text-red-500">*</span></label>
-                {isFromPsc ? (
+                {/* Verrouillé uniquement si PSC a fourni le mode d'exercice. Sinon → boutons
+                    éditables (Éditeur exclu pour un compte PSC = médecin vérifié). */}
+                {isFromPsc && modeExercice ? (
                   <input
                     type="text"
                     value={modeExercice}
@@ -340,7 +347,7 @@ export default function CompleterProfilPage() {
                   />
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {MODES_EXERCICE.map((mode) => (
+                    {MODES_EXERCICE.filter((mode) => !isFromPsc || mode !== 'Éditeur').map((mode) => (
                       <button
                         key={mode}
                         type="button"
