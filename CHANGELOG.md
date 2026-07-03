@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-07-03] — Citations en base + admin, radar utilisateurs, fix sticky comparatifs
+## [2026-07-03] — Citations en base + admin, radar utilisateurs, fix sticky, bascule session PSC, espace éditeur
 
 ### Feature — Citations éditables en base (admin + proposition médecin)
 - Le carrousel de citations passe de la constante front à une table Supabase `citations` (statut `en_attente`/`publiee`/`refusee`, `propose_par`). Lecture publique via `getCitationsActives()` (service-role, ISR) avec fallback sur la constante si table vide/erreur. Seed initial [scripts/seed-citations.ts](scripts/seed-citations.ts) (37 citations).
@@ -24,8 +24,23 @@
 - Cause : `overflow-x: hidden` sur `<html>`/`<body>` ([layout.tsx](src/app/layout.tsx)) forçait `overflow-y` à `auto` → racine transformée en conteneur de défilement → tous les `position: sticky` neutralisés (pas seulement le bandeau de tri). Le layout n'était pas en cause.
 - Fix : `overflow-x: hidden` → `overflow-x: clip` (coupe le débordement horizontal sans créer de scroll container). Restaure le sticky du bandeau de tri (et les autres sticky du site). Layout catalogue remis en flex (bandeau + liste dans la colonne haute).
 
+### PSC — Établissement de session côté serveur (bascule verifyOtp)
+- Mesure tranchée (table `psc_session_events`, entonnoir 105 handoffs réels du 28/06→03/07) : `verify_success` 82,9 %, `verify_error` 1,0 %, abandon silencieux 16,2 %. Le `verifyOtp` n'échoue quasiment jamais côté serveur → **piste A (correctif serveur) abandonnée**. La perte réelle est un abandon avant l'issue (contexte navigateur perdu au retour de l'app mobile PSC). Cf [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) §7.
+- Bascule : le `verifyOtp` passe côté serveur dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + adaptateur cookies, modèle `/auth/confirm`), redirection directe vers la destination — plus de roundtrip client `/auth/psc-session`. Appliqué aux flux standard + association. Objectif : récupérer les ~16 % d'abandons. **En test dev, non mergé en prod** ; validation par mesure post-merge (`verify_success` doit alors porter un `user_id`).
+
+### Feature — Espace éditeur : upload de logo + lien communauté (commit `72906ae`)
+- Upload de logo par fichier (composant [ImageUploadField.tsx](src/components/ui/ImageUploadField.tsx)) en plus du lien URL, côté espace éditeur et formulaires admin (Editeur/Solution/Partenaire).
+- Lien vers la communauté de l'éditeur ([EditeurCommunautes.tsx](src/components/solutions/detail/EditeurCommunautes.tsx), `communauteTypeMeta.ts`), affiché sur fiche solution / page éditeur.
+
+### UX / UI — Acronymes dans le questionnaire + notifications
+- Le questionnaire d'évaluation ([solution/noter/[...slug]/page.tsx](src/app/solution/noter/[...slug]/page.tsx)) surligne désormais les acronymes du glossaire (titres de section/critère + questions) via `AcronymText`.
+- Notifications : retrait de la mention « Plus d'informations prochainement » sous « Questionnaires de recherche » (feature publique) dans [mes-notifications](src/app/mon-compte/mes-notifications/page.tsx) et [gerer-notifications](src/app/gerer-notifications/GererNotificationsClient.tsx).
+
 ### TODO — Mises à jour
 - Terminé : « Carrousel de citations — édition en admin (passage en base) » (table + admin CRUD/modération + proposition médecin livrés).
+- Terminé (commit `72906ae`) : « Upload de logo (fichier) » + « Lien vers la communauté de l'éditeur ».
+- PSC : piste A abandonnée (mesure) ; bascule verifyOtp serveur en test dev (vérifs post-merge notées).
+- Ajouté : question « user-friendly médecins juniors avec e-CPF » (questionnaires).
 
 ---
 
