@@ -5,6 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 function generateToken(): string {
   return createHmac('sha256', process.env.ADMIN_PASSWORD!).update('admin-session').digest('hex')
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      await sgMail.send({ to: user.email, from: 'contact@100000medecins.org', subject: result.sujet, html: result.html })
+      await sgMail.send({ to: user.email, from: EMAIL_SENDER, subject: result.sujet, html: result.html })
       sent++
     } catch (e) {
       errors.push(`${user.email}: ${e}`)

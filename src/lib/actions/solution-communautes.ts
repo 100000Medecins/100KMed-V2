@@ -5,13 +5,13 @@ import { createHmac } from 'crypto'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 }
 
 const NOTIF_TO = 'contact@100000medecins.org'
-const NOTIF_FROM = 'contact@100000medecins.org'
 
 const VALID_TYPES = ['whatsapp', 'telegram', 'discord', 'facebook', 'forum', 'autre'] as const
 type TypeCommunaute = (typeof VALID_TYPES)[number]
@@ -105,7 +105,7 @@ export async function submitSolutionCommunaute(input: {
       }
       await sgMail.send({
         to: NOTIF_TO,
-        from: { email: NOTIF_FROM, name: '100000médecins.org' },
+        from: EMAIL_SENDER,
         subject: `[Communauté ${type}] ${nomFinal} (${sol.nom})`,
         html: `
           <h2>Nouvelle proposition de communauté</h2>
@@ -220,7 +220,7 @@ export async function setStatutCommunaute(id: string, statut: 'en_attente' | 'ap
           : 'https://www.100000medecins.org'
         await sgMail.send({
           to: email,
-          from: { email: NOTIF_FROM, name: '100000médecins.org' },
+          from: EMAIL_SENDER,
           subject: `Votre proposition de communauté pour ${sol?.nom ?? 'une solution'} a été publiée`,
           html: `
             <h2>Merci pour votre contribution !</h2>

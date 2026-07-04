@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
       }
       await sgMail.send({
         to: user.email,
-        from: 'contact@100000medecins.org',
+        from: EMAIL_SENDER,
         subject: result.sujet,
         html: result.html,
       })

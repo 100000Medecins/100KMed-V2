@@ -6,6 +6,7 @@ import { generateRevalidationLink } from '@/lib/email/revalidation'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 function generateAdminToken(): string {
   return createHmac('sha256', process.env.ADMIN_PASSWORD!)
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
   try {
     await sgMail.send({
       to: adminEmail,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: `[TEST] ${result.sujet}`,
       html: result.html,
     })

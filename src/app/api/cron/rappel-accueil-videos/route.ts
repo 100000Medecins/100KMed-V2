@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
   try {
     await sgMail.send({
       to: adminEmail,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: daysLeft === 0
         ? "[Action requise] La sélection vidéos page d'accueil a expiré"
         : `[Rappel] Sélection vidéos accueil — expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`,

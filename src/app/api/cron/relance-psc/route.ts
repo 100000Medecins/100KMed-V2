@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
       }
       await sgMail.send({
         to: ev.email_temp,
-        from: 'contact@100000medecins.org',
+        from: EMAIL_SENDER,
         subject: result.sujet,
         html: result.html,
       })

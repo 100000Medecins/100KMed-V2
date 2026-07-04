@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { verifyEmailChangeToken } from '@/lib/email/email-change-token'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 /**
  * Confirmation d'un changement d'email via lien HMAC idempotent (remplace l'email natif
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
         sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
         await sgMail.send({
           to: oldEmail,
-          from: 'contact@100000medecins.org',
+          from: EMAIL_SENDER,
           subject: courtesy.sujet,
           html: courtesy.html,
         })

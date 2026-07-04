@@ -7,6 +7,7 @@ import { after } from 'next/server'
 import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 interface CritereScore {
   id: string
@@ -897,7 +898,7 @@ export async function submitEvaluationAnonyme(
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   await sgMail.send({
     to: emailTemp,
-    from: 'contact@100000medecins.org',
+    from: EMAIL_SENDER,
     subject: sujet,
     html: contenuHtml,
   })

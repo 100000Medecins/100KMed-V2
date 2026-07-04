@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 import { revalidatePath } from 'next/cache'
@@ -52,7 +53,7 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
     if (result) {
       await sgMail.send({
         to: recipientEmail,
-        from: 'contact@100000medecins.org',
+        from: EMAIL_SENDER,
         subject: result.sujet,
         html: result.html,
       })
@@ -65,7 +66,7 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
   try {
     await sgMail.send({
       to: 'contact@100000medecins.org',
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: `Suppression de compte — ${profile?.prenom ?? ''} ${profile?.nom ?? ''} (${user.email})`,
       html: `
         <h2>Demande de suppression de compte</h2>

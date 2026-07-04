@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
         const sujet = (newsletter.sujet as string).replace(/\{\{nom\}\}/g, nomDisplay)
         await sgMail.send({
           to: user.email,
-          from: 'contact@100000medecins.org',
+          from: EMAIL_SENDER,
           subject: sujet,
           html,
         })

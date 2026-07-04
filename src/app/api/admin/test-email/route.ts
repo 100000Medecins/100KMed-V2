@@ -5,6 +5,7 @@ import { buildEmail } from '@/lib/actions/emailTemplates'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 const DEFAULT_TEST_EMAIL = 'david.azerad@100000medecins.org'
 
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
   try {
     await sgMail.send({
       to,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: `[TEST] ${result.sujet}`,
       html: result.html,
     })

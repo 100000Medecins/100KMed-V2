@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-07-04] — Expéditeur email unique (EMAIL_SENDER)
+
+### Infrastructure — Centralisation de l'expéditeur SendGrid
+- Nouveau module [src/lib/email/sender.ts](src/lib/email/sender.ts) exportant `EMAIL_SENDER` (`{ email, name }`) : **source de vérité unique** du `from` de tous les envois SendGrid. `email` figé (expéditeur vérifié Sender Authentication — une adresse non vérifiée casse la délivrabilité) ; `name` surchargeable sans toucher au code via la variable d'env `EMAIL_FROM_NAME` (repli `100000medecins.org`).
+- ~30 fichiers migrés (routes `send-*`, crons email, server actions) : suppression des `from: {...}` codés en dur → `from: EMAIL_SENDER`.
+
+---
+
 ## [2026-07-03] — Citations en base + admin, radar utilisateurs, fix sticky, bascule session PSC, espace éditeur
 
 ### Feature — Citations éditables en base (admin + proposition médecin)

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
 const DIGEST_TO = 'david.azerad@100000medecins.org'
-const DIGEST_FROM = 'contact@100000medecins.org'
 const WINDOW_DAYS = 7
 
 // Libellés lisibles par type d'événement (miroir de la page /admin/activite).
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
   try {
     await sgMail.send({
       to: DIGEST_TO,
-      from: { email: DIGEST_FROM, name: '100000médecins.org' },
+      from: EMAIL_SENDER,
       subject: `[Activité] ${events.length} événement${events.length > 1 ? 's' : ''} cette semaine${nbAModerer > 0 ? ` — ${nbAModerer} à modérer` : ''}`,
       html,
     })

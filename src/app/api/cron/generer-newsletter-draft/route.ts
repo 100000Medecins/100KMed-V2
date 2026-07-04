@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 import { buildNewsletterHtml } from '@/lib/email/newsletter-template'
 import { readFileSync } from 'fs'
 import { join } from 'path'
@@ -173,7 +174,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans backticks, sa
   try {
     await sgMail.send({
       to: adminEmail,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: `[100 000 Médecins] Newsletter ${moisLabel} — brouillon à valider`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:500px;">

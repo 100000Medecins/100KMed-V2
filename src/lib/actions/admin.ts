@@ -8,6 +8,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUniqueEditeurSlug } from '@/lib/db/editeurs'
 import { buildSolutionSeoTitle } from '@/lib/seo/title'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 // ────────────────────────────────────────────
 // Auth
@@ -1712,12 +1713,11 @@ export async function suggestEditeurReferencement(formData: FormData) {
   try {
     const { default: sgMail } = await import('@sendgrid/mail')
     sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
-    const FROM = { email: 'contact@100000medecins.org', name: '100000médecins.org' }
 
     // Accusé de réception au demandeur
     await sgMail.send({
       to: emailContact,
-      from: FROM,
+      from: EMAIL_SENDER,
       subject: 'Votre demande de référencement — 100000médecins.org',
       html: `
         <h2>Demande bien reçue</h2>
@@ -1741,7 +1741,7 @@ export async function suggestEditeurReferencement(formData: FormData) {
     // Notification interne
     await sgMail.send({
       to: 'david.azerad@100000medecins.org',
-      from: FROM,
+      from: EMAIL_SENDER,
       replyTo: emailContact,
       subject: `[Demande référencement] ${nomEditeur}`,
       html: `

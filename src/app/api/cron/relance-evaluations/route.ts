@@ -4,6 +4,7 @@ import { generateRevalidationLink } from '@/lib/email/revalidation'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ async function sendRelanceEmail(
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   await sgMail.send({
     to: toEmail,
-    from: 'contact@100000medecins.org',
+    from: EMAIL_SENDER,
     subject: result.sujet,
     html: result.html,
   })
