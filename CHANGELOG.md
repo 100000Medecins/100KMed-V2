@@ -5,6 +5,20 @@
 
 ---
 
+## [2026-07-05] — PSC : déblocage internes/CPF + signalement d'identité ciblé
+
+### PSC — Débloquer l'inscription des internes/CPF sans spécialité (commit `da62810`, mergé main)
+- Cause : les internes via **CPF** (et certains généralistes) n'ont pas de spécialité — ni parfois de mode d'exercice — dans le retour Pro Santé Connect. Ces champs, requis pour valider, étaient en **lecture seule** pour les comptes PSC → champ vide + verrouillé → bouton « Terminer » grisé à vie (idem édition profil).
+- Fix (100 % côté formulaire) : spécialité / mode d'exercice **verrouillés uniquement si PSC les a fournis**, sinon éditables ([/completer-profil](src/app/completer-profil/page.tsx) **et** [/mon-compte/profil](src/app/mon-compte/profil/page.tsx) ; « Éditeur » exclu pour un compte PSC). Ajout de « Interne » à `SPECIALITES`.
+
+### PSC — Signalement d'identité restreint aux champs verrouillés (commit `e22713e`, sur dev)
+- Le modal « Une erreur ? » ([completer-profil](src/app/completer-profil/page.tsx)) ne propose plus que les champs **réellement fournis par PSC** (non modifiables). Un champ vide étant désormais éditable, il n'apparaît plus → fin des mails « spécialité vide » (l'utilisateur la renseigne). Le signalement reste dispo pour une vraie valeur PSC erronée.
+
+### TODO — Mises à jour
+- Item « bascule verifyOtp serveur » enrichi : mesure dev (7/7 post-déploiement, échantillon petit + métrique brouillée par base partagée dev/prod) + **checklist de tests avant merge** (persistance session, 6 flux PSC, fusion non migrée, **mobile prioritaire**).
+
+---
+
 ## [2026-07-04] — Expéditeur email unique (EMAIL_SENDER)
 
 ### Infrastructure — Centralisation de l'expéditeur SendGrid
