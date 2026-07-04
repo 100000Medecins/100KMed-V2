@@ -5,6 +5,7 @@ import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { getSiteConfig } from '@/lib/actions/siteConfig'
 import { specialiteConcernee } from '@/lib/constants/profil'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
         if (!result) continue
         await sgMail.send({
           to: user.email,
-          from: 'contact@100000medecins.org',
+          from: EMAIL_SENDER,
           subject: result.sujet,
           html: result.html,
         })

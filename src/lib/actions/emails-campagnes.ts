@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export type EmailCampagne = {
   id: string
@@ -190,7 +191,7 @@ export async function sendCampagneNow(
         if (!result) continue
         await sgMail.send({
           to: user.email,
-          from: 'contact@100000medecins.org',
+          from: EMAIL_SENDER,
           subject: result.sujet,
           html: result.html,
         })

@@ -6,13 +6,13 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 }
 
 const NOTIF_TO = 'contact@100000medecins.org'
-const NOTIF_FROM = 'contact@100000medecins.org'
 
 const CIT_STATUTS = ['en_attente', 'publiee', 'refusee'] as const
 type CitStatut = (typeof CIT_STATUTS)[number]
@@ -82,7 +82,7 @@ export async function proposerCitation(
       const email = prof?.contact_email || prof?.email || ''
       await sgMail.send({
         to: NOTIF_TO,
-        from: { email: NOTIF_FROM, name: '100000médecins.org' },
+        from: EMAIL_SENDER,
         subject: `[Proposition Citation] ${text.slice(0, 60)}`,
         html: `
           <h2>Nouvelle citation proposée</h2>

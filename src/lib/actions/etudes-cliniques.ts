@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -270,7 +271,7 @@ export async function demanderInfoEtude(etudeId: string, etudeTitle: string) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
   await sgMail.send({
     to: dmhEmail,
-    from: 'contact@100000medecins.org',
+    from: EMAIL_SENDER,
     subject: `Demande d'information — ${etudeTitle}`,
     html: `
       <p>Un médecin souhaite en savoir plus sur l'étude <strong>${etudeTitle}</strong>.</p>

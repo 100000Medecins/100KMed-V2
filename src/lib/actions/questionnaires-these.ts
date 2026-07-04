@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export type QuestionnaireThese = {
   id: string
@@ -117,7 +118,7 @@ export async function deposerQuestionnaire(payload: {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'
     await sgMail.send({
       to: adminEmail,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: `[100000médecins] Nouveau questionnaire de thèse à valider`,
       html: `<p>Un nouveau questionnaire de thèse a été déposé et attend votre validation.</p>
 <p><strong>Titre :</strong> ${payload.titre}</p>

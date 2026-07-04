@@ -11,6 +11,7 @@ import { generateEmailChangeToken } from '@/lib/email/email-change-token'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { verifyTurnstileToken } from '@/lib/turnstile'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 import sharp from 'sharp'
 
 /**
@@ -52,7 +53,7 @@ export async function sendPasswordReset(email: string): Promise<{ error: string 
   try {
     await sgMail.send({
       to: email,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: emailContent.sujet,
       html: emailContent.html,
     })
@@ -111,7 +112,7 @@ export async function requestEmailChange(newEmail: string): Promise<{ error: str
   try {
     await sgMail.send({
       to: normalized,
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       subject: emailContent.sujet,
       html: emailContent.html,
     })
@@ -250,7 +251,7 @@ async function sendConfirmationEmail(
   sgMail.setApiKey(process.env.SENDGRID_API_KEY)
   await sgMail.send({
     to: email,
-    from: 'contact@100000medecins.org',
+    from: EMAIL_SENDER,
     subject: emailContent.sujet,
     html: emailContent.html,
   })
@@ -426,7 +427,7 @@ export async function completeProfile(data: {
       try {
         await sgMail.send({
           to: data.contact_email,
-          from: 'contact@100000medecins.org',
+          from: EMAIL_SENDER,
           subject: emailContent.sujet,
           html: emailContent.html,
         })
@@ -531,7 +532,7 @@ export async function signalerErreurIdentite(input: {
   try {
     await sgMail.send({
       to: 'david.azerad@100000medecins.org',
-      from: 'contact@100000medecins.org',
+      from: EMAIL_SENDER,
       replyTo: email,
       subject: `Signalement identité — ${esc(profile?.prenom)} ${esc(profile?.nom)} (RPPS ${esc(profile?.rpps)})`,
       html,

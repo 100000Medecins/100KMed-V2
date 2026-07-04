@@ -180,7 +180,6 @@ export default function GererNotificationsClient({
                   Répondez à des questionnaires de thèse ou des études académiques
                   sur le thème de l&apos;e-santé.
                 </p>
-                <p className="text-xs text-gray-400 mt-1 italic">Plus d&apos;informations prochainement.</p>
               </div>
             </div>
             <Toggle

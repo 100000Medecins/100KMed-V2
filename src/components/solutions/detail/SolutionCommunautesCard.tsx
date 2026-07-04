@@ -1,19 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Users, ExternalLink, MessageCircle, MessageSquare, Hash, Facebook, Globe, Plus } from 'lucide-react'
+import { Users, ExternalLink, Plus } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import type { CommunautePublique } from '@/lib/db/solution-communautes'
+import { COMMUNAUTE_TYPE_META as TYPE_META } from './communauteTypeMeta'
 import ProposeCommunauteModal from './ProposeCommunauteModal'
-
-const TYPE_META: Record<string, { label: string; Icon: typeof MessageCircle; color: string }> = {
-  whatsapp:  { label: 'WhatsApp',  Icon: MessageCircle, color: 'text-green-600 bg-green-50' },
-  telegram:  { label: 'Telegram',  Icon: MessageSquare, color: 'text-sky-600 bg-sky-50' },
-  discord:   { label: 'Discord',   Icon: Hash,          color: 'text-indigo-600 bg-indigo-50' },
-  facebook:  { label: 'Facebook',  Icon: Facebook,      color: 'text-blue-600 bg-blue-50' },
-  forum:     { label: 'Forum',     Icon: Globe,         color: 'text-amber-600 bg-amber-50' },
-  autre:     { label: 'Autre',     Icon: Globe,         color: 'text-gray-600 bg-gray-50' },
-}
 
 export default function SolutionCommunautesCard({
   solutionId,

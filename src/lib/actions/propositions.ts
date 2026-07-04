@@ -6,13 +6,13 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 }
 
 const NOTIF_TO = 'contact@100000medecins.org'
-const NOTIF_FROM = 'contact@100000medecins.org'
 
 function generateToken(): string {
   return createHmac('sha256', process.env.ADMIN_PASSWORD!)
@@ -90,7 +90,7 @@ export async function submitProposition(input: {
       const proposerEmail = profile?.contact_email || profile?.email || ''
       await sgMail.send({
         to: NOTIF_TO,
-        from: { email: NOTIF_FROM, name: '100000médecins.org' },
+        from: EMAIL_SENDER,
         subject: `[Proposition ${typeLabel}] ${titre}`,
         html: `
           <h2>Nouvelle proposition utilisateur — ${typeLabel}</h2>

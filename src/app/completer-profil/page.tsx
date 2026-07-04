@@ -37,6 +37,9 @@ export default function CompleterProfilPage() {
   const [errError, setErrError] = useState<string | null>(null)
 
   const openErrModal = () => {
+    // Défaut = premier champ réellement verrouillé (valeur PSC présente). Un champ vide
+    // est éditable directement → ce n'est pas une « erreur » à signaler.
+    setErrChamp(specialite ? 'Spécialité' : modeExercice ? "Mode d'exercice" : (nom || prenom) ? 'Nom / Prénom' : 'Autre')
     setErrEmail(contactEmail)
     setErrMessage('')
     setErrSent(false)
@@ -138,6 +141,15 @@ export default function CompleterProfilPage() {
     modeExercice &&
     contactEmail.trim() &&
     (isEditeur ? claimFilled : !!specialite)
+
+  // Champs proposés au signalement d'erreur : uniquement ceux verrouillés (valeur PSC
+  // présente). Un champ vide étant désormais éditable, il n'y a pas d'« erreur » à signaler.
+  const champsSignalables = [
+    ...(specialite ? ['Spécialité'] : []),
+    ...(modeExercice ? ["Mode d'exercice"] : []),
+    ...(nom || prenom ? ['Nom / Prénom'] : []),
+    'Autre',
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -535,10 +547,9 @@ export default function CompleterProfilPage() {
                     onChange={(e) => setErrChamp(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
                   >
-                    <option>Spécialité</option>
-                    <option>Mode d&apos;exercice</option>
-                    <option>Nom / Prénom</option>
-                    <option>Autre</option>
+                    {champsSignalables.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

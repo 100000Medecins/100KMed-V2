@@ -98,6 +98,37 @@ Discriminant : `email.endsWith('@psc.sante.fr')` (placeholder), comme déjà fai
 `AdminUtilisateursClient.tsx` (`hasRealEmail`) et `psc-callback` (`hasFakeEmail`). À réutiliser
 partout où un email PSC peut s'afficher.
 
+## 7. Mesure du handoff `verifyOtp` — piste A tranchée (2026-07-03)
+
+Table `psc_session_events` (déployée le 2026-06-26, commit `c4eeab6`) : un événement par
+étape du handoff de session, corrélé par `correlation_id` (1 inscription = 1 corrélation).
+Étapes : `handoff_start`, `verify_success`, `verify_error`.
+
+**Entonnoir sur 105 handoffs réels (28/06 → 03/07/2026) :**
+
+| Issue | Nombre | % |
+|---|---|---|
+| `verify_success` (session établie) | 87 | **82,9 %** |
+| `verify_error` (échec verifyOtp) | 1 | **1,0 %** |
+| Abandon silencieux (ni succès ni erreur après `handoff_start`) | 17 | **16,2 %** |
+
+Réparti régulièrement sur les 6 jours (1-3 abandons/jour, 7 le 02/07 plus chargé) →
+**systématique, pas un incident**. L'unique `verify_error` est un
+`"Email link is invalid or has expired"` (magiclink OTP expiré), non un bug serveur.
+
+**Verdict — piste A ABANDONNÉE** : la piste A supposait que le `verifyOtp` échouait côté
+serveur (réparable par correctif). La mesure la réfute : `verifyOtp` **réussit à 83 % et
+n'échoue quasiment jamais** (1/105). La perte réelle (16 %) est un **abandon avant l'issue** :
+le handoff démarre mais le **roundtrip `verifyOtp` côté client** (`/auth/psc-session`)
+n'aboutit pas — contexte navigateur perdu au retour de l'app mobile PSC. Un correctif serveur
+sur `verifyOtp` ne récupérerait pas ces 16 %. Note : 83 % de sessions établies est **meilleur**
+que l'estimation initiale (~72 %) — le rework onboarding du 20/06 (mdp optionnel) a probablement
+déjà aidé.
+
+**Vrai levier restant** (nouvel item TODO) : établir la session **entièrement côté serveur**
+dans `psc-callback` (supprimer l'étape client `verifyOtp`) pour que la perte de contexte
+navigateur ne casse plus la session. À cadrer avant de coder.
+
 ## 6. Pistes restantes (non implémentées)
 
 2. **Réduire la friction PSC** : rendre le mot de passe **optionnel** à `/completer-profil`

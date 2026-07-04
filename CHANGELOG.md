@@ -5,7 +5,29 @@
 
 ---
 
-## [2026-07-03] — Citations en base + admin, radar utilisateurs, fix sticky comparatifs
+## [2026-07-05] — PSC : déblocage internes/CPF + signalement d'identité ciblé
+
+### PSC — Débloquer l'inscription des internes/CPF sans spécialité (commit `da62810`, mergé main)
+- Cause : les internes via **CPF** (et certains généralistes) n'ont pas de spécialité — ni parfois de mode d'exercice — dans le retour Pro Santé Connect. Ces champs, requis pour valider, étaient en **lecture seule** pour les comptes PSC → champ vide + verrouillé → bouton « Terminer » grisé à vie (idem édition profil).
+- Fix (100 % côté formulaire) : spécialité / mode d'exercice **verrouillés uniquement si PSC les a fournis**, sinon éditables ([/completer-profil](src/app/completer-profil/page.tsx) **et** [/mon-compte/profil](src/app/mon-compte/profil/page.tsx) ; « Éditeur » exclu pour un compte PSC). Ajout de « Interne » à `SPECIALITES`.
+
+### PSC — Signalement d'identité restreint aux champs verrouillés (commit `e22713e`, sur dev)
+- Le modal « Une erreur ? » ([completer-profil](src/app/completer-profil/page.tsx)) ne propose plus que les champs **réellement fournis par PSC** (non modifiables). Un champ vide étant désormais éditable, il n'apparaît plus → fin des mails « spécialité vide » (l'utilisateur la renseigne). Le signalement reste dispo pour une vraie valeur PSC erronée.
+
+### TODO — Mises à jour
+- Item « bascule verifyOtp serveur » enrichi : mesure dev (7/7 post-déploiement, échantillon petit + métrique brouillée par base partagée dev/prod) + **checklist de tests avant merge** (persistance session, 6 flux PSC, fusion non migrée, **mobile prioritaire**).
+
+---
+
+## [2026-07-04] — Expéditeur email unique (EMAIL_SENDER)
+
+### Infrastructure — Centralisation de l'expéditeur SendGrid
+- Nouveau module [src/lib/email/sender.ts](src/lib/email/sender.ts) exportant `EMAIL_SENDER` (`{ email, name }`) : **source de vérité unique** du `from` de tous les envois SendGrid. `email` figé (expéditeur vérifié Sender Authentication — une adresse non vérifiée casse la délivrabilité) ; `name` surchargeable sans toucher au code via la variable d'env `EMAIL_FROM_NAME` (repli `100000medecins.org`).
+- ~30 fichiers migrés (routes `send-*`, crons email, server actions) : suppression des `from: {...}` codés en dur → `from: EMAIL_SENDER`.
+
+---
+
+## [2026-07-03] — Citations en base + admin, radar utilisateurs, fix sticky, bascule session PSC, espace éditeur
 
 ### Feature — Citations éditables en base (admin + proposition médecin)
 - Le carrousel de citations passe de la constante front à une table Supabase `citations` (statut `en_attente`/`publiee`/`refusee`, `propose_par`). Lecture publique via `getCitationsActives()` (service-role, ISR) avec fallback sur la constante si table vide/erreur. Seed initial [scripts/seed-citations.ts](scripts/seed-citations.ts) (37 citations).
@@ -24,8 +46,23 @@
 - Cause : `overflow-x: hidden` sur `<html>`/`<body>` ([layout.tsx](src/app/layout.tsx)) forçait `overflow-y` à `auto` → racine transformée en conteneur de défilement → tous les `position: sticky` neutralisés (pas seulement le bandeau de tri). Le layout n'était pas en cause.
 - Fix : `overflow-x: hidden` → `overflow-x: clip` (coupe le débordement horizontal sans créer de scroll container). Restaure le sticky du bandeau de tri (et les autres sticky du site). Layout catalogue remis en flex (bandeau + liste dans la colonne haute).
 
+### PSC — Établissement de session côté serveur (bascule verifyOtp)
+- Mesure tranchée (table `psc_session_events`, entonnoir 105 handoffs réels du 28/06→03/07) : `verify_success` 82,9 %, `verify_error` 1,0 %, abandon silencieux 16,2 %. Le `verifyOtp` n'échoue quasiment jamais côté serveur → **piste A (correctif serveur) abandonnée**. La perte réelle est un abandon avant l'issue (contexte navigateur perdu au retour de l'app mobile PSC). Cf [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) §7.
+- Bascule : le `verifyOtp` passe côté serveur dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + adaptateur cookies, modèle `/auth/confirm`), redirection directe vers la destination — plus de roundtrip client `/auth/psc-session`. Appliqué aux flux standard + association. Objectif : récupérer les ~16 % d'abandons. **En test dev, non mergé en prod** ; validation par mesure post-merge (`verify_success` doit alors porter un `user_id`).
+
+### Feature — Espace éditeur : upload de logo + lien communauté (commit `72906ae`)
+- Upload de logo par fichier (composant [ImageUploadField.tsx](src/components/ui/ImageUploadField.tsx)) en plus du lien URL, côté espace éditeur et formulaires admin (Editeur/Solution/Partenaire).
+- Lien vers la communauté de l'éditeur ([EditeurCommunautes.tsx](src/components/solutions/detail/EditeurCommunautes.tsx), `communauteTypeMeta.ts`), affiché sur fiche solution / page éditeur.
+
+### UX / UI — Acronymes dans le questionnaire + notifications
+- Le questionnaire d'évaluation ([solution/noter/[...slug]/page.tsx](src/app/solution/noter/[...slug]/page.tsx)) surligne désormais les acronymes du glossaire (titres de section/critère + questions) via `AcronymText`.
+- Notifications : retrait de la mention « Plus d'informations prochainement » sous « Questionnaires de recherche » (feature publique) dans [mes-notifications](src/app/mon-compte/mes-notifications/page.tsx) et [gerer-notifications](src/app/gerer-notifications/GererNotificationsClient.tsx).
+
 ### TODO — Mises à jour
 - Terminé : « Carrousel de citations — édition en admin (passage en base) » (table + admin CRUD/modération + proposition médecin livrés).
+- Terminé (commit `72906ae`) : « Upload de logo (fichier) » + « Lien vers la communauté de l'éditeur ».
+- PSC : piste A abandonnée (mesure) ; bascule verifyOtp serveur en test dev (vérifs post-merge notées).
+- Ajouté : question « user-friendly médecins juniors avec e-CPF » (questionnaires).
 
 ---
 

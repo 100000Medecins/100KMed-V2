@@ -10,6 +10,7 @@ import FonctionnalitesSection from '@/components/admin/FonctionnalitesSection'
 import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesAssocieesSection'
 import VideosLieesManager from '@/components/admin/VideosLieesManager'
 import Button from '@/components/ui/Button'
+import ImageUploadField from '@/components/ui/ImageUploadField'
 
 function isVideoUrl(url: string): boolean {
   return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
@@ -128,9 +129,6 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [prixMode, setPrixMode] = useState<'unique' | 'plage'>(
     solution?.prix_ttc_min != null || solution?.prix_ttc_max != null ? 'plage' : 'unique'
   )
-  const [logoUploading, setLogoUploading] = useState(false)
-  const [logoUploadError, setLogoUploadError] = useState<string | null>(null)
-  const logoFileInputRef = useRef<HTMLInputElement>(null)
   const [galerieUploadingIndex, setGalerieUploadingIndex] = useState<number | null>(null)
   const [galerieUploadError, setGalerieUploadError] = useState<string | null>(null)
   const [bulkUploading, setBulkUploading] = useState(false)
@@ -208,25 +206,6 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
     if (galerieBulkInputRef.current) galerieBulkInputRef.current.value = ''
   }
 
-  async function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setLogoUploading(true)
-    setLogoUploadError(null)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const json = await res.json()
-      if (!res.ok) { setLogoUploadError(json.error ?? 'Erreur lors de l\'upload'); return }
-      setLogoUrl(json.url)
-    } catch {
-      setLogoUploadError('Erreur réseau lors de l\'upload')
-    } finally {
-      setLogoUploading(false)
-      if (logoFileInputRef.current) logoFileInputRef.current.value = ''
-    }
-  }
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     general: true,
     apparence: false,
@@ -398,42 +377,12 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           </div>
           <div>
             <label className={labelClass}>Logo</label>
-            <input
-              ref={logoFileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-              className="hidden"
-              onChange={handleLogoFileChange}
+            <ImageUploadField
+              value={logoUrl}
+              onChange={setLogoUrl}
+              inputClassName={inputClass}
+              previewClassName="w-14 h-14 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0"
             />
-            <div className="flex items-center gap-3">
-              {logoUrl && (
-                <img
-                  src={logoUrl}
-                  alt="Logo"
-                  className="w-14 h-14 object-contain rounded-lg border border-gray-200 bg-gray-50 p-1 flex-shrink-0"
-                />
-              )}
-              <div className="flex-1 space-y-2">
-                <input
-                  type="text"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://... ou coller une URL"
-                  className={inputClass}
-                />
-                <button
-                  type="button"
-                  onClick={() => logoFileInputRef.current?.click()}
-                  disabled={logoUploading}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {logoUploading ? '⏳ Upload...' : '⬆ Uploader un fichier'}
-                </button>
-              </div>
-            </div>
-            {logoUploadError && (
-              <p className="mt-1.5 text-xs text-red-500">{logoUploadError}</p>
-            )}
           </div>
         </div>
         <div>

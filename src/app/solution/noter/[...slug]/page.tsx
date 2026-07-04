@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { submitEvaluation, submitEvaluationAnonyme, saveDraftEvaluation } from '@/lib/actions/evaluation'
 import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Mail, CheckCircle } from 'lucide-react'
 import { getCritereLabel } from '@/lib/constants/criteres'
+import AcronymText from '@/components/AcronymText'
 
 interface PageProps {
   params: Promise<{ slug: string[] }>
@@ -158,7 +159,7 @@ function SectionCollapsible({
         className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-navy">{section.titre}</h3>
+          <AcronymText as="h3" className="text-sm font-semibold text-navy" text={section.titre} />
           <p className="text-xs text-gray-400 mt-0.5">
             {ratedInSection}/{section.questions.length} questions répondues
           </p>
@@ -185,7 +186,7 @@ function SectionCollapsible({
           <div className="space-y-4">
             {section.questions.map((q) => (
               <div key={q.key} className="pl-2 border-l-2 border-gray-100">
-                <p className="text-xs text-gray-600 mb-2">{q.question}</p>
+                <AcronymText as="p" className="text-xs text-gray-600 mb-2" text={q.question} />
                 <StarSelector
                   value={q.key in scores ? scores[q.key] : 0}
                   onChange={(v) => onScoreChange(q.key, v)}
@@ -770,10 +771,12 @@ export default function NoterPage(props: PageProps) {
 
                 {CRITERES.map((critere) => (
                   <div key={critere.key} className="bg-white rounded-card shadow-card p-5">
-                    <h3 className="text-sm font-semibold text-navy mb-1">
-                      {getCritereLabel(critere.key, solution?.categorie?.label_fonctionnalites)}
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-3">{critere.question}</p>
+                    <AcronymText
+                      as="h3"
+                      className="text-sm font-semibold text-navy mb-1"
+                      text={getCritereLabel(critere.key, solution?.categorie?.label_fonctionnalites)}
+                    />
+                    <AcronymText as="p" className="text-xs text-gray-500 mb-3" text={critere.question} />
                     <StarSelector
                       value={critere.key in scores ? scores[critere.key] : 0}
                       onChange={(v) => {

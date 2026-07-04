@@ -12,10 +12,33 @@ _(rien d'urgent pour l'instant)_
 
 ## En attente / Idées
 
-### Suivi PSC — vérifier la mesure du handoff de session (à partir du 2026-07-03)
-- **Contexte** : ~28 % des inscriptions PSC n'établissent jamais de session (`verifyOtp` client jamais abouti) et ~48 % atteignent `/completer-profil` sans saisir d'email. Mesure déployée le 2026-06-26 (table `psc_session_events`, commit `c4eeab6`) pour trancher « échec `verifyOtp` » (réparable par correctif serveur = piste A) vs « abandon avant l'issue ».
-- **À faire le 2026-07-03 (~1 semaine)** : vérifier qu'assez d'inscriptions PSC ont été collectées pour être significatif, puis rejouer la requête d'entonnoir (réussis / échec verifyOtp / abandon avant issue) → décider de la piste A.
-- **Outils** : requête d'entonnoir sur `psc_session_events` (rejouable via MCP), script `scripts/diag-psc-parcours.ts`, doc [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) (à actualiser).
+### ~~Suivi PSC — piste A (correctif serveur verifyOtp)~~ [Tranché 2026-07-03 → ABANDONNÉE]
+- **Verdict (entonnoir sur `psc_session_events`, 105 handoffs réels du 28/06 → 03/07)** : `verify_success` **82,9 %**, `verify_error` **1,0 %** (1 seul cas, « Email link is invalid or has expired »), abandon silencieux **16,2 %**. Réparti régulièrement sur les 6 jours → systématique, pas un incident.
+- **Conclusion** : le `verifyOtp` **n'échoue quasiment jamais côté serveur** → la piste A (correctif serveur) est **sans objet**. La perte réelle est un **abandon avant l'issue** (contexte navigateur perdu au retour de l'app mobile PSC, avant que le `verifyOtp` client aboutisse). Détail chiffré acté dans [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) (§7, 2026-07-03).
+
+#### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [en test dev — 2026-07-03]
+- **Point de perte** : le roundtrip **`verifyOtp` côté client** (`/auth/psc-session`) après le retour de l'app PSC. ~16 % des handoffs démarrent (`handoff_start`) sans jamais émettre d'événement terminal → le navigateur perd le contexte avant l'aboutissement.
+- **Solution implémentée (branche `dev`, non mergée)** : `verifyOtp` déplacé **côté serveur** dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + cookies, modèle `/auth/confirm`), redirection directe vers `next`, plus de passage par `/auth/psc-session`. Appliqué aux flux standard + association. `tsc` OK. `/auth/psc-session` + `/api/psc-session-event` gardés en filet (à supprimer après validation).
+- **État (2026-07-04)** : mesuré en dev — entonnoir **strictement post-déploiement** (après 03/07 15h) = **7/7 handoffs → session établie côté serveur, 0 perdu (100 %)**, contre ~83 % avant. Les pertes se sont arrêtées net au déploiement (dernier « perdu » le 03/07 13:08). ⚠️ Échantillon **petit** (surtout mes tests) + **mobile pas encore validé**.
+- **Tests à faire AVANT le merge en main** :
+  - **Persistance de session** (le vrai risque du changement) : après chaque login PSC, **F5 sur `/mon-compte/profil`** → toujours connecté ; enchaîner `/mon-compte/*` → `/solution/noter/*` sans déconnexion ni boucle.
+  - **Les 6 flux PSC** : (1) nouveau compte → completer-profil → /mon-compte/profil ; (2) reconnexion d'un compte complet → **direct** /mon-compte/profil ; (3) **association** (connecté email/mdp + bouton « Connecter PSC » → `?psc=associe`, toujours connecté, RPPS rattaché) ; (4) **validation avis anonyme** (anonyme → mail → PSC → avis publié **et** connecté) ; (5) évals `en_attente_psc` d'un compte existant → publiées ; (6) **interne/CPF sans spécialité** → completer-profil éditable.
+  - **⚠️ Fusion** (compte email/mdp + compte PSC même RPPS) : `merge.ts` utilise **encore l'ancien `/auth/psc-session`** (non migré) → tester que la fusion aboutit **et** qu'on est connecté. À harmoniser plus tard (même risque mobile ~16 %).
+  - **⭐ MOBILE (prioritaire)** : dérouler un login PSC **depuis un smartphone (app e-CPS)** sur `dev.100000medecins.org` — c'est LE scénario cible du fix (les ~16 % perdus étaient au retour de l'app mobile). Test qui vaut de l'or.
+  - **Mesure dev** : relancer l'entonnoir par `correlation_id` sur `psc_session_events` (cf [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md)) une fois plus de volume → `perdus_sans_issue` doit rester ~0.
+- **Vérifs post-merge PROD (le compteur démarre au merge, pas avant)** :
+  - **~48 h après merge — smoke check** : pas de régression → `verify_success` ≥ ~80 %, `verify_error` proche de 0. Si ça dérape → revert (re-router vers la page client).
+  - **~1 semaine après merge (~120-200 handoffs) — vérif statistique** : rejouer l'entonnoir sur `psc_session_events`, comparer `abandon_silencieux` à la baseline **16,2 %** → attendu : chute vers ~1 %.
+- **Si validé** : supprimer `/auth/psc-session` + `/api/psc-session-event` (commit de nettoyage) et fermer l'item.
+- **Enjeu** : ~3 inscriptions/jour perdues à ce rythme.
+
+### Contenu des questionnaires
+
+#### Question « user-friendly pour les médecins juniors avec e-CPF » (2026-07-03)
+- **Besoin** : ajouter une question évaluant à quel point le logiciel est agréable/simple à utiliser pour un **médecin junior** (interne, remplaçant) équipé d'une **carte e-CPF** (Carte de Professionnel en Formation, l'équivalent de la CPS pour ceux qui n'ont pas encore de CPS nominative).
+- **Où** : au moins dans le questionnaire **Facturation / Télétransmission** (la e-CPF sert à la télétransmission FSE), et dans **Logiciel métier**.
+- **Angle** : le logiciel gère-t-il proprement la e-CPF (lecture carte, télétransmission en mode remplaçant, paramétrage sans friction) du point de vue d'un junior ?
+- **À faire** : rédiger le libellé, choisir le critère majeur de rattachement (probablement `fonctionnalites` ou `editeur`), l'ajouter aux sections DB des catégories concernées.
 
 ### Sécurité
 
@@ -89,6 +112,19 @@ _(rien en cours)_
 - **Méthode** : composant **extrait d'abord**, **remplacé ensuite** au fil de l'eau dans les fichiers qu'on touche pour d'autres raisons. Pas de big-bang.
 - **Pas dans le scope** : Storybook, doc formelle — pas de valeur tant qu'on est seul à coder.
 
+### Espace éditeur
+
+#### ~~Upload de logo (fichier) au lieu du seul lien URL~~ [OK] Fait 2026-07-03 (commit 72906ae)
+- **Constat** : dans l'espace éditeur, le **logo entreprise** ([mon-espace-editeur/page.tsx:316-321](src/app/mon-compte/mon-espace-editeur/page.tsx#L316)) et le **logo solution** ([ligne 536-541](src/app/mon-compte/mon-espace-editeur/page.tsx#L536)) ne se renseignent que via un `<input type="url">` pointant vers une image hébergée ailleurs. Beaucoup d'éditeurs n'ont pas d'URL publique sous la main → friction + liens qui cassent.
+- **Besoin** : permettre l'**upload d'un fichier image** (drag & drop ou sélecteur), stocké côté Supabase Storage, qui remplit ensuite `logo_url` avec l'URL publique du fichier uploadé. Garder l'option lien pour ceux qui préfèrent.
+- **À faire** : bucket Storage dédié (+ policies), server action d'upload (validation type/poids, éventuel redimensionnement), composant d'upload réutilisable (entreprise + solution). Appliquer aussi côté admin (`EditeurForm`, `SolutionForm`) tant qu'on y est.
+
+#### ~~Lien vers la communauté de l'éditeur~~ [OK] Fait 2026-07-03 (commit 72906ae)
+- **Besoin** : permettre à l'éditeur de renseigner un **lien vers sa communauté d'utilisateurs** (groupe Facebook/LinkedIn, Discord, forum, espace clients…), en plus des champs existants « site web » et « site de support ».
+- **Où** : espace éditeur ([mon-espace-editeur/page.tsx](src/app/mon-compte/mon-espace-editeur/page.tsx), à côté du champ website ~ligne 333) + affichage sur la fiche solution / page éditeur ; à répercuter côté admin (`EditeurForm`).
+- **À faire** : nouvelle colonne (ex. `communaute_url` sur `editeurs`, ou `solutions` selon le niveau voulu), régénérer les types Supabase, ajouter l'input `type=url` + le rendu public.
+- **Lien** : à articuler avec l'item « Favoriser l'entraide entre utilisateurs » (canal communautaire) plus bas.
+
 ### Performance
 
 _(rien à faire pour l'instant)_
@@ -148,7 +184,7 @@ _(rien à faire pour l'instant)_
 
 ### Nouvelles catégories de solutions (en cours)
 
-#### Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (2026-06-21)
+#### ~~Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (2026-06-21)~~ [OK] Fait 2026-07-03
 - **Quand** : une fois le questionnaire Téléexpertise créé (les 3 questionnaires prêts).
 - **Quoi** : dérouler le parcours complet de notation pour Télétransmission, Téléconsultation et Téléexpertise — étape 1 (5 critères majeurs) + étape 2 (questions détaillées BDD), vérifier que les sous-questions s'affichent, sont skippables, et que la note se calcule.
 - **Où** : URL directe `/solution/noter/[catégorie]/[solution]` (le parcours ne vérifie pas `actif`, donc testable catégories inactives). Exemples :

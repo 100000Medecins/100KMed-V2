@@ -1,11 +1,11 @@
 'use server'
 
 import sgMail from '@sendgrid/mail'
+import { EMAIL_SENDER } from '@/lib/email/sender'
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
 
 const CONTACT_TO = 'david.azerad@100000medecins.org'
-const CONTACT_FROM = 'contact@100000medecins.org'
 
 export async function sendContactMessage(data: {
   nom: string
@@ -23,7 +23,7 @@ export async function sendContactMessage(data: {
 
   await sgMail.send({
     to: CONTACT_TO,
-    from: { email: CONTACT_FROM, name: '100000médecins.org' },
+    from: EMAIL_SENDER,
     replyTo: email,
     subject: `Message de contact — ${prenom} ${nom}`,
     html: `

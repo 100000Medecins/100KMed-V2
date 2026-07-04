@@ -293,7 +293,7 @@ const html = `<!DOCTYPE html>
 sgMail.setApiKey(SENDGRID_API_KEY)
 await sgMail.send({
   to: TO,
-  from: 'contact@100000medecins.org',
+  from: { email: 'contact@100000medecins.org', name: process.env.EMAIL_FROM_NAME || '100000medecins.org' },
   subject: '[TEST v16] Le nouveau 100 000 Médecins est là ✨',
   html,
 })
