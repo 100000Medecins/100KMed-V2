@@ -546,6 +546,90 @@ function SolutionEditeurCard({
             />
           </div>
 
+          {/* Galerie */}
+          <div className="pt-3 border-t border-gray-100">
+            <label className="block text-sm font-semibold text-navy mb-3">Galerie</label>
+            <div className="space-y-3">
+              {galerie.map((item, i) => {
+                const isVideo = isVideoUrl(item.url) || item.type === 'video'
+                const thumb = isVideo ? getYoutubeThumbnail(item.url) : null
+                return (
+                  <div
+                    key={i}
+                    draggable
+                    onDragStart={() => handleDragStart(i)}
+                    onDragOver={(e) => handleDragOver(e, i)}
+                    onDragEnd={() => setDragIdx(null)}
+                    className="flex items-start gap-3 p-3 bg-surface-light rounded-xl"
+                  >
+                    <div className="cursor-grab active:cursor-grabbing pt-2 text-gray-300 hover:text-gray-500 flex-shrink-0">
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                    <div className="w-20 h-14 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden relative">
+                      {isVideo ? (
+                        <>
+                          {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover opacity-80" /> : <div className="w-full h-full bg-gray-800" />}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                              <Play className="w-3 h-3 text-white fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        </>
+                      ) : item.url ? (
+                        <img src={item.url} alt="" className="w-full h-full object-cover" />
+                      ) : null}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      {isVideo && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+                          <Play className="w-2.5 h-2.5 fill-red-600" /> Vidéo
+                        </span>
+                      )}
+                      <input
+                        type="url"
+                        value={item.url}
+                        onChange={(e) => updateItem(i, { url: e.target.value })}
+                        placeholder={isVideo ? 'https://www.youtube.com/watch?v=...' : 'https://...'}
+                        className={inputClass}
+                      />
+                      <input
+                        type="text"
+                        value={item.titre ?? ''}
+                        onChange={(e) => updateItem(i, { titre: e.target.value })}
+                        placeholder="Titre / description (optionnel)"
+                        className={inputClass}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(i)}
+                      className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 mt-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                type="button"
+                onClick={addImage}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue rounded-xl transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Ajouter une image
+              </button>
+              <button
+                type="button"
+                onClick={addVideo}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-dashed border-red-200 text-red-400 hover:border-red-500 hover:text-red-600 rounded-xl transition-colors"
+              >
+                <Play className="w-3.5 h-3.5" /> Ajouter une vidéo YouTube / Vimeo
+              </button>
+            </div>
+          </div>
+
           {/* Mot de l'éditeur (page solution) */}
           <div className="pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2 mb-1.5">
@@ -561,6 +645,52 @@ function SolutionEditeurCard({
               onChange={setMotEditeur}
               minHeight={140}
             />
+          </div>
+
+          {/* Contacts commerciaux (par solution) */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Briefcase className="w-4 h-4 text-accent-blue" />
+              <p className="text-sm font-semibold text-navy">Contacts commerciaux <span className="text-gray-400 font-normal">(demande de démo, devis&hellip;)</span></p>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts commerciaux ».
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email commercial</label>
+                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contact@..." className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone commercial</label>
+                <input type="tel" value={contactTel} onChange={(e) => setContactTel(e.target.value)} className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          {/* Contacts support (par solution) */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Headphones className="w-4 h-4 text-accent-blue" />
+              <p className="text-sm font-semibold text-navy">Contacts support <span className="text-gray-400 font-normal">(SAV, assistance technique)</span></p>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts support ».
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email support</label>
+                <input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} placeholder="support@..." className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone support</label>
+                <input type="tel" value={supportTel} onChange={(e) => setSupportTel(e.target.value)} className={inputClass} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Site / page de support</label>
+                <input type="url" value={supportSite} onChange={(e) => setSupportSite(e.target.value)} placeholder="https://..." className={inputClass} />
+              </div>
+            </div>
           </div>
 
           {/* Tarification */}
@@ -701,52 +831,6 @@ function SolutionEditeurCard({
             })()}
           </div>
 
-          {/* Contacts commerciaux (par solution) */}
-          <div className="pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-2 mb-2">
-              <Briefcase className="w-4 h-4 text-accent-blue" />
-              <p className="text-sm font-semibold text-navy">Contacts commerciaux <span className="text-gray-400 font-normal">(demande de démo, devis&hellip;)</span></p>
-            </div>
-            <p className="text-xs text-gray-400 mb-3">
-              Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts commerciaux ».
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Email commercial</label>
-                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contact@..." className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone commercial</label>
-                <input type="tel" value={contactTel} onChange={(e) => setContactTel(e.target.value)} className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Contacts support (par solution) */}
-          <div className="pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-2 mb-2">
-              <Headphones className="w-4 h-4 text-accent-blue" />
-              <p className="text-sm font-semibold text-navy">Contacts support <span className="text-gray-400 font-normal">(SAV, assistance technique)</span></p>
-            </div>
-            <p className="text-xs text-gray-400 mb-3">
-              Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts support ».
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Email support</label>
-                <input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} placeholder="support@..." className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone support</label>
-                <input type="tel" value={supportTel} onChange={(e) => setSupportTel(e.target.value)} className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Site / page de support</label>
-                <input type="url" value={supportSite} onChange={(e) => setSupportSite(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
-            </div>
-          </div>
-
           {/* Communauté utilisateurs */}
           <div className="pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2 mb-2">
@@ -764,90 +848,6 @@ function SolutionEditeurCard({
               <Plus className="w-3.5 h-3.5" />
               Proposer une communauté
             </button>
-          </div>
-
-          {/* Galerie */}
-          <div className="pt-3 border-t border-gray-100">
-            <label className="block text-sm font-semibold text-navy mb-3">Galerie</label>
-            <div className="space-y-3">
-              {galerie.map((item, i) => {
-                const isVideo = isVideoUrl(item.url) || item.type === 'video'
-                const thumb = isVideo ? getYoutubeThumbnail(item.url) : null
-                return (
-                  <div
-                    key={i}
-                    draggable
-                    onDragStart={() => handleDragStart(i)}
-                    onDragOver={(e) => handleDragOver(e, i)}
-                    onDragEnd={() => setDragIdx(null)}
-                    className="flex items-start gap-3 p-3 bg-surface-light rounded-xl"
-                  >
-                    <div className="cursor-grab active:cursor-grabbing pt-2 text-gray-300 hover:text-gray-500 flex-shrink-0">
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-                    <div className="w-20 h-14 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden relative">
-                      {isVideo ? (
-                        <>
-                          {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover opacity-80" /> : <div className="w-full h-full bg-gray-800" />}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
-                              <Play className="w-3 h-3 text-white fill-white ml-0.5" />
-                            </div>
-                          </div>
-                        </>
-                      ) : item.url ? (
-                        <img src={item.url} alt="" className="w-full h-full object-cover" />
-                      ) : null}
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      {isVideo && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
-                          <Play className="w-2.5 h-2.5 fill-red-600" /> Vidéo
-                        </span>
-                      )}
-                      <input
-                        type="url"
-                        value={item.url}
-                        onChange={(e) => updateItem(i, { url: e.target.value })}
-                        placeholder={isVideo ? 'https://www.youtube.com/watch?v=...' : 'https://...'}
-                        className={inputClass}
-                      />
-                      <input
-                        type="text"
-                        value={item.titre ?? ''}
-                        onChange={(e) => updateItem(i, { titre: e.target.value })}
-                        placeholder="Titre / description (optionnel)"
-                        className={inputClass}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(i)}
-                      className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 mt-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="flex flex-wrap gap-2 mt-3">
-              <button
-                type="button"
-                onClick={addImage}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue rounded-xl transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" /> Ajouter une image
-              </button>
-              <button
-                type="button"
-                onClick={addVideo}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-dashed border-red-200 text-red-400 hover:border-red-500 hover:text-red-600 rounded-xl transition-colors"
-              >
-                <Play className="w-3.5 h-3.5" /> Ajouter une vidéo YouTube / Vimeo
-              </button>
-            </div>
           </div>
 
           {/* Footer : voir la page + bouton enregistrer */}
