@@ -963,11 +963,25 @@ export default function NoterPage(props: PageProps) {
               </div>
 
               {/* Intro narrative */}
-              <div className="bg-blue-50 rounded-card p-4 mb-6">
+              <div className="bg-blue-50 rounded-card p-4 mb-3">
                 <p className="text-xs text-blue-800 leading-relaxed">
                   Cette section est facultative, mais nous aide à mieux comprendre votre expérience au quotidien.
                 </p>
               </div>
+
+              {/* Raccourci « passer et soumettre » visible sans scroller (miroir du bouton du bas) */}
+              {!isLastStep && (
+                <div className="flex justify-end mb-6">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="text-sm font-medium text-accent-blue hover:text-accent-blue/80 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    Passer et soumettre
+                  </button>
+                </div>
+              )}
 
               {/* Sections de la sous-étape courante (accordéons) */}
               <div className="space-y-3">

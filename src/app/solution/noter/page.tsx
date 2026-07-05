@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -32,10 +32,20 @@ export default function ChoisirSolutionPage() {
   const [search, setSearch] = useState('')
   const [selectedCategorie, setSelectedCategorie] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const searchRef = useRef<HTMLDivElement>(null)
   const handleCategorieClick = (slug: string) => {
     const next = selectedCategorie === slug ? null : slug
     setSelectedCategorie(next)
   }
+
+  // À la sélection d'une catégorie, faire défiler jusqu'à la barre de recherche
+  // (avec la liste filtrée en dessous) : sinon le clic filtre plus bas sans rien
+  // déplacer et l'utilisateur ne voit pas ce qui se passe. Offset pour la navbar fixe.
+  useEffect(() => {
+    if (!selectedCategorie || !searchRef.current) return
+    const y = searchRef.current.getBoundingClientRect().top + window.scrollY - 88
+    window.scrollTo({ top: y, behavior: 'smooth' })
+  }, [selectedCategorie])
 
   useEffect(() => {
     if (authLoading) return
@@ -160,7 +170,7 @@ export default function ChoisirSolutionPage() {
           )}
 
           {/* Barre de recherche */}
-          <div className="relative mb-4">
+          <div ref={searchRef} className="relative mb-4 scroll-mt-24">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
