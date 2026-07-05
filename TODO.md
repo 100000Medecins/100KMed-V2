@@ -182,6 +182,10 @@ _(rien à faire pour l'instant)_
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
+#### Vérifier le domaine `100000médecins.org` sur Gandi (2026-07-05)
+- **Contexte** : domaine `100000médecins.org` (variante accentuée / IDN) récemment acheté, actuellement **en erreur** sur Gandi suite à l'achat.
+- **À faire** : vérifier la configuration du domaine sur Gandi (état du domaine, zone DNS, redirection vers le domaine principal `100000medecins.org`), identifier la cause de l'erreur et la corriger.
+
 ### Nouvelles catégories de solutions (en cours)
 
 #### ~~Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (2026-06-21)~~ [OK] Fait 2026-07-03
