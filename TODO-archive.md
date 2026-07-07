@@ -5,6 +5,23 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-07-03**
+- [ABANDONNÉE] 2026-07-03 : Suivi PSC — piste A (correctif serveur verifyOtp) (En attente / Idées — PSC)
+  - Verdict (entonnoir sur psc_session_events, 105 handoffs réels du 28/06 → 03/07) : verify_success 82,9 %, verify_error 1,0 % (1 seul cas « Email link is invalid or has expired »), abandon silencieux 16,2 %. Réparti régulièrement sur 6 jours → systématique, pas un incident.
+  - Conclusion : le verifyOtp n'échoue quasiment jamais côté serveur → piste A sans objet. La perte réelle est un abandon avant l'issue (contexte navigateur perdu au retour de l'app mobile PSC). Détail chiffré dans docs/diagnostic-emails-psc.md (§7).
+- [OK] 2026-07-03 : Carrousel de citations — édition en admin (passage en base) (UX / UI)
+  - Table Supabase citations (statut en_attente/publiee/refusee, propose_par) + GRANTs/RLS + seed. Lecture front getCitationsActives() (fallback constante). Admin /admin/citations (CRUD + modération + badge sidebar). Proposition médecin via onglet « Une citation » sur /mon-compte/proposer. Cf CHANGELOG 2026-07-03.
+- [OK] 2026-07-03 : Upload de logo (fichier) au lieu du seul lien URL (Espace éditeur, commit 72906ae)
+  - Constat : logo entreprise et logo solution ne se renseignaient que via <input type="url"> → friction + liens cassés pour les éditeurs sans URL publique.
+  - Livré : upload d'un fichier image stocké côté Supabase Storage qui remplit logo_url ; option lien conservée. Appliqué à l'espace éditeur (entreprise + solution).
+- [OK] 2026-07-03 : Lien vers la communauté de l'éditeur (Espace éditeur, commit 72906ae)
+  - Besoin : renseigner un lien vers la communauté d'utilisateurs (groupe Facebook/LinkedIn, Discord, forum…), en plus de site web / site de support.
+  - Livré : nouveau champ input type=url + rendu public. À articuler avec l'item « Favoriser l'entraide entre utilisateurs ».
+- [OK] 2026-07-03 : Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (Nouvelles catégories de solutions)
+  - Parcours complet déroulé pour Télétransmission, Téléconsultation et Téléexpertise (étape 1 : 5 critères majeurs + étape 2 : questions détaillées BDD). Sous-questions affichées, skippables, note calculée. Testé via URL directe (le parcours ne vérifie pas actif).
+
+---
+
 **2026-06-27**
 - [OK] 2026-06-27 : Résultats Google → 404 : plan de redirection (URGENT)
   - Diagnostic dans docs/redirections-404-seo.md. Fait 2026-05-28/29 : sitemap corrigé (filtre actif + catégorie active + fix BASE_URL, éditeurs dédoublonnés, articles, force-dynamic), 10 redirections 301 dans next.config.mjs, comparaison slug-vs-slug → redirect /solutions/comparer, archive.* réparé, legacy.* en noindex, sitemap fantôme supprimé.

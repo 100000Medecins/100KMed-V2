@@ -12,10 +12,6 @@ _(rien d'urgent pour l'instant)_
 
 ## En attente / Idées
 
-### ~~Suivi PSC — piste A (correctif serveur verifyOtp)~~ [Tranché 2026-07-03 → ABANDONNÉE]
-- **Verdict (entonnoir sur `psc_session_events`, 105 handoffs réels du 28/06 → 03/07)** : `verify_success` **82,9 %**, `verify_error` **1,0 %** (1 seul cas, « Email link is invalid or has expired »), abandon silencieux **16,2 %**. Réparti régulièrement sur les 6 jours → systématique, pas un incident.
-- **Conclusion** : le `verifyOtp` **n'échoue quasiment jamais côté serveur** → la piste A (correctif serveur) est **sans objet**. La perte réelle est un **abandon avant l'issue** (contexte navigateur perdu au retour de l'app mobile PSC, avant que le `verifyOtp` client aboutisse). Détail chiffré acté dans [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) (§7, 2026-07-03).
-
 #### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [en test dev — 2026-07-03]
 - **Point de perte** : le roundtrip **`verifyOtp` côté client** (`/auth/psc-session`) après le retour de l'app PSC. ~16 % des handoffs démarrent (`handoff_start`) sans jamais émettre d'événement terminal → le navigateur perd le contexte avant l'aboutissement.
 - **Solution implémentée (branche `dev`, non mergée)** : `verifyOtp` déplacé **côté serveur** dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + cookies, modèle `/auth/confirm`), redirection directe vers `next`, plus de passage par `/auth/psc-session`. Appliqué aux flux standard + association. `tsc` OK. `/auth/psc-session` + `/api/psc-session-event` gardés en filet (à supprimer après validation).
@@ -72,6 +68,24 @@ _(rien en cours)_
 
 ### Nettoyage
 
+#### Auditer le scoring des sous-critères sur toutes les catégories (2026-07-07)
+- **Vérifier** : pour chaque catégorie (Logiciel médical, Agenda, IA scribes, IA documentaires, Télétransmission, Téléconsultation, Téléexpertise), que les réponses aux sous-critères remontent bien (a) dans la moyenne des 5 critères principaux (raffinement client `buildRefinedCritereScores`) **et** (b) dans leur propre moyenne de sous-critère (ligne jumelle dans `criteres` → `resultats` + « Comparatif détaillé par sous-critères »).
+- **Cause racine identifiée (2026-07-07)** : deux tables parallèles décrivent les questions — `questionnaire_questions` (formulaire, éditable en admin) et `criteres` (scoring). L'admin (`createQuestion`, [src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) n'écrit QUE dans `questionnaire_questions`, aucun trigger ne synchronise → toute question créée en admin compte dans son critère majeur + la note globale, mais n'a PAS de moyenne de sous-critère isolée tant qu'on n'ajoute pas la ligne `criteres` à la main.
+- **À faire** : requête d'audit `questionnaire_questions.key` vs `criteres.identifiant_tech` par catégorie → lister les `key` orphelines (présentes côté formulaire, absentes côté criteres) ; décider si on les complète (script type `scripts/add-question-ecpf-junior.ts`) et surtout **si on fait évoluer l'admin pour créer/supprimer la ligne `criteres` en même temps** (supprimer la désynchro à la source).
+- **Contexte** : découvert en ajoutant la question e-CPF junior — clés `tt_ecpf_remplacant` / `detail_ecpf_junior`, complétées dans les DEUX tables le 2026-07-07.
+
+#### Synchroniser `questionnaire_questions` ↔ `criteres` — supprimer la désynchro à la source (2026-07-08)
+- **But** : que créer/modifier/supprimer une question en admin maintienne automatiquement le sous-critère `criteres` jumeau (aujourd'hui l'admin n'écrit que `questionnaire_questions`). Correctif de la cause racine de l'item d'audit ci-dessus.
+- **Faisabilité vérifiée (2026-07-08)** : effort ~½ journée, risque faible. Le resolver du parent est trivial car les **5 critères majeurs sont uniques** dans `criteres` (`type='note'`, UUID stables) et **tous** les sous-critères (toutes catégories) pointent vers ces 5 mêmes parents. On n'ajoute que des lignes (comme les seeds), sans toucher au scoring/affichage public. Données déjà 100 % synchro (0 orphelin) → pas de backfill.
+- **Approche retenue : A — miroir dans les server actions** ([src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) :
+  1. Resolver `resolveCritere(categorieSlug, critereMajeur) → { id_categorie (via slug), parent_id (majeur canonique unique) }`.
+  2. **Décision à prendre — source du `nom_court`** (le form ne l'a pas) : colonne `nom_court` sur `questionnaire_questions` + input « Libellé court » dans `QuestionnaireEditor` (propre, 1 DDL + régé types) OU dérivé du texte (zéro DDL, moche).
+  3. `createQuestion` → INSERT jumeau `criteres` (`type='detail'`, `is_enfant=true`) ; `updateQuestion` → UPDATE (clé→`identifiant_tech`, majeur→`parent_id`, `nom_court`) ; `deleteQuestion` → DELETE jumeau ; `reorderQuestions` → rien (`criteres` n'a pas d'`ordre`).
+  4. Vérifier la FK de `deleteSection` : si cascade sur les questions, supprimer d'abord les jumeaux `criteres` des clés de la section.
+  5. Atomicité : pragmatique d'abord (écritures séquentielles + audit orphelins en filet) ; durcissement possible via fonction Postgres (RPC) atomique.
+  6. Garde-fou : requête d'orphelins (`questionnaire_questions.key` vs `criteres.identifiant_tech`) en mini-script / check santé admin.
+- **Alternatives écartées pour l'instant** : C — trigger Postgres (couvre aussi scripts + SQL manuel, mais PL/pgSQL + `nom_court` à sourcer + plus opaque) ; B — unifier en 1 table (théoriquement « le bien » mais migration de plusieurs jours touchant le scoring/affichage public → risque élevé, non).
+
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
@@ -97,9 +111,6 @@ _(rien en cours)_
 - ~~**À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport.~~ [OK] Testé OK 2026-05-31 (pas de débordement constaté).
 - **À retravailler (2026-06-04)** : refaire le texte de la modale d'information (titre + corps) à côté de la note globale sur les pages solutions. Le texte actuel est à revoir avant éventuelle réactivation de la modale via le nouveau toggle `modale_active` dans l'admin (livré 2026-06-04). Pour rappel, la modale est désormais désactivable par défaut depuis `/admin/pages` → « Tooltip — Note globale des solutions ».
 
-#### ~~Carrousel de citations — édition en admin (passage en base)~~ [OK] Fait 2026-07-03
-- Table Supabase `citations` (statut en_attente/publiee/refusee, propose_par) + GRANTs/RLS + seed. Lecture front `getCitationsActives()` (fallback constante). Admin `/admin/citations` (CRUD + modération + badge sidebar). Proposition médecin via onglet « Une citation » sur `/mon-compte/proposer`. Cf CHANGELOG 2026-07-03.
-
 #### Extraire des composants UI partagés (mini design system pragmatique)
 - **Constat** : 7 valeurs de `rounded-*` (348× xl, 279× lg, 168× card, 72× button, 69× 2xl…), 10 variations de padding pour des boutons « primaire » (42× `px-4 py-2`, 23× `px-7 py-3`…), 4 styles de badges concurrents, 10 fichiers qui redéclarent `inputClass` inline, 10 fichiers avec leur propre overlay `fixed inset-0 bg-black/`.
 - **Phase 0 livrée (2026-05-24)** : dossier `src/components/ui/` créé, conventions tokens validées dans [src/components/ui/README.md](src/components/ui/README.md) (radius = `rounded-card` 16px et `rounded-button` 12px ; primaire = `bg-navy`, secondaire = `bg-accent-blue`).
@@ -114,16 +125,7 @@ _(rien en cours)_
 
 ### Espace éditeur
 
-#### ~~Upload de logo (fichier) au lieu du seul lien URL~~ [OK] Fait 2026-07-03 (commit 72906ae)
-- **Constat** : dans l'espace éditeur, le **logo entreprise** ([mon-espace-editeur/page.tsx:316-321](src/app/mon-compte/mon-espace-editeur/page.tsx#L316)) et le **logo solution** ([ligne 536-541](src/app/mon-compte/mon-espace-editeur/page.tsx#L536)) ne se renseignent que via un `<input type="url">` pointant vers une image hébergée ailleurs. Beaucoup d'éditeurs n'ont pas d'URL publique sous la main → friction + liens qui cassent.
-- **Besoin** : permettre l'**upload d'un fichier image** (drag & drop ou sélecteur), stocké côté Supabase Storage, qui remplit ensuite `logo_url` avec l'URL publique du fichier uploadé. Garder l'option lien pour ceux qui préfèrent.
-- **À faire** : bucket Storage dédié (+ policies), server action d'upload (validation type/poids, éventuel redimensionnement), composant d'upload réutilisable (entreprise + solution). Appliquer aussi côté admin (`EditeurForm`, `SolutionForm`) tant qu'on y est.
-
-#### ~~Lien vers la communauté de l'éditeur~~ [OK] Fait 2026-07-03 (commit 72906ae)
-- **Besoin** : permettre à l'éditeur de renseigner un **lien vers sa communauté d'utilisateurs** (groupe Facebook/LinkedIn, Discord, forum, espace clients…), en plus des champs existants « site web » et « site de support ».
-- **Où** : espace éditeur ([mon-espace-editeur/page.tsx](src/app/mon-compte/mon-espace-editeur/page.tsx), à côté du champ website ~ligne 333) + affichage sur la fiche solution / page éditeur ; à répercuter côté admin (`EditeurForm`).
-- **À faire** : nouvelle colonne (ex. `communaute_url` sur `editeurs`, ou `solutions` selon le niveau voulu), régénérer les types Supabase, ajouter l'input `type=url` + le rendu public.
-- **Lien** : à articuler avec l'item « Favoriser l'entraide entre utilisateurs » (canal communautaire) plus bas.
+_(rien en cours)_
 
 ### Performance
 
@@ -139,6 +141,35 @@ _(rien à faire pour l'instant)_
 - **À surveiller** : Search Console → vérifier que `/sitemap.xml` OU `/sitemap-v2.xml` passe en « Réussite » (≈ 1-2 semaines après soumission v2). Surveiller aussi le déréférencement progressif de `dev.*`.
 
 ### Mises à jour techniques
+
+#### ⚠️ Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy)
+- **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/optimisation-egress-supabase.md](docs/optimisation-egress-supabase.md).
+- **Cause (vérifiée)** : ~170 `<img src>` (84 fichiers) pointent en direct sur le Storage en **pleine résolution, non optimisé** ; seuls 4 fichiers utilisent `next/image` et `next.config.mjs` n'a pas de section `images`. L'endpoint d'upload stockait tel quel jusqu'à 5 Mo, sans compression ni `cacheControl`.
+- **Audit BDD (2026-07-08) — ce que le Storage sert** : **132 captures galerie** (`solutions_galerie`, bucket `media`, PNG pleine réso — **1er poste**) + **79 avatars** + 70 logos solutions + 29 logos éditeurs + 7 images catégories (sur la home) + 7 logos partenaires. Buckets : `media`, `images`, `avatars`. (Les 113 logos solutions/éditeurs « externes » sont déjà hors Supabase.)
+- ✅ **Déjà fait (code, sur `dev`, non commité/non déployé au 2026-07-08)** :
+  - **`scripts/optimize-storage-images.ts`** — recompresse en WebP l'existant d'un bucket, ré-uploadé **sous le même chemin** (⇒ **aucune URL à changer en base**). Dry-run par défaut, `--execute` requis, backup binaire des originaux + `manifest.json` avant écriture, GIF/SVG ignorés.
+  - **`src/app/api/upload/route.ts`** patché — tout nouvel upload raster → resize ≤1600px + WebP q80 + `cacheControl` 1 an. GIF (logo animé email) / SVG conservés intacts. (`sharp` tourne en runtime Node, la route n'est pas `edge`.)
+- **Séquence recommandée (reste à faire)** :
+  1. **Dry-run** (lecture seule, sans risque) pour les vrais Mo avant/après :
+     ```bash
+     npx tsx scripts/optimize-storage-images.ts             # bucket media
+     npx tsx scripts/optimize-storage-images.ts --bucket images
+     ```
+     WebP sur des PNG = **−60 à −80 %** ; comme les captures dominent l'egress, ça seul devrait repasser sous 5 GB.
+  2. Si gains OK → **`--execute`** sur `media` puis `images`. **Déployer** le patch upload (sinon la compression à l'upload ne prend pas effet).
+  3. **Basculer les 48 avatars stock vers `public/`** (fichiers déjà dans `public/images/portraits/avatar-N.png`) — meilleur ratio (vus sur tous les avis). ⚠️ **AVANT** : vérifier qu'une URL locale s'affiche en prod (`https://<domaine>/images/portraits/avatar-1.png` — historiquement `/images/*` renvoyait un 404, raison de la bascule initiale vers Storage) **et** qu'aucun email ne rend d'avatar (chemin relatif = cassé hors site). SQL :
+     ```sql
+     -- Dry-run : contrôler la correspondance
+     select url, '/images/portraits/' || regexp_replace(url, '^.*/', '') as nouvelle_url
+     from avatars where user_id is null and url like '%/avatars/portraits/avatar-%';
+     -- Bascule (après vérif)
+     update avatars set url = '/images/portraits/' || regexp_replace(url, '^.*/', '')
+     where user_id is null and url like '%/avatars/portraits/avatar-%';
+     ```
+  4. *(Optionnel, priorité basse)* logos syndicats du « mot du président » (`pages_statiques.metadata`, page `qui-sommes-nous`) → `/images/syndicats/*.png` (déjà dans `public/`). Le footer/home utilisent déjà les chemins locaux ([src/lib/data.ts](src/lib/data.ts)).
+- **Arbitrage plan Pro** : passer Pro **juste pour l'egress = traiter le symptôme** (sans optimisation, ça remonte avec le trafic + surplus 0,09 $/GB sur images non optimisées). Free (5 GB) → Pro (~25 $/mois, **250 GB egress**, backups quotidiens auto, fin de la pause après inactivité, +DB/compute). **Reco : faire l'optimisation d'abord** (gratuit, utile même en Pro — perf/SEO/coûts), **puis** décider Pro sur ses bénéfices propres (surtout backups quotidiens vs notre backup **hebდo manuel** via `/backup`) et la trajectoire de trafic — pas sous la pression du mail. **Ce mail n'est donc PAS en soi « la raison qu'on attendait » pour Pro** ; il l'est seulement si les autres bénéfices Pro nous intéressaient déjà.
+- **Optionnel plus tard** : brancher `next/image` (`remotePatterns` Supabase) → Vercel sert du WebP redimensionné depuis son CDN (egress Supabase ÷ nb visiteurs, mais consomme les quotas d'optimisation Vercel) ; vérifier les logs Storage (écarter bot/scraper/hotlinking).
+- **Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour.
 
 #### Audit grants Supabase avant le 30 octobre 2026
 - **Contexte** : à partir du 30/10/2026, Supabase n'exposera plus automatiquement les nouvelles tables `public` à la Data API (PostgREST/`supabase-js`). Les tables existantes ne sont pas touchées — elles conservent leurs grants implicites.
@@ -187,15 +218,6 @@ _(rien à faire pour l'instant)_
 - **À faire** : vérifier la configuration du domaine sur Gandi (état du domaine, zone DNS, redirection vers le domaine principal `100000medecins.org`), identifier la cause de l'erreur et la corriger.
 
 ### Nouvelles catégories de solutions (en cours)
-
-#### ~~Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (2026-06-21)~~ [OK] Fait 2026-07-03
-- **Quand** : une fois le questionnaire Téléexpertise créé (les 3 questionnaires prêts).
-- **Quoi** : dérouler le parcours complet de notation pour Télétransmission, Téléconsultation et Téléexpertise — étape 1 (5 critères majeurs) + étape 2 (questions détaillées BDD), vérifier que les sous-questions s'affichent, sont skippables, et que la note se calcule.
-- **Où** : URL directe `/solution/noter/[catégorie]/[solution]` (le parcours ne vérifie pas `actif`, donc testable catégories inactives). Exemples :
-  - `/solution/noter/teletransmission/acteurfr-teletransmission`
-  - `/solution/noter/teleconsultation/clickdoc-teleconsultation`
-  - `/solution/noter/teleexpertise/<slug-solution>` (après création du questionnaire)
-- **Note** : rien n'est visible en navigation normale tant que les catégories sont `actif=false` — ce test passe par l'URL directe.
 
 #### Affichage des prix — plomberie livrée, remplissage en cours
 - **Plomberie livrée 2026-06-04** : helpers `src/lib/prix.ts`, table `app_settings` + toggle `/admin/parametres` (OFF par défaut), bloc Tarification fiche solution, indicateur €/€€/€€€/€€€€ + tri, colonne « Prix » + filtre admin, aperçu éditeur.
