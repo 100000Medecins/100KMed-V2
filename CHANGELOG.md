@@ -5,6 +5,33 @@
 
 ---
 
+## [2026-07-08] — Réduction de l'egress Supabase (compression des images)
+
+### Infrastructure — Pipeline de compression des images Storage
+- **Contexte** : mail Supabase (Fair Use Policy applicable au 6 août 2026) — le cached egress dépasse le quota Free (5 GB/mois). Cause : aucun pipeline d'images — ~170 `<img>` servent des originaux pleine résolution depuis le Storage, endpoint d'upload sans compression ni `cacheControl`.
+- **Upload** ([route.ts](src/app/api/upload/route.ts)) : tout nouvel upload raster (JPEG/PNG/WebP) est redimensionné (≤1600px) + converti WebP q80 + `cacheControl` 1 an via `sharp`. GIF (logo animé email) et SVG intacts ; repli sur l'original si `sharp` échoue.
+- **Recompression de l'existant** ([optimize-storage-images.ts](scripts/optimize-storage-images.ts)) : recompresse en WebP les images d'un bucket, ré-uploadées sous le même chemin (aucune URL à changer en base). Dry-run par défaut, `--execute` requis, backup binaire + `manifest.json` avant écriture. Audit BDD : 132 captures galerie (bucket `media`) = 1er poste d'egress.
+- **Doc** : [docs/optimisation-egress-supabase.md](docs/optimisation-egress-supabase.md) (audit chiffré, bascule avatars stock → `public/`, arbitrage plan Pro).
+- **Non déployé / non exécuté** : le patch prend effet au déploiement ; le script n'écrit qu'en `--execute`.
+
+### TODO — Mises à jour
+- Ajout : « Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 » (Mises à jour techniques).
+
+---
+
+## [2026-07-07] — Question e-CPF « médecin junior » (télétransmission + logiciel médical)
+
+### Feature — Question e-CPF pour remplaçants / internes
+- Ajout d'une question évaluant la gestion de la carte **e-CPF** (Carte de Professionnel en Formation) pour un remplaçant/interne, dans 2 questionnaires : **Télétransmission** (clé `tt_ecpf_remplacant`, critère `fonctionnalites`) et **Logiciel médical** (clé `detail_ecpf_junior`, critère `interface`).
+- Écriture dans les **deux** tables via [scripts/add-question-ecpf-junior.ts](scripts/add-question-ecpf-junior.ts) : `questionnaire_questions` (affichage du formulaire) **et** `criteres` (ligne jumelle `type=detail`, `parent_id`/`id_categorie` recopiés d'un sous-critère frère, pour la moyenne de sous-critère + « Comparatif détaillé par sous-critères »). INSERT pur, idempotent, backup JSON avant écriture.
+- **Désynchro identifiée** : l'admin (`createQuestion`) n'écrit que `questionnaire_questions` → une question créée en admin compte dans son critère majeur + la note globale, mais n'a pas de moyenne de sous-critère isolée tant qu'on n'ajoute pas la ligne `criteres` à la main.
+
+### TODO — Mises à jour
+- Ajout (Nettoyage) : « Auditer le scoring des sous-critères sur toutes les catégories » + « Synchroniser `questionnaire_questions` ↔ `criteres` — supprimer la désynchro à la source ».
+- Archivage (`/todo-clean`) des items terminés du 03/07 vers `TODO-archive.md`.
+
+---
+
 ## [2026-07-05] — PSC : déblocage internes/CPF + signalement d'identité ciblé
 
 ### PSC — Débloquer l'inscription des internes/CPF sans spécialité (commit `da62810`, mergé main)
