@@ -45,12 +45,12 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
         const href = catSlug
           ? `/solutions/${catSlug}/${solution.slug}`
           : '#'
+        const hrefAvis = href === '#' ? '#' : `${href}#temoignages`
 
         return (
-          <Link
+          <div
             key={solution.id}
-            href={href}
-            className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-6 flex flex-col group min-w-0"
+            className="relative bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-6 flex flex-col group min-w-0"
           >
             {/* Logo */}
             <div className="w-full h-24 rounded-xl bg-surface-light flex items-center justify-center mb-4 overflow-hidden">
@@ -70,9 +70,11 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
               )}
             </div>
 
-            {/* Nom */}
+            {/* Nom (porte le lien étiré sur toute la carte → haut de la fiche) */}
             <h3 className="text-sm sm:text-base font-semibold text-navy group-hover:text-accent-blue transition-colors mb-3 hyphens-auto">
-              {solution.nom}
+              <Link href={href} className="after:content-[''] after:absolute after:inset-0 focus:outline-none focus-visible:underline">
+                {solution.nom}
+              </Link>
             </h3>
 
             {/* Description */}
@@ -113,18 +115,20 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
               const displayNote = tri === 'nom' ? null
                 : solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5)
               const nbAvis: number | null = solution.nbNotesUtilisateurs ?? null
-              const noteLabel = isUtilisateurs && nbAvis
-                ? `${nbAvis} avis`
-                : isUtilisateurs
-                ? 'Utilisateurs'
-                : ''
               return (
                 <div className="flex items-center gap-1 pt-3 border-t border-gray-100 overflow-hidden">
                   {displayNote ? (
                     <>
                       <RatingBadge rating={displayNote} size="sm" />
                       <StarRating rating={displayNote} size={12} />
-                      {noteLabel && <span className="text-[10px] text-gray-400 whitespace-nowrap">{noteLabel}</span>}
+                      {nbAvis ? (
+                        <Link
+                          href={hrefAvis}
+                          className="relative z-10 hidden sm:inline text-[10px] text-gray-400 hover:text-accent-blue hover:underline underline-offset-2 whitespace-nowrap"
+                        >
+                          {nbAvis} avis
+                        </Link>
+                      ) : null}
                     </>
                   ) : (
                     <span className="text-xs text-gray-400">Pas encore noté</span>
@@ -132,7 +136,7 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
                 </div>
               )
             })()}
-          </Link>
+          </div>
         )
       })}
     </div>

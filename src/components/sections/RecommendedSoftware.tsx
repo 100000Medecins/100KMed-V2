@@ -12,6 +12,7 @@ interface SolutionCard {
   logo_url: string | null
   noteUtilisateurs: number | null
   noteRedac: number | null
+  nbNotesUtilisateurs: number | null
   categorieSlug: string
 }
 
@@ -114,12 +115,15 @@ export default function RecommendedSoftware({ categories }: RecommendedSoftwareP
 }
 
 function SolutionCardItem({ solution }: { solution: SolutionCard }) {
+  const href = `/solutions/${solution.categorieSlug}/${solution.slug}`
   return (
-    <Link
-      href={`/solutions/${solution.categorieSlug}/${solution.slug}`}
-      className="bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-5 flex flex-col items-center text-center group"
-    >
-      <span className="text-xs sm:text-sm font-semibold text-navy mb-3 line-clamp-2">{solution.nom}</span>
+    <div className="relative bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-5 flex flex-col items-center text-center group">
+      {/* Nom (porte le lien étiré sur toute la carte → haut de la fiche) */}
+      <span className="text-xs sm:text-sm font-semibold text-navy mb-3 line-clamp-2">
+        <Link href={href} className="after:content-[''] after:absolute after:inset-0 focus:outline-none focus-visible:underline">
+          {solution.nom}
+        </Link>
+      </span>
 
       <div className="w-full h-16 sm:h-20 rounded-xl bg-surface-light flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden mb-3">
         {solution.logo_url ? (
@@ -135,35 +139,43 @@ function SolutionCardItem({ solution }: { solution: SolutionCard }) {
         )}
       </div>
 
-      <div className="w-full flex flex-col gap-1.5 mt-auto">
+      <div className="w-full grid grid-cols-[auto_auto] justify-center items-center gap-x-2 gap-y-1.5 mt-auto">
         {solution.noteUtilisateurs != null && (
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] text-gray-400 uppercase tracking-wide shrink-0">
+          <>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
               <span className="sm:hidden">Util.</span>
               <span className="hidden sm:inline">Utilisateurs</span>
             </span>
-            <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-1">
               <RatingBadge rating={solution.noteUtilisateurs} size="sm" />
               <StarRating rating={solution.noteUtilisateurs} size={11} />
+              {solution.nbNotesUtilisateurs != null && solution.nbNotesUtilisateurs > 0 && (
+                <Link
+                  href={`${href}#temoignages`}
+                  className="relative z-10 hidden sm:inline text-[10px] text-gray-400 hover:text-accent-blue hover:underline underline-offset-2 whitespace-nowrap"
+                >
+                  ({solution.nbNotesUtilisateurs} avis)
+                </Link>
+              )}
             </div>
-          </div>
+          </>
         )}
         {solution.noteRedac != null && (
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] text-gray-400 uppercase tracking-wide shrink-0">
+          <>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
               <span className="sm:hidden">Réd.</span>
               <span className="hidden sm:inline">Rédaction</span>
             </span>
-            <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-1">
               <RatingBadge rating={solution.noteRedac} size="sm" />
               <StarRating rating={solution.noteRedac} size={11} />
             </div>
-          </div>
+          </>
         )}
         {solution.noteUtilisateurs == null && solution.noteRedac == null && (
-          <span className="text-xs text-gray-400">Pas encore noté</span>
+          <span className="col-span-2 text-xs text-gray-400">Pas encore noté</span>
         )}
       </div>
-    </Link>
+    </div>
   )
 }

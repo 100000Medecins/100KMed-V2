@@ -462,16 +462,49 @@ export async function getNbNotesUtilisateurs(
 
   const supabase = client ?? (await createServerClient())
 
-  const { data, error } = await supabase
+  const map: Record<string, number> = {}
+
+  // Étape 1 : ligne `type='moyenne'` (1 par solution) → pas de troncature à 1000 lignes.
+  // (Même stratégie que getNotesUtilisateursGlobales : lire toutes les lignes resultats
+  //  d'une catégorie dépasse la limite implicite Supabase de 1000 et devient non déterministe.)
+  const { data: critereMoyenne } = await supabase
+    .from('criteres')
+    .select('id')
+    .eq('type', 'moyenne')
+    .maybeSingle()
+
+  if (critereMoyenne?.id) {
+    const { data: lignesMoyenne } = await supabase
+      .from('resultats')
+      .select('solution_id, nb_notes')
+      .in('solution_id', solutionIds)
+      .eq('critere_id', critereMoyenne.id)
+      .not('nb_notes', 'is', null)
+    for (const row of lignesMoyenne ?? []) {
+      const n = row.nb_notes as number | null
+      if (n != null) map[row.solution_id as string] = n
+    }
+  }
+
+  // Étape 2 — Fallback : solutions sans ligne `moyenne` → max nb_notes sur les critères majeurs
+  // (au plus 5 lignes/solution, donc pas de risque de troncature).
+  const missingIds = solutionIds.filter((id) => !(id in map))
+  if (missingIds.length === 0) return map
+
+  const { data: criteresMajeurs } = await supabase
+    .from('criteres')
+    .select('id')
+    .not('nom_capital', 'is', null)
+  const critereIds = (criteresMajeurs || []).map((c) => c.id)
+  if (critereIds.length === 0) return map
+
+  const { data } = await supabase
     .from('resultats')
     .select('solution_id, nb_notes')
-    .in('solution_id', solutionIds)
+    .in('solution_id', missingIds)
+    .in('critere_id', critereIds)
     .not('nb_notes', 'is', null)
-
-  if (error || !data) return {}
-
-  const map: Record<string, number> = {}
-  for (const row of data) {
+  for (const row of data ?? []) {
     const id = row.solution_id as string
     const n = row.nb_notes as number
     if (!(id in map) || n > map[id]) map[id] = n
