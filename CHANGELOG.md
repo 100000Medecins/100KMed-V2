@@ -12,7 +12,7 @@
 - **Upload** ([route.ts](src/app/api/upload/route.ts)) : tout nouvel upload raster (JPEG/PNG/WebP) est redimensionné (≤1600px) + converti WebP q80 + `cacheControl` 1 an via `sharp`. GIF (logo animé email) et SVG intacts ; repli sur l'original si `sharp` échoue.
 - **Recompression de l'existant** ([optimize-storage-images.ts](scripts/optimize-storage-images.ts)) : recompresse en WebP les images d'un bucket, ré-uploadées sous le même chemin (aucune URL à changer en base). Dry-run par défaut, `--execute` requis, backup binaire + `manifest.json` avant écriture. Audit BDD : 132 captures galerie (bucket `media`) = 1er poste d'egress.
 - **Doc** : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md) (audit chiffré, bascule avatars stock → `public/`, arbitrage plan Pro).
-- **Non déployé / non exécuté** : le patch prend effet au déploiement ; le script n'écrit qu'en `--execute`.
+- **Exécuté le 2026-07-08** : recompression appliquée — `media` −81 % (72,7→13,6 Mo, 235 objets), `images` −90 % (24→2,3 Mo, 75 objets), `avatars` déjà légers. URLs inchangées. Reste : déployer le patch upload (merge dev→main) pour compresser aussi les *nouveaux* uploads.
 
 ### TODO — Mises à jour
 - Ajout : « Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 » (Mises à jour techniques).

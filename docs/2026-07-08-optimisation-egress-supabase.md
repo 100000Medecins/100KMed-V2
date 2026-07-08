@@ -36,15 +36,20 @@ Buckets : **`media`** (galeries), **`images`** (uploads WYSIWYG + catégories), 
    défaut, `--execute` requis, backup binaire des originaux + `manifest.json` avant écriture.
    GIF/SVG ignorés.
    ```bash
-   npx tsx scripts/optimize-storage-images.ts                 # dry-run bucket media
-   npx tsx scripts/optimize-storage-images.ts --execute       # applique (media)
+   # dry-run (lecture seule) sur chaque bucket, puis --execute quand les gains sont OK
+   npx tsx scripts/optimize-storage-images.ts --bucket media --execute
    npx tsx scripts/optimize-storage-images.ts --bucket images --execute
+   npx tsx scripts/optimize-storage-images.ts --bucket avatars --execute
    ```
 2. **`src/app/api/upload/route.ts`** — tout nouvel upload raster est désormais
    redimensionné (max 1600px) + converti WebP (q80) + `cacheControl` 1 an. GIF/SVG intacts.
 
 **Gain attendu** : WebP sur des captures PNG = **−60 à −80 %** de poids. Comme les captures
 dominent l'egress, ces deux mesures seules devraient largement repasser sous 5 GB.
+
+**Mesuré et appliqué le 2026-07-08 (`--execute`)** : `media` 72,7 → 13,6 Mo (**−81 %**, 235 objets),
+`images` 24,0 → 2,3 Mo (**−90 %**, 75 objets), `avatars` déjà légers (rien à faire). URLs inchangées,
+`cacheControl` 1 an posé, originaux sauvegardés dans `storage-backups/` (ignoré par git).
 
 ## 3. Assets à sortir vers `public/` (servis gratuitement par Vercel)
 
@@ -53,7 +58,7 @@ dupliqués dans `public/`** — les basculer met leur egress Supabase à **zéro
 
 | Asset | Statut | Action |
 |---|---|---|
-| **Avatars stock** (48) | Fichiers déjà dans `public/images/portraits/avatar-N.png` | Swap SQL `avatars` où `user_id IS NULL` → chemin local. **Meilleur ratio** (vus sur tous les avis). |
+| **Avatars stock** (79 en base) | ⚠️ `public/` n'en contient que **48** → swap direct impossible (les 31 manquants feraient 404) | **Préférer** : recompresser le bucket `avatars` en place (`--bucket avatars`, §2), URLs inchangées. Swap `public/` différé (cf. ci-dessous). |
 | **Logos syndicats « mot du président »** (~8) | Déjà dans `public/images/syndicats/` ; footer/home déjà locaux | Swap des URLs dans `pages_statiques.metadata` (page `qui-sommes-nous`). Priorité basse (1 page). |
 | Logo GIF en-tête email | `images/logos/` | **NE PAS bouger** — les mails exigent une URL absolue. |
 | Logos solutions/éditeurs externes (113) | Déjà hors Supabase | Rien. |
@@ -63,7 +68,12 @@ dupliqués dans `public/`** — les basculer met leur egress Supabase à **zéro
    Historiquement le site renvoyait un 404 sur `/images/*` (raison de la bascule vers Storage).
 2. Vérifier qu'aucun **email** ne rend d'avatar (les chemins relatifs cassent hors du site).
 
-### SQL de bascule des avatars stock (à lancer par David, après vérif ci-dessus)
+### SQL de bascule des avatars stock — DIFFÉRÉ (79 en base vs 48 dans `public/`)
+
+⚠️ **Ne pas lancer tel quel** : la table `avatars` a 79 lignes stock mais `public/images/portraits/`
+n'a que 48 fichiers → 31 avatars feraient 404. Recompresser le bucket `avatars` (§2) apporte
+l'essentiel du gain sans ce risque. Ce swap n'a de sens qu'après avoir copié les **79** fichiers
+dans `public/` **et** validé les points 1/2 ci-dessus.
 
 ```sql
 -- 1) Dry-run : contrôler la correspondance
