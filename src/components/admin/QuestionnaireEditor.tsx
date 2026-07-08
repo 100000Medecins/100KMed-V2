@@ -41,9 +41,9 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
 
   // ── Question states ───────────────────────────────────────────────────────
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
-  const [editingQuestion, setEditingQuestion] = useState({ key: '', question: '', critere_majeur: 'interface' as QuestionnaireQuestion['critere_majeur'] })
+  const [editingQuestion, setEditingQuestion] = useState({ key: '', question: '', critere_majeur: 'interface' as QuestionnaireQuestion['critere_majeur'], nom_court: '' })
   const [newQuestionSectionId, setNewQuestionSectionId] = useState<string | null>(null)
-  const [newQuestion, setNewQuestion] = useState({ key: '', question: '', critere_majeur: 'interface' as QuestionnaireQuestion['critere_majeur'] })
+  const [newQuestion, setNewQuestion] = useState({ key: '', question: '', critere_majeur: 'interface' as QuestionnaireQuestion['critere_majeur'], nom_court: '' })
 
   // ── Drag sections ─────────────────────────────────────────────────────────
   const sectionDragRef = useRef<number | null>(null)
@@ -115,7 +115,7 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
   // ── Question CRUD ─────────────────────────────────────────────────────────
   function startEditQuestion(q: QuestionnaireQuestion) {
     setEditingQuestionId(q.id)
-    setEditingQuestion({ key: q.key, question: q.question, critere_majeur: q.critere_majeur })
+    setEditingQuestion({ key: q.key, question: q.question, critere_majeur: q.critere_majeur, nom_court: q.nom_court ?? '' })
   }
 
   async function confirmEditQuestion(sectionId: string, questionId: string) {
@@ -126,7 +126,7 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
     ))
     setEditingQuestionId(null)
     startTransition(async () => {
-      await updateQuestion(questionId, editingQuestion.key.trim(), editingQuestion.question.trim(), editingQuestion.critere_majeur)
+      await updateQuestion(questionId, editingQuestion.key.trim(), editingQuestion.question.trim(), editingQuestion.critere_majeur, editingQuestion.nom_court.trim())
     })
   }
 
@@ -144,7 +144,7 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
     const section = sections.find((s) => s.id === sectionId)
     const ordre = section?.questions.length ?? 0
     startTransition(async () => {
-      const result = await createQuestion(sectionId, newQuestion.key.trim(), newQuestion.question.trim(), newQuestion.critere_majeur, ordre)
+      const result = await createQuestion(sectionId, newQuestion.key.trim(), newQuestion.question.trim(), newQuestion.critere_majeur, ordre, newQuestion.nom_court.trim())
       if (result?.question) {
         setSections((prev) => prev.map((s) => s.id === sectionId
           ? { ...s, questions: [...s.questions, result.question!] }
@@ -152,7 +152,7 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
         ))
       }
     })
-    setNewQuestion({ key: '', question: '', critere_majeur: 'interface' })
+    setNewQuestion({ key: '', question: '', critere_majeur: 'interface', nom_court: '' })
     setNewQuestionSectionId(null)
   }
 
@@ -284,12 +284,18 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
                     >
                       {editingQuestionId === q.id ? (
                         <div className="space-y-2">
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <input
                               value={editingQuestion.key}
                               onChange={(e) => setEditingQuestion((p) => ({ ...p, key: e.target.value }))}
                               placeholder="Clé technique (ex: detail_connexion)"
-                              className="w-48 text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue/30 font-mono"
+                              className="w-40 text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue/30 font-mono"
+                            />
+                            <input
+                              value={editingQuestion.nom_court}
+                              onChange={(e) => setEditingQuestion((p) => ({ ...p, nom_court: e.target.value }))}
+                              placeholder="Libellé court (comparatif)"
+                              className="w-44 text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
                             />
                             <select
                               value={editingQuestion.critere_majeur}
@@ -348,12 +354,18 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
                 {/* Nouvelle question */}
                 {newQuestionSectionId === section.id ? (
                   <div className="px-4 py-3 space-y-2 bg-blue-50/40">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <input
                         value={newQuestion.key}
                         onChange={(e) => setNewQuestion((p) => ({ ...p, key: e.target.value }))}
                         placeholder="Clé technique (ex: detail_connexion)"
-                        className="w-56 text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue/30 font-mono"
+                        className="w-44 text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue/30 font-mono"
+                      />
+                      <input
+                        value={newQuestion.nom_court}
+                        onChange={(e) => setNewQuestion((p) => ({ ...p, nom_court: e.target.value }))}
+                        placeholder="Libellé court (comparatif)"
+                        className="w-44 text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
                       />
                       <select
                         value={newQuestion.critere_majeur}
@@ -382,7 +394,7 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setNewQuestionSectionId(null); setNewQuestion({ key: '', question: '', critere_majeur: 'interface' }) }}
+                        onClick={() => { setNewQuestionSectionId(null); setNewQuestion({ key: '', question: '', critere_majeur: 'interface', nom_court: '' }) }}
                         className="px-3 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         Annuler
@@ -393,7 +405,7 @@ export default function QuestionnaireEditor({ categorieSlug, initialSections, sl
                   <div className="px-4 py-2">
                     <button
                       type="button"
-                      onClick={() => { setNewQuestionSectionId(section.id); setNewQuestion({ key: '', question: '', critere_majeur: 'interface' }) }}
+                      onClick={() => { setNewQuestionSectionId(section.id); setNewQuestion({ key: '', question: '', critere_majeur: 'interface', nom_court: '' }) }}
                       className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-accent-blue transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />

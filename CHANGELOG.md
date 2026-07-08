@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-07-08] — Réduction de l'egress Supabase (compression des images)
+## [2026-07-08] — Egress Supabase (compression images) + synchro questionnaire ↔ criteres
 
 ### Infrastructure — Pipeline de compression des images Storage
 - **Contexte** : mail Supabase (Fair Use Policy applicable au 6 août 2026) — le cached egress dépasse le quota Free (5 GB/mois). Cause : aucun pipeline d'images — ~170 `<img>` servent des originaux pleine résolution depuis le Storage, endpoint d'upload sans compression ni `cacheControl`.
@@ -16,6 +16,13 @@
 
 ### TODO — Mises à jour
 - Ajout : « Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 » (Mises à jour techniques).
+
+### Admin — Synchro `questionnaire_questions` ↔ `criteres` (désynchro supprimée à la source)
+- L'éditeur de questionnaires ([QuestionnaireEditor.tsx](src/components/admin/QuestionnaireEditor.tsx) → [questionnaires.ts](src/lib/actions/questionnaires.ts)) n'écrivait que `questionnaire_questions` ; la ligne jumelle `criteres` (`is_enfant`, pilote la moyenne de sous-critère + le « Comparatif détaillé par sous-critères ») devait être ajoutée à la main → risque d'orphelins.
+- `createQuestion` / `updateQuestion` / `deleteQuestion` maintiennent désormais le jumeau automatiquement via le helper `resolveCritereTwin` (`id_categorie` via slug, `parent_id` = majeur canonique `type='note'`, `type` copié d'un frère de la catégorie). `deleteSection` supprime jumeaux **+ questions** (aucune FK cascade). `reorderQuestions` = no-op (les enfants n'ont pas d'`ordre`).
+- Option A « libellé court » : nouvelle colonne `questionnaire_questions.nom_court` + input « Libellé court » dans l'éditeur (le comparatif affiche `criteres.nom_court`, repli sur la clé technique — cf [comparison.ts](src/lib/actions/comparison.ts)).
+- Fix data : `tt_ecpf_remplacant` repassé `type=NULL` (le script e-CPF avait mis `detail`, incohérent avec la convention `NULL` de la télétransmission).
+- Vérif : `tsc` OK + test d'intégration BDD **19/19** (create/update/delete, 0 orphelin maintenu). Plan : [docs/plan-synchro-questionnaire-criteres.md](docs/plan-synchro-questionnaire-criteres.md).
 
 ---
 
