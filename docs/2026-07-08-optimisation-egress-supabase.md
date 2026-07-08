@@ -49,7 +49,16 @@ dominent l'egress, ces deux mesures seules devraient largement repasser sous 5 G
 
 **Mesuré et appliqué le 2026-07-08 (`--execute`)** : `media` 72,7 → 13,6 Mo (**−81 %**, 235 objets),
 `images` 24,0 → 2,3 Mo (**−90 %**, 75 objets), `avatars` déjà légers (rien à faire). URLs inchangées,
-`cacheControl` 1 an posé, originaux sauvegardés dans `storage-backups/` (ignoré par git).
+originaux sauvegardés dans `storage-backups/` (ignoré par git).
+
+> **Note cache (vérifié empiriquement 2026-07-08)** : l'endpoint public du Storage de ce projet renvoie
+> **`Cache-Control: no-cache` quelle que soit la valeur `cacheControl` passée à l'upload** (testé
+> insert / upsert / update / delete+insert → tous `no-cache` ; un avatar jamais touché est aussi `no-cache`).
+> Le paramètre est donc **ignoré côté header servi**. Impact réel **faible** : grâce à l'`ETag`, les visites
+> répétées revalident et reçoivent un **304** (~0 octet). Le gain vient de la **taille** (−81/−90 %), pas du cache.
+> Pour un vrai cache long navigateur (zéro revalidation), le levier est **`next/image` / Vercel** (qui pose son
+> propre cache long sur les images optimisées) ou la config **Smart CDN** côté dashboard Supabase — **pas** le
+> paramètre d'upload. Le `cacheControl` reste passé dans le code (intention correcte, sans effet ici pour l'instant).
 
 ## 3. Assets à sortir vers `public/` (servis gratuitement par Vercel)
 
