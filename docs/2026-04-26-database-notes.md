@@ -190,7 +190,7 @@ getNotesRedac(solutionId)
 - `criteres_backup`, `evaluations_backup`, `resultats_backup` : sauvegardes d'AVANT la migration du 12 avril, supprimées le 2026-04-26.
 - **Ne jamais relancer la migration** : diviserait toutes les notes par 2 une seconde fois.
 
-> Pour l'historique complet de l'audit de confusion du 2026-04-26, voir `docs/nettoyageBDD.md`.
+> Pour l'historique complet de l'audit de confusion du 2026-04-26, voir `docs/2026-04-26-nettoyageBDD.md`.
 
 ## Incohérences code (état 2026-05-08)
 

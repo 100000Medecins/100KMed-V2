@@ -1,7 +1,7 @@
 /**
  * Corpus de citations affichées en carrousel aléatoire en tête du catalogue
  * (page /solutions/[idCategorie]). Repris de l'ancien site Quasar — voir
- * docs/citations-ancien-site.md. Thèmes : qualité, changement, décision.
+ * docs/2026-06-30-citations-ancien-site.md. Thèmes : qualité, changement, décision.
  *
  * `auteur` vide ('') = pas d'attribution affichée.
  */

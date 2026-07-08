@@ -1,7 +1,7 @@
 # Questionnaire d'évaluation — Catégorie Téléexpertise
 
 > Proposé et validé le **2026-06-21** — **implémenté en BDD le même jour** (3 sections / 17 questions vérifiées).
-> Modèle : calqué sur `docs/teletransmission-questionnaire.md` (livré 2026-05-17) et `docs/teleconsultation-questionnaire.md`.
+> Modèle : calqué sur `docs/2026-05-17-teletransmission-questionnaire.md` (livré 2026-05-17) et `docs/2026-06-09-teleconsultation-questionnaire.md`.
 
 ## Statut : implémenté ✅
 
@@ -27,7 +27,7 @@ Le système d'évaluation a 2 niveaux, communs à toutes les catégories :
 
 ## Spécificités de la catégorie à respecter
 
-Le catalogue Téléexpertise regroupe **10 solutions** (cf [docs/teleexpertise-import.md](teleexpertise-import.md)) très hétérogènes : plateformes nationales (Omnidoc, Rofim), territoriales/régionales (Medaviz, MonSisra, plateformes GRADeS), intégrées au LGC (Doctolib/Siilo), et thématiques dermatologie (DermatoExpert, Tessan, Avisdoc).
+Le catalogue Téléexpertise regroupe **10 solutions** (cf [docs/2026-06-04-teleexpertise-import.md](2026-06-04-teleexpertise-import.md)) très hétérogènes : plateformes nationales (Omnidoc, Rofim), territoriales/régionales (Medaviz, MonSisra, plateformes GRADeS), intégrées au LGC (Doctolib/Siilo), et thématiques dermatologie (DermatoExpert, Tessan, Avisdoc).
 
 La téléexpertise est un **avis asynchrone entre médecins** (requérant → expert/requis), pas une consultation patient. Les questions portent donc sur : solliciter/atteindre le bon expert, transmettre un dossier documenté, le compte rendu d'avis, la cotation de l'acte, l'e-RCP, et la relation éditeur. Pas de question « téléconsultation » (couverte par sa propre catégorie) ni « facturation FSE patient ».
 

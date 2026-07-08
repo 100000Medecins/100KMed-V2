@@ -1,7 +1,7 @@
 # Questionnaire d'évaluation — Catégorie Téléconsultation
 
 > Proposé le **2026-06-09** — **implémenté en BDD** (vérifié le 2026-06-21).
-> Modèle : calqué sur `docs/teletransmission-questionnaire.md` (livré 2026-05-17).
+> Modèle : calqué sur `docs/2026-05-17-teletransmission-questionnaire.md` (livré 2026-05-17).
 
 ## Statut : implémenté ✅
 
@@ -35,7 +35,7 @@ Le système d'évaluation a 2 niveaux, communs à toutes les catégories :
 
 ## Spécificités de la catégorie à respecter
 
-Le catalogue Téléconsultation regroupe **15 solutions très hétérogènes** (cf [docs/teleconsultation-import.md](teleconsultation-import.md)) :
+Le catalogue Téléconsultation regroupe **15 solutions très hétérogènes** (cf [docs/2026-05-25-teleconsultation-import.md](2026-05-25-teleconsultation-import.md)) :
 
 - **Plateformes agréées société de TLC** (Qare, Livi, MEDADOM, Tessan, MédecinDirect) — modèle salariat ou commission, médecin de plateforme.
 - **Modules vidéo intégrés à un LGC/agenda** (Doctolib, Maiia, Hellocare Pro, Clickdoc, MadeForMed) — médecin en nom propre, sa patientèle.

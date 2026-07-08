@@ -158,7 +158,7 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     .eq('statut', 'publiee')
     // Une note n'est comptabilisée que finalisée pour le calcul : moyenne posée
     // (= 5 critères principaux remplis). Écarte les brouillons partiels qui héritent
-    // du DEFAULT statut='publiee'. Cf docs/evaluation-scoring.md.
+    // du DEFAULT statut='publiee'. Cf docs/2026-04-26-evaluation-scoring.md.
     .not('moyenne_utilisateur', 'is', null)
   if (isLegacy) {
     evalQuery = evalQuery.gte('created_at', DATE_MISE_EN_LIGNE)
@@ -556,7 +556,7 @@ export async function reconfirmerEvaluation(solutionId: string) {
 }
 
 // Les 5 critères principaux = condition minimale pour qu'une note soit valide
-// et comptabilisée (cf docs/evaluation-scoring.md, « Cycle de vie & comptabilisation »).
+// et comptabilisée (cf docs/2026-04-26-evaluation-scoring.md, « Cycle de vie & comptabilisation »).
 const CRITERES_PRINCIPAUX = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix'] as const
 
 /**
@@ -787,7 +787,7 @@ export async function submitEvaluation(
   // (dizaines de requêtes séquentielles), journal admin et revalidation. L'évaluation
   // est déjà persistée ci-dessus — ces étapes n'impactent que l'affichage public des
   // moyennes. Les garder synchrones bloquait le client (spinner « dans le vide »), voire
-  // dépassait le timeout serverless → promesse jamais résolue. cf docs/evaluation-scoring.md.
+  // dépassait le timeout serverless → promesse jamais résolue. cf docs/2026-04-26-evaluation-scoring.md.
   after(async () => {
     try {
       if (statut === 'publiee') {
