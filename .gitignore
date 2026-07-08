@@ -45,6 +45,8 @@ tmp/
 docs/backup-fix-*.json
 docs/backup-backfill-*.json
 backups/
+# Originaux binaires sauvegardés par scripts/optimize-storage-images.ts (rollback local, lourd)
+storage-backups/
 
 # Gabarits de marque Office (gros binaires .pptx/.docx — gérés hors repo)
 brand-templates/

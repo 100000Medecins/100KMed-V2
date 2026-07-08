@@ -147,7 +147,7 @@ L'import était complet. Il faut juste corriger les scores en ciblant `statut IS
 4. Recalculer `resultats.moyenne_utilisateurs_base5`
 
 ### Plan de codage associé (après ré-import)
-Voir `docs/database-notes.md` pour le détail technique.
+Voir `docs/2026-04-26-database-notes.md` pour le détail technique.
 
 ---
 

@@ -5,7 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins
 
 // Sitemap mis en cache (ISR), régénéré au plus une fois par heure. Évite d'interroger
 // Supabase à chaque hit de Googlebot : un hoquet BDD ferait 5xx la route, que Google
-// journalise comme « Impossible de récupérer le sitemap ». Cf docs/redirections-404-seo.md.
+// journalise comme « Impossible de récupérer le sitemap ». Cf docs/2026-05-29-redirections-404-seo.md.
 export const revalidate = 3600
 
 // Bloquer le sitemap hors prod (cf robots.ts) : evite que Google decouvre

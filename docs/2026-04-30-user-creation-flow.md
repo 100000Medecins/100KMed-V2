@@ -2,7 +2,7 @@
 
 Daté 2026-05-14. À mettre à jour si le flux change.
 
-> **Voir aussi** : [auth-navigation.md](auth-navigation.md) pour la **couche navigation** (`window.location.href` vs `router.push`, middleware, redirections post-auth). Ce doc-ci couvre la **couche données** (quelles tables sont remplies à quel moment, race conditions, rattachements).
+> **Voir aussi** : [auth-navigation.md](2026-04-28-auth-navigation.md) pour la **couche navigation** (`window.location.href` vs `router.push`, middleware, redirections post-auth). Ce doc-ci couvre la **couche données** (quelles tables sont remplies à quel moment, race conditions, rattachements).
 
 ---
 
@@ -97,7 +97,7 @@ Pour les utilisateurs email/mdp :
 
 1. Lit le `token` en query string
 2. Appelle `supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' })` → consomme le magiclink et **crée la session cookie côté navigateur**
-3. En cas de succès : `window.location.replace(next)` (navigation native — voir [auth-navigation.md](auth-navigation.md))
+3. En cas de succès : `window.location.replace(next)` (navigation native — voir [auth-navigation.md](2026-04-28-auth-navigation.md))
 4. Timeout 10s ou erreur : `window.location.replace('/connexion?error=psc_session_error')`
 
 ### Étape 4 — Complétion du profil PSC

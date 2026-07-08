@@ -1,5 +1,5 @@
 // Vérification serveur d'un token Cloudflare Turnstile (anti-bot, formulaire d'inscription).
-// Cf. docs/email-architecture.md n'est pas concerné — ceci est purement anti-bot.
+// Cf. docs/2026-04-27-email-architecture.md n'est pas concerné — ceci est purement anti-bot.
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 

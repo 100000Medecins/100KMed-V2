@@ -12,7 +12,7 @@
  *   - évals SB avec scores "ancien format" (clés numériques "1"-"50" présentes)
  *   - évals SB avec critères majeurs manquants (interface/fonctionnalites/fiabilite/editeur/qualite_prix)
  *
- * Lecture seule. Génère docs/audit-evaluations-firebase-vs-supabase.md.
+ * Lecture seule. Génère docs/2026-05-28-audit-evaluations-firebase-vs-supabase.md.
  */
 
 import { initializeApp, cert } from 'firebase-admin/app'
@@ -370,7 +370,7 @@ async function main() {
     }
   }
 
-  const outPath = path.resolve(__dirname, '../docs/audit-evaluations-firebase-vs-supabase.md')
+  const outPath = path.resolve(__dirname, '../docs/2026-05-28-audit-evaluations-firebase-vs-supabase.md')
   fs.writeFileSync(outPath, md.join('\n'), 'utf-8')
   console.log(`\n→ Document écrit : ${outPath}`)
 }

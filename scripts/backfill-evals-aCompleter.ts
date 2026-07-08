@@ -5,7 +5,7 @@
  * moyenne_utilisateur ni last_date_note → compté dans nb_notes mais exclu de la note
  * et des témoignages (incohérence carte 9 / témoignages 8). Décision produit :
  * les 5 critères principaux remplis = note valide qui doit compter (cf
- * docs/evaluation-scoring.md, « Cycle de vie & comptabilisation »).
+ * docs/2026-04-26-evaluation-scoring.md, « Cycle de vie & comptabilisation »).
  *
  * Ce script, pour chaque éval ayant les 5 critères principaux mais last_date_note NULL :
  *   - moyenne_utilisateur = moyenne des 5 principaux (base 5)

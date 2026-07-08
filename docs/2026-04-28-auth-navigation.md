@@ -1,6 +1,6 @@
 # Auth — Architecture de navigation (2026-05-14)
 
-> **Voir aussi** : [user-creation-flow.md](user-creation-flow.md) pour la **couche données** (quelles tables sont remplies à quel moment, rattachement éval anonyme, race conditions). Ce doc-ci couvre la **couche navigation** (`window.location.href` vs `router.push`, middleware, redirections post-auth).
+> **Voir aussi** : [user-creation-flow.md](2026-04-30-user-creation-flow.md) pour la **couche données** (quelles tables sont remplies à quel moment, rattachement éval anonyme, race conditions). Ce doc-ci couvre la **couche navigation** (`window.location.href` vs `router.push`, middleware, redirections post-auth).
 
 ## Règle fondamentale
 

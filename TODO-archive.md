@@ -5,9 +5,26 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-07-03**
+- [ABANDONNÉE] 2026-07-03 : Suivi PSC — piste A (correctif serveur verifyOtp) (En attente / Idées — PSC)
+  - Verdict (entonnoir sur psc_session_events, 105 handoffs réels du 28/06 → 03/07) : verify_success 82,9 %, verify_error 1,0 % (1 seul cas « Email link is invalid or has expired »), abandon silencieux 16,2 %. Réparti régulièrement sur 6 jours → systématique, pas un incident.
+  - Conclusion : le verifyOtp n'échoue quasiment jamais côté serveur → piste A sans objet. La perte réelle est un abandon avant l'issue (contexte navigateur perdu au retour de l'app mobile PSC). Détail chiffré dans docs/2026-06-16-diagnostic-emails-psc.md (§7).
+- [OK] 2026-07-03 : Carrousel de citations — édition en admin (passage en base) (UX / UI)
+  - Table Supabase citations (statut en_attente/publiee/refusee, propose_par) + GRANTs/RLS + seed. Lecture front getCitationsActives() (fallback constante). Admin /admin/citations (CRUD + modération + badge sidebar). Proposition médecin via onglet « Une citation » sur /mon-compte/proposer. Cf CHANGELOG 2026-07-03.
+- [OK] 2026-07-03 : Upload de logo (fichier) au lieu du seul lien URL (Espace éditeur, commit 72906ae)
+  - Constat : logo entreprise et logo solution ne se renseignaient que via <input type="url"> → friction + liens cassés pour les éditeurs sans URL publique.
+  - Livré : upload d'un fichier image stocké côté Supabase Storage qui remplit logo_url ; option lien conservée. Appliqué à l'espace éditeur (entreprise + solution).
+- [OK] 2026-07-03 : Lien vers la communauté de l'éditeur (Espace éditeur, commit 72906ae)
+  - Besoin : renseigner un lien vers la communauté d'utilisateurs (groupe Facebook/LinkedIn, Discord, forum…), en plus de site web / site de support.
+  - Livré : nouveau champ input type=url + rendu public. À articuler avec l'item « Favoriser l'entraide entre utilisateurs ».
+- [OK] 2026-07-03 : Tester le parcours de notation (questionnaire) des 3 nouvelles catégories (Nouvelles catégories de solutions)
+  - Parcours complet déroulé pour Télétransmission, Téléconsultation et Téléexpertise (étape 1 : 5 critères majeurs + étape 2 : questions détaillées BDD). Sous-questions affichées, skippables, note calculée. Testé via URL directe (le parcours ne vérifie pas actif).
+
+---
+
 **2026-06-27**
 - [OK] 2026-06-27 : Résultats Google → 404 : plan de redirection (URGENT)
-  - Diagnostic dans docs/redirections-404-seo.md. Fait 2026-05-28/29 : sitemap corrigé (filtre actif + catégorie active + fix BASE_URL, éditeurs dédoublonnés, articles, force-dynamic), 10 redirections 301 dans next.config.mjs, comparaison slug-vs-slug → redirect /solutions/comparer, archive.* réparé, legacy.* en noindex, sitemap fantôme supprimé.
+  - Diagnostic dans docs/2026-05-29-redirections-404-seo.md. Fait 2026-05-28/29 : sitemap corrigé (filtre actif + catégorie active + fix BASE_URL, éditeurs dédoublonnés, articles, force-dynamic), 10 redirections 301 dans next.config.mjs, comparaison slug-vs-slug → redirect /solutions/comparer, archive.* réparé, legacy.* en noindex, sitemap fantôme supprimé.
   - Suivi résiduel conservé dans la section SEO de TODO.md : vérifier sitemap.xml en « Réussite » + déréférencement legacy.*.
 - [OK] 2026-06-27 : Télétransmission — finitions après seeding initial (Nouvelles catégories)
   - Seeding : 1 catégorie, 4 éditeurs, 23 tags, 20 solutions, 203 liaisons. Vérifié 2026-06-27 : catégorie active, 19 solutions actives, 0 sans logo/SEO, 4 éditeurs complets (Aatlantide, Olaqin, VITALONLINE, Calimed Santé).
@@ -35,7 +52,7 @@ Les items sont organisés par date (du plus récent au plus ancien).
   - Commit `8e21784` — token HMAC, page `/confirmer-changement-email`, sync `public.users.email`, 2 templates BDD (cf CHANGELOG).
   - Contexte (2026-06-08) : signup (`ff1ef31`) et reset mdp (`4589f20`) déjà migrés en mai vers liens HMAC maison via SendGrid pour résister au pré-scan anti-phishing (Outlook Safe Links / Gmail consommaient les tokens OTP single-use). Le changement d'adresse email était le seul flux résiduel utilisant encore `supabase.auth.updateUser({ email })` → email natif Supabase sans master_layout 3 lignes.
   - Décision : migrer pour appliquer le master_layout neuf, gagner l'idempotence, devenir indépendant de Supabase Auth pour les emails.
-  - Étapes livrées : template `confirmation_changement_email` en BDD, helper `src/lib/email/email-change-token.ts`, server action `requestEmailChange(newEmail)`, page `/confirmer-changement-email?uid&iat&token` (re-vérif HMAC + `admin.updateUserById`), email de courtoisie à l'ancienne adresse, remplacement de `auth.updateUser({ email })` dans `profil/page.tsx`, mise à jour `docs/email-architecture.md`.
+  - Étapes livrées : template `confirmation_changement_email` en BDD, helper `src/lib/email/email-change-token.ts`, server action `requestEmailChange(newEmail)`, page `/confirmer-changement-email?uid&iat&token` (re-vérif HMAC + `admin.updateUserById`), email de courtoisie à l'ancienne adresse, remplacement de `auth.updateUser({ email })` dans `profil/page.tsx`, mise à jour `docs/2026-04-27-email-architecture.md`.
 
 ---
 
@@ -95,7 +112,7 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 **2026-05-29**
 - [OK] 2026-05-29 : Audit Firebase ↔ Supabase (Nettoyage)
-  - Audit complet réalisé le 2026-05-28 ([docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) appliqués.
+  - Audit complet réalisé le 2026-05-28 ([docs/2026-05-28-audit-evaluations-firebase-vs-supabase.md](docs/2026-05-28-audit-evaluations-firebase-vs-supabase.md)). Fix #1 (378 évals), Fix #1bis (37 évals), Fix #2 (10 commentaires) appliqués.
   - Fix #3 FAIT (vérifié 2026-05-29 : 0 éval en ancien format restante). Script `scripts/fix-anciennes-evals-format.ts`. Mapping idTech→detail_* figé.
   - Fix #4 SANS OBJET (vérifié 2026-05-29 via le mapping Excel + dry-run du script). Sur les 718 évals Firebase : 656 déjà présentes, 15 sur des solutions non reprises au catalogue (Medaplix, OSOFT…), et 44 « absentes » qui sont en réalité des coquilles vides (49 scores tous à 0, aucune note/date/commentaire = formulaire ouvert jamais rempli). Le garde-fou `isEmpty` du script `scripts/fix-import-evals-manquantes.ts` les skip à juste titre.
   - 560 users Firebase non migrés = profils dormants (`isComplete=false`, pas d'email, jamais finalisés, dont 0 avec une vraie éval). Décision : ne PAS les importer.
@@ -140,7 +157,7 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 **2026-05-20**
 - [OK] 2026-05-20 : Passer en main avec Next.js 16 (Mises à jour techniques)
-  - Migration livrée et mergée `dev` → `main` (merge commit `e0cbd38`). Détail dans `docs/migration-nextjs-16.md`
+  - Migration livrée et mergée `dev` → `main` (merge commit `e0cbd38`). Détail dans `docs/2026-05-14-migration-nextjs-16.md`
 
 **2026-05-19**
 - [OK] 2026-05-19 : Lien vers groupe WhatsApp/Telegram par solution (Communication, sous « Favoriser l'entraide »)
@@ -159,13 +176,13 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 **2026-05-17**
 - [OK] 2026-05-17 : Remplacer les avatars utilisateurs — couplé avec la migration technique (Avatars)
-  - Voir `docs/avatars_migration_plan.md`
+  - Voir `docs/2026-05-08-avatars_migration_plan.md`
   - Migration `users.portrait` text URL → uuid avec FK vers `avatars(id)` + nouveau catalogue de 67 avatars (50 médicaux + 17 décalés geek)
   - Plan en 4 étapes réalisé : migrer portrait vers UUID, modifier updateAvatar, adapter les requêtes d'affichage, puis remplacer les images
   - Pipeline scripté : `generate-avatars.ts` + `finalize-avatars.ts` + `upload-avatars-to-supabase.ts` (~10 USD pour 160 PNG via Retro Diffusion)
   - Plus de risque de UPDATE massif sur 5800+ utilisateurs pour changer les images (le portrait est maintenant une référence par UUID, plus une URL dénormalisée)
 - [OK] 2026-05-17 : Questionnaire d'évaluation Télétransmission — conception + implémentation BDD (Télétransmission)
-  - 3 sections, 20 questions mappées sur les 5 critères majeurs — voir `docs/teletransmission-questionnaire.md`
+  - 3 sections, 20 questions mappées sur les 5 critères majeurs — voir `docs/2026-05-17-teletransmission-questionnaire.md`
 
 **2026-05-16**
 - [OK] 2026-05-16 : Affichage avatar cassé sur une page solution (Bugs à corriger)
@@ -231,7 +248,7 @@ Les items sont organisés par date (du plus récent au plus ancien).
 **2026-05-08**
 - [OK] 2026-05-08 : Audit BDD complet (Nettoyage)
   - Corrections critiques et importantes appliquées (sécurité RLS, intégrité FK, index, types)
-  - Rapport détaillé : `docs/audit_bdd_05_2026.md` — Schéma : `docs/schema_bdd_05_2026.md`
+  - Rapport détaillé : `docs/2026-05-08-audit_bdd.md` — Schéma : `docs/2026-05-08-schema_bdd.md`
 - [OK] 2026-05-08 : Architecture email PSC — email synthétique vs réel (Bugs à corriger)
   - Décision : ne rien changer tant que le fix `getUserById` avant `generateLink` couvre tous les cas
 
@@ -291,7 +308,7 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 **2026-04-30**
 - [OK] 2026-04-30 : Documenter le flux de création utilisateur — dualité auth.users / public.users (IMPORTANT)
-  - docs/user-creation-flow.md : flux email/mdp + PSC, cas limites, schéma ASCII
+  - docs/2026-04-30-user-creation-flow.md : flux email/mdp + PSC, cas limites, schéma ASCII
 - [OK] 2026-04-30 : Documenter le système questionnaire / scoring (IMPORTANT)
   - evaluation-scoring.md mis à jour — questionnaires multi-catégories, DETAIL_CRITERE_MAP, SLUGS_UTILITE
 - [OK] 2026-04-30 : Activer le 2FA GitHub (IMPORTANT)
@@ -308,7 +325,7 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 **2026-04-28**
 - [OK] 2026-04-28 : Auth — centralisation navigation post-auth (Fait récemment)
-  - window.location partout, middleware /connexion + /inscription, docs/auth-navigation.md
+  - window.location partout, middleware /connexion + /inscription, docs/2026-04-28-auth-navigation.md
 - [OK] 2026-04-28 : PSC session bloquée — router.replace → window.location.replace (Fait récemment)
 - [OK] 2026-04-28 : Profil — bouton Enregistrer désactivé si aucun changement + étoiles champs obligatoires (Fait récemment)
 - [OK] 2026-04-28 : Inscription — bouton "Se connecter" bloqué (email existant) corrigé (Fait récemment)

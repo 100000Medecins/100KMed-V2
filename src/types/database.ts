@@ -1211,6 +1211,7 @@ export type Database = {
           critere_majeur: string
           id: string
           key: string
+          nom_court: string | null
           ordre: number
           question: string
           section_id: string
@@ -1219,6 +1220,7 @@ export type Database = {
           critere_majeur: string
           id?: string
           key: string
+          nom_court?: string | null
           ordre?: number
           question: string
           section_id: string
@@ -1227,6 +1229,7 @@ export type Database = {
           critere_majeur?: string
           id?: string
           key?: string
+          nom_court?: string | null
           ordre?: number
           question?: string
           section_id?: string

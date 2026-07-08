@@ -171,7 +171,7 @@ async function main() {
   })
 
   // ─── Onglet REDIRECTIONS URL ─────────────────────────────
-  // Cf docs/redirections-404-seo.md. Les fiches solution/editeur gardent le même schéma
+  // Cf docs/2026-05-29-redirections-404-seo.md. Les fiches solution/editeur gardent le même schéma
   // (slug identique), donc pas de redirection pour elles ; seules les pages renommées listées.
   const redirectionsRows = [
     { ancienne_url: '/difficileDeChanger', nouvelle_url: '/difficile-de-changer', type: '301', note: 'renommage camelCase→kebab' },

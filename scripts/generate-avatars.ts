@@ -20,7 +20,7 @@
  *   --only=ID       Ne générer qu'un seul ID (utile pour tester ou régénérer)
  *   --set=med|geek  Restreindre au sous-ensemble (défaut: les deux)
  *
- * Voir docs/avatars-prompts-theme-hospital.md pour les détails du style.
+ * Voir docs/2026-05-17-avatars-prompts-theme-hospital.md pour les détails du style.
  */
 import * as fs from 'fs/promises'
 import * as path from 'path'

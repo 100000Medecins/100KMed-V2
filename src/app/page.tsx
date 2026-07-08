@@ -8,7 +8,7 @@ import EditorCTA from "@/components/sections/EditorCTA";
 import BlogPreview from "@/components/sections/BlogPreview";
 import CommunautePreview from "@/components/sections/CommunautePreview";
 import { getCategories } from "@/lib/db/categories";
-import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getSiteStats } from "@/lib/db/solutions";
+import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getNbNotesUtilisateurs, getSiteStats } from "@/lib/db/solutions";
 import { getHomepageVideos } from "@/lib/db/misc";
 
 export const revalidate = 1800;
@@ -24,9 +24,10 @@ export default async function Home() {
     categories.map(async (cat) => {
       const solutions = await getSolutions({ categorieId: cat.id });
       const solutionIds = solutions.map((s) => s.id);
-      const [notesUtilisateurs, notesRedac] = await Promise.all([
+      const [notesUtilisateurs, notesRedac, nbNotes] = await Promise.all([
         getNotesUtilisateursGlobales(solutionIds),
         getNotesRedacGlobales(solutionIds),
+        getNbNotesUtilisateurs(solutionIds),
       ]);
 
       const solutionsAvecNotes = solutions
@@ -37,6 +38,7 @@ export default async function Home() {
           logo_url: s.logo_url,
           noteUtilisateurs: notesUtilisateurs[s.id] ?? null,
           noteRedac: notesRedac[s.id] ?? null,
+          nbNotesUtilisateurs: nbNotes[s.id] ?? null,
           categorieSlug: cat.slug || "",
         }))
         .filter((s) => s.noteUtilisateurs !== null || s.noteRedac !== null)

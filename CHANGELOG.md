@@ -5,6 +5,57 @@
 
 ---
 
+## [2026-07-09] — Sitemap (nettoyage doublon) + nombre d'avis cliquable
+
+### SEO — Sitemap : suppression du doublon `sitemap-v2.xml`
+- Route `src/app/sitemap-v2.xml/route.ts` supprimée : le `/sitemap.xml` principal est robuste (ISR + repli `try/catch`, jamais de 5xx), le doublon (workaround 2026-06-07) n'a plus d'intérêt.
+- Diagnostic GSC : « Impossible de récupérer » sur les 2 sitemaps avec « Dernière lecture » VIDE = échec unique à la soumission (mi-juin), jamais réessayé par Google. Serveur sain (200, XML valide, 234 URLs, canonique www propre). Action : re-soumettre `sitemap.xml` dans GSC. Non bloquant (pages indexées par crawl direct).
+
+### UX / UI — Nombre d'avis cliquable sur les cartes solutions
+- « N avis » affiché près de la note utilisateurs (home `RecommendedSoftware` + `SolutionList`), lien vers `#temoignages` de la fiche.
+- Cartes : passage du `<Link>` global à un motif « lien étiré » sur le nom (`after:absolute inset-0`) pour permettre un 2e lien imbriqué valide (pas d'`<a>` dans `<a>`).
+- `getNbNotesUtilisateurs` ([solutions.ts](src/lib/db/solutions.ts)) fiabilisé : lecture de la ligne `type='moyenne'` d'abord (1/solution → évite la troncature à 1000 lignes de `resultats`), repli sur le max des critères majeurs.
+
+### TODO — Mises à jour
+- Sitemap : diagnostic + action GSC consignés, route v2 retirée.
+- Egress : recompression appliquée le 2026-07-08 (média −81 %, images −90 %) ; reste déploiement du patch upload + surveillance dashboard.
+
+---
+
+## [2026-07-08] — Egress Supabase (compression images) + synchro questionnaire ↔ criteres
+
+### Infrastructure — Pipeline de compression des images Storage
+- **Contexte** : mail Supabase (Fair Use Policy applicable au 6 août 2026) — le cached egress dépasse le quota Free (5 GB/mois). Cause : aucun pipeline d'images — ~170 `<img>` servent des originaux pleine résolution depuis le Storage, endpoint d'upload sans compression ni `cacheControl`.
+- **Upload** ([route.ts](src/app/api/upload/route.ts)) : tout nouvel upload raster (JPEG/PNG/WebP) est redimensionné (≤1600px) + converti WebP q80 + `cacheControl` 1 an via `sharp`. GIF (logo animé email) et SVG intacts ; repli sur l'original si `sharp` échoue.
+- **Recompression de l'existant** ([optimize-storage-images.ts](scripts/optimize-storage-images.ts)) : recompresse en WebP les images d'un bucket, ré-uploadées sous le même chemin (aucune URL à changer en base). Dry-run par défaut, `--execute` requis, backup binaire + `manifest.json` avant écriture. Audit BDD : 132 captures galerie (bucket `media`) = 1er poste d'egress.
+- **Doc** : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md) (audit chiffré, bascule avatars stock → `public/`, arbitrage plan Pro).
+- **Exécuté le 2026-07-08** : recompression appliquée — `media` −81 % (72,7→13,6 Mo, 235 objets), `images` −90 % (24→2,3 Mo, 75 objets), `avatars` déjà légers. URLs inchangées. Reste : déployer le patch upload (merge dev→main) pour compresser aussi les *nouveaux* uploads.
+
+### TODO — Mises à jour
+- Ajout : « Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 » (Mises à jour techniques).
+
+### Admin — Synchro `questionnaire_questions` ↔ `criteres` (désynchro supprimée à la source)
+- L'éditeur de questionnaires ([QuestionnaireEditor.tsx](src/components/admin/QuestionnaireEditor.tsx) → [questionnaires.ts](src/lib/actions/questionnaires.ts)) n'écrivait que `questionnaire_questions` ; la ligne jumelle `criteres` (`is_enfant`, pilote la moyenne de sous-critère + le « Comparatif détaillé par sous-critères ») devait être ajoutée à la main → risque d'orphelins.
+- `createQuestion` / `updateQuestion` / `deleteQuestion` maintiennent désormais le jumeau automatiquement via le helper `resolveCritereTwin` (`id_categorie` via slug, `parent_id` = majeur canonique `type='note'`, `type` copié d'un frère de la catégorie). `deleteSection` supprime jumeaux **+ questions** (aucune FK cascade). `reorderQuestions` = no-op (les enfants n'ont pas d'`ordre`).
+- Option A « libellé court » : nouvelle colonne `questionnaire_questions.nom_court` + input « Libellé court » dans l'éditeur (le comparatif affiche `criteres.nom_court`, repli sur la clé technique — cf [comparison.ts](src/lib/actions/comparison.ts)).
+- Fix data : `tt_ecpf_remplacant` repassé `type=NULL` (le script e-CPF avait mis `detail`, incohérent avec la convention `NULL` de la télétransmission).
+- Vérif : `tsc` OK + test d'intégration BDD **19/19** (create/update/delete, 0 orphelin maintenu). Plan : [docs/2026-07-08-plan-synchro-questionnaire-criteres.md](docs/2026-07-08-plan-synchro-questionnaire-criteres.md).
+
+---
+
+## [2026-07-07] — Question e-CPF « médecin junior » (télétransmission + logiciel médical)
+
+### Feature — Question e-CPF pour remplaçants / internes
+- Ajout d'une question évaluant la gestion de la carte **e-CPF** (Carte de Professionnel en Formation) pour un remplaçant/interne, dans 2 questionnaires : **Télétransmission** (clé `tt_ecpf_remplacant`, critère `fonctionnalites`) et **Logiciel médical** (clé `detail_ecpf_junior`, critère `interface`).
+- Écriture dans les **deux** tables via [scripts/add-question-ecpf-junior.ts](scripts/add-question-ecpf-junior.ts) : `questionnaire_questions` (affichage du formulaire) **et** `criteres` (ligne jumelle `type=detail`, `parent_id`/`id_categorie` recopiés d'un sous-critère frère, pour la moyenne de sous-critère + « Comparatif détaillé par sous-critères »). INSERT pur, idempotent, backup JSON avant écriture.
+- **Désynchro identifiée** : l'admin (`createQuestion`) n'écrit que `questionnaire_questions` → une question créée en admin compte dans son critère majeur + la note globale, mais n'a pas de moyenne de sous-critère isolée tant qu'on n'ajoute pas la ligne `criteres` à la main.
+
+### TODO — Mises à jour
+- Ajout (Nettoyage) : « Auditer le scoring des sous-critères sur toutes les catégories » + « Synchroniser `questionnaire_questions` ↔ `criteres` — supprimer la désynchro à la source ».
+- Archivage (`/todo-clean`) des items terminés du 03/07 vers `TODO-archive.md`.
+
+---
+
 ## [2026-07-05] — PSC : déblocage internes/CPF + signalement d'identité ciblé
 
 ### PSC — Débloquer l'inscription des internes/CPF sans spécialité (commit `da62810`, mergé main)
@@ -47,7 +98,7 @@
 - Fix : `overflow-x: hidden` → `overflow-x: clip` (coupe le débordement horizontal sans créer de scroll container). Restaure le sticky du bandeau de tri (et les autres sticky du site). Layout catalogue remis en flex (bandeau + liste dans la colonne haute).
 
 ### PSC — Établissement de session côté serveur (bascule verifyOtp)
-- Mesure tranchée (table `psc_session_events`, entonnoir 105 handoffs réels du 28/06→03/07) : `verify_success` 82,9 %, `verify_error` 1,0 %, abandon silencieux 16,2 %. Le `verifyOtp` n'échoue quasiment jamais côté serveur → **piste A (correctif serveur) abandonnée**. La perte réelle est un abandon avant l'issue (contexte navigateur perdu au retour de l'app mobile PSC). Cf [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) §7.
+- Mesure tranchée (table `psc_session_events`, entonnoir 105 handoffs réels du 28/06→03/07) : `verify_success` 82,9 %, `verify_error` 1,0 %, abandon silencieux 16,2 %. Le `verifyOtp` n'échoue quasiment jamais côté serveur → **piste A (correctif serveur) abandonnée**. La perte réelle est un abandon avant l'issue (contexte navigateur perdu au retour de l'app mobile PSC). Cf [docs/2026-06-16-diagnostic-emails-psc.md](docs/2026-06-16-diagnostic-emails-psc.md) §7.
 - Bascule : le `verifyOtp` passe côté serveur dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + adaptateur cookies, modèle `/auth/confirm`), redirection directe vers la destination — plus de roundtrip client `/auth/psc-session`. Appliqué aux flux standard + association. Objectif : récupérer les ~16 % d'abandons. **En test dev, non mergé en prod** ; validation par mesure post-merge (`verify_success` doit alors porter un `user_id`).
 
 ### Feature — Espace éditeur : upload de logo + lien communauté (commit `72906ae`)
@@ -70,7 +121,7 @@
 
 ### Feature — Carrousel de citations en tête du catalogue
 - Réintroduction du système de citations aléatoires de l'ancien site Quasar, en tête de la page catalogue ([solutions/[idCategorie]/page.tsx](src/app/solutions/[idCategorie]/page.tsx), entre le hero et la liste). Composant [CitationCarousel.tsx](src/components/CitationCarousel.tsx) : tirage aléatoire au montage (sans mismatch SSR), auto-rotation 8 s, pause au survol, navigation aux flèches, respect de `prefers-reduced-motion`. Rendu volontairement discret (ligne italique estompée, sans carte). `/solutions` redirigeant vers la catégorie par défaut, le carrousel couvre de fait toutes les pages catalogue.
-- Corpus en constante front [citations.ts](src/lib/constants/citations.ts) : 37 citations (36 issues de l'ancien front `ancien-site-frontend` + « Le prix s'oublie, la qualité reste » sans auteur). Vérifié : aucune citation en base Firebase (corpus hardcodé côté front à l'époque). Corpus + traçabilité dans [docs/citations-ancien-site.md](docs/citations-ancien-site.md).
+- Corpus en constante front [citations.ts](src/lib/constants/citations.ts) : 37 citations (36 issues de l'ancien front `ancien-site-frontend` + « Le prix s'oublie, la qualité reste » sans auteur). Vérifié : aucune citation en base Firebase (corpus hardcodé côté front à l'époque). Corpus + traçabilité dans [docs/2026-06-30-citations-ancien-site.md](docs/2026-06-30-citations-ancien-site.md).
 
 ### TODO — Mises à jour
 - Archivés (→ TODO-archive.md) : redirections 404/SEO, finitions Télétransmission / Téléconsultation / Téléexpertise (vérifiées en base), DMARC `p=reject`.
@@ -106,8 +157,8 @@
 ## [2026-06-23] — Questionnaires télémédecine, maison-mère sur fiche éditeur, easter egg logo & confort admin
 
 ### Module — Questionnaires d'évaluation Téléconsultation & Téléexpertise (+ affichage détaillé)
-- **Téléconsultation** : questionnaire déjà en BDD (3 sections / 18 questions, préfixe `tlc_*`) — confirmé et documenté ([docs/teleconsultation-questionnaire.md](docs/teleconsultation-questionnaire.md)).
-- **Téléexpertise** : questionnaire créé (3 sections / 17 questions, préfixe `tle_*`), servi automatiquement par `getSectionsForSlug('teleexpertise')` ([docs/teleexpertise-questionnaire.md](docs/teleexpertise-questionnaire.md)). Aucune modif de code (lecture BDD).
+- **Téléconsultation** : questionnaire déjà en BDD (3 sections / 18 questions, préfixe `tlc_*`) — confirmé et documenté ([docs/2026-06-09-teleconsultation-questionnaire.md](docs/2026-06-09-teleconsultation-questionnaire.md)).
+- **Téléexpertise** : questionnaire créé (3 sections / 17 questions, préfixe `tle_*`), servi automatiquement par `getSectionsForSlug('teleexpertise')` ([docs/2026-06-22-teleexpertise-questionnaire.md](docs/2026-06-22-teleexpertise-questionnaire.md)). Aucune modif de code (lecture BDD).
 - **Affichage « Comparatif détaillé » câblé pour les 3 catégories télémédecine** : les sous-questions vivaient seulement dans `questionnaire_questions` (notation), pas dans `criteres` (affichage par sous-critère). Insertion des sous-critères enfants (`is_enfant=true`, `parent_id` = critère majeur) dans `criteres` : `tt_*` (20), `tlc_*` (18), `tle_*` (17). `recalcResultatsPourSolution` les agrège désormais dans `resultats` → l'accordéon détaillé les affiche (comme logiciel métier / agendas / IA). Se peuple au 1ᵉʳ recalcul d'éval d'une solution.
 
 ### Feature — Maison-mère affichée sur la page éditeur publique (commit `f6f38d4`)
@@ -148,7 +199,7 @@
 
 ### Admin — Journal d'activité unifié (`activity_log`)
 
-Nouveau flux de supervision pour l'admin : voir inscriptions, évaluations et modifications sensibles des éditeurs sans fouiller table par table. Doc de référence : [docs/supervision-activite.md](docs/supervision-activite.md).
+Nouveau flux de supervision pour l'admin : voir inscriptions, évaluations et modifications sensibles des éditeurs sans fouiller table par table. Doc de référence : [docs/2026-06-21-supervision-activite.md](docs/2026-06-21-supervision-activite.md).
 
 - **Table `activity_log`** (append-only) : 1 ligne = 1 événement, avec diff `{ champ: { avant, apres } }`, gravité (`info`/`a_moderer`), `lu`. RLS activée **sans policy** (inaccessible hors `service_role`) ; `claude_readonly` en SELECT pour le MCP. `cible_id` en **text** (ids Firebase). GRANTs explicites (anticipation 2026-10-30).
 - **Helper `logActivity()`** ([src/lib/activity/log.ts](src/lib/activity/log.ts)) : point d'entrée unique, **ne fait jamais échouer l'action métier** (erreur avalée). Catalogue `ACTIVITY_TYPES`.
@@ -177,7 +228,7 @@ Dernier flux email qui dépendait de Supabase natif (`auth.updateUser({ email })
 - ⚠️ Fix de suivi (même jour) : la v1 ne mettait pas à jour `contact_email` → pour les comptes PSC (qui priorisent `contact_email`), l'ancien email restait affiché et un faux champ « Email Pro Santé Connect » apparaissait. Corrigé : `contact_email` aligné + refresh session sur `?email_changed=1`.
 - `profil/page.tsx` : `auth.updateUser` → `requestEmailChange`. Cancel/pending (hint `localStorage`) inchangés.
 - 2 templates BDD : `confirmation_changement_email`, `notification_changement_email`. `SAMPLE_VARS` admin complétés. Commit `8e21784`.
-- Doc : [docs/email-architecture.md](docs/email-architecture.md) — section « natifs Supabase = morts » + flux détaillé.
+- Doc : [docs/2026-04-27-email-architecture.md](docs/2026-04-27-email-architecture.md) — section « natifs Supabase = morts » + flux détaillé.
 
 ### UX / UI — Warning next/image (logo en-tête admin)
 - `w-auto` déplacé de la className vers `style` inline (Next 16/Turbopack lit le style inline) → silence le warning aspect-ratio. Cosmétique, dev-only. Commit `2a622f2`.
@@ -206,13 +257,13 @@ Dernier flux email qui dépendait de Supabase natif (`auth.updateUser({ email })
 - **Option A (sans table)** : les champs PSC viennent de l'annuaire RPPS et ne sont pas modifiables → le signalement sert au triage manuel (correction de mapping côté site, surcharge admin, ou orientation vers l'Ordre).
 
 ### Diagnostic — Emails PSC synthétiques (doc)
-- [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md) : PSC production ne renvoie pas l'email des médecins (absent du RPPS) → repli `psc-{rpps}@psc.sante.fr` (~90 % des inscriptions récentes). Fix casse login (`checkEmailExists`/`signInWithEmail` normalisés) livré le 16/06.
+- [docs/2026-06-16-diagnostic-emails-psc.md](docs/2026-06-16-diagnostic-emails-psc.md) : PSC production ne renvoie pas l'email des médecins (absent du RPPS) → repli `psc-{rpps}@psc.sante.fr` (~90 % des inscriptions récentes). Fix casse login (`checkEmailExists`/`signInWithEmail` normalisés) livré le 16/06.
 
 ---
 
 ## [2026-06-18] — Évaluations : comptabilisation dès les 5 critères principaux + fix étoiles par critère
 
-Doc de référence mise à jour : [docs/evaluation-scoring.md](docs/evaluation-scoring.md) (§« Cycle de vie & comptabilisation »).
+Doc de référence mise à jour : [docs/2026-04-26-evaluation-scoring.md](docs/2026-04-26-evaluation-scoring.md) (§« Cycle de vie & comptabilisation »).
 
 ### Fix — Étoiles par critère affichées à moitié (carte témoignages)
 
@@ -254,7 +305,7 @@ Extension de la maison-mère (livrée dans la foulée le même jour) : le compte
 
 ### Fix — Connexion par email cassée pour les casses différentes (+ diagnostic emails PSC)
 
-Investigation suite au constat de comptes `psc-…@psc.sante.fr` sans email réel + impossibilité de se connecter par email pour un compte pourtant présent. Détail complet dans [docs/diagnostic-emails-psc.md](docs/diagnostic-emails-psc.md).
+Investigation suite au constat de comptes `psc-…@psc.sante.fr` sans email réel + impossibilité de se connecter par email pour un compte pourtant présent. Détail complet dans [docs/2026-06-16-diagnostic-emails-psc.md](docs/2026-06-16-diagnostic-emails-psc.md).
 
 - **Cause emails synthétiques** : PSC **production** (live depuis le 25/05) ne renvoie pas l'email des médecins (absent de l'annuaire RPPS) → repli `psc-{rpps}@psc.sante.fr`. ~90 % des inscriptions récentes, 89 comptes sans aucun email réel. Ce ne sont pas des inscriptions ratées : auth PSC OK, mais décrochage massif à `/completer-profil` (email + mot de passe imposés → 13/102 seulement complètent).
 - **Bug corrigé** : `check_auth_email_exists` fait un match exact sensible à la casse ; la page connexion passait l'email non normalisé → faux « Aucun compte trouvé » + redirection inscription pour toute casse différente. Correctif sans DDL (`auth.users.email` déjà en minuscules) : `checkEmailExists` (`src/lib/actions/user.ts`) et `signInWithEmail` (`src/components/providers/AuthProvider.tsx`) normalisent en `trim().toLowerCase()`.
@@ -414,7 +465,7 @@ Analyse des rapports DMARC du 26 au 30/05 : 7 mails sur 5 jours, 100 % DKIM/SPF 
 
 ### Module — Catégorie Téléexpertise (préparation seeding)
 
-- Nouveau document de travail `docs/teleexpertise-import.md` (237 lignes) : mapping de 10 solutions du CSV `Comparatif_teleexpertise_medecins_2026.csv` vers la future catégorie `teleexpertise` (à créer). Inclut grille de tags (4 séparateurs + 17 toggles), sites web devinés à valider, décisions sur les prix nuls. Seeding effectif à faire dans une session dédiée.
+- Nouveau document de travail `docs/2026-06-04-teleexpertise-import.md` (237 lignes) : mapping de 10 solutions du CSV `Comparatif_teleexpertise_medecins_2026.csv` vers la future catégorie `teleexpertise` (à créer). Inclut grille de tags (4 séparateurs + 17 toggles), sites web devinés à valider, décisions sur les prix nuls. Seeding effectif à faire dans une session dédiée.
 
 ### Infrastructure
 - `.gitignore` : exclusion de `*.ts.new` (sortie temporaire de `npx supabase gen types`).
@@ -542,7 +593,7 @@ Chantier indépendant (travail externe à la session, intégré dans le même co
 
 ### SEO — Redirections des anciennes URLs Quasar + sitemap
 
-Suite au constat de résultats Google pointant vers des 404 après la bascule en prod. Diagnostic complet dans [docs/redirections-404-seo.md](docs/redirections-404-seo.md) : la plupart des URLs SEO gardent le même schéma ; les 404 venaient surtout du sitemap (qui exposait des pages inactives et que Google n'arrivait pas à lire) et de `legacy.` indexé.
+Suite au constat de résultats Google pointant vers des 404 après la bascule en prod. Diagnostic complet dans [docs/2026-05-29-redirections-404-seo.md](docs/2026-05-29-redirections-404-seo.md) : la plupart des URLs SEO gardent le même schéma ; les 404 venaient surtout du sitemap (qui exposait des pages inactives et que Google n'arrivait pas à lire) et de `legacy.` indexé.
 
 - **`next.config.mjs`** : 10 redirections 301 des anciennes URLs renommées (camelCase→kebab : `difficileDeChanger`, `tousEnsemble`, `lancement100k`, `monCompte/*`, `connexion/creationCompte/*` ; + `presentation100k`→`qui-sommes-nous`).
 - **Comparaison `slug-vs-slug`** : l'ancienne URL `/solutions/:cat/:slugA-vs-:slugB` est interceptée dans la page solution, les slugs sont résolus en UUIDs (`getSolutionIdsBySlugs` dans `src/lib/db/solutions.ts`) et redirigée 301 vers `/solutions/comparer?ids=`. Fallback `/solutions` si un slug est introuvable.
@@ -556,7 +607,7 @@ Suite au constat de résultats Google pointant vers des 404 après la bascule en
 
 ### Nettoyage — Colonnes mortes Supabase
 
-- Suppression de colonnes inutilisées : `categories.criteres_recherche`, `categories.schema_evaluation`, `resultats.notes_critere`, `users.date_naissance`. Détail dans [docs/audit-colonnes-mortes-supabase.md](docs/audit-colonnes-mortes-supabase.md).
+- Suppression de colonnes inutilisées : `categories.criteres_recherche`, `categories.schema_evaluation`, `resultats.notes_critere`, `users.date_naissance`. Détail dans [docs/2026-05-29-audit-colonnes-mortes-supabase.md](docs/2026-05-29-audit-colonnes-mortes-supabase.md).
 - Régénération de `src/types/database.ts` + nettoyage de `src/types/models.ts` (type `SchemaEvaluation` retiré) et `src/lib/db/evaluations.ts` (références `notes_critere`).
 - **`CLAUDE.md`** : nouvelle section sur les chemins d'accès BDD (MCP `claude_readonly` + BYPASSRLS pour les analyses, `service_role` pour les écritures, DDL via SQL Editor).
 
@@ -574,7 +625,7 @@ Un utilisateur de l'ancien site signale que la fiche Odaiji n'affiche pas certai
 
 ### Audit — Comparaison Firebase ↔ Supabase sur les 24 solutions legacy
 
-- Script `scripts/audit-global-evaluations-firebase.ts` (ré-exécutable, lecture seule) : compare évals FB ↔ SB par RPPS pour chaque solution `is_firebase_legacy = true`. Rapport détaillé dans [docs/audit-evaluations-firebase-vs-supabase.md](docs/audit-evaluations-firebase-vs-supabase.md).
+- Script `scripts/audit-global-evaluations-firebase.ts` (ré-exécutable, lecture seule) : compare évals FB ↔ SB par RPPS pour chaque solution `is_firebase_legacy = true`. Rapport détaillé dans [docs/2026-05-28-audit-evaluations-firebase-vs-supabase.md](docs/2026-05-28-audit-evaluations-firebase-vs-supabase.md).
 - **Bug critique découvert pendant l'audit** : tous les scripts utilisant `.from('users').select(...)` étaient plafonnés silencieusement à **1000 rows** (limite Supabase par défaut), alors qu'on a 5930 users avec RPPS. Conséquence : la première passe d'audit et de fix manquait ~83% des utilisateurs. Corrigé par pagination explicite (`.range(from, from+PAGE-1)`).
 - **Chiffres clés (post-fixes)** : 705 évals FB vs 644 SB (24 solutions) ; 638 matchées ; 63 non importées ; 16 en ancien format (clés numériques `"6"-"50"`) ; 5 user-SB-sans-RPPS pré-launch.
 
@@ -716,7 +767,7 @@ Pour chaque solution : description courte + longue, prix décodé (`prix_ttc` / 
 - `interoperable` : Globule ↔ Weda (interopérabilité annoncée par l'éditeur)
 
 ### Suivi / docs
-- Mapping détaillé conservé dans [docs/teleconsultation-import.md](docs/teleconsultation-import.md) (descriptions, prix, tags, sources fichier Excel).
+- Mapping détaillé conservé dans [docs/2026-05-25-teleconsultation-import.md](docs/2026-05-25-teleconsultation-import.md) (descriptions, prix, tags, sources fichier Excel).
 - Types Supabase régénérés (`npx supabase gen types…`).
 - Reste à compléter par David fiche-par-fiche : logos, URLs éditeur (devinées), `meta.title`/`meta.description` SEO, puis bascule `actif = true`.
 
@@ -1087,7 +1138,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - **Fix** : explicitation du nom de la contrainte FK dans les selects → `avatar:avatars!users_portrait_fkey(url)` dans `src/lib/db/users.ts` (`getUserById`) et `src/lib/db/evaluations.ts` (`getAvisUtilisateurs`, `getLastAvisUtilisateurs`, `getAvisUtilisateursPaginated`).
 
 ### Docs — Refonte du brouillon questionnaire téletransmission
-- `docs/teletransmission-questionnaire.md` retravaillé en prévision du chantier "Questionnaire d'évaluation pour la catégorie Télétransmission" (TODO en attente).
+- `docs/2026-05-17-teletransmission-questionnaire.md` retravaillé en prévision du chantier "Questionnaire d'évaluation pour la catégorie Télétransmission" (TODO en attente).
 
 ### Fix — Typing `Awaited<Props['searchParams']>` dans `/gerer-notifications` (Next.js 16)
 - Petit ajustement : `searchParams` est une Promise en Next 16, le helper `renderContent` doit le recevoir `Awaited` pour éviter l'erreur TypeScript.
@@ -1103,7 +1154,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - 60 médicaux générés via API Retro Diffusion (RD Plus + Classic + prompt master Bullfrog v1) + 17 décalés "geek" (jedi, wookie, yoda, robot, sorcier, chevalier, pirate, ninja, samouraï, cowboy, vampire, astronaute, steampunk, princesse, viking, détective, boxer, sorcière, cyborg, savant fou) — archétypes génériques, pas de personnages identifiables nommément (choix IP).
 - Pipeline scripté de bout en bout : `scripts/generate-avatars.ts` (batch 80 prompts × 2 variantes = 160 PNG), `scripts/finalize-avatars.ts` (tri → renommage `avatar-1..67.png` + upscale x2 nearest neighbor 256×256), `scripts/upload-avatars-to-supabase.ts` (bucket Storage public + génération SQL d'insert).
 - Coût final : ~10 USD pour 160 images (estim initiale 30 USD largement surévaluée).
-- Doc complète du style + prompts + workflow dans `docs/avatars-prompts-theme-hospital.md` (historique des décisions plans A/B/C tracé).
+- Doc complète du style + prompts + workflow dans `docs/2026-05-17-avatars-prompts-theme-hospital.md` (historique des décisions plans A/B/C tracé).
 
 ### Module — Migration BDD avatars (URL → UUID + FK)
 - `users.portrait` : type `text` → `uuid`, FK `users_portrait_fkey` vers `avatars(id)` avec `ON DELETE SET NULL`.
@@ -1201,7 +1252,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - 9 utilisateurs au portrait NULL laissés intacts.
 
 ### Reste à faire (non bloquant)
-- La vraie migration vers UUID décrite dans `docs/avatars_migration_plan.md` permettrait de changer les images sans `UPDATE` massif. Non urgent — l'avatar du site est maintenant cohérent.
+- La vraie migration vers UUID décrite dans `docs/2026-05-08-avatars_migration_plan.md` permettrait de changer les images sans `UPDATE` massif. Non urgent — l'avatar du site est maintenant cohérent.
 
 ---
 
@@ -1253,11 +1304,11 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - `test-email` : lookup du destinataire en base via son email pour générer un vrai lien HMAC fonctionnel en preview (fallback sur l'URL loggée si destinataire absent de la base) → l'aperçu admin reflète désormais ce que recevront les vrais utilisateurs.
 
 ### Docs — Architecture emails : section footer HMAC ajoutée
-- `docs/email-architecture.md` : nouvelle section "Footer Gérer mes préférences (lien HMAC-only)" — explique l'architecture (URL idempotente, HMAC `sha256(EMAIL_SECRET, "notif:uid:iat")`, TTL 1 an, résistance aux scanners Outlook/Gmail), la génération via single source of truth (`generateUnsubscribeLink`), et la contrainte d'inclure `{{lien_desabonnement}}` dans le HTML du template (le `master_layout` ne l'injecte pas automatiquement).
+- `docs/2026-04-27-email-architecture.md` : nouvelle section "Footer Gérer mes préférences (lien HMAC-only)" — explique l'architecture (URL idempotente, HMAC `sha256(EMAIL_SECRET, "notif:uid:iat")`, TTL 1 an, résistance aux scanners Outlook/Gmail), la génération via single source of truth (`generateUnsubscribeLink`), et la contrainte d'inclure `{{lien_desabonnement}}` dans le HTML du template (le `master_layout` ne l'injecte pas automatiquement).
 - Checklist d'ajout d'un nouvel email étendue : placeholder à inclure dans le template + appel de `generateUnsubscribeLink` côté code + test du lien après envoi.
 
 ### Docs — Drift PSC corrigée dans user-creation-flow + cross-refs entre docs
-- `docs/user-creation-flow.md` §Flux 2 disait "Vérifie OTP côté serveur" alors que le code vérifie l'OTP **côté client** dans `/auth/psc-session` via `supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })`. Le callback se contente de générer un magiclink et de rediriger. Découpage du Flux 2 en 2 étapes distinctes : "Callback PSC" (serveur, prépare le magiclink) et "Création de session" (client, consomme le magiclink).
+- `docs/2026-04-30-user-creation-flow.md` §Flux 2 disait "Vérifie OTP côté serveur" alors que le code vérifie l'OTP **côté client** dans `/auth/psc-session` via `supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })`. Le callback se contente de générer un magiclink et de rediriger. Découpage du Flux 2 en 2 étapes distinctes : "Callback PSC" (serveur, prépare le magiclink) et "Création de session" (client, consomme le magiclink).
 - Ajout d'un encart "Voir aussi" en tête de chaque doc (`auth-navigation.md` et `user-creation-flow.md`) pointant vers l'autre, avec la séparation explicite des angles : navigation vs données. Pas de fusion — chaque doc reste consultable seul selon le bug qu'on chasse.
 
 ### Chore — `.gitignore`
@@ -1483,7 +1534,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - Remplacement par animations CSS pures (`@keyframes hero-float` + CSS custom properties inline)
 - `HeroIllustration.tsx` devient Server Component (suppression `'use client'`)
 - `framer-motion` désinstallé ; autres findings classés sans action requise
-- Doc : `docs/optimisation-bundlecode-05-2026.md`
+- Doc : `docs/2026-05-09-optimisation-bundlecode.md`
 
 ### Sécurité — npm audit fix (27 → 15 vulnérabilités)
 - 1 critical résolue : protobufjs (arbitrary code execution)
@@ -1571,7 +1622,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 ### TODO — Mises à jour (session 2)
 - Archivé : Audit BDD complet ✅
 - Archivé : Architecture email PSC (décision validée) ✅
-- Ajouté : Plan migration avatars (`docs/avatars_migration_plan.md`)
+- Ajouté : Plan migration avatars (`docs/2026-05-08-avatars_migration_plan.md`)
 
 ---
 
@@ -1770,7 +1821,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - Fix systémique : toutes navigations post-auth migrent vers `window.location.href` / `window.location.replace` (navigation native navigateur, rechargement complet garanti)
 - Suppression des `useEffect([user, loading])` dans `/connexion` et `/inscription` qui créaient des doubles navigations (useEffect + handler se déclenchant simultanément)
 - Middleware (`middleware.ts` + `lib/supabase/middleware.ts`) : `/connexion` et `/inscription` ajoutés au matcher ; si déjà connecté → redirect serveur `/mon-compte/profil` (remplace proprement les useEffects supprimés)
-- `docs/auth-navigation.md` créé : documentation des 7 flux d'auth, règle fondamentale, anti-patterns à ne jamais reproduire
+- `docs/2026-04-28-auth-navigation.md` créé : documentation des 7 flux d'auth, règle fondamentale, anti-patterns à ne jamais reproduire
 
 ### Fix PSC — /auth/psc-session encore bloquée malgré le timeout
 - `router.replace` → `window.location.replace` dans `psc-session/page.tsx`
@@ -1798,8 +1849,8 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - Suppression du cache `.next/cache` nécessaire pour voir l'effet (ISR stale)
 
 ### Docs — Doctrine du système de notes établie
-- `docs/evaluation-scoring.md` : tables "état actuel / état cible", règle fondamentale (note globale = moyenne des 5 critères affichés), statuts des corrections
-- `docs/database-notes.md` : nettoyé, état des données confirmé (migration Firebase 0→5 terminée le 2026-04-12), plan d'action Phase 2
+- `docs/2026-04-26-evaluation-scoring.md` : tables "état actuel / état cible", règle fondamentale (note globale = moyenne des 5 critères affichés), statuts des corrections
+- `docs/2026-04-26-database-notes.md` : nettoyé, état des données confirmé (migration Firebase 0→5 terminée le 2026-04-12), plan d'action Phase 2
 
 ### UX / UI — Refonte visuelle pages solutions et index
 
@@ -1827,7 +1878,7 @@ Création des clés Turnstile côté Cloudflare et pose dans Vercel (env Product
 - Admin → Emails : nouvel onglet "Template email" pour éditer/prévisualiser le `master_layout` ; bandeau excuse 23/04 supprimé
 - `EmailTemplateEditor` : aperçu rendu final (layout + contenu composés), guard `isFullDocument` côté client, envoi de test avec destinataire modifiable
 - Logo email réduit à 276px (85%) dans `baseTemplate.ts` et `newsletter-template.ts`
-- `docs/email-architecture.md` mis à jour : table des 10 templates, section master layout, guide migration progressive, checklist ajout email
+- `docs/2026-04-27-email-architecture.md` mis à jour : table des 10 templates, section master layout, guide migration progressive, checklist ajout email
 
 ### UX / UI — Améliorations mobile listing et navbar
 - Navbar mobile : accordion par groupe de catégories (premier groupe ouvert par défaut)
