@@ -83,6 +83,10 @@ _(rien en cours)_
   6. Garde-fou : requête d'orphelins (`questionnaire_questions.key` vs `criteres.identifiant_tech`) en mini-script / check santé admin.
 - **Alternatives écartées pour l'instant** : C — trigger Postgres (couvre aussi scripts + SQL manuel, mais PL/pgSQL + `nom_court` à sourcer + plus opaque) ; B — unifier en 1 table (théoriquement « le bien » mais migration de plusieurs jours touchant le scoring/affichage public → risque élevé, non).
 
+#### Statuer sur le comparateur orphelin `/solutions/comparer` (2026-07-08)
+- **Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx#L66)).
+- **À trancher** : (1) **laisser** (sert de cible SEO aux redirects legacy, coût nul) ; (2) **ré-activer** (boutons « Comparer » + barre « Comparer (N) » qui construit `?ids=`) ; (3) **nettoyer** (retirer l'état mort du store, garder page + redirect pour le SEO). ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.
+
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
@@ -141,7 +145,9 @@ _(rien à faire pour l'instant)_
 - ✅ **Bug URLs éditeurs UUID brut** : résolu de facto par le passage en slug (2026-05-30). Le code ne génère plus jamais d'URL `/editeur/<uuid>`.
 - ✅ **Sitemap-v2 alternatif soumis dans Search Console** (2026-06-07) : `https://www.100000medecins.org/sitemap-v2.xml` créé pour tenter de casser le cache négatif Google qui maintenait `/sitemap.xml` en erreur depuis le 27/05. Soumis dans Search Console.
 - ✅ **Indexation `dev.100000medecins.org` bloquée** (2026-06-07) : robots.txt `Disallow: /` + meta robots noindex + sitemap vide hors prod. Demande de suppression du préfixe `dev.*` soumise dans Search Console (effet ~6 mois, masquage Google immédiat).
-- **À surveiller** : Search Console → vérifier que `/sitemap.xml` OU `/sitemap-v2.xml` passe en « Réussite » (≈ 1-2 semaines après soumission v2). Surveiller aussi le déréférencement progressif de `dev.*`.
+- **Diagnostic 2026-07-09** : sitemap 100 % sain côté serveur (200, XML valide, 234 URLs, ~50 ms, canonique www propre, ISR + repli try/catch déployé sur `main`). GSC affiche **« Impossible de récupérer »** sur `sitemap.xml` **et** `sitemap-v2.xml`, avec **« Dernière lecture » VIDE** (jamais lus) depuis les soumissions du 14-16 juin → **échec unique au moment de la soumission (site/robots pas prêt à l'époque), jamais réessayé par Google**. Non bloquant : les pages sont indexées par crawl direct (le sitemap est cosmétique).
+- **Route `sitemap-v2.xml` supprimée (2026-07-09)** — le principal est robuste, le doublon n'a plus d'intérêt.
+- **À faire côté GSC** (David) : (1) supprimer les 2 entrées sitemap listées ; (2) re-soumettre **uniquement** `sitemap.xml` pour forcer un fetch neuf (endpoint sain maintenant) ; (3) si ça reste rouge après 48 h → *Inspection de l'URL* → **test en direct** sur `https://www.100000medecins.org/sitemap.xml` pour voir si Googlebot le récupère (révèlerait un blocage actif). Surveiller aussi le déréférencement de `dev.*`.
 
 ### Mises à jour techniques
 
@@ -149,10 +155,10 @@ _(rien à faire pour l'instant)_
 - **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md).
 - **Cause (vérifiée)** : ~170 `<img src>` (84 fichiers) pointent en direct sur le Storage en **pleine résolution, non optimisé** ; seuls 4 fichiers utilisent `next/image` et `next.config.mjs` n'a pas de section `images`. L'endpoint d'upload stockait tel quel jusqu'à 5 Mo, sans compression ni `cacheControl`.
 - **Audit BDD (2026-07-08) — ce que le Storage sert** : **132 captures galerie** (`solutions_galerie`, bucket `media`, PNG pleine réso — **1er poste**) + **79 avatars** + 70 logos solutions + 29 logos éditeurs + 7 images catégories (sur la home) + 7 logos partenaires. Buckets : `media`, `images`, `avatars`. (Les 113 logos solutions/éditeurs « externes » sont déjà hors Supabase.)
-- ✅ **Déjà fait (code, sur `dev`, non commité/non déployé au 2026-07-08)** :
+- ✅ **Fait (2026-07-08/09)** — code commité sur `dev` **+ recompression exécutée** : `media` −81 % (72,7→13,6 Mo), `images` −90 % (24→2,3 Mo), `avatars` déjà légers (rien à gagner). Originaux dans `storage-backups/` (gitignored). ⚠️ `cacheControl` ignoré par l'endpoint public (sert `no-cache`) — impact faible (ETag→304), cf. doc. Code :
   - **`scripts/optimize-storage-images.ts`** — recompresse en WebP l'existant d'un bucket, ré-uploadé **sous le même chemin** (⇒ **aucune URL à changer en base**). Dry-run par défaut, `--execute` requis, backup binaire des originaux + `manifest.json` avant écriture, GIF/SVG ignorés.
   - **`src/app/api/upload/route.ts`** patché — tout nouvel upload raster → resize ≤1600px + WebP q80 + `cacheControl` 1 an. GIF (logo animé email) / SVG conservés intacts. (`sharp` tourne en runtime Node, la route n'est pas `edge`.)
-- **Séquence recommandée (reste à faire)** :
+- **Reste à faire** (recompression média/images **FAITE**, cf. doc) : **(a)** déployer le patch upload (merge `dev→main`) pour compresser les *nouveaux* uploads ; **(b)** surveiller la chute du cached egress dans le Usage Dashboard (2-3 j) ; **(c)** décider Pro. Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
   1. **Dry-run** (lecture seule, sans risque) pour les vrais Mo avant/après :
      ```bash
      npx tsx scripts/optimize-storage-images.ts             # bucket media

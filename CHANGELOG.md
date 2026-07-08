@@ -5,6 +5,23 @@
 
 ---
 
+## [2026-07-09] — Sitemap (nettoyage doublon) + nombre d'avis cliquable
+
+### SEO — Sitemap : suppression du doublon `sitemap-v2.xml`
+- Route `src/app/sitemap-v2.xml/route.ts` supprimée : le `/sitemap.xml` principal est robuste (ISR + repli `try/catch`, jamais de 5xx), le doublon (workaround 2026-06-07) n'a plus d'intérêt.
+- Diagnostic GSC : « Impossible de récupérer » sur les 2 sitemaps avec « Dernière lecture » VIDE = échec unique à la soumission (mi-juin), jamais réessayé par Google. Serveur sain (200, XML valide, 234 URLs, canonique www propre). Action : re-soumettre `sitemap.xml` dans GSC. Non bloquant (pages indexées par crawl direct).
+
+### UX / UI — Nombre d'avis cliquable sur les cartes solutions
+- « N avis » affiché près de la note utilisateurs (home `RecommendedSoftware` + `SolutionList`), lien vers `#temoignages` de la fiche.
+- Cartes : passage du `<Link>` global à un motif « lien étiré » sur le nom (`after:absolute inset-0`) pour permettre un 2e lien imbriqué valide (pas d'`<a>` dans `<a>`).
+- `getNbNotesUtilisateurs` ([solutions.ts](src/lib/db/solutions.ts)) fiabilisé : lecture de la ligne `type='moyenne'` d'abord (1/solution → évite la troncature à 1000 lignes de `resultats`), repli sur le max des critères majeurs.
+
+### TODO — Mises à jour
+- Sitemap : diagnostic + action GSC consignés, route v2 retirée.
+- Egress : recompression appliquée le 2026-07-08 (média −81 %, images −90 %) ; reste déploiement du patch upload + surveillance dashboard.
+
+---
+
 ## [2026-07-08] — Egress Supabase (compression images) + synchro questionnaire ↔ criteres
 
 ### Infrastructure — Pipeline de compression des images Storage
