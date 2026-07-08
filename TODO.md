@@ -12,7 +12,8 @@ _(rien d'urgent pour l'instant)_
 
 ## En attente / Idées
 
-#### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [en test dev — 2026-07-03]
+#### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [MERGÉ PROD 2026-07-05 — reste validation stat + cleanup]
+- **✅ Statut (vérifié 2026-07-08)** : bascule **mergée sur `main` le 2026-07-05** (commit `b8ad50a`, feature `b92be61`), donc **en prod**. Smoke check 48 h passé. **Restent 2 bouts pour clôturer** : (1) **validation statistique ~1 semaine** (~120-200 handoffs, attendu ~12/07) — rejouer l'entonnoir sur `psc_session_events`, `abandon_silencieux` doit chuter de 16,2 % → ~1 % ; (2) **commit de nettoyage** : supprimer `src/app/auth/psc-session/page.tsx` + `src/app/api/psc-session-event/route.ts` (filet encore présent) — ⚠️ vérifier d'abord que `merge.ts` n'en dépend plus (fusion non migrée, cf. checklist).
 - **Point de perte** : le roundtrip **`verifyOtp` côté client** (`/auth/psc-session`) après le retour de l'app PSC. ~16 % des handoffs démarrent (`handoff_start`) sans jamais émettre d'événement terminal → le navigateur perd le contexte avant l'aboutissement.
 - **Solution implémentée (branche `dev`, non mergée)** : `verifyOtp` déplacé **côté serveur** dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + cookies, modèle `/auth/confirm`), redirection directe vers `next`, plus de passage par `/auth/psc-session`. Appliqué aux flux standard + association. `tsc` OK. `/auth/psc-session` + `/api/psc-session-event` gardés en filet (à supprimer après validation).
 - **État (2026-07-04)** : mesuré en dev — entonnoir **strictement post-déploiement** (après 03/07 15h) = **7/7 handoffs → session établie côté serveur, 0 perdu (100 %)**, contre ~83 % avant. Les pertes se sont arrêtées net au déploiement (dernier « perdu » le 03/07 13:08). ⚠️ Échantillon **petit** (surtout mes tests) + **mobile pas encore validé**.
@@ -30,11 +31,8 @@ _(rien d'urgent pour l'instant)_
 
 ### Contenu des questionnaires
 
-#### Question « user-friendly pour les médecins juniors avec e-CPF » (2026-07-03)
-- **Besoin** : ajouter une question évaluant à quel point le logiciel est agréable/simple à utiliser pour un **médecin junior** (interne, remplaçant) équipé d'une **carte e-CPF** (Carte de Professionnel en Formation, l'équivalent de la CPS pour ceux qui n'ont pas encore de CPS nominative).
-- **Où** : au moins dans le questionnaire **Facturation / Télétransmission** (la e-CPF sert à la télétransmission FSE), et dans **Logiciel métier**.
-- **Angle** : le logiciel gère-t-il proprement la e-CPF (lecture carte, télétransmission en mode remplaçant, paramétrage sans friction) du point de vue d'un junior ?
-- **À faire** : rédiger le libellé, choisir le critère majeur de rattachement (probablement `fonctionnalites` ou `editeur`), l'ajouter aux sections DB des catégories concernées.
+#### ~~Question « user-friendly pour les médecins juniors avec e-CPF » (2026-07-03)~~ [OK] Fait 2026-07-08
+- **Livré** : question e-CPF ajoutée via [scripts/add-question-ecpf-junior.ts](scripts/add-question-ecpf-junior.ts) dans `questionnaire_questions` **et** `criteres` — clés `tt_ecpf_remplacant` (télétransmission, critère `fonctionnalites`) et `detail_ecpf_junior` (logiciel-medical, critère `interface`). Cf CHANGELOG 2026-07-07.
 
 ### Sécurité
 
@@ -68,13 +66,12 @@ _(rien en cours)_
 
 ### Nettoyage
 
-#### Auditer le scoring des sous-critères sur toutes les catégories (2026-07-07)
-- **Vérifier** : pour chaque catégorie (Logiciel médical, Agenda, IA scribes, IA documentaires, Télétransmission, Téléconsultation, Téléexpertise), que les réponses aux sous-critères remontent bien (a) dans la moyenne des 5 critères principaux (raffinement client `buildRefinedCritereScores`) **et** (b) dans leur propre moyenne de sous-critère (ligne jumelle dans `criteres` → `resultats` + « Comparatif détaillé par sous-critères »).
-- **Cause racine identifiée (2026-07-07)** : deux tables parallèles décrivent les questions — `questionnaire_questions` (formulaire, éditable en admin) et `criteres` (scoring). L'admin (`createQuestion`, [src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) n'écrit QUE dans `questionnaire_questions`, aucun trigger ne synchronise → toute question créée en admin compte dans son critère majeur + la note globale, mais n'a PAS de moyenne de sous-critère isolée tant qu'on n'ajoute pas la ligne `criteres` à la main.
-- **À faire** : requête d'audit `questionnaire_questions.key` vs `criteres.identifiant_tech` par catégorie → lister les `key` orphelines (présentes côté formulaire, absentes côté criteres) ; décider si on les complète (script type `scripts/add-question-ecpf-junior.ts`) et surtout **si on fait évoluer l'admin pour créer/supprimer la ligne `criteres` en même temps** (supprimer la désynchro à la source).
-- **Contexte** : découvert en ajoutant la question e-CPF junior — clés `tt_ecpf_remplacant` / `detail_ecpf_junior`, complétées dans les DEUX tables le 2026-07-07.
+#### ~~Auditer le scoring des sous-critères sur toutes les catégories (2026-07-07)~~ [OK] Fait 2026-07-08
+- **Résultat de l'audit** : requête `questionnaire_questions.key` LEFT JOIN `criteres.identifiant_tech` → **0 orphelin** (toutes catégories confondues). Les données sont **100 % synchro** : chaque question du formulaire a bien son jumeau `criteres` (moyenne de sous-critère + « Comparatif détaillé par sous-critères »).
+- **Cause racine identifiée (2026-07-07)** : deux tables parallèles — `questionnaire_questions` (formulaire, admin) et `criteres` (scoring). L'admin (`createQuestion`, [src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) n'écrit QUE dans `questionnaire_questions` → risque de désynchro à chaque question créée en admin. **Correctif = l'item de synchro ci-dessous** (aujourd'hui 0 orphelin car complétés à la main, mais fragile).
 
-#### Synchroniser `questionnaire_questions` ↔ `criteres` — supprimer la désynchro à la source (2026-07-08)
+#### ~~Synchroniser `questionnaire_questions` ↔ `criteres` — supprimer la désynchro à la source (2026-07-08)~~ [OK] Fait 2026-07-08
+- **Livré** : miroir `criteres` dans `createQuestion`/`updateQuestion`/`deleteQuestion`/`deleteSection` (helper `resolveCritereTwin`) + colonne+input `nom_court` (Option A) + fix data `tt_ecpf_remplacant`. `tsc` OK + test d'intégration BDD **19/19** (0 orphelin). Cf CHANGELOG 2026-07-08 + [docs/plan-synchro-questionnaire-criteres.md](docs/plan-synchro-questionnaire-criteres.md). **Reste (optionnel)** : smoke test UI dans `/admin/questionnaires`.
 - **But** : que créer/modifier/supprimer une question en admin maintienne automatiquement le sous-critère `criteres` jumeau (aujourd'hui l'admin n'écrit que `questionnaire_questions`). Correctif de la cause racine de l'item d'audit ci-dessus.
 - **Faisabilité vérifiée (2026-07-08)** : effort ~½ journée, risque faible. Le resolver du parent est trivial car les **5 critères majeurs sont uniques** dans `criteres` (`type='note'`, UUID stables) et **tous** les sous-critères (toutes catégories) pointent vers ces 5 mêmes parents. On n'ajoute que des lignes (comme les seeds), sans toucher au scoring/affichage public. Données déjà 100 % synchro (0 orphelin) → pas de backfill.
 - **Approche retenue : A — miroir dans les server actions** ([src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) :
@@ -102,6 +99,12 @@ _(rien en cours)_
 - Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
 
 ### UX / UI
+
+#### Cartes de solutions — compteur d'avis + clic vers les avis (2026-07-08)
+- **(a) Nombre d'évaluations sur toutes les cartes** : afficher « X avis » sur chaque carte de solution — pas seulement l'index, mais **toutes** les pages qui affichent des cartes (comparatif catégorie, fiche éditeur, recherche, comparateur…). À faire : recenser les composants de carte (`SolutionList` + variantes), vérifier que le compteur (`nbNotesUtilisateurs`) est fourni partout par la couche `db`, ajouter l'affichage de façon cohérente.
+- **(b) Clic sur les avis → bas de la fiche solution (ancre)** : cliquer sur « X avis » / la note utilisateurs doit amener directement à la section des avis en bas de la fiche.
+  - **Déjà en place** : l'ancre existe — `<div id="avis-utilisateurs" className="scroll-mt-[140px]">` dans [SolutionDetailPage.tsx](src/components/solutions/SolutionDetailPage.tsx#L117) (la navbar interne de `SolutionHero` y pointe déjà). Rien à créer côté fiche.
+  - **Reste** : rendre le « X avis » cliquable **sur les cartes** → lien `/solutions/[categorieSlug]/[solutionSlug]#avis-utilisateurs` (le navigateur scrolle à l'ancre à l'arrivée ; `scroll-mt` gère la navbar fixe). Le compteur du (a) et la cible du clic = même élément → traiter (a) et (b) ensemble.
 
 #### Tooltip note globale — affiner après la livraison initiale (2026-05-30)
 
