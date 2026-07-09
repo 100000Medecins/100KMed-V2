@@ -147,7 +147,8 @@ _(rien à faire pour l'instant)_
 - ✅ **Indexation `dev.100000medecins.org` bloquée** (2026-06-07) : robots.txt `Disallow: /` + meta robots noindex + sitemap vide hors prod. Demande de suppression du préfixe `dev.*` soumise dans Search Console (effet ~6 mois, masquage Google immédiat).
 - **Diagnostic 2026-07-09** : sitemap 100 % sain côté serveur (200, XML valide, 234 URLs, ~50 ms, canonique www propre, ISR + repli try/catch déployé sur `main`). GSC affiche **« Impossible de récupérer »** sur `sitemap.xml` **et** `sitemap-v2.xml`, avec **« Dernière lecture » VIDE** (jamais lus) depuis les soumissions du 14-16 juin → **échec unique au moment de la soumission (site/robots pas prêt à l'époque), jamais réessayé par Google**. Non bloquant : les pages sont indexées par crawl direct (le sitemap est cosmétique).
 - **Route `sitemap-v2.xml` supprimée (2026-07-09)** — le principal est robuste, le doublon n'a plus d'intérêt.
-- **À faire côté GSC** (David) : (1) supprimer les 2 entrées sitemap listées ; (2) re-soumettre **uniquement** `sitemap.xml` pour forcer un fetch neuf (endpoint sain maintenant) ; (3) si ça reste rouge après 48 h → *Inspection de l'URL* → **test en direct** sur `https://www.100000medecins.org/sitemap.xml` pour voir si Googlebot le récupère (révèlerait un blocage actif). Surveiller aussi le déréférencement de `dev.*`.
+- ✅ **Fait côté GSC (2026-07-09)** : les 2 entrées sitemap supprimées + `sitemap.xml` re-soumis (fetch neuf sur endpoint sain).
+- **À surveiller** : si `sitemap.xml` reste rouge après 48 h → *Inspection de l'URL* → **test en direct** sur `https://www.100000medecins.org/sitemap.xml` (révèlerait un blocage actif Googlebot). Surveiller aussi le déréférencement de `dev.*`.
 
 ### Mises à jour techniques
 
@@ -158,7 +159,7 @@ _(rien à faire pour l'instant)_
 - ✅ **Fait (2026-07-08/09)** — code commité sur `dev` **+ recompression exécutée** : `media` −81 % (72,7→13,6 Mo), `images` −90 % (24→2,3 Mo), `avatars` déjà légers (rien à gagner). Originaux dans `storage-backups/` (gitignored). ⚠️ `cacheControl` ignoré par l'endpoint public (sert `no-cache`) — impact faible (ETag→304), cf. doc. Code :
   - **`scripts/optimize-storage-images.ts`** — recompresse en WebP l'existant d'un bucket, ré-uploadé **sous le même chemin** (⇒ **aucune URL à changer en base**). Dry-run par défaut, `--execute` requis, backup binaire des originaux + `manifest.json` avant écriture, GIF/SVG ignorés.
   - **`src/app/api/upload/route.ts`** patché — tout nouvel upload raster → resize ≤1600px + WebP q80 + `cacheControl` 1 an. GIF (logo animé email) / SVG conservés intacts. (`sharp` tourne en runtime Node, la route n'est pas `edge`.)
-- **Reste à faire** (recompression média/images **FAITE**, cf. doc) : **(a)** déployer le patch upload (merge `dev→main`) pour compresser les *nouveaux* uploads ; **(b)** surveiller la chute du cached egress dans le Usage Dashboard (2-3 j) ; **(c)** décider Pro. Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
+- **Reste à faire** (recompression images + **patch upload : FAITS & déployés** — merge `dev→main` `a8f255a` du 08/07, `sharp`/WebP confirmés dans `main:upload/route.ts`) : **(b)** surveiller la chute du cached egress dans le Usage Dashboard (2-3 j) ; **(c)** décider Pro (optionnel). Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
   1. **Dry-run** (lecture seule, sans risque) pour les vrais Mo avant/après :
      ```bash
      npx tsx scripts/optimize-storage-images.ts             # bucket media

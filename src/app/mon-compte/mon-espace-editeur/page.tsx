@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { getEditeurDataForUser, updateEditeurByUser, updateSolutionByEditeur, syncGalerieByEditeur } from '@/lib/actions/admin-users'
-import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase, Euro, Users } from 'lucide-react'
+import { ChevronDown, ChevronUp, Save, Play, Plus, Trash2, GripVertical, Building2, Clock, Headphones, FileText, Layers, Briefcase, Euro, Users, Upload } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { buildPrixDisplay } from '@/lib/prix'
@@ -438,6 +438,11 @@ function SolutionEditeurCard({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [galerieUploadingIndex, setGalerieUploadingIndex] = useState<number | null>(null)
+  const [galerieBulkUploading, setGalerieBulkUploading] = useState(false)
+  const [galerieUploadError, setGalerieUploadError] = useState<string | null>(null)
+  const galerieFileInputRef = useRef<HTMLInputElement>(null)
+  const galerieBulkInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
   const [communauteModalOpen, setCommunauteModalOpen] = useState(false)
 
@@ -492,6 +497,51 @@ function SolutionEditeurCard({
   const removeItem = (i: number) => setGalerie((g) => g.filter((_, idx) => idx !== i))
   const updateItem = (i: number, patch: Partial<GalerieItem>) =>
     setGalerie((g) => g.map((item, idx) => (idx === i ? { ...item, ...patch } : item)))
+
+  const ACCEPT_IMG = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml'
+
+  // Upload d'un fichier pour un item galerie existant → /api/upload (resize + WebP q80).
+  async function handleGalerieFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || galerieUploadingIndex === null) return
+    const idxCible = galerieUploadingIndex
+    setGalerieUploadError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) { setGalerieUploadError(json.error ?? 'Erreur upload'); return }
+      setGalerie((g) => g.map((item, idx) => (idx === idxCible ? { ...item, url: json.url, type: 'image' } : item)))
+    } catch {
+      setGalerieUploadError('Erreur réseau lors de l\'upload')
+    } finally {
+      setGalerieUploadingIndex(null)
+      if (galerieFileInputRef.current) galerieFileInputRef.current.value = ''
+    }
+  }
+
+  // Upload multiple : ajoute autant d'items image que de fichiers choisis (chacun compressé).
+  async function handleGalerieBulkUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setGalerieBulkUploading(true)
+    setGalerieUploadError(null)
+    const nouveaux: GalerieItem[] = []
+    for (const file of files) {
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        const json = await res.json()
+        if (res.ok) nouveaux.push({ url: json.url, titre: null, ordre: galerie.length + nouveaux.length, type: 'image' })
+        else setGalerieUploadError(json.error ?? 'Erreur upload')
+      } catch { setGalerieUploadError('Erreur réseau lors de l\'upload') }
+    }
+    if (nouveaux.length) setGalerie((g) => [...g, ...nouveaux])
+    setGalerieBulkUploading(false)
+    if (galerieBulkInputRef.current) galerieBulkInputRef.current.value = ''
+  }
 
   const handleDragStart = (i: number) => setDragIdx(i)
   const handleDragOver = (e: React.DragEvent, i: number) => {
@@ -589,9 +639,19 @@ function SolutionEditeurCard({
                         type="url"
                         value={item.url}
                         onChange={(e) => updateItem(i, { url: e.target.value })}
-                        placeholder={isVideo ? 'https://www.youtube.com/watch?v=...' : 'https://...'}
+                        placeholder={isVideo ? 'https://www.youtube.com/watch?v=...' : 'https://... ou uploader un fichier'}
                         className={inputClass}
                       />
+                      {!isVideo && (
+                        <button
+                          type="button"
+                          onClick={() => { setGalerieUploadingIndex(i); galerieFileInputRef.current?.click() }}
+                          disabled={galerieUploadingIndex === i}
+                          className="inline-flex items-center gap-1 text-xs text-accent-blue hover:underline disabled:opacity-50"
+                        >
+                          <Upload className="w-3 h-3" /> {galerieUploadingIndex === i ? 'Upload…' : 'ou uploader un fichier'}
+                        </button>
+                      )}
                       <input
                         type="text"
                         value={item.titre ?? ''}
@@ -612,13 +672,25 @@ function SolutionEditeurCard({
               })}
             </div>
 
+            {/* Inputs fichier cachés → /api/upload (resize ≤1600px + WebP q80, comme l'admin) */}
+            <input ref={galerieFileInputRef} type="file" accept={ACCEPT_IMG} className="hidden" onChange={handleGalerieFileChange} />
+            <input ref={galerieBulkInputRef} type="file" accept={ACCEPT_IMG} multiple className="hidden" onChange={handleGalerieBulkUpload} />
+
             <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => galerieBulkInputRef.current?.click()}
+                disabled={galerieBulkUploading}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-dashed border-accent-blue/40 text-accent-blue hover:border-accent-blue hover:bg-accent-blue/5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                <Upload className="w-3.5 h-3.5" /> {galerieBulkUploading ? 'Upload en cours…' : 'Uploader des images'}
+              </button>
               <button
                 type="button"
                 onClick={addImage}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-accent-blue hover:text-accent-blue rounded-xl transition-colors"
               >
-                <Plus className="w-3.5 h-3.5" /> Ajouter une image
+                <Plus className="w-3.5 h-3.5" /> Ajouter via une URL
               </button>
               <button
                 type="button"
@@ -628,6 +700,7 @@ function SolutionEditeurCard({
                 <Play className="w-3.5 h-3.5" /> Ajouter une vidéo YouTube / Vimeo
               </button>
             </div>
+            {galerieUploadError && <p className="text-xs text-red-600 mt-2">{galerieUploadError}</p>}
           </div>
 
           {/* Mot de l'éditeur (page solution) */}
