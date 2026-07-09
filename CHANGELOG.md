@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-07-10] — Upload de fichiers dans la galerie éditeur
+
+### UX / UI — Galerie éditeur : upload de fichiers (compressé)
+- L'espace éditeur ne permettait d'ajouter des images de galerie que par **URL collée** (hotlink) ; l'admin avait déjà l'upload fichier. Ajout de l'upload côté éditeur ([mon-espace-editeur/page.tsx](src/app/mon-compte/mon-espace-editeur/page.tsx)) : bouton « Uploader des images » (multiple) + lien « ou uploader un fichier » par item.
+- Les uploads passent par `/api/upload` → **resize ≤1600px + WebP q80** (bucket `images`), comme les logos et la galerie admin → nouvelles captures éditeur compressées d'office (cohérent avec l'effort egress). Bouton URL conservé (« Ajouter via une URL »).
+
+### TODO — Mises à jour
+- SEO : actions GSC (suppression des 2 entrées + re-soumission `sitemap.xml`) marquées faites (09/07) ; reste surveillance 48 h.
+- Egress : patch upload confirmé **déployé** sur `main` (merge `a8f255a`) ; reste surveillance du dashboard + décision Pro.
+
+---
+
 ## [2026-07-09] — Sitemap (nettoyage doublon) + nombre d'avis cliquable
 
 ### SEO — Sitemap : suppression du doublon `sitemap-v2.xml`
