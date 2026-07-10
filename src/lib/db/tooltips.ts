@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 
 export interface NoteGlobaleTooltip {
   tooltip_court_legacy: string
@@ -34,7 +34,7 @@ function isValidTooltip(obj: unknown): obj is Omit<NoteGlobaleTooltip, 'modale_a
  * (typiquement : ne pas afficher la tooltip plutôt qu'un texte hardcodé périmé).
  */
 export async function getNoteGlobaleTooltip(): Promise<NoteGlobaleTooltip | null> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   const { data, error } = await supabase
     .from('pages_statiques')
     .select('contenu')

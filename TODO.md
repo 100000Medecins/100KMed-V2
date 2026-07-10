@@ -136,7 +136,15 @@ _(rien en cours)_
 
 ### Performance
 
-_(rien à faire pour l'instant)_
+#### Réduire la CPU Vercel Fluid — passe 2 (extension ISR aux autres pages publiques)
+- **Contexte** : alerte Vercel Fluid Active CPU (~91 % des 4h Hobby → **risque de pause du site**). Cause : les pages publiques lisaient les cookies (via `createServerClient`) → rendues **dynamiquement à chaque requête**. Preuve + recette : [docs/2026-07-11-plan-isr-pages-publiques.md](docs/2026-07-11-plan-isr-pages-publiques.md).
+- ✅ **Passe 1 FAITE + déployée (2026-07-11)** : `createPublicClient()` (anon sans cookies, RLS conservée) + bascule des lectures publiques + `generateStaticParams` → **accueil `ƒ→○`** et **139 fiches solutions `ƒ→●`** (les 2 gros postes). Build + `tsc` OK. Cf CHANGELOG 2026-07-11.
+- **Passe 2 — reste à faire** (même recette : bascule vers `createPublicClient` + `generateStaticParams() { return [] }`, **fichier par fichier avec build de vérif `ƒ→○/●`**) :
+  - Contenu éditorial : `/blog`, `/blog/[slug]`, `/actualites`, `/qui-sommes-nous`, `/comparatifs`, `/videos`, `/glossaire`, `/difficile-de-changer`, `/irritants-esante`, `/tous-ensemble`, `/lancement-100k`, `/transparence`, `/cgu`, `/rgpd`… (prioriser blog/actualités).
+  - Sous-page avis `/solutions/[cat]/[sol]/evaluations`.
+  - **Page catégorie `/solutions/[cat]`** : cas à part — dynamique car lit `searchParams` (filtres tags/tri) → la rendre statique = **passer le filtrage côté client** (petit chantier distinct).
+  - Hors scope : `/recherche` (dynamique par nature).
+- **Vercel Pro** : à garder en tête pour la rentrée (dépassement = **pause du site**, pas throttle ; cf. CHANGELOG 2026-07-10). La passe 1 réduit déjà fortement la CPU.
 
 ### SEO / Référencement
 

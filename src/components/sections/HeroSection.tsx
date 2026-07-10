@@ -1,9 +1,9 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import HeroIllustration from './HeroIllustration'
 
 async function getPartenaires() {
   try {
-    const supabase = await createServerClient()
+    const supabase = createPublicClient()
     const { data } = await supabase
       .from('partenaires')
       .select('id, nom, logo_url, lien_url')
@@ -17,7 +17,7 @@ async function getPartenaires() {
 
 async function getSiteConfig(cles: string[]): Promise<Record<string, string>> {
   try {
-    const supabase = await createServerClient()
+    const supabase = createPublicClient()
     const { data } = await (supabase as any)
       .from('site_config')
       .select('cle, valeur')

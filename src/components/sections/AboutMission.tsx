@@ -1,10 +1,10 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import MissionCard from '@/components/ui/MissionCard'
 import { missionItems } from '@/lib/data'
 
 async function getSiteConfig(cles: string[]): Promise<Record<string, string>> {
   try {
-    const supabase = await createServerClient()
+    const supabase = createPublicClient()
     const { data } = await (supabase as any)
       .from('site_config')
       .select('cle, valeur')
@@ -20,7 +20,7 @@ async function getSiteConfig(cles: string[]): Promise<Record<string, string>> {
 async function getPagesBySlugOrder(slugs: string[]) {
   if (slugs.length === 0) return []
   try {
-    const supabase = await createServerClient()
+    const supabase = createPublicClient()
     const { data } = await supabase
       .from('pages_statiques')
       .select('slug, titre, image_couverture, meta_description')

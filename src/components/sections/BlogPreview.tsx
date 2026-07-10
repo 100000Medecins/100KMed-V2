@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 
 type Article = {
   id: string
@@ -12,7 +12,7 @@ type Article = {
 }
 
 async function getDerniersArticles(): Promise<Article[]> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('articles')
