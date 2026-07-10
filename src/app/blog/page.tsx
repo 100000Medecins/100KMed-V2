@@ -5,7 +5,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 
-export const revalidate = 300
+export const revalidate = 1800 // ISR 30 min (au lieu de 5 min) — réduit la CPU Vercel Fluid.
 
 export const metadata: Metadata = {
   title: 'Blog — 100000médecins.org',

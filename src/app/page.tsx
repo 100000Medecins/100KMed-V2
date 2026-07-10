@@ -11,7 +11,7 @@ import { getCategories } from "@/lib/db/categories";
 import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getNbNotesUtilisateurs, getSiteStats } from "@/lib/db/solutions";
 import { getHomepageVideos } from "@/lib/db/misc";
 
-export const revalidate = 1800;
+export const revalidate = 3600; // ISR 1h (au lieu de 30 min) — accueil = gros fan-out BDD, réduit la CPU Vercel Fluid.
 
 export default async function Home() {
   const [categories, siteStats, videos] = await Promise.all([

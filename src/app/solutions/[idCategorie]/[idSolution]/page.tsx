@@ -1,4 +1,4 @@
-export const revalidate = 300
+export const revalidate = 3600 // ISR 1h : ~12x moins de régénérations qu'en 5 min. Rendu lourd (~10-13 requêtes BDD) × 139 fiches → gros poste de CPU Vercel Fluid. Les modifs admin revalident à la volée (revalidatePath).
 
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
