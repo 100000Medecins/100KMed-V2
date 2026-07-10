@@ -1,4 +1,4 @@
-import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { createPublicClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { previewInactive } from '@/lib/preview'
 import type { SolutionWithRelations, SolutionWithResultat } from '@/types/models'
 
@@ -11,7 +11,7 @@ export async function getSolutions(options?: {
   editeurId?: string
   limit?: number
 }) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   // Si on filtre par catégorie, utiliser un INNER JOIN pour filtrer via la FK
   const categorieJoin = options?.categorieId
@@ -52,7 +52,7 @@ export async function getSolutions(options?: {
  * automatiquement la vignette + le bouton play.
  */
 async function getVideosForSolutionAsGalerie(
-  supabase: Awaited<ReturnType<typeof createServerClient>>,
+  supabase: ReturnType<typeof createPublicClient>,
   solutionId: string,
   baseOrdre: number,
 ) {
@@ -90,7 +90,7 @@ async function getVideosForSolutionAsGalerie(
  * Remplace : fetchSolutionByIdSolution + sous-resolvers (editeur, categorie, tags)
  */
 export async function getSolutionById(id: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('solutions')
@@ -138,7 +138,7 @@ export async function getSolutionById(id: string) {
  * Utilisé pour rediriger les anciennes URLs de comparaison `slug-vs-slug` vers `/solutions/comparer?ids=`.
  */
 export async function getSolutionIdsBySlugs(slugs: string[]): Promise<Map<string, string>> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   const { data } = await supabase.from('solutions').select('id, slug').in('slug', slugs)
   return new Map((data ?? []).filter((s): s is { id: string; slug: string } => !!s.slug).map((s) => [s.slug, s.id]))
 }
@@ -147,7 +147,7 @@ export async function getSolutionIdsBySlugs(slugs: string[]): Promise<Map<string
  * Récupère une solution par son slug avec toutes ses relations.
  */
 export async function getSolutionBySlug(slug: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('solutions')
@@ -199,7 +199,7 @@ export async function getSolutionBySlug(slug: string) {
  * Remplace : fetchSolutionsByTags
  */
 export async function getSolutionsByTags(categorieId: string, tagIds: string[]) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   // Comportement ET : garder uniquement les solutions qui ont TOUS les tags sélectionnés
   const { data: solutionTagRows, error: tagError } = await supabase
@@ -244,7 +244,7 @@ export async function getSolutionsByCategorieAndType(
   type: string,
   limit: number
 ) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   let query = supabase
     .from('solutions')
@@ -265,7 +265,7 @@ export async function getSolutionsByCategorieAndType(
  * Génère les paramètres statiques pour ISR.
  */
 export async function getAllSolutionIds() {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('solutions')
@@ -283,7 +283,7 @@ export async function getAllSolutionIds() {
  * Source : table resultats + criteres, filtrés sur nom_capital non null.
  */
 export async function getNotesRedac(solutionId: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('resultats')
@@ -327,7 +327,7 @@ export type NoteRedac = Awaited<ReturnType<typeof getNotesRedac>>[number]
 
 export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   const { data, error } = await supabase
     .from('solutions')
     .select('id, evaluation_redac_note')
@@ -356,11 +356,11 @@ export async function getNotesRedacGlobales(solutionIds: string[]): Promise<Reco
  */
 export async function getNotesUtilisateursGlobales(
   solutionIds: string[],
-  client?: Awaited<ReturnType<typeof createServerClient>>,
+  client?: ReturnType<typeof createPublicClient>,
 ): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = client ?? (await createServerClient())
+  const supabase = client ?? (createPublicClient())
 
   // Étape 1 : essayer de lire la ligne `type='moyenne'` pour chaque solution
   const { data: critereMoyenne } = await supabase
@@ -429,7 +429,7 @@ export async function getNotesCritere(
 ): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('resultats')
@@ -456,11 +456,11 @@ export async function getNotesCritere(
  */
 export async function getNbNotesUtilisateurs(
   solutionIds: string[],
-  client?: Awaited<ReturnType<typeof createServerClient>>,
+  client?: ReturnType<typeof createPublicClient>,
 ): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = client ?? (await createServerClient())
+  const supabase = client ?? (createPublicClient())
 
   const map: Record<string, number> = {}
 
@@ -538,11 +538,11 @@ export async function getSiteStats(): Promise<{ nbSolutions: number; nbEvaluatio
 
 export async function getNotesGlobalesRedac(
   solutionIds: string[],
-  client?: Awaited<ReturnType<typeof createServerClient>>,
+  client?: ReturnType<typeof createPublicClient>,
 ): Promise<Record<string, number>> {
   if (solutionIds.length === 0) return {}
 
-  const supabase = client ?? (await createServerClient())
+  const supabase = client ?? (createPublicClient())
 
   const { data, error } = await supabase
     .from('solutions')

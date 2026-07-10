@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 
 type Etude = { id: string; titre: string; description: string | null; date_fin: string | null }
 type Questionnaire = { id: string; titre: string; description: string | null; date_fin: string | null }
 
 async function getData() {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = supabase as any
   const today = new Date().toISOString().slice(0, 10)

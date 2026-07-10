@@ -45,3 +45,26 @@ export function createServiceRoleClient() {
   )
 }
 
+/**
+ * Client Supabase pour les LECTURES PUBLIQUES sur pages cacheables (ISR).
+ *
+ * Clé anon, mais SANS adaptateur cookies → n'appelle jamais `cookies()`, donc
+ * n'oblige pas Next.js à rendre la page dynamiquement (contrairement à
+ * `createServerClient()`). C'est ce qui permet à l'ISR de s'activer sur les pages
+ * publiques (fiches solutions, accueil, catégories…) → rendu ~1×/heure au lieu de
+ * chaque requête, d'où une forte baisse de la CPU Vercel Fluid.
+ *
+ * La RLS reste active (rôle anon = ne voit que les lignes publiques), donc même
+ * vue qu'un visiteur anonyme + filet de sécurité si un filtre `actif` manquait.
+ *
+ * ⚠️ NE JAMAIS l'utiliser pour du contenu spécifique-utilisateur (mes évals,
+ * favoris, profil…) : ça nécessite la session → `createServerClient()`.
+ */
+export function createPublicClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
+

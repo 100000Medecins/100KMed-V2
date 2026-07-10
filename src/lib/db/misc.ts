@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, createPublicClient } from '@/lib/supabase/server'
 import type { Avatar, Actualite, DocumentRow, Tag, Critere } from '@/types/models'
 
 /**
@@ -64,7 +64,7 @@ export async function getVideoRubriques(): Promise<VideoRubrique[]> {
  * Mode auto : les 6 dernières publiées (par created_at desc).
  */
 export async function getHomepageVideos(): Promise<VideoRow[]> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -158,7 +158,7 @@ export async function getActualites(limit?: number) {
  * Remplace : fetchTags
  */
 export async function getTags(categorieId: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('tags')
@@ -196,7 +196,7 @@ export async function getTagsPrincipauxForSolution(solutionId: string) {
  * via les resultats des solutions de la catégorie.
  */
 export async function getCriteresMajeurs(categorieId: string): Promise<Critere[]> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   // Solutions de la catégorie
   const { data: sols } = await supabase

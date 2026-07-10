@@ -17,6 +17,20 @@
 
 ---
 
+## [2026-07-11] — Pages publiques cacheables par ISR (CPU Vercel Fluid) — passe 1
+
+### Infrastructure — Lectures publiques cookie-less → ISR
+- **Cause** : les pages publiques lisaient les cookies via `createServerClient()` → Next les rendait **dynamiquement à chaque requête** (le `revalidate` était ignoré ; prouvé au build : accueil `ƒ`). 1er poste de CPU Vercel Fluid (~91 % du quota Hobby).
+- **Fix** : nouveau `createPublicClient()` ([server.ts](src/lib/supabase/server.ts)) — clé anon **sans cookies** (RLS conservée). Bascule des fonctions de lecture publique du chemin accueil/fiches (`solutions.ts`, `tooltips.ts`, `categories.ts` publiques, `misc` home/tags/critères) + 4 composants de sections d'accueil qui fetchaient inline.
+- **`generateStaticParams() { return [] }`** ajouté à la fiche solution (pattern déjà utilisé par `/editeur/[slug]`) : bascule la route de `ƒ` à `●` (ISR on-demand).
+- **Résultat (build + `tsc` OK)** : accueil **`ƒ→○`**, 139 fiches solutions **`ƒ→●`** (rendu ~1×/h au lieu d'à chaque requête). Découverte : beaucoup de fonctions fiche étaient **déjà** en service-role (settings, citations, avis, résultats). Plan : [docs/2026-07-11-plan-isr-pages-publiques.md](docs/2026-07-11-plan-isr-pages-publiques.md).
+- **Passe 2 (à venir)** : même recette pour blog/actualités/pages éditoriales + filtres catégorie côté client (cf. TODO Performance).
+
+### TODO — Mises à jour
+- Ajout (Performance) : « Réduire la CPU Vercel Fluid — passe 2 (extension ISR) ».
+
+---
+
 ## [2026-07-10] — Réduction de la CPU Vercel Fluid (fenêtres ISR)
 
 ### Infrastructure — Allongement des fenêtres de revalidation ISR

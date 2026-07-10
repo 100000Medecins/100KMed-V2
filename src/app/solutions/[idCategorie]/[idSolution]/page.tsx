@@ -42,6 +42,14 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   }
 }
 
+// Retourne vide : les fiches sont générées on-demand puis mises en cache (ISR).
+// Déclarer generateStaticParams (même vide) bascule la route de dynamique (ƒ) à
+// statique/ISR (●) → rendu ~1×/heure par fiche au lieu d'à chaque requête (CPU Vercel Fluid).
+// (Même pattern que /editeur/[slug].)
+export async function generateStaticParams() {
+  return []
+}
+
 export default async function SolutionPage(props: PageProps) {
   const params = await props.params;
 

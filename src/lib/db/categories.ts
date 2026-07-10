@@ -1,5 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServerClient, createServiceRoleClient, createPublicClient } from '@/lib/supabase/server'
 import { previewInactive } from '@/lib/preview'
 import type { Categorie } from '@/types/models'
 
@@ -10,7 +9,7 @@ export type Groupe = { id: string; nom: string; ordre: number }
  * Remplace : fetchCategories
  */
 export async function getCategories() {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   let query = supabase
     .from('categories')
@@ -43,7 +42,7 @@ export async function getAllCategoriesAdmin() {
  * Remplace : fetchCategorieByIdCategorie
  */
 export async function getCategorieById(id: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('categories')
@@ -60,7 +59,7 @@ export async function getCategorieById(id: string) {
  * Remplace : fetchCategorieDefaut
  */
 export async function getCategorieDefaut() {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('categories')
@@ -76,7 +75,7 @@ export async function getCategorieDefaut() {
  * Récupère une catégorie par son slug.
  */
 export async function getCategorieBySlug(slug: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('categories')
@@ -105,7 +104,7 @@ export async function getGroupes(): Promise<Groupe[]> {
  * Récupère les catégories actives avec leur groupe, pour la navbar et la page hub.
  */
 export async function getCategoriesAvecGroupe() {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   let query = (supabase as any)
     .from('categories')
     .select('nom, slug, groupe_id, groupes_categories(id, nom, ordre)')
@@ -125,7 +124,7 @@ export async function getCategoriesAvecGroupe() {
  * Génère les paramètres statiques pour ISR.
  */
 export async function getAllCategorieIds() {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   let query = supabase
     .from('categories')
