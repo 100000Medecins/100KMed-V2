@@ -1,4 +1,4 @@
-export const revalidate = 300
+export const revalidate = 1800 // ISR 30 min (au lieu de 5 min) — réduit la CPU Vercel Fluid.
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'

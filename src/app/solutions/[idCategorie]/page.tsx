@@ -1,4 +1,4 @@
-export const revalidate = 300
+export const revalidate = 3600 // ISR 1h (au lieu de 5 min) — réduit la CPU Vercel Fluid ; les modifs admin revalident à la volée.
 
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'

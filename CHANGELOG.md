@@ -17,6 +17,15 @@
 
 ---
 
+## [2026-07-10] — Réduction de la CPU Vercel Fluid (fenêtres ISR)
+
+### Infrastructure — Allongement des fenêtres de revalidation ISR
+- **Contexte** : alerte Vercel (Fluid Active CPU à ~91 % des 4h incluses du plan Hobby → **risque de mise en pause du site**). Cause : les fiches solutions (`/solutions/[cat]/[sol]`, ~10-13 requêtes BDD par rendu × 139 pages) en `revalidate=300` régénéraient en continu sous le crawl des bots. Les crons (quotidiens/hebdo) sont négligeables.
+- **Fix** : fenêtres ISR allongées — fiches solutions & catégories `300→3600`, accueil `1800→3600`, blog (liste + article) `300→1800`. → **~6-12× moins** de régénérations en arrière-plan. Sans impact de fraîcheur notable (les modifs admin revalident déjà à la volée via `revalidatePath` ; un nouvel avis se reflète sous 1h).
+- **À suivre** : chez Vercel, dépassement = **mise en pause** (site hors ligne), pas un throttle → envisager **Pro** avant la campagne de rentrée (assurance anti-downtime). L'optimisation ISR garde la facture basse même en Pro.
+
+---
+
 ## [2026-07-09] — Sitemap (nettoyage doublon) + nombre d'avis cliquable
 
 ### SEO — Sitemap : suppression du doublon `sitemap-v2.xml`
