@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-07-12] — Pages publiques cacheables par ISR — passe 2 + tri catégorie
+
+### Infrastructure — ISR passe 2 : bascule des pages publiques restantes
+- Suite de la passe 1 (accueil + fiches). Recette : lectures publiques via `createPublicClient` (anon, sans cookies) + `generateStaticParams`, build de vérif `ƒ→○/●` fichier par fichier.
+- **12 pages `ƒ→○`** : `/cgu`, `/rgpd`, `/transparence`, `/qui-sommes-nous`, `/tous-ensemble`, `/difficile-de-changer`, `/irritants-esante`, `/lancement-100k`, `/comparatifs`, `/videos` (switch `getPageBySlug/OrNull`, `getVideos/getVideoRubriques`, inline comparatifs) + `/glossaire`, `/stories-tutos` (email du formulaire de suggestion lu **côté client** via `useAuth` au lieu de la session serveur ; `force-dynamic` retiré).
+- **2 pages `ƒ→●`** : `/blog/[slug]` (switch + `generateStaticParams`) et la **page catégorie `/solutions/[cat]`** — filtrage tags + tri (global/critère/prix/nom) **déportés côté client** (fonction pure `filterAndSortSolutions` + `SolutionsCategoryBrowser`/`useSearchParams`, fallback `<Suspense>` = vue par défaut rendue serveur → solutions dans le HTML statique pour le SEO). `SolutionFilters`/`SolutionSortBar` inchangés. Vérif rendu serveur : 30/41 solutions dans le HTML selon la catégorie.
+- Plan : [docs/2026-07-11-plan-isr-passe-2.md](docs/2026-07-11-plan-isr-passe-2.md).
+
+### UX / UI — Tri « Nom » de la page catégorie : 2 correctifs
+- **Notes masquées en tri Nom** : les cartes affichaient « Pas encore noté » en A→Z (`displayNote` forcé à `null`). Fix : en `tri === 'nom'`, afficher **les deux notes** (Utilisateurs + Rédaction) comme sur l'accueil, si présentes ([SolutionList.tsx](src/components/solutions/SolutionList.tsx)).
+- **Tri Nom perdu au filtrage** (bug préexistant) : cocher un tag en tri Nom repassait sur « Note utilisateurs ». Cause : `SolutionFilters.buildUrl` omettait `tri` quand `!== 'nom'` → URL sans `tri` = retour au défaut. Fix : n'omettre que le vrai défaut (`!== 'note_utilisateurs'`) + `DEFAULT_DIR` complété (`prix`).
+
+### Nettoyage — Route morte `/actualites`
+- Découvert pendant la passe 2 : `/actualites` interroge `public.actualites`, table **inexistante** (vérifié SQL ; vestige Firebase, contenu migré vers `articles`). Route non liée, laissée dynamique pour ne pas casser le build ; `getActualites` conservé sur `createServerClient` (commenté). À nettoyer.
+
+### TODO — Mises à jour
+- Barré : « Cartes solutions — compteur d'avis + clic » (fait) ; test mobile e-CPS PSC (fait).
+- Ajout (Nettoyage) : route morte `/actualites` (+ `documents`).
+- Passe 2 : statut (phases 1/1b/2 + page catégorie faites ; reste `/blog` liste + sous-page avis).
+
+---
+
 ## [2026-07-10] — Upload de fichiers dans la galerie éditeur
 
 ### UX / UI — Galerie éditeur : upload de fichiers (compressé)
