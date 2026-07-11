@@ -3,7 +3,7 @@ export const revalidate = 1800 // ISR 30 min (au lieu de 5 min) — réduit la C
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -14,8 +14,14 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+// ISR à la demande : la 1ʳᵉ visite d'un article le rend puis le met en cache (comme les fiches
+// solutions) → route ● au lieu de ƒ. La lecture publique (anon, sans cookies) le permet. Cf passe 2 ISR.
+export async function generateStaticParams() {
+  return []
+}
+
 async function getArticle(slug: string) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('articles')

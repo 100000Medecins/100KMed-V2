@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, createPublicClient } from '@/lib/supabase/server'
 import type { PageStatique } from '@/types/models'
 
 export async function getPagesStatiques(): Promise<PageStatique[]> {
@@ -14,7 +14,8 @@ export async function getPagesStatiques(): Promise<PageStatique[]> {
 }
 
 export async function getPageBySlug(slug: string): Promise<PageStatique> {
-  const supabase = await createServerClient()
+  // Lecture publique (contenu éditorial) → client anon sans cookies pour rester cacheable ISR.
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('pages_statiques')
@@ -39,7 +40,8 @@ export async function getPageBySlug(slug: string): Promise<PageStatique> {
  * dans un `try { } catch { notFound() }` qui masque tout.
  */
 export async function getPageBySlugOrNull(slug: string): Promise<PageStatique | null> {
-  const supabase = await createServerClient()
+  // Lecture publique (contenu éditorial) → client anon sans cookies pour rester cacheable ISR.
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('pages_statiques')

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -27,7 +27,7 @@ type Groupe = {
 }
 
 async function getCategoriesGroupees(): Promise<Groupe[]> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('categories')

@@ -1,9 +1,8 @@
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR 1h — page publique cacheable (cf passe 2 ISR).
 
 import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { getVideos, getVideoRubriques } from '@/lib/db/misc'
 import StoriesTutosSuggestForm from '@/components/StoriesTutosSuggestForm'
 import { Video } from 'lucide-react'
@@ -48,28 +47,12 @@ function VideoCard({ video }: { video: { id: string; titre: string | null; url: 
   )
 }
 
-async function getUserEmail(): Promise<string | null> {
-  try {
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
-    const serviceClient = createServiceRoleClient()
-    const { data: profile } = await serviceClient
-      .from('users')
-      .select('contact_email')
-      .eq('id', user.id)
-      .single()
-    return (profile as { contact_email?: string } | null)?.contact_email || user.email || null
-  } catch {
-    return null
-  }
-}
-
 export default async function StoriesTutosPage() {
-  const [videos, rubriques, userEmail] = await Promise.all([
+  // Page publique cacheable (ISR) : lectures anon sans cookies. L'email de préremplissage du
+  // formulaire de suggestion est désormais lu côté client (useAuth) dans StoriesTutosSuggestForm.
+  const [videos, rubriques] = await Promise.all([
     getVideos({ onlyPublished: true }),
     getVideoRubriques(),
-    getUserEmail(),
   ])
 
   // Grouper : videos avec rubrique → par rubrique (ordre rubrique) ; sans rubrique → à la fin
@@ -129,7 +112,7 @@ export default async function StoriesTutosPage() {
             )}
 
             <div id="proposer" className="max-w-3xl mx-auto">
-              <StoriesTutosSuggestForm userEmail={userEmail} />
+              <StoriesTutosSuggestForm />
             </div>
           </div>
         </section>

@@ -7,19 +7,32 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { getCategorieBySlug } from '@/lib/db/categories'
-import { getSolutions, getSolutionsByTags, getNotesGlobalesRedac, getNotesUtilisateursGlobales, getNotesCritere, getNbNotesUtilisateurs } from '@/lib/db/solutions'
+import {
+  getSolutions,
+  getNotesGlobalesRedac,
+  getNotesUtilisateursGlobales,
+  getNbNotesUtilisateurs,
+  getSolutionsTagsMap,
+  getNotesParCritere,
+} from '@/lib/db/solutions'
 import { getTags, getCriteresMajeurs } from '@/lib/db/misc'
 import { getDisplayPrixFront } from '@/lib/db/settings'
 import { getCitationsActives } from '@/lib/db/citations'
-import { computeSortValue } from '@/lib/prix'
-import SolutionList from '@/components/solutions/SolutionList'
-import SolutionFilters from '@/components/solutions/SolutionFilters'
-import SolutionSortBar from '@/components/solutions/SolutionSortBar'
 import CitationCarousel from '@/components/CitationCarousel'
+import SolutionsCategoryBrowser from '@/components/solutions/SolutionsCategoryBrowser'
+import SolutionsCategoryView from '@/components/solutions/SolutionsCategoryView'
+import { filterAndSortSolutions, type CategoryBrowseData } from '@/lib/solutions-filter-sort'
+
+/**
+ * ISR à la demande (page ● au lieu de ƒ). Le filtrage/tri (qui lisait `searchParams` côté serveur,
+ * seul déclencheur dynamique restant) est désormais fait côté client dans SolutionsCategoryBrowser.
+ */
+export async function generateStaticParams() {
+  return []
+}
 
 interface PageProps {
   params: Promise<{ idCategorie: string }>
-  searchParams: Promise<{ tags?: string; tri?: string; critere?: string; dir?: string }>
 }
 
 /**
@@ -62,14 +75,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 // Le flag has_note_redac sur la catégorie contrôle l'affichage du tri par note rédaction
 
-const DEFAULT_DIR: Record<string, 'asc' | 'desc'> = {
-  nom: 'asc',
-  note_redac: 'desc',
-  note_utilisateurs: 'desc',
-}
-
 export default async function SolutionsPage(props: PageProps) {
-  const searchParams = await props.searchParams;
   const params = await props.params;
 
   // Ancien format Quasar : slug catégorie en CamelCase. Redirection 301 vers minuscules.
@@ -81,82 +87,39 @@ export default async function SolutionsPage(props: PageProps) {
   const categorie = await getCategorieBySlug(params.idCategorie).catch(() => null)
   if (!categorie) notFound()
 
-  const selectedTagIds = searchParams.tags?.split(',').filter(Boolean) || []
-  const tri = searchParams.tri || 'note_utilisateurs'
-  const critereId = searchParams.critere || ''
-  const dir: 'asc' | 'desc' = (searchParams.dir === 'asc' || searchParams.dir === 'desc')
-    ? searchParams.dir
-    : DEFAULT_DIR[tri] ?? 'desc'
-
-  // Fetch solutions
-  const solutions = selectedTagIds.length > 0
-    ? await getSolutionsByTags(categorie.id, selectedTagIds)
-    : await getSolutions({ categorieId: categorie.id })
-
+  // On charge TOUTES les solutions de la catégorie + TOUTES les données de tri/filtre d'un coup
+  // (aucune lecture de searchParams côté serveur → page statique). Filtrage/tri fait côté client.
+  const solutions = await getSolutions({ categorieId: categorie.id })
   const solutionIds = solutions.map((s) => s.id)
 
-  // Fetch en parallèle
-  const needsRedacNotes = tri !== 'nom'
-  const needsUserNotes = tri === 'note_utilisateurs'
-  const needsCritere = (tri === 'note_redac' || tri === 'note_utilisateurs') && critereId
-
-  const [tags, criteresMajeurs, notesRedac, nbNotesMap, displayPrixFront, citations] = await Promise.all([
+  const [tags, criteresMajeurs, notesRedac, notesUtilisateurs, nbNotesMap, displayPrixFront, citations, solutionTags] = await Promise.all([
     getTags(categorie.id),
     getCriteresMajeurs(categorie.id),
-    needsRedacNotes ? getNotesGlobalesRedac(solutionIds) : Promise.resolve({} as Record<string, number>),
+    getNotesGlobalesRedac(solutionIds),
+    getNotesUtilisateursGlobales(solutionIds),
     getNbNotesUtilisateurs(solutionIds),
     getDisplayPrixFront(),
     getCitationsActives(),
+    getSolutionsTagsMap(solutionIds),
   ])
 
-  const [notesUtilisateurs, notesCritere] = await Promise.all([
-    needsUserNotes ? getNotesUtilisateursGlobales(solutionIds) : Promise.resolve({} as Record<string, number>),
-    needsCritere ? getNotesCritere(solutionIds, critereId, tri === 'note_utilisateurs' ? 'utilisateurs' : 'redac') : Promise.resolve({} as Record<string, number>),
-  ])
+  const critereNotes = await getNotesParCritere(solutionIds, criteresMajeurs.map((c) => c.id))
 
-  // Enrichir
-  let solutionsAvecNotes = solutions.map((s) => ({
-    ...s,
-    noteRedacBase5: notesRedac[s.id] ?? null,
-    noteUtilisateursBase5: notesUtilisateurs[s.id] ?? null,
-    noteCritere: notesCritere[s.id] ?? null,
-    nbNotesUtilisateurs: nbNotesMap[s.id] ?? null,
-  }))
-
-  // Trier (direction appliquée)
-  const asc = dir === 'asc'
-  if (needsCritere) {
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
-      asc ? (a.noteCritere ?? -1) - (b.noteCritere ?? -1) : (b.noteCritere ?? -1) - (a.noteCritere ?? -1)
-    )
-  } else if (tri === 'note_redac') {
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
-      asc ? (a.noteRedacBase5 ?? -1) - (b.noteRedacBase5 ?? -1) : (b.noteRedacBase5 ?? -1) - (a.noteRedacBase5 ?? -1)
-    )
-  } else if (tri === 'note_utilisateurs') {
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
-      asc ? (a.noteUtilisateursBase5 ?? -1) - (b.noteUtilisateursBase5 ?? -1) : (b.noteUtilisateursBase5 ?? -1) - (a.noteUtilisateursBase5 ?? -1)
-    )
-  } else if (tri === 'prix' && displayPrixFront) {
-    // Tri par prix : solutions sans prix renvoyées en fin de liste (séparées visuellement)
-    const sortValueOf = (s: { prix_ttc: number | null; prix_ttc_min: number | null; prix_ttc_max: number | null }) =>
-      computeSortValue({ ...s, prix_devise: null, prix_frequence: null, prix_duree_engagement_mois: null })
-    const withPrix = solutionsAvecNotes.filter((s) => sortValueOf(s as any) != null)
-    const withoutPrix = solutionsAvecNotes.filter((s) => sortValueOf(s as any) == null)
-    withPrix.sort((a, b) => {
-      const va = sortValueOf(a as any)!
-      const vb = sortValueOf(b as any)!
-      return asc ? va - vb : vb - va
-    })
-    // Solutions sans prix triees par nom A→Z pour un ordre stable
-    withoutPrix.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
-    solutionsAvecNotes = [...withPrix, ...withoutPrix]
-  } else {
-    // tri nom
-    solutionsAvecNotes = solutionsAvecNotes.sort((a, b) =>
-      asc ? (a.nom || '').localeCompare(b.nom || '') : (b.nom || '').localeCompare(a.nom || '')
-    )
+  const browseData: CategoryBrowseData = {
+    notesRedac, notesUtilisateurs, nbNotesMap, solutionTags, critereNotes, displayPrixFront,
   }
+
+  const categorieSlug = categorie.slug || ''
+  const hasNoteRedac = !!(categorie as any).has_note_redac
+  const labelFiltres = (categorie as any).label_filtres || undefined
+
+  // Vue par défaut (tri note_utilisateurs, sans filtre) rendue côté serveur → sert de fallback
+  // au <Suspense> : garantit que la liste complète des solutions est dans le HTML statique (SEO).
+  const defaultEnriched = filterAndSortSolutions(
+    solutions,
+    { selectedTagIds: [], tri: 'note_utilisateurs', critereId: '', dir: 'desc' },
+    browseData,
+  )
 
   return (
     <>
@@ -204,44 +167,36 @@ export default async function SolutionsPage(props: PageProps) {
           <CitationCarousel citations={citations} />
         </section>
 
-        {/* Filtres + liste */}
-        <section className="max-w-7xl mx-auto px-6 pt-4 pb-10 md:py-10">
-          {/* Layout flex d'origine : le bandeau de tri vit dans la colonne haute (flex-1)
-              qui contient aussi la liste → son `sticky top-[80px]` a la plage de défilement
-              nécessaire pour rester collé en haut. */}
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar filtres (tags uniquement) */}
-            {tags.length > 0 && (
-              <aside className="w-full md:w-52 shrink-0">
-                <Suspense fallback={<div className="h-12 bg-surface-light rounded-xl animate-pulse" />}>
-                  <SolutionFilters
-                    tags={tags}
-                    selectedTagIds={selectedTagIds}
-                    currentTri={tri}
-                    currentCritere={critereId}
-                    currentDir={dir}
-                    labelFiltres={(categorie as any).label_filtres || undefined}
-                  />
-                </Suspense>
-              </aside>
-            )}
-
-            {/* Colonne solutions : bandeau de tri (sticky) + liste */}
-            <div className="flex-1 min-w-0">
-              <SolutionSortBar
-                criteresMajeurs={criteresMajeurs}
-                currentTri={tri}
-                currentCritere={critereId}
-                currentDir={dir}
-                selectedTagIds={selectedTagIds}
-                count={solutionsAvecNotes.length}
-                hideNoteRedac={!(categorie as any).has_note_redac}
-                showPrixOption={displayPrixFront}
-              />
-              <SolutionList solutions={solutionsAvecNotes} categorieSlug={categorie.slug || ''} tri={tri} displayPrixFront={displayPrixFront} />
-            </div>
-          </div>
-        </section>
+        {/* Filtres + liste. Le tri/filtre lit `useSearchParams` (client) → sous <Suspense> pour
+            garder la page statique. Fallback = vue par défaut rendue serveur (SEO : solutions
+            présentes dans le HTML), remplacée au montage par la vue pilotée par l'URL. */}
+        <Suspense
+          fallback={
+            <SolutionsCategoryView
+              enriched={defaultEnriched}
+              tags={tags}
+              criteresMajeurs={criteresMajeurs}
+              selectedTagIds={[]}
+              tri="note_utilisateurs"
+              critereId=""
+              dir="desc"
+              displayPrixFront={displayPrixFront}
+              categorieSlug={categorieSlug}
+              hasNoteRedac={hasNoteRedac}
+              labelFiltres={labelFiltres}
+            />
+          }
+        >
+          <SolutionsCategoryBrowser
+            solutions={solutions}
+            tags={tags}
+            criteresMajeurs={criteresMajeurs}
+            data={browseData}
+            categorieSlug={categorieSlug}
+            hasNoteRedac={hasNoteRedac}
+            labelFiltres={labelFiltres}
+          />
+        </Suspense>
       </main>
       <Footer />
     </>

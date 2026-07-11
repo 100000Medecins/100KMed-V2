@@ -3,8 +3,13 @@
 import { useState, useTransition, useEffect, useRef } from 'react'
 import { Lightbulb, Send, Check } from 'lucide-react'
 import { suggestAcronyme } from '@/lib/actions/admin'
+import { useAuth } from '@/components/providers/AuthProvider'
 
 export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }: { userEmail?: string | null; defaultOpen?: boolean }) {
+  // Email de notification : prop serveur si fournie (pages dynamiques /mon-compte), sinon
+  // l'email de session lu côté client → garde la page glossaire statique/ISR (cf passe 2 ISR).
+  const { user } = useAuth()
+  const email = userEmail ?? user?.email ?? null
   const [open, setOpen] = useState(defaultOpen)
   const [notify, setNotify] = useState(true)
   const [done, setDone] = useState(false)
@@ -88,9 +93,9 @@ export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }:
               />
             </div>
           </div>
-          {userEmail ? (
+          {email ? (
             <>
-              <input type="hidden" name="email" value={notify ? userEmail : ''} />
+              <input type="hidden" name="email" value={notify ? email : ''} />
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -99,7 +104,7 @@ export default function GlossaireSuggestForm({ userEmail, defaultOpen = false }:
                   className="w-4 h-4 rounded accent-accent-blue"
                 />
                 <span className="text-xs text-gray-500">
-                  M&apos;envoyer un email lors de la publication <span className="text-gray-400">({userEmail})</span>
+                  M&apos;envoyer un email lors de la publication <span className="text-gray-400">({email})</span>
                 </span>
               </label>
             </>

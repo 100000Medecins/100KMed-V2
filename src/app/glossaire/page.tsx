@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -23,7 +23,7 @@ type Acronyme = {
 }
 
 async function getAcronymes(): Promise<Acronyme[]> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('acronymes')
@@ -32,25 +32,10 @@ async function getAcronymes(): Promise<Acronyme[]> {
   return (data ?? []) as Acronyme[]
 }
 
-async function getUserEmail(): Promise<string | null> {
-  try {
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
-    const serviceClient = createServiceRoleClient()
-    const { data: profile } = await serviceClient
-      .from('users')
-      .select('contact_email')
-      .eq('id', user.id)
-      .single()
-    return (profile as { contact_email?: string } | null)?.contact_email || user.email || null
-  } catch {
-    return null
-  }
-}
-
 export default async function GlossairePage() {
-  const [acronymes, userEmail] = await Promise.all([getAcronymes(), getUserEmail()])
+  // Page publique cacheable (ISR) : lecture anon sans cookies. L'email de préremplissage du
+  // formulaire de suggestion est désormais lu côté client (useAuth) dans GlossaireSuggestForm.
+  const acronymes = await getAcronymes()
   const letters = Array.from(new Set(acronymes.map(a => a.sigle[0].toUpperCase()))).sort()
 
   return (
@@ -72,7 +57,7 @@ export default async function GlossairePage() {
         <section className="max-w-5xl mx-auto px-6 py-10">
           <GlossaireClient acronymes={acronymes} letters={letters} />
           <div id="proposer">
-            <GlossaireSuggestForm userEmail={userEmail} />
+            <GlossaireSuggestForm />
           </div>
         </section>
       </main>
