@@ -109,12 +109,63 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
               )
             })()}
 
-            {/* Note */}
+            {/* Note(s) */}
             {(() => {
-              const isUtilisateurs = tri === 'note_utilisateurs'
-              const displayNote = tri === 'nom' ? null
-                : solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5)
               const nbAvis: number | null = solution.nbNotesUtilisateurs ?? null
+
+              // Tri « Nom » : pas de note de classement → on affiche les DEUX notes
+              // (Utilisateurs + Rédaction), comme sur l'accueil, si elles existent.
+              if (tri === 'nom') {
+                const noteUtil: number | null = solution.noteUtilisateursBase5 ?? null
+                const noteRedac: number | null = solution.noteRedacBase5 ?? null
+                if (noteUtil == null && noteRedac == null) {
+                  return (
+                    <div className="flex items-center gap-1 pt-3 border-t border-gray-100 overflow-hidden">
+                      <span className="text-xs text-gray-400">Pas encore noté</span>
+                    </div>
+                  )
+                }
+                return (
+                  <div className="grid grid-cols-[auto_auto] justify-start items-center gap-x-2 gap-y-1 pt-3 border-t border-gray-100 overflow-hidden">
+                    {noteUtil != null && (
+                      <>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                          <span className="sm:hidden">Util.</span>
+                          <span className="hidden sm:inline">Utilisateurs</span>
+                        </span>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <RatingBadge rating={noteUtil} size="sm" />
+                          <StarRating rating={noteUtil} size={12} />
+                          {nbAvis ? (
+                            <Link
+                              href={hrefAvis}
+                              className="relative z-10 hidden sm:inline text-[10px] text-gray-400 hover:text-accent-blue hover:underline underline-offset-2 whitespace-nowrap"
+                            >
+                              {nbAvis} avis
+                            </Link>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
+                    {noteRedac != null && (
+                      <>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                          <span className="sm:hidden">Réd.</span>
+                          <span className="hidden sm:inline">Rédaction</span>
+                        </span>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <RatingBadge rating={noteRedac} size="sm" />
+                          <StarRating rating={noteRedac} size={12} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              }
+
+              // Autres tris : note de classement (utilisateurs / rédaction / critère) — inchangé.
+              const isUtilisateurs = tri === 'note_utilisateurs'
+              const displayNote = solution.noteCritere ?? (isUtilisateurs ? solution.noteUtilisateursBase5 : solution.noteRedacBase5)
               return (
                 <div className="flex items-center gap-1 pt-3 border-t border-gray-100 overflow-hidden">
                   {displayNote ? (
