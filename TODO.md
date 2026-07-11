@@ -40,6 +40,11 @@ _(rien en cours)_
 
 ### Communication
 
+#### Fiche de synthèse « pourquoi revendiquer sa fiche » pour les éditeurs (via FEIMA) (2026-07-11)
+- **But** : rédiger une fiche de synthèse à destination des **éditeurs de logiciels médicaux** — ce qu'est 100 000 Médecins (plateforme d'avis/comparaison par les médecins) + pourquoi **revendiquer sa fiche solution** (espace éditeur : compléter description / logo / galerie / prix / coordonnées, maîtriser sa présence).
+- **Canal de diffusion** : transmettre via **Francis Mambrini (FEIMA)** — Fédération des Éditeurs d'Informatique Médicale et paramédicale Ambulatoire — pour relais auprès des éditeurs membres.
+- **À faire** : rédiger la fiche (≈1 page : quoi / pourquoi / comment revendiquer + lien vers l'espace éditeur), au format transmissible (PDF / doc), puis l'envoyer à Francis Mambrini.
+
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
@@ -86,6 +91,17 @@ _(rien en cours)_
 #### Statuer sur le comparateur orphelin `/solutions/comparer` (2026-07-08)
 - **Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx#L66)).
 - **À trancher** : (1) **laisser** (sert de cible SEO aux redirects legacy, coût nul) ; (2) **ré-activer** (boutons « Comparer » + barre « Comparer (N) » qui construit `?ids=`) ; (3) **nettoyer** (retirer l'état mort du store, garder page + redirect pour le SEO). ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.
+
+#### ⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (2026-07-11)
+- **Symptôme** : radar « Utilisateurs » de Med'Oc (`/solutions/logiciel-medical/medoc`) affiche **Fonctionnalités = 0** alors que les évals ont 4.5 & 3.58.
+- **Cause A — ancrage Firebase figé faux (isolé)** : Med'Oc est `is_firebase_legacy` ; la note affichée = `resultats.firebase_moyenne_base5` (figé à la migration). Pour `fonctionnalites` il vaut **0** (le `notes` JSONB a pourtant les vraies notes 4.5/3.58 → ~4.04). Les évals de 2023 = pré-lancement → ne repassent pas par-dessus l'ancrage. **Une seule ligne en base** (Med'Oc / fonctionnalites).
+- **Cause B — score `0` (« NC / non noté ») compté comme un vrai 0 (large)** : `recalcResultatsPourSolution` ([src/lib/actions/evaluation.ts](src/lib/actions/evaluation.ts)) fait `if (!isNaN(num) && user_id) notes[user_id]=num` → un critère laissé à 0 est agrégé comme 0, tirant la moyenne vers le bas (jusqu'à l'annuler si c'est la seule note, ex. MonMédecin.org `qualite_prix=0`). **68 évals publiées / 22 solutions** portent ≥1 zéro sur un critère majeur.
+- **Cas annexe** : Tandem Health a des `resultats` (nb_notes=1, tout à 0) **sans aucune éval** → ligne orpheline/périmée ; un recalcul la remet à zéro (nb_notes=0 → plus de point radar).
+- **Décision actée (2026-07-11)** : **0 = non noté → à exclure** (cohérent avec la règle « les 5 critères doivent être > 0 » du formulaire).
+- **Correctif (2 volets, session dédiée)** :
+  1. **Code** — `recalcResultatsPourSolution` : exclure les scores ≤ 0 (`num > 0`) sur les 2 chemins (legacy post-lancement + non-legacy) ; traiter `firebase_moyenne_base5 = 0` comme « pas d'ancrage ».
+  2. **Données** — script `tsx` (dry-run par défaut, `--execute`, **backup JSON** obligatoire) : (a) Med'Oc → recalculer l'ancrage `firebase_moyenne_base5` de fonctionnalités depuis le `notes` JSONB (~4.04) ; (b) re-jouer `recalcResultatsPourSolution` sur les 22 solutions concernées (ou toutes ~110) + nettoyer les `resultats` orphelins.
+- **⚠️ Impact public** : les notes des 22 solutions **remontent** (elles étaient injustement pénalisées), Med'Oc passe de 0 → ~4. Plus juste, mais ça bouge l'affichage public → vérif avant/après (méthode des scripts `fix-firebase-*` : dry-run, backup, comptage avant/après).
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
