@@ -120,7 +120,10 @@ function SolutionCardItem({ solution }: { solution: SolutionCard }) {
     <div className="relative bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 p-3 sm:p-5 flex flex-col items-center text-center group">
       {/* Nom (porte le lien étiré sur toute la carte → haut de la fiche) */}
       <span className="text-xs sm:text-sm font-semibold text-navy mb-3 line-clamp-2">
-        <Link href={href} className="after:content-[''] after:absolute after:inset-0 focus:outline-none focus-visible:underline">
+        {/* Lien étiré sur toute la carte. after:z-[1] : passe au-dessus du logo qui,
+            au survol (group-hover:scale-105), crée un contexte d'empilement — sinon le
+            clic sur le logo rate le lien. Le lien « N avis » reste cliquable (z-10). */}
+        <Link href={href} className="after:content-[''] after:absolute after:inset-0 after:z-[1] focus:outline-none focus-visible:underline">
           {solution.nom}
         </Link>
       </span>

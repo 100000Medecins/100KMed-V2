@@ -26,6 +26,9 @@
 - **Résultat (build + `tsc` OK)** : accueil **`ƒ→○`**, 139 fiches solutions **`ƒ→●`** (rendu ~1×/h au lieu d'à chaque requête). Découverte : beaucoup de fonctions fiche étaient **déjà** en service-role (settings, citations, avis, résultats). Plan : [docs/2026-07-11-plan-isr-pages-publiques.md](docs/2026-07-11-plan-isr-pages-publiques.md).
 - **Passe 2 (à venir)** : même recette pour blog/actualités/pages éditoriales + filtres catégorie côté client (cf. TODO Performance).
 
+### UX / UI — Cartes logiciels de l'accueil cliquables en entier
+- Le clic sur le **logo central** d'une carte (accueil `RecommendedSoftware`) ne faisait rien : le lien étiré (`after:inset-0`) passait **sous** le logo agrandi au survol (`group-hover:scale` → contexte d'empilement). Fix : **`after:z-[1]`** → toute la carte cliquable (comme les comparatifs), le lien « N avis » (`z-10`) reste distinct.
+
 ### TODO — Mises à jour
 - Ajout (Performance) : « Réduire la CPU Vercel Fluid — passe 2 (extension ISR) ».
 
