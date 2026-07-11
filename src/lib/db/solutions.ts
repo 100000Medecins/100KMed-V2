@@ -561,3 +561,56 @@ export async function getNotesGlobalesRedac(
   }
   return map
 }
+
+/**
+ * Map solutionId -> liste des id_tag, pour le filtrage par tags **côté client** de la page
+ * catégorie (passe 2 ISR). Une seule requête sur solutions_tags pour toute la catégorie.
+ */
+export async function getSolutionsTagsMap(solutionIds: string[]): Promise<Record<string, string[]>> {
+  if (solutionIds.length === 0) return {}
+  const supabase = createPublicClient()
+  const { data, error } = await supabase
+    .from('solutions_tags')
+    .select('id_solution, id_tag')
+    .in('id_solution', solutionIds)
+  if (error || !data) return {}
+  const map: Record<string, string[]> = {}
+  for (const row of data) {
+    const sid = row.id_solution as string | null
+    const tid = row.id_tag as string | null
+    if (!sid || !tid) continue
+    ;(map[sid] ??= []).push(tid)
+  }
+  return map
+}
+
+/**
+ * Notes par critère (rédac + utilisateurs) pour une liste de solutions et de critères, en **une
+ * seule requête**, pour le tri par critère **côté client** de la page catégorie (passe 2 ISR).
+ * Retourne solutionId -> critereId -> { redac, users }. Borné (solutions × critères majeurs)
+ * donc pas de risque de troncature 1000 lignes.
+ */
+export async function getNotesParCritere(
+  solutionIds: string[],
+  critereIds: string[],
+): Promise<Record<string, Record<string, { redac: number | null; users: number | null }>>> {
+  if (solutionIds.length === 0 || critereIds.length === 0) return {}
+  const supabase = createPublicClient()
+  const { data, error } = await supabase
+    .from('resultats')
+    .select('solution_id, critere_id, note_redac_base5, moyenne_utilisateurs_base5')
+    .in('solution_id', solutionIds)
+    .in('critere_id', critereIds)
+  if (error || !data) return {}
+  const map: Record<string, Record<string, { redac: number | null; users: number | null }>> = {}
+  for (const row of data) {
+    const sid = row.solution_id as string | null
+    const cid = row.critere_id as string | null
+    if (!sid || !cid) continue
+    ;(map[sid] ??= {})[cid] = {
+      redac: (row.note_redac_base5 as number | null) ?? null,
+      users: (row.moyenne_utilisateurs_base5 as number | null) ?? null,
+    }
+  }
+  return map
+}

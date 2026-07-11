@@ -12,6 +12,7 @@ const DEFAULT_DIR: Record<string, string> = {
   nom: 'asc',
   note_redac: 'desc',
   note_utilisateurs: 'desc',
+  prix: 'asc',
 }
 
 interface SolutionFiltersProps {
@@ -79,7 +80,9 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
   function buildUrl(tagIds: string[]) {
     const params = new URLSearchParams()
     if (tagIds.length > 0) params.set('tags', tagIds.join(','))
-    if (currentTri && currentTri !== 'nom') params.set('tri', currentTri)
+    // Persister le tri courant SAUF le défaut réel (note_utilisateurs) — sinon un tri « nom »
+    // (ou note_redac / prix) était perdu au clic sur un tag et retombait sur le défaut.
+    if (currentTri && currentTri !== 'note_utilisateurs') params.set('tri', currentTri)
     if (currentCritere) params.set('critere', currentCritere)
     if (currentDir && currentDir !== DEFAULT_DIR[currentTri]) params.set('dir', currentDir)
     const q = params.toString()

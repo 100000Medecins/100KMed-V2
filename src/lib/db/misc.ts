@@ -45,7 +45,7 @@ export type VideoRow = {
 }
 
 export async function getVideoRubriques(): Promise<VideoRubrique[]> {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('video_rubriques')
@@ -99,7 +99,7 @@ export async function getVideos(options?: {
   onlyPublished?: boolean
   limit?: number
 }) {
-  const supabase = await createServerClient()
+  const supabase = createPublicClient()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
@@ -135,6 +135,10 @@ export async function getVideos(options?: {
  * Remplace : fetchActualites
  */
 export async function getActualites(limit?: number) {
+  // ⚠️ La table `public.actualites` N'EXISTE PAS (vérifié 2026-07-11 : vestige Firebase, le
+  // contenu « actualités » a migré vers `articles`/le blog). getActualites échoue donc à
+  // l'exécution → on garde `createServerClient` (cookies) pour que `/actualites` reste
+  // DYNAMIQUE et ne casse pas le build par un prérendu ISR. À nettoyer (cf TODO : route morte).
   const supabase = await createServerClient()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -21,7 +21,7 @@ _(rien d'urgent pour l'instant)_
   - **Persistance de session** (le vrai risque du changement) : après chaque login PSC, **F5 sur `/mon-compte/profil`** → toujours connecté ; enchaîner `/mon-compte/*` → `/solution/noter/*` sans déconnexion ni boucle.
   - **Les 6 flux PSC** : (1) nouveau compte → completer-profil → /mon-compte/profil ; (2) reconnexion d'un compte complet → **direct** /mon-compte/profil ; (3) **association** (connecté email/mdp + bouton « Connecter PSC » → `?psc=associe`, toujours connecté, RPPS rattaché) ; (4) **validation avis anonyme** (anonyme → mail → PSC → avis publié **et** connecté) ; (5) évals `en_attente_psc` d'un compte existant → publiées ; (6) **interne/CPF sans spécialité** → completer-profil éditable.
   - **⚠️ Fusion** (compte email/mdp + compte PSC même RPPS) : `merge.ts` utilise **encore l'ancien `/auth/psc-session`** (non migré) → tester que la fusion aboutit **et** qu'on est connecté. À harmoniser plus tard (même risque mobile ~16 %).
-  - **⭐ MOBILE (prioritaire)** : dérouler un login PSC **depuis un smartphone (app e-CPS)** sur `dev.100000medecins.org` — c'est LE scénario cible du fix (les ~16 % perdus étaient au retour de l'app mobile). Test qui vaut de l'or.
+  - ~~**⭐ MOBILE (prioritaire)** : dérouler un login PSC depuis un smartphone (app e-CPS) sur `dev.100000medecins.org`~~ [OK] Fait 2026-07-11 — testé OK sur mobile (le scénario cible du fix, retour de l'app e-CPS).
   - **Mesure dev** : relancer l'entonnoir par `correlation_id` sur `psc_session_events` (cf [docs/2026-06-16-diagnostic-emails-psc.md](docs/2026-06-16-diagnostic-emails-psc.md)) une fois plus de volume → `perdus_sans_issue` doit rester ~0.
 - **Vérifs post-merge PROD (le compteur démarre au merge, pas avant)** :
   - **~48 h après merge — smoke check** : pas de régression → `verify_success` ≥ ~80 %, `verify_error` proche de 0. Si ça dérape → revert (re-router vers la page client).
@@ -92,6 +92,11 @@ _(rien en cours)_
 - **Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx#L66)).
 - **À trancher** : (1) **laisser** (sert de cible SEO aux redirects legacy, coût nul) ; (2) **ré-activer** (boutons « Comparer » + barre « Comparer (N) » qui construit `?ids=`) ; (3) **nettoyer** (retirer l'état mort du store, garder page + redirect pour le SEO). ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.
 
+#### Routes/tables mortes (vestiges Firebase) : `/actualites` + `documents` (2026-07-11)
+- **Découvert pendant la passe 2 ISR** : la page `/actualites` interroge `public.actualites` — table qui **n'existe pas** (SQL vérifié 2026-07-11 ; hint PostgREST : « articles »). Le contenu a migré vers `articles`/le blog. Route **non liée** dans la nav/footer → morte. Laissée dynamique pour ne pas casser le build ISR.
+- **À trancher** : supprimer la route + `getActualites` (misc.ts) + le type `Actualite` (models.ts), OU rediriger `/actualites → /blog`.
+- **Idem `documents`** : `public.documents` inexistante aussi → `getDocuments` (misc.ts) est probablement du code mort (vérifier s'il est appelé quelque part avant suppression).
+
 #### ⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (2026-07-11)
 - **Symptôme** : radar « Utilisateurs » de Med'Oc (`/solutions/logiciel-medical/medoc`) affiche **Fonctionnalités = 0** alors que les évals ont 4.5 & 3.58.
 - **Cause A — ancrage Firebase figé faux (isolé)** : Med'Oc est `is_firebase_legacy` ; la note affichée = `resultats.firebase_moyenne_base5` (figé à la migration). Pour `fonctionnalites` il vaut **0** (le `notes` JSONB a pourtant les vraies notes 4.5/3.58 → ~4.04). Les évals de 2023 = pré-lancement → ne repassent pas par-dessus l'ancrage. **Une seule ligne en base** (Med'Oc / fonctionnalites).
@@ -120,7 +125,7 @@ _(rien en cours)_
 
 ### UX / UI
 
-#### Cartes de solutions — compteur d'avis + clic vers les avis (2026-07-08)
+#### ~~Cartes de solutions — compteur d'avis + clic vers les avis (2026-07-08)~~ [OK] Fait 2026-07-11
 - **(a) Nombre d'évaluations sur toutes les cartes** : afficher « X avis » sur chaque carte de solution — pas seulement l'index, mais **toutes** les pages qui affichent des cartes (comparatif catégorie, fiche éditeur, recherche, comparateur…). À faire : recenser les composants de carte (`SolutionList` + variantes), vérifier que le compteur (`nbNotesUtilisateurs`) est fourni partout par la couche `db`, ajouter l'affichage de façon cohérente.
 - **(b) Clic sur les avis → bas de la fiche solution (ancre)** : cliquer sur « X avis » / la note utilisateurs doit amener directement à la section des avis en bas de la fiche.
   - **Déjà en place** : l'ancre existe — `<div id="avis-utilisateurs" className="scroll-mt-[140px]">` dans [SolutionDetailPage.tsx](src/components/solutions/SolutionDetailPage.tsx#L117) (la navbar interne de `SolutionHero` y pointe déjà). Rien à créer côté fiche.
@@ -155,11 +160,13 @@ _(rien en cours)_
 #### Réduire la CPU Vercel Fluid — passe 2 (extension ISR aux autres pages publiques)
 - **Contexte** : alerte Vercel Fluid Active CPU (~91 % des 4h Hobby → **risque de pause du site**). Cause : les pages publiques lisaient les cookies (via `createServerClient`) → rendues **dynamiquement à chaque requête**. Preuve + recette : [docs/2026-07-11-plan-isr-pages-publiques.md](docs/2026-07-11-plan-isr-pages-publiques.md).
 - ✅ **Passe 1 FAITE + déployée (2026-07-11)** : `createPublicClient()` (anon sans cookies, RLS conservée) + bascule des lectures publiques + `generateStaticParams` → **accueil `ƒ→○`** et **139 fiches solutions `ƒ→●`** (les 2 gros postes). Build + `tsc` OK. Cf CHANGELOG 2026-07-11.
-- **Passe 2 — reste à faire** (même recette : bascule vers `createPublicClient` + `generateStaticParams() { return [] }`, **fichier par fichier avec build de vérif `ƒ→○/●`**) :
-  - Contenu éditorial : `/blog`, `/blog/[slug]`, `/actualites`, `/qui-sommes-nous`, `/comparatifs`, `/videos`, `/glossaire`, `/difficile-de-changer`, `/irritants-esante`, `/tous-ensemble`, `/lancement-100k`, `/transparence`, `/cgu`, `/rgpd`… (prioriser blog/actualités).
-  - Sous-page avis `/solutions/[cat]/[sol]/evaluations`.
-  - **Page catégorie `/solutions/[cat]`** : cas à part — dynamique car lit `searchParams` (filtres tags/tri) → la rendre statique = **passer le filtrage côté client** (petit chantier distinct).
-  - Hors scope : `/recherche` (dynamique par nature).
+- **Passe 2 — plan détaillé (3 recettes, phasé ROI/risque)** : [docs/2026-07-11-plan-isr-passe-2.md](docs/2026-07-11-plan-isr-passe-2.md). Recette de base : bascule vers `createPublicClient` (+ `generateStaticParams() { return [] }` pour les segments dynamiques), **fichier par fichier avec build de vérif `ƒ→○/●`**.
+  - ✅ **Phase 1 FAITE (2026-07-11, build vert)** : 10 pages éditoriales fixes `ƒ→○` — `/cgu`, `/rgpd`, `/transparence`, `/qui-sommes-nous`, `/tous-ensemble`, `/difficile-de-changer`, `/irritants-esante`, `/lancement-100k`, `/comparatifs`, `/videos`.
+  - ✅ **Phase 1b FAITE (2026-07-11, build vert)** : `/glossaire` + `/stories-tutos` → `○` (email prérempli lu côté client via `useAuth`, `getUserEmail` serveur + `force-dynamic` retirés).
+  - ✅ **Phase 2 FAITE (2026-07-11, build vert)** : `/blog/[slug]` → `●` (switch + `generateStaticParams`).
+  - ✅ **Page catégorie `/solutions/[cat]` FAITE (2026-07-11, build vert)** : `ƒ→●` — filtrage/tri déportés côté client (fonction pure `filterAndSortSolutions` + `SolutionsCategoryBrowser`/`useSearchParams`, fallback Suspense = vue par défaut serveur pour le SEO). ⚠️ **Parité tri/tags à vérifier en local avant merge.** C'était le plus gros poste CPU public restant.
+  - **Reste (Recette C, ROI faible)** : `/blog` liste (filtre catégorie → client, → `○`) ; sous-page avis `/solutions/[cat]/[sol]/evaluations` (tri → client, → `●`). Recette dans [docs/2026-07-11-plan-isr-passe-2.md](docs/2026-07-11-plan-isr-passe-2.md).
+  - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
 - **Vercel Pro** : à garder en tête pour la rentrée (dépassement = **pause du site**, pas throttle ; cf. CHANGELOG 2026-07-10). La passe 1 réduit déjà fortement la CPU.
 
 ### SEO / Référencement
@@ -183,7 +190,7 @@ _(rien en cours)_
 - ✅ **Fait (2026-07-08/09)** — code commité sur `dev` **+ recompression exécutée** : `media` −81 % (72,7→13,6 Mo), `images` −90 % (24→2,3 Mo), `avatars` déjà légers (rien à gagner). Originaux dans `storage-backups/` (gitignored). ⚠️ `cacheControl` ignoré par l'endpoint public (sert `no-cache`) — impact faible (ETag→304), cf. doc. Code :
   - **`scripts/optimize-storage-images.ts`** — recompresse en WebP l'existant d'un bucket, ré-uploadé **sous le même chemin** (⇒ **aucune URL à changer en base**). Dry-run par défaut, `--execute` requis, backup binaire des originaux + `manifest.json` avant écriture, GIF/SVG ignorés.
   - **`src/app/api/upload/route.ts`** patché — tout nouvel upload raster → resize ≤1600px + WebP q80 + `cacheControl` 1 an. GIF (logo animé email) / SVG conservés intacts. (`sharp` tourne en runtime Node, la route n'est pas `edge`.)
-- **Reste à faire** (recompression images + **patch upload : FAITS & déployés** — merge `dev→main` `a8f255a` du 08/07, `sharp`/WebP confirmés dans `main:upload/route.ts`) : **(b)** surveiller la chute du cached egress dans le Usage Dashboard (2-3 j) ; **(c)** décider Pro (optionnel). Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
+- **Reste à faire** (recompression images + **patch upload : FAITS & déployés** — merge `dev→main` `a8f255a` du 08/07, `sharp`/WebP confirmés dans `main:upload/route.ts`) : **(b) ⏰ Vérifier l'egress du NOUVEAU cycle vers le 20/07** — les compteurs se remettent à 0 le ~12/07 avec les optims en place (images légères + `getNbNotes`) → le cached egress doit **plonger sous 5 Go**. *(Le 131 % au 11/07 = un mois d'images non optimisées cumulées AVANT le fix, qui franchit le seuil en fin de cycle ; ce n'est ni un bug de comptage ni notre travail — recompression + `getNbNotes` réduisent l'egress. **Grâce jusqu'au 06/08**, aucune restriction d'ici là. Vérifier aussi le détail journalier : régulier = trafic images / pic 08-09/07 = script de recompression one-shot.)* ; **(c) passer Pro UNIQUEMENT si** encore > 5 Go après un cycle complet post-optimisation (vrai signal de trafic). Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
   1. **Dry-run** (lecture seule, sans risque) pour les vrais Mo avant/après :
      ```bash
      npx tsx scripts/optimize-storage-images.ts             # bucket media
