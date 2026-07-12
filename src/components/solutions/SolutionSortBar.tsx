@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, ArrowUp, ArrowDown } from 'lucide-react'
 import type { Critere } from '@/types/models'
@@ -38,8 +38,12 @@ const DESKTOP_OPTIONS = [
 const PRIX_OPTION = { value: 'prix', label: 'Prix' }
 
 export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCritere, currentDir, selectedTagIds, count, hideNoteRedac = false, showPrixOption = false }: SolutionSortBarProps) {
-  const router = useRouter()
   const pathname = usePathname()
+
+  // Met à jour l'URL SANS navigation routeur : évite la remontée en haut au 1er clic (révélation
+  // de la frontière <Suspense> de la page catégorie, non couverte par scroll:false). En Next 15+,
+  // useSearchParams réagit à history.pushState → le tri se met à jour.
+  const navigate = (url: string) => window.history.pushState(null, '', url)
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const sortBarRef = useRef<HTMLDivElement>(null)
@@ -89,16 +93,16 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
     if (isActive) {
       const newDir: 'asc' | 'desc' = currentDir === 'asc' ? 'desc' : 'asc'
       const critere = (tri === 'note_redac' || tri === 'note_utilisateurs') ? currentCritere : ''
-      router.push(buildUrl(tri, critere, newDir), { scroll: false })
+      navigate(buildUrl(tri, critere, newDir))
     } else {
       const critere = (tri === 'note_redac' || tri === 'note_utilisateurs') ? currentCritere : ''
-      router.push(buildUrl(tri, critere, DEFAULT_DIR[tri] ?? 'desc'), { scroll: false })
+      navigate(buildUrl(tri, critere, DEFAULT_DIR[tri] ?? 'desc'))
     }
   }
 
   function setCritere(critereId: string) {
     const tri = (currentTri === 'note_redac' || currentTri === 'note_utilisateurs') ? currentTri : 'note_utilisateurs'
-    router.push(buildUrl(tri, critereId, currentDir), { scroll: false })
+    navigate(buildUrl(tri, critereId, currentDir))
     setDropdownOpen(false)
   }
 
@@ -128,7 +132,7 @@ export default function SolutionSortBar({ criteresMajeurs, currentTri, currentCr
   const dropdownList = dropdownOpen && (
     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 bg-white rounded-xl shadow-card border border-gray-100 py-1 w-max max-w-[min(200px,calc(100vw-2rem))]">
       <button
-        onClick={() => { router.push(buildUrl(currentTri || 'note_utilisateurs', '', currentDir), { scroll: false }); setDropdownOpen(false) }}
+        onClick={() => { navigate(buildUrl(currentTri || 'note_utilisateurs', '', currentDir)); setDropdownOpen(false) }}
         className={`w-full text-left text-xs px-4 py-2 hover:bg-surface-light transition-colors ${!currentCritere ? 'font-semibold text-navy' : 'text-gray-600'}`}
       >
         Note globale

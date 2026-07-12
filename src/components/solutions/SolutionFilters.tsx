@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import type { Tag } from '@/types/models'
 import AcronymText from '@/components/AcronymText'
@@ -57,9 +57,13 @@ function buildGroups(tags: TagWithParent[]): { label: string | null; id: string;
 }
 
 export default function SolutionFilters({ tags, selectedTagIds, currentTri, currentCritere, currentDir, labelFiltres }: SolutionFiltersProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const tagsWithParent = tags as TagWithParent[]
+
+  // Met à jour l'URL SANS navigation routeur : évite que la frontière <Suspense> de la page
+  // catégorie ne soit « révélée » au 1er clic (ce qui faisait remonter en haut malgré scroll:false).
+  // En Next 15+, useSearchParams réagit à history.pushState → le filtrage se met à jour.
+  const navigate = (url: string) => window.history.pushState(null, '', url)
 
   const groups = buildGroups(tagsWithParent)
 
@@ -93,7 +97,7 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
     const newTags = selectedTagIds.includes(tagId)
       ? selectedTagIds.filter((id) => id !== tagId)
       : [...selectedTagIds, tagId]
-    router.push(buildUrl(newTags), { scroll: false })
+    navigate(buildUrl(newTags))
   }
 
   if (tags.length === 0) return null
@@ -105,14 +109,14 @@ export default function SolutionFilters({ tags, selectedTagIds, currentTri, curr
       <div className="hidden md:flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-navy">{labelFiltres || 'Fonctionnalités'}</h3>
         {selectedTagIds.length > 0 && (
-          <button onClick={() => router.push(buildUrl([]), { scroll: false })} className="text-xs text-accent-blue hover:underline">
+          <button onClick={() => navigate(buildUrl([]))} className="text-xs text-accent-blue hover:underline">
             Effacer
           </button>
         )}
       </div>
       {selectedTagIds.length > 0 && (
         <div className="md:hidden flex justify-end mb-2">
-          <button onClick={() => router.push(buildUrl([]), { scroll: false })} className="text-xs text-accent-blue hover:underline">
+          <button onClick={() => navigate(buildUrl([]))} className="text-xs text-accent-blue hover:underline">
             Effacer
           </button>
         </div>
