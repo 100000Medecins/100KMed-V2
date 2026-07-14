@@ -5,6 +5,23 @@
 
 ---
 
+## [2026-07-14] — Notes utilisateurs : règle « 0 = non noté » + comptage PSC admin
+
+### Fix — Scoring : un critère à 0 (« NC ») faussait le radar et la note
+- **Symptôme** : le radar « Utilisateurs » de Med'Oc affichait Fonctionnalités = 0 malgré de vraies notes ; d'autres solutions étaient injustement tirées vers le bas par des critères laissés à 0.
+- **Cause** : `recalcResultatsPourSolution` ([evaluation.ts](src/lib/actions/evaluation.ts)) agrégeait les `0` comme de vraies notes, alors qu'un `0` = **critère non renseigné (NC)** (le formulaire exige > 0). En legacy, un ancrage Firebase figé à `0` était aussi compté comme un vrai 0.
+- **Fix code (3 volets)** : exclusion `num > 0` dans l'agrégation par critère ; ancrage Firebase à 0 = « pas d'ancrage » (NC) ; critère sans note valide remis à NC (plus de « 0 fantôme » figé).
+- **Fix données** : `scripts/fix-notes-zero-nc.ts` (dry-run par défaut, `--execute`, **backup JSON**) — 4 solutions corrigées : **Med'Oc** (fonctionnalités → NC, note globale figée **2.47 → 3.09**, elle avait le 0 « cuit dedans »), **Doctolib** (editeur 3.10→3.88, qualité-prix 2.70→3.38), **MonMédecin.org** (qualité-prix → NC), **Tandem Health** (5 critères orphelins → NC).
+- **Décision clé (≠ plan initial)** : règle **strictement « 0 = NC »**. Les notes Firebase **figées non nulles ne sont PAS recalculées** depuis les sous-critères de l'ancien site → **Premiocare reste 4.34** (litige connu), Medistory / MLM / etc. inchangées. Le plan initial (recalcul des 22 solutions depuis le JSONB) est abandonné.
+
+### Admin — Comptage des comptes PSC ayant noté (non tronqué)
+- `/admin/utilisateurs` : le compteur « comptes sans email (PSC) ayant posté des évaluations » pouvait sous-évaluer au-delà de 1000 évals notées (limite implicite Supabase). Fix : helper `getUserIdsAvecNotes` paginé par 1000 ([page.tsx](src/app/admin/utilisateurs/page.tsx)), intersection en mémoire avec les users (tous paginés) → jamais tronqué.
+
+### TODO — Mises à jour
+- Barré : « Notes utilisateurs faussées : critère à 0 » (fait — approche resserrée, Premiocare non modifié).
+
+---
+
 ## [2026-07-12] — Pages publiques cacheables par ISR — passe 2 + tri catégorie
 
 ### Infrastructure — ISR passe 2 : bascule des pages publiques restantes

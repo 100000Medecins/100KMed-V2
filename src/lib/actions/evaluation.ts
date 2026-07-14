@@ -182,7 +182,9 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     for (const evRow of evaluations ?? []) {
       const raw = (evRow.scores as Record<string, unknown> | null)?.[key]
       const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
-      if (!isNaN(num) && evRow.user_id) notes[evRow.user_id] = num
+      // Un score `0` = critère **non noté / NC** (le formulaire exige > 0 pour une note valide)
+      // → exclu de l'agrégation, sinon il tire la moyenne du critère vers le bas (cf. décision 2026-07-13).
+      if (!isNaN(num) && num > 0 && evRow.user_id) notes[evRow.user_id] = num
     }
 
     if (isLegacy) {
@@ -206,7 +208,9 @@ export async function recalcResultatsPourSolution(solutionId: string) {
       // on retombe sur le calcul classique des notes post-lancement uniquement.
       let nouvelleMoyenne: number | null
       let nouveauNbNotes: number
-      if (fbMoy != null && fbNb != null && fbNb > 0) {
+      // Ancrage Firebase à 0 = **pas** de note historique réelle (l'ancien site n'avait pas de
+      // note pour ce critère) → traité comme « non noté », pas comme un vrai 0.
+      if (fbMoy != null && fbMoy > 0 && fbNb != null && fbNb > 0) {
         nouveauNbNotes = fbNb + nbPost
         nouvelleMoyenne = nouveauNbNotes > 0
           ? Math.round(((fbMoy * fbNb + sommePost) / nouveauNbNotes) * 100) / 100
@@ -215,7 +219,9 @@ export async function recalcResultatsPourSolution(solutionId: string) {
         nouveauNbNotes = nbPost
         nouvelleMoyenne = Math.round((sommePost / nbPost) * 100) / 100
       } else {
-        continue
+        // Ni ancrage valide ni note post-lancement > 0 → critère « non noté » (NC).
+        nouvelleMoyenne = null
+        nouveauNbNotes = 0
       }
 
       await supabase
@@ -230,7 +236,15 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     } else {
       // Mode classique (non-legacy) : moyenne directe depuis evaluations
       const nbNotes = Object.keys(notes).length
-      if (nbNotes === 0) continue
+      if (nbNotes === 0) {
+        // Aucune note valide (> 0) → remettre le critère en « non noté » (évite un 0 fantôme figé).
+        await supabase
+          .from('resultats')
+          .update({ notes: {}, nb_notes: 0, moyenne_utilisateurs: null, moyenne_utilisateurs_base5: null })
+          .eq('solution_id', solutionId)
+          .eq('critere_id', critere.id)
+        continue
+      }
       const moyenne = Math.round(
         (Object.values(notes).reduce((s, v) => s + v, 0) / nbNotes) * 100
       ) / 100

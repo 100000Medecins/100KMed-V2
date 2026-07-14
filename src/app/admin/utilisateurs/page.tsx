@@ -35,10 +35,37 @@ async function getAllUsers(supabase: ReturnType<typeof createServiceRoleClient>)
   return all
 }
 
+/**
+ * Set des `user_id` ayant au moins une évaluation notée (`last_date_note` non nul).
+ * Paginé (batches de 1000) pour ne PAS être tronqué par la limite implicite Supabase
+ * quand le nombre d'évals notées dépasse 1000 (sinon le compteur d'actifs sous-évalue).
+ */
+async function getUserIdsAvecNotes(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+): Promise<Set<string>> {
+  const set = new Set<string>()
+  const PAGE = 1000
+  let from = 0
+  while (true) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from('evaluations')
+      .select('user_id')
+      .not('last_date_note', 'is', null)
+      .not('user_id', 'is', null)
+      .range(from, from + PAGE - 1)
+    if (!data || data.length === 0) break
+    for (const e of data as { user_id: string }[]) set.add(e.user_id)
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return set
+}
+
 async function getData() {
   const supabase = createServiceRoleClient()
 
-  const [users, { data: editeurs }, { data: pendingClaims }, { count: nbSansEmailAvecNotes }] = await Promise.all([
+  const [users, { data: editeurs }, { data: pendingClaims }, userIdsAvecNotes] = await Promise.all([
     getAllUsers(supabase),
     supabase
       .from('editeurs')
@@ -49,26 +76,15 @@ async function getData() {
       .from('editeur_claims')
       .select('user_id')
       .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('evaluations')
-      .select('user_id', { count: 'exact', head: false })
-      .not('last_date_note', 'is', null)
-      .then(async ({ data }: { data: { user_id: string }[] | null }) => {
-        if (!data) return { count: 0 }
-        const userIds = Array.from(new Set(data.map((e: { user_id: string }) => e.user_id)))
-        // Parmi ces users, lesquels n'ont pas d'email ?
-        const { count } = await (supabase as any)
-          .from('users')
-          .select('id', { count: 'exact', head: true })
-          .in('id', userIds)
-          .is('email', null)
-        return { count: count ?? 0 }
-      }),
+    getUserIdsAvecNotes(supabase),
   ])
 
+  // Comptes sans email (PSC) ayant au moins une évaluation notée.
+  // Intersection en mémoire (users tous paginés + set paginé) → jamais tronqué à 1000.
+  const nbSansEmailAvecNotes = users.filter((u) => !u.email && userIdsAvecNotes.has(u.id)).length
+
   const pendingClaimUserIds = (pendingClaims ?? []).map((c: { user_id: string }) => c.user_id)
-  return { users, editeurs: editeurs ?? [], nbSansEmailAvecNotes: nbSansEmailAvecNotes ?? 0, pendingClaimUserIds }
+  return { users, editeurs: editeurs ?? [], nbSansEmailAvecNotes, pendingClaimUserIds }
 }
 
 export default async function AdminUtilisateursPage() {

@@ -40,10 +40,8 @@ _(rien en cours)_
 
 ### Communication
 
-#### Fiche de synthèse « pourquoi revendiquer sa fiche » pour les éditeurs (via FEIMA) (2026-07-11)
-- **But** : rédiger une fiche de synthèse à destination des **éditeurs de logiciels médicaux** — ce qu'est 100 000 Médecins (plateforme d'avis/comparaison par les médecins) + pourquoi **revendiquer sa fiche solution** (espace éditeur : compléter description / logo / galerie / prix / coordonnées, maîtriser sa présence).
-- **Canal de diffusion** : transmettre via **Francis Mambrini (FEIMA)** — Fédération des Éditeurs d'Informatique Médicale et paramédicale Ambulatoire — pour relais auprès des éditeurs membres.
-- **À faire** : rédiger la fiche (≈1 page : quoi / pourquoi / comment revendiquer + lien vers l'espace éditeur), au format transmissible (PDF / doc), puis l'envoyer à Francis Mambrini.
+#### ~~Fiche de synthèse « pourquoi revendiquer sa fiche » pour les éditeurs (via FEIMA)~~ [OK] Fait 2026-07-13
+- **Livré** : fiche de synthèse (ce qu'est 100 000 Médecins + pourquoi/comment revendiquer sa fiche solution) rédigée et transmise via Francis Mambrini (FEIMA).
 
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
 - **Whydoc** — intégration vidéos/stories
@@ -97,16 +95,9 @@ _(rien en cours)_
 - **À trancher** : supprimer la route + `getActualites` (misc.ts) + le type `Actualite` (models.ts), OU rediriger `/actualites → /blog`.
 - **Idem `documents`** : `public.documents` inexistante aussi → `getDocuments` (misc.ts) est probablement du code mort (vérifier s'il est appelé quelque part avant suppression).
 
-#### ⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (2026-07-11)
-- **Symptôme** : radar « Utilisateurs » de Med'Oc (`/solutions/logiciel-medical/medoc`) affiche **Fonctionnalités = 0** alors que les évals ont 4.5 & 3.58.
-- **Cause A — ancrage Firebase figé faux (isolé)** : Med'Oc est `is_firebase_legacy` ; la note affichée = `resultats.firebase_moyenne_base5` (figé à la migration). Pour `fonctionnalites` il vaut **0** (le `notes` JSONB a pourtant les vraies notes 4.5/3.58 → ~4.04). Les évals de 2023 = pré-lancement → ne repassent pas par-dessus l'ancrage. **Une seule ligne en base** (Med'Oc / fonctionnalites).
-- **Cause B — score `0` (« NC / non noté ») compté comme un vrai 0 (large)** : `recalcResultatsPourSolution` ([src/lib/actions/evaluation.ts](src/lib/actions/evaluation.ts)) fait `if (!isNaN(num) && user_id) notes[user_id]=num` → un critère laissé à 0 est agrégé comme 0, tirant la moyenne vers le bas (jusqu'à l'annuler si c'est la seule note, ex. MonMédecin.org `qualite_prix=0`). **68 évals publiées / 22 solutions** portent ≥1 zéro sur un critère majeur.
-- **Cas annexe** : Tandem Health a des `resultats` (nb_notes=1, tout à 0) **sans aucune éval** → ligne orpheline/périmée ; un recalcul la remet à zéro (nb_notes=0 → plus de point radar).
-- **Décision actée (2026-07-11)** : **0 = non noté → à exclure** (cohérent avec la règle « les 5 critères doivent être > 0 » du formulaire).
-- **Correctif (2 volets, session dédiée)** :
-  1. **Code** — `recalcResultatsPourSolution` : exclure les scores ≤ 0 (`num > 0`) sur les 2 chemins (legacy post-lancement + non-legacy) ; traiter `firebase_moyenne_base5 = 0` comme « pas d'ancrage ».
-  2. **Données** — script `tsx` (dry-run par défaut, `--execute`, **backup JSON** obligatoire) : (a) Med'Oc → recalculer l'ancrage `firebase_moyenne_base5` de fonctionnalités depuis le `notes` JSONB (~4.04) ; (b) re-jouer `recalcResultatsPourSolution` sur les 22 solutions concernées (ou toutes ~110) + nettoyer les `resultats` orphelins.
-- **⚠️ Impact public** : les notes des 22 solutions **remontent** (elles étaient injustement pénalisées), Med'Oc passe de 0 → ~4. Plus juste, mais ça bouge l'affichage public → vérif avant/après (méthode des scripts `fix-firebase-*` : dry-run, backup, comptage avant/après).
+#### ~~⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (2026-07-11)~~ [OK] Fait 2026-07-14
+- **Livré (2026-07-14)** : règle **« 0 = non noté »** appliquée. **Code** — `recalcResultatsPourSolution` ([src/lib/actions/evaluation.ts](src/lib/actions/evaluation.ts)) exclut les scores `≤ 0`, traite un ancrage Firebase à 0 comme « pas d'ancrage », et remet à NC un critère sans note valide. **Données** — `scripts/fix-notes-zero-nc.ts` (dry-run + backup) a corrigé **4 solutions** : Med'Oc (fonctionnalités → NC, globale 2.47→3.09), Doctolib (editeur/qualité-prix remontés), MonMédecin.org (qualité-prix → NC), Tandem Health (5 critères orphelins → NC). Cf CHANGELOG 2026-07-14.
+- **Décision ≠ plan initial** : approche **resserrée** — les notes Firebase **figées non nulles NE sont PAS recalculées** depuis les sous-critères de l'ancien site. **Premiocare reste 4.34** (litige connu), Medistory / MLM / etc. inchangées. Le plan « recalculer les 22 solutions depuis le JSONB » est abandonné (aurait remonté Premiocare à ~4.88 à tort).
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
@@ -230,7 +221,7 @@ _(rien en cours)_
 
 ### Supervision admin — notifications d'activité du site
 
-#### Flux d'activité + alertes admin (idée 2026-06-21)
+#### ~~Flux d'activité + alertes admin (idée 2026-06-21)~~ [OK] Fait 2026-07-13 (testé en conditions réelles, concluant)
 - **Besoin** : que l'admin voie en quasi temps réel ce qui se passe (inscriptions, évaluations) **et** les modifications de contenu sensibles faites par les éditeurs (prix, texte, image, paramètres), pour modérer/surveiller sans fouiller.
 - **Événements à tracer (1er jet)** :
   - Inscriptions (email + PSC), comptes incomplets / décrocheurs PSC
@@ -245,7 +236,7 @@ _(rien en cours)_
   - **Canaux** : in-app (`/admin/activite` + badge non-lus) **+ digest hebdo**. **Pas de mail immédiat** (mail à la suppression déjà en place ; alerte prix non souhaitée).
   - **Rétention** : aucune purge (volume négligeable, ~10 Mo/an ; sert aussi de trace d'audit).
 - ✅ **Implémenté (2026-06-21)** : table `activity_log` (GRANTs + RLS), helper `logActivity()` ([src/lib/activity/log.ts](src/lib/activity/log.ts)), 12 événements branchés (inscriptions email/PSC, évals publiée/en attente/à compléter, modifs éditeur fiche+solution avec diff, propositions, revendications, demandes de référencement, suppression & paramètre admin), page [/admin/activite](src/app/admin/activite/page.tsx) (flux filtrable + badge non-lus + « tout marquer comme lu »), digest hebdo [/api/cron/digest-activite](src/app/api/cron/digest-activite/route.ts) (lundi 7h30 → david.azerad@). Doc : [docs/2026-06-21-supervision-activite.md](docs/2026-06-21-supervision-activite.md).
-  - **Reste éventuel** : tester en conditions réelles ; gater le digest si besoin (clé `digest_activite_actif`) — non fait, volontaire.
+  - ✅ **Testé en conditions réelles (2026-07-13)** — concluant. (Gater le digest via `digest_activite_actif` si besoin un jour — non fait, volontaire.)
 
 ### Déploiement final
 
@@ -254,9 +245,8 @@ _(rien en cours)_
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
 
-#### Vérifier le domaine `100000médecins.org` sur Gandi (2026-07-05)
-- **Contexte** : domaine `100000médecins.org` (variante accentuée / IDN) récemment acheté, actuellement **en erreur** sur Gandi suite à l'achat.
-- **À faire** : vérifier la configuration du domaine sur Gandi (état du domaine, zone DNS, redirection vers le domaine principal `100000medecins.org`), identifier la cause de l'erreur et la corriger.
+#### ~~Vérifier le domaine `100000médecins.org` sur Gandi~~ [OK] Fait 2026-07-13
+- **Réglé** : configuration corrigée sur Gandi ; le domaine accentué (IDN) `100000médecins.org` pointe désormais vers `www.100000medecins.org`.
 
 ### Nouvelles catégories de solutions (en cours)
 
