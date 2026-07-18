@@ -7,17 +7,20 @@ import StoriesSection from "@/components/sections/StoriesSection";
 import EditorCTA from "@/components/sections/EditorCTA";
 import BlogPreview from "@/components/sections/BlogPreview";
 import CommunautePreview from "@/components/sections/CommunautePreview";
+import AnnonceBanner from "@/components/sections/AnnonceBanner";
 import { getCategories } from "@/lib/db/categories";
 import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getNbNotesUtilisateurs, getSiteStats } from "@/lib/db/solutions";
 import { getHomepageVideos } from "@/lib/db/misc";
+import { getAnnoncesActives } from "@/lib/db/annonces";
 
 export const revalidate = 3600; // ISR 1h (au lieu de 30 min) — accueil = gros fan-out BDD, réduit la CPU Vercel Fluid.
 
 export default async function Home() {
-  const [categories, siteStats, videos] = await Promise.all([
+  const [categories, siteStats, videos, annonces] = await Promise.all([
     getCategories(),
     getSiteStats(),
     getHomepageVideos(),
+    getAnnoncesActives(),
   ]);
 
   const categoriesData = await Promise.all(
@@ -58,6 +61,7 @@ export default async function Home() {
   return (
     <>
       <Navbar />
+      {annonces.length > 0 && <AnnonceBanner annonces={annonces} />}
       <main>
         <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} nbInscrits={siteStats.nbInscrits} nbAcronymes={siteStats.nbAcronymes} />
         <RecommendedSoftware categories={categoriesData} />

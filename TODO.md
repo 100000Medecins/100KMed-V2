@@ -43,6 +43,16 @@ _(rien en cours)_
 #### ~~Fiche de synthèse « pourquoi revendiquer sa fiche » pour les éditeurs (via FEIMA)~~ [OK] Fait 2026-07-13
 - **Livré** : fiche de synthèse (ce qu'est 100 000 Médecins + pourquoi/comment revendiquer sa fiche solution) rédigée et transmise via Francis Mambrini (FEIMA).
 
+#### Système d'annonces sur l'index + section admin (2026-07-16)
+- **Besoin immédiat** : publier une **annonce sur la page d'accueil** (jeu concours) + créer une **page dédiée aux gagnants du jeu concours**.
+- **Système générique à construire** : une **section « Annonces » dans l'admin** pour gérer les annonces à affichage spécial sur l'index, avec :
+  - **période d'affichage** : date de début / date de fin (masquage auto hors fenêtre)
+  - **titre** + **contenu**
+  - **CTA** : libellé + lien (ex. vers la page des gagnants)
+  - À cadrer : toggle actif/inactif, variante visuelle (bandeau / encart / modale), ordre si plusieurs annonces simultanées.
+- **Pistes techniques** : table `annonces` (⚠️ GRANTs explicites + RLS, cf. CLAUDE.md — `date_debut`/`date_fin`/`titre`/`contenu`/`cta_label`/`cta_url`/`actif`), server actions CRUD, page `/admin/annonces`, composant d'affichage sur l'accueil (filtre `actif` + fenêtre de dates courante). La 1re annonce (jeu concours) pointe via son CTA vers la page gagnants.
+- **Livrables** : (a) système annonces + `/admin/annonces` ; (b) bannière/encart index piloté par la BDD ; (c) page « gagnants du jeu concours ».
+
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme

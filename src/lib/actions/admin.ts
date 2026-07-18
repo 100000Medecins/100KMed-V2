@@ -765,6 +765,78 @@ export async function togglePartenaireActif(id: string, actif: boolean) {
 }
 
 // ────────────────────────────────────────────
+// Annonces (bandeau accueil)
+// ────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractAnnonceFromFormData(formData: FormData): Record<string, any> {
+  const dateDebut = (formData.get('date_debut') as string) || null
+  const dateFin = (formData.get('date_fin') as string) || null
+  return {
+    titre: (formData.get('titre') as string) || null,
+    contenu: (formData.get('contenu') as string) || null,
+    cta_label: (formData.get('cta_label') as string) || null,
+    cta_url: (formData.get('cta_url') as string) || null,
+    variante: (formData.get('variante') as string) || 'info',
+    // <input type="datetime-local"> = string locale sans TZ → new Date() la lit dans le
+    // fuseau du serveur ; on stocke en ISO (colonne timestamptz).
+    date_debut: dateDebut ? new Date(dateDebut).toISOString() : null,
+    date_fin: dateFin ? new Date(dateFin).toISOString() : null,
+    actif: formData.get('actif') === 'true',
+    ordre: formData.get('ordre') ? parseInt(formData.get('ordre') as string, 10) : 0,
+    updated_at: new Date().toISOString(),
+  }
+}
+
+export async function createAnnonce(formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('annonces')
+    .insert({ id: randomUUID(), ...extractAnnonceFromFormData(formData) })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/annonces')
+  revalidatePath('/')
+  redirect('/admin/annonces')
+}
+
+export async function updateAnnonce(id: string, formData: FormData) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('annonces')
+    .update(extractAnnonceFromFormData(formData))
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/annonces')
+  revalidatePath('/')
+  redirect('/admin/annonces')
+}
+
+export async function deleteAnnonce(id: string) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('annonces').delete().eq('id', id)
+  revalidatePath('/admin/annonces')
+  revalidatePath('/')
+}
+
+export async function toggleAnnonceActif(id: string, actif: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('annonces')
+    .update({ actif, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  revalidatePath('/admin/annonces')
+  revalidatePath('/')
+}
+
+// ────────────────────────────────────────────
 // Éditeurs
 // ────────────────────────────────────────────
 
