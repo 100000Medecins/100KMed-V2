@@ -5,6 +5,22 @@
 
 ---
 
+## [2026-07-19] — Refonte email de lancement syndicats + Vercel Web Analytics
+
+### Email — Refonte du template « lancement_syndicat »
+- **En-tête réordonné** : logo du **syndicat** en 1er, puis ♥, puis le logo **100 000 Médecins « 3 lignes »** (`logo-principal-couleur`, l'original empilé) à la place de l'alternatif horizontal (`logo-secondaire`).
+- **Cadre « Aujourd'hui »** remonté juste après le paragraphe d'intro (« En 2019, {{syndicat}} a participé… »), avant la liste des réalisations de l'association.
+- **Atouts réordonnés** : « think-tank des médecins geeks » avant « représentation aux réunions ANS/DNS/CNAM ».
+- **Wording catégories** reformulé (« De nouvelles catégories pour vous aider au quotidien : agendas, IA « Scribes », IA Documentaires, mais également téléexpertise, téléconsultation, télétransmission… »).
+- **Gras → liens** : accueil, 6 catégories (`agendas-medicaux`, `intelligence-artificielle-medecine`, `ia-documentaires`, `teleexpertise`, `teleconsultation`, `teletransmission` — toutes peuplées, 10-42 solutions), `/glossaire`, `/stories-tutos`, études/thèses/idées (`/mon-compte/*`, ⚠️ derrière login), FEIMA/DNS → `/glossaire` (⚠️ FEIMA pas encore dans le glossaire). Style bleu accent gras sans soulignement. Helper `link()` centralisé, **UTM conservés** sur tous les liens.
+- Source de vérité [scripts/save-lancement-syndicat-template.mjs](scripts/save-lancement-syndicat-template.mjs) → poussée en base (`email_templates`) → 7 fichiers [docs/lancement-syndicats/*.html](docs/lancement-syndicats/) régénérés (aucun override syndicat en base → propagation à tous).
+
+### Infrastructure — Vercel Web Analytics + régé types
+- Ajout `@vercel/analytics` + `<Analytics/>` dans [layout.tsx](src/app/layout.tsx) — sans cookie (pas de bandeau RGPD), capte les UTM pour l'attribution par syndicat des emails de lancement. **Reste 1 action manuelle** : activer l'onglet **Analytics** dans le dashboard Vercel (sinon rien n'est collecté). Attribution `utm_source` limitée sur plan Hobby ; Plausible si besoin d'un vrai découpage par syndicat.
+- `src/types/database.ts` régénéré : il était **vide** dans le working tree (bloquait `npm run build`), régénéré via `supabase gen types` (inclut la table `annonces`). `npm run build` repasse vert.
+
+---
+
 ## [2026-07-14] — Notes utilisateurs : règle « 0 = non noté » + comptage PSC admin
 
 ### Fix — Scoring : un critère à 0 (« NC ») faussait le radar et la note
