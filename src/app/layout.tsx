@@ -4,6 +4,7 @@ import AuthProvider from "@/components/providers/AuthProvider";
 import ScrollRestoration from "@/components/providers/ScrollRestoration";
 import KonamiGame from "@/components/easter-egg/KonamiGame";
 import AcronymPopover from "@/components/AcronymPopover";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -65,6 +66,7 @@ export default function RootLayout({
         <AuthProvider>{children}</AuthProvider>
         <AcronymPopover />
         <KonamiGame />
+        <Analytics />
       </body>
     </html>
   );

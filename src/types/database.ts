@@ -92,6 +92,51 @@ export type Database = {
         }
         Relationships: []
       }
+      annonces: {
+        Row: {
+          actif: boolean
+          contenu: string | null
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          date_debut: string
+          date_fin: string
+          id: string
+          ordre: number
+          titre: string
+          updated_at: string
+          variante: string
+        }
+        Insert: {
+          actif?: boolean
+          contenu?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          date_debut: string
+          date_fin: string
+          id?: string
+          ordre?: number
+          titre: string
+          updated_at?: string
+          variante?: string
+        }
+        Update: {
+          actif?: boolean
+          contenu?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          date_debut?: string
+          date_fin?: string
+          id?: string
+          ordre?: number
+          titre?: string
+          updated_at?: string
+          variante?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           description: string | null

@@ -31,8 +31,24 @@ const SUBJECT = 'Le nouveau 100 000 Médecins est là ✨'
 const S = 'https://www.100000medecins.org'
 const STORAGE = 'https://qnspmlskzgqrqtuvsbuo.supabase.co/storage/v1/object/public/images'
 const BG = `background-color:#0f1e38;background-image:radial-gradient(ellipse 70% 60% at 12% 75%,rgba(74,144,217,0.55) 0%,transparent 100%),radial-gradient(ellipse 55% 55% at 82% 12%,rgba(138,92,246,0.45) 0%,transparent 100%),radial-gradient(ellipse 50% 45% at 58% 92%,rgba(16,185,129,0.30) 0%,transparent 100%)`
-const LINK_HOME = `${S}/?utm_source={{utm_source}}&utm_medium=email&utm_campaign=lancement-2026`
-const LINK_NOTER = `${S}/solution/noter?utm_source={{utm_source}}&utm_medium=email&utm_campaign=lancement-2026`
+// UTM conservés sur TOUS les liens du mail (attribution par syndicat via Vercel Web Analytics).
+const UTM = `utm_source={{utm_source}}&utm_medium=email&utm_campaign=lancement-2026`
+const link = (path) => `${S}${path}${path.includes('?') ? '&' : '?'}${UTM}`
+const LINK_HOME = link('/')
+const LINK_NOTER = link('/solution/noter')
+const LINK_GLOSSAIRE = link('/glossaire')
+const LINK_STORIES = link('/stories-tutos')
+const LINK_AGENDAS = link('/solutions/agendas-medicaux')
+const LINK_SCRIBES = link('/solutions/intelligence-artificielle-medecine')
+const LINK_DOCUMENTAIRES = link('/solutions/ia-documentaires')
+const LINK_TELEEXPERTISE = link('/solutions/teleexpertise')
+const LINK_TELECONSULTATION = link('/solutions/teleconsultation')
+const LINK_TELETRANSMISSION = link('/solutions/teletransmission')
+const LINK_ETUDES = link('/mon-compte/etudes-cliniques')
+const LINK_THESES = link('/mon-compte/questionnaires-these')
+const LINK_IDEE = link('/mon-compte/proposer/idee')
+// Style des liens inline dans le corps (gras + bleu accent, sans soulignement pour la lisibilité).
+const LNK = 'color:#4A90D9;font-weight:700;text-decoration:none;'
 
 const contenu_html = `<!DOCTYPE html>
 <html lang="fr">
@@ -47,18 +63,18 @@ const contenu_html = `<!DOCTYPE html>
   <tr><td align="center" style="padding:32px 16px 48px;">
     <table cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
 
-      <!-- ══ LOGO EN-TÊTE + ♥ + LOGO SYNDICAT ══ -->
+      <!-- ══ LOGO SYNDICAT + ♥ + LOGO 100 000 MÉDECINS (3 lignes) ══ -->
       <tr>
         <td style="padding:0 0 24px;" align="center">
           <table cellpadding="0" cellspacing="0" role="presentation">
             <tr>
-              <td style="vertical-align:middle;padding:0 14px 0 0;">
+              <td style="vertical-align:middle;padding:0 14px 0 0;">{{logo_syndicat_cell}}</td>
+              <td style="vertical-align:middle;padding:0 14px;font-size:24px;line-height:1;color:#E8734A;" aria-hidden="true">&#x2665;</td>
+              <td style="vertical-align:middle;padding:0 0 0 14px;">
                 <a href="${LINK_HOME}" style="text-decoration:none;display:block;line-height:0;">
-                  <img src="${STORAGE}/logos/logo-secondaire-couleur-trimmed.png" alt="100 000 Médecins" width="276" style="display:block;width:276px;height:auto;border:0;" />
+                  <img src="${STORAGE}/logos/logo-principal-couleur-trimmed.png" alt="100 000 Médecins" height="64" style="display:block;height:64px;width:auto;border:0;" />
                 </a>
               </td>
-              <td style="vertical-align:middle;padding:0 14px;font-size:24px;line-height:1;color:#E8734A;" aria-hidden="true">&#x2665;</td>
-              <td style="vertical-align:middle;padding:0 0 0 14px;">{{logo_syndicat_cell}}</td>
             </tr>
           </table>
         </td>
@@ -80,8 +96,24 @@ const contenu_html = `<!DOCTYPE html>
                 <p style="margin:0 0 14px;font-size:17px;font-weight:600;color:#0f1e38;">Chère consœur, cher confrère,</p>
 
                 <p style="margin:0 0 14px;font-size:16px;color:#4A5568;line-height:1.7;">
-                  En 2019, <strong style="color:#0f1e38;">{{article_syndicat}}{{nom_syndicat}}</strong> a participé à la fondation de l'association <strong style="color:#0f1e38;">100&nbsp;000&nbsp;Médecins</strong>, afin de peser sur les grandes orientations de l'e-santé pour les médecins de ville.
+                  En 2019, <strong style="color:#0f1e38;">{{article_syndicat}}{{nom_syndicat}}</strong> a participé à la fondation de l'association <a href="${LINK_HOME}" style="${LNK}">100&nbsp;000&nbsp;Médecins</a>, afin de peser sur les grandes orientations de l'e-santé pour les médecins de ville.
                 </p>
+
+                <!-- ── Encart Aujourd'hui (annonce + au programme) — déplacé juste après l'intro ── -->
+                <div style="margin:20px 0 26px;background:#F4F6FB;border-radius:14px;padding:24px 26px;">
+                  <p style="margin:0 0 14px;font-size:22px;font-weight:800;color:#4A90D9;letter-spacing:-0.3px;line-height:1.2;">Aujourd'hui</p>
+                  <p style="margin:0 0 18px;font-size:17px;font-weight:600;color:#0f1e38;line-height:1.5;">
+                    Nous sommes particulièrement heureux de vous annoncer la mise en ligne de <a href="${LINK_HOME}" style="color:#4A90D9;font-weight:700;text-decoration:none;">la nouvelle version de 100000Medecins.org</a>&nbsp;!
+                  </p>
+                  <p style="margin:0 0 10px;font-size:15px;font-weight:700;color:#0f1e38;">Au programme :</p>
+                  <ul style="margin:0;padding:0 0 0 22px;font-size:16px;color:#3a4256;line-height:1.7;">
+                    <li style="margin:0 0 8px;">De nouvelles catégories pour vous aider au quotidien : <a href="${LINK_AGENDAS}" style="${LNK}">agendas en ligne</a>, <a href="${LINK_SCRIBES}" style="${LNK}">IA «&nbsp;Scribes&nbsp;»</a> et <a href="${LINK_DOCUMENTAIRES}" style="${LNK}">IA Documentaires</a>, mais également <a href="${LINK_TELEEXPERTISE}" style="${LNK}">téléexpertise</a>, <a href="${LINK_TELECONSULTATION}" style="${LNK}">téléconsultation</a>, <a href="${LINK_TELETRANSMISSION}" style="${LNK}">télétransmission</a>…</li>
+                    <li style="margin:0 0 8px;">La possibilité de participer à des <a href="${LINK_ETUDES}" style="${LNK}">études cliniques</a> ou des <a href="${LINK_THESES}" style="${LNK}">thèses</a> sur le thème de l'e-santé.</li>
+                    <li style="margin:0 0 8px;">Un <a href="${LINK_GLOSSAIRE}" style="${LNK}">glossaire e-santé</a> — particulièrement utile pour les n00bs que nous sommes tous…</li>
+                    <li style="margin:0 0 8px;">Des <a href="${LINK_STORIES}" style="${LNK}">stories, tutos et témoignages</a> pour mieux vous situer dans le far-west de l'e-santé.</li>
+                    <li style="margin:0 0 0;">Et la proposition indécente de <a href="${LINK_IDEE}" style="${LNK}">soumettre vos idées</a> pour améliorer en continu ce qui, en réalité, est VOTRE site&nbsp;! :-D</li>
+                  </ul>
+                </div>
 
                 <p style="margin:0 0 12px;font-size:16px;color:#4A5568;line-height:1.7;">
                   Peu de ses avancées ont été rendues publiques, mais on peut mettre à son crédit :
@@ -89,28 +121,12 @@ const contenu_html = `<!DOCTYPE html>
 
                 <ul style="margin:0 0 20px;padding:0 0 0 22px;font-size:16px;color:#4A5568;line-height:1.7;">
                   <li style="margin:0 0 8px;">Un premier site d'évaluation des logiciels métier (LGC) en 2022 — près de <strong style="color:#0f1e38;">6 000 confrères</strong>, <strong style="color:#0f1e38;">600 évaluations</strong>.</li>
-                  <li style="margin:0 0 8px;">Une représentation aux innombrables réunions de l'ANS, de la DNS et de la CNAM&nbsp;: des relations nouées pour une co-construction réelle et apaisée.</li>
                   <li style="margin:0 0 8px;">Un « think-tank des médecins geeks » au sein de l'association.</li>
+                  <li style="margin:0 0 8px;">Une représentation aux innombrables réunions de l'ANS, de la DNS et de la CNAM&nbsp;: des relations nouées pour une co-construction réelle et apaisée.</li>
                   <li style="margin:0 0 8px;">Des journées de l'e-santé organisées dans des départements de médecine générale, reproductibles toutes spécialités (les contacter).</li>
                   <li style="margin:0 0 8px;">Des participations à des congrès — stands, conférences (idem, les contacter).</li>
-                  <li style="margin:0 0 0;">Plus récemment, le co-portage avec la <strong style="color:#0f1e38;">FEIMA</strong> et la <strong style="color:#0f1e38;">DNS</strong> d'un groupe de travail sur… la portabilité des logiciels métiers (oui, oui)&nbsp;: sous peu, <strong style="color:#0f1e38;">l'export gratuit de vos données sous un mois — et l'import sans perte</strong> — sera la règle. Plus d'excuses pour procrastiner un changement de logiciel s'il vous irrite au quotidien ;-)</li>
+                  <li style="margin:0 0 0;">Plus récemment, le co-portage avec la <a href="${LINK_GLOSSAIRE}" style="${LNK}">FEIMA</a> et la <a href="${LINK_GLOSSAIRE}" style="${LNK}">DNS</a> d'un groupe de travail sur… la portabilité des logiciels métiers (oui, oui)&nbsp;: sous peu, <strong style="color:#0f1e38;">l'export gratuit de vos données sous un mois — et l'import sans perte</strong> — sera la règle. Plus d'excuses pour procrastiner un changement de logiciel s'il vous irrite au quotidien ;-)</li>
                 </ul>
-
-                <!-- ── Encart Aujourd'hui (annonce + au programme) ── -->
-                <div style="margin:24px 0 36px;background:#F4F6FB;border-radius:14px;padding:24px 26px;">
-                  <p style="margin:0 0 14px;font-size:22px;font-weight:800;color:#4A90D9;letter-spacing:-0.3px;line-height:1.2;">Aujourd'hui</p>
-                  <p style="margin:0 0 18px;font-size:17px;font-weight:600;color:#0f1e38;line-height:1.5;">
-                    Nous sommes particulièrement heureux de vous annoncer la mise en ligne de <span style="color:#4A90D9;">la nouvelle version de 100000Medecins.org</span>&nbsp;!
-                  </p>
-                  <p style="margin:0 0 10px;font-size:15px;font-weight:700;color:#0f1e38;">Au programme :</p>
-                  <ul style="margin:0;padding:0 0 0 22px;font-size:16px;color:#3a4256;line-height:1.7;">
-                    <li style="margin:0 0 8px;">De nouvelles catégories d'évaluation : <strong style="color:#0f1e38;">agendas en ligne</strong>, <strong style="color:#0f1e38;">IA Scribes</strong> (qui écoutent et résument vos consultations), <strong style="color:#0f1e38;">IA Documentaires</strong> (pour vos questions complexes), et bientôt téléexpertise, téléconsultation, télétransmission…</li>
-                    <li style="margin:0 0 8px;">La possibilité de participer à des <strong style="color:#0f1e38;">études cliniques</strong> ou des <strong style="color:#0f1e38;">thèses</strong> sur le thème de l'e-santé.</li>
-                    <li style="margin:0 0 8px;">Un <strong style="color:#0f1e38;">glossaire e-santé</strong> — particulièrement utile pour les n00bs que nous sommes tous…</li>
-                    <li style="margin:0 0 8px;">Des <strong style="color:#0f1e38;">stories, tutos et témoignages</strong> pour mieux vous situer dans le far-west de l'e-santé.</li>
-                    <li style="margin:0 0 0;">Et la proposition indécente de <strong style="color:#0f1e38;">soumettre vos idées</strong> pour améliorer en continu ce qui, en réalité, est VOTRE site&nbsp;! :-D</li>
-                  </ul>
-                </div>
 
                 <!-- ── CTA (deux boutons, centrés) ── -->
                 <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px;">
