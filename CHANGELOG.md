@@ -19,6 +19,11 @@
 - Ajout `@vercel/analytics` + `<Analytics/>` dans [layout.tsx](src/app/layout.tsx) — sans cookie (pas de bandeau RGPD), capte les UTM pour l'attribution par syndicat des emails de lancement. **Reste 1 action manuelle** : activer l'onglet **Analytics** dans le dashboard Vercel (sinon rien n'est collecté). Attribution `utm_source` limitée sur plan Hobby ; Plausible si besoin d'un vrai découpage par syndicat.
 - `src/types/database.ts` régénéré : il était **vide** dans le working tree (bloquait `npm run build`), régénéré via `supabase gen types` (inclut la table `annonces`). `npm run build` repasse vert.
 
+### Email — Logos syndicats (PNG + cartouche) + peaufinage (passe 2)
+- **Logos CSMF/SML** : récupérés depuis `partenaires` (SVG/WebP, non fiables en email) → **convertis en PNG** (sharp) → uploadés sur `storage/images/syndicats/{csmf,sml}.png`. Logos sombres sur en-tête sombre → **cartouche blanc** (`logo_bg=#ffffff` dans `pages_statiques.metadata`). **Cache-bust `?v=2`** sur les URLs logos ([generate-lancement-syndicats.mjs](scripts/generate-lancement-syndicats.mjs) + [LancementSyndicatsManager.tsx](src/components/admin/LancementSyndicatsManager.tsx)) — le CDN Supabase servait l'ancienne image sur URL identique.
+- **études/thèses → ancre `#communaute`** (au lieu de `/mon-compte/*` derrière login) : ajout `id="communaute"` + `scroll-mt` sur la section « Participez à la recherche » ([CommunautePreview.tsx](src/components/sections/CommunautePreview.tsx)). « soumettre vos idées » : lien retiré, gras bleu conservé.
+- **Réagencement + wording** : CTA remontés juste sous l'encadré d'annonce ; citation « Notre avenir passe par le numérique… » déplacée **après le mot du président** ; réalisations reformulées (« Mais l'association 100 000 Médecins, c'est aussi : », Collège des Médecins Geeks, groupes de travail DNS/ANS/CNAM **sans liens**, « portabilité des logiciels métiers » en gras bleu).
+
 ---
 
 ## [2026-07-14] — Notes utilisateurs : règle « 0 = non noté » + comptage PSC admin

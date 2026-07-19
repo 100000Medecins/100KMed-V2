@@ -1,4 +1,5 @@
 import type { SolutionWithRelations, ResultatWithCritere, Editeur } from '@/types/models'
+import { ensureHttps } from '@/lib/url'
 
 /**
  * Génère le JSON-LD SoftwareApplication + AggregateRating pour une solution.
@@ -19,7 +20,7 @@ export function generateSolutionJsonLd(
     description: solution.description || undefined,
     applicationCategory: 'HealthApplication',
     operatingSystem: 'Web',
-    url: solution.website || undefined,
+    url: ensureHttps(solution.website) || undefined,
     image: solution.logo_url || undefined,
   }
 
@@ -39,7 +40,7 @@ export function generateSolutionJsonLd(
     jsonLd.author = {
       '@type': 'Organization',
       name: solution.editeur.nom_commercial || solution.editeur.nom || undefined,
-      url: solution.editeur.website || undefined,
+      url: ensureHttps(solution.editeur.website) || undefined,
     }
   }
 
@@ -65,7 +66,7 @@ export function generateOrganizationJsonLd(editeur: Editeur) {
     '@type': 'Organization',
     name: editeur.nom_commercial || editeur.nom || undefined,
     description: editeur.description || undefined,
-    url: editeur.website || undefined,
+    url: ensureHttps(editeur.website) || undefined,
     logo: editeur.logo_url || undefined,
     address: editeur.contact_ville
       ? {

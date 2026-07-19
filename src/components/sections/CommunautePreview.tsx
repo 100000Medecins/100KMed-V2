@@ -69,7 +69,7 @@ export default async function CommunautePreview() {
   if (etudes.length === 0 && questionnaires.length === 0) return null
 
   return (
-    <section className="py-10 md:py-14">
+    <section id="communaute" className="scroll-mt-24 py-10 md:py-14">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-end justify-between mb-8 gap-4">
           <div>

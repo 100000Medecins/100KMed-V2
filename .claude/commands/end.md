@@ -1,6 +1,6 @@
 Routine de fin de session sur ce projet. Usage : /end.
 
-Sauvegarde le code, documente ce qui a ete fait, met a jour la TODO, push sur GitHub. Le but : pouvoir reprendre proprement sur l'autre machine (laptop / desktop).
+Sauvegarde le code, documente ce qui a ete fait, met a jour la TODO, push sur GitHub, et met a jour le vault Obsidian (base de connaissances) si pertinent. Le but : pouvoir reprendre proprement sur l'autre machine (laptop / desktop).
 
 ## Etape 1 - Verification initiale
 
@@ -45,6 +45,7 @@ Si la session ne concerne **que** des fichiers `.claude/commands/*.md` (mise en 
 
 - **Saute l'etape 3** (pas de mise a jour CHANGELOG.md - ce n'est pas une feature applicative)
 - **Saute l'etape 4** (pas de mise a jour TODO.md applicative)
+- **Saute l'etape 7** (pas de note Obsidian pour une session d'outillage)
 - Va directement a l'etape 5 avec un message de commit du type `chore(claude-code): ...`
 
 ## Etape 3 - Mise a jour du CHANGELOG.md
@@ -184,7 +185,39 @@ Lance `git push origin <branche>`. Verifie le succes dans la sortie.
 - **Non-fast-forward** (la branche distante a avance) - lance `git pull --rebase` puis re-push. Si conflit, arrete et demande a l'utilisateur de gerer manuellement.
 - **Autre erreur** - affiche l'erreur exacte, demande a l'utilisateur ce qu'il veut faire.
 
-## Etape 7 - Confirmation finale + TODO restante detaillee
+## Etape 7 - Mise a jour du vault Obsidian (base de connaissances) - si juge necessaire
+
+Cette etape alimente le vault Obsidian "Projets Pro" de David (base de connaissances perso, distincte du repo projet). But : capitaliser la session en notes reliees, pour ne pas avoir a tout refaire.
+
+### Vault cible et convention
+
+- Emplacement : `C:\Users\david\Documents\Obsidian\Projets Pro`, dossier du projet courant : `100000Medecins/` (hub = `Vue d'ensemble.md`).
+- Une note = un sujet ; notes reliees par des `[[wikilinks]]` ; frontmatter YAML avec un champ `updated:` a rafraichir a chaque modification. Contenu en francais correct (avec accents).
+- Le vault est un **repo git DISTINCT**, avec auto-commit/push gere par le plugin Obsidian Git. **Ne lance JAMAIS de commande git sur le vault** (add/commit/push) : ecris seulement les fichiers, le plugin synchronise seul. Ne confonds pas avec le push du repo projet (etape 6).
+
+### Robustesse
+
+Verifie d'abord que le dossier du vault existe sur cette machine (`Test-Path`). S'il est absent, **saute cette etape** et signale-le en une ligne au bilan final ("vault Obsidian introuvable sur ce poste, note non generee").
+
+### Quand generer / mettre a jour (le "si juge necessaire")
+
+Mets a jour ou cree une note **seulement si la session a produit quelque chose digne de la base de connaissances** : nouvelle feature, fix non trivial porteur d'une lecon, decision d'architecture, plan/diagnostic, migration de donnees, decision figee.
+
+**Ne genere PAS de note** si : session d'outillage (`.claude/commands/*`), micro-fix cosmetique, WIP non concluant. Regle simple : si ca meritait une vraie entree CHANGELOG avec une decision/feature/fix, c'est probablement a refleter dans une note ; si c'est un micro-changement, saute. En cas de doute leger, propose et laisse David trancher.
+
+### Approche incrementale
+
+- **Mets a jour la (les) note(s) existante(s) pertinente(s)** plutot que d'en creer de nouvelles. Mappe le sujet de la session sur les notes du dossier : `[[Architecture]]`, `[[PSC — Pro Santé Connect]]`, `[[Chantiers en cours]]`, `[[Scoring & évaluations]]`, `[[Performance & ISR]]`, `[[Questionnaires & imports de catégories]]`, `[[PSC, Auth & Emails]]`, `[[Migration Firebase & BDD]]`, etc.
+- La note **`Chantiers en cours`** est la note vivante a rafraichir par defaut (statut des chantiers actifs, decisions figees).
+- Ne relis pas tout le projet : appuie-toi sur le **diff de la session** + l'entree CHANGELOG qui vient d'etre redigee.
+- Ne cree une **nouvelle note** que si le sujet est vraiment neuf (aucune note existante ne convient), en respectant la convention (bon dossier, frontmatter, liens vers le hub et les notes voisines).
+- A chaque note touchee : mets a jour `updated:` (date du jour) et, si pertinent, ajoute une ligne ou un callout date.
+
+### Validation (comme CHANGELOG / TODO)
+
+Propose a David quelle(s) note(s) tu comptes creer/mettre a jour et un resume du contenu. **Attends sa validation avant d'ecrire.** La base de connaissances n'est jamais modifiee sans accord explicite, exactement comme le CHANGELOG et la TODO.
+
+## Etape 8 - Confirmation finale + TODO restante detaillee
 
 Termine par un bilan en francais, en INCLUANT la TODO restante au **format detaille** (1 ligne par item).
 
@@ -194,6 +227,7 @@ Termine par un bilan en francais, en INCLUANT la TODO restante au **format detai
 > - 1 commit pousse sur `origin/dev` : `feat(psc): ...`
 > - CHANGELOG.md mis a jour (entree du 2026-04-25)
 > - TODO.md : 2 taches barrees, 1 nouvelle ajoutee
+> - Vault Obsidian : note `Chantiers en cours` mise a jour (ou "aucune note - session non concernee")
 >
 > **Voici ce qu'il reste a faire la prochaine fois :**
 >
@@ -262,3 +296,4 @@ Si l'etape 4 a detecte plus de 10 items barres dans TODO.md, ajoute a la fin :
 - **Le CHANGELOG et le TODO ne sont JAMAIS modifies sans validation explicite** sur le contenu propose.
 - **Toujours en francais**, ton conversationnel.
 - **Jamais de tableaux Markdown** pour afficher des donnees : listes a puces.
+- **Le vault Obsidian est un repo distinct** : ne lance jamais de git dessus (le plugin Obsidian Git synchronise). L'etape 7 ecrit seulement des fichiers.

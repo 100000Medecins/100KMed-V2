@@ -1,5 +1,6 @@
 import { Mail, Phone, ExternalLink, Briefcase, Headphones } from 'lucide-react'
 import type { SolutionWithRelations } from '@/types/models'
+import { ensureHttps } from '@/lib/url'
 
 interface SupportSectionProps {
   solution: SolutionWithRelations
@@ -46,6 +47,7 @@ export default function SupportSection({ solution, displayCommercial = false }: 
   const supportEmail = sol.support_email
   const supportTel = sol.support_telephone
   const supportSite = sol.support_website
+  const supportSiteUrl = ensureHttps(supportSite)
 
   // Le bloc commercial n'est rendu QUE si le toggle admin est activé ET qu'il y a des coordonnées renseignées.
   const hasCommercial = displayCommercial && !!(contactEmail || contactTel)
@@ -97,8 +99,8 @@ export default function SupportSection({ solution, displayCommercial = false }: 
                 {supportTel && (
                   <ContactButton href={`tel:${supportTel.replace(/\s/g, '')}`} icon={Phone} label={supportTel} />
                 )}
-                {supportSite && (
-                  <ContactButton href={supportSite} icon={ExternalLink} label="Page de support" />
+                {supportSiteUrl && (
+                  <ContactButton href={supportSiteUrl} icon={ExternalLink} label="Page de support" />
                 )}
               </div>
             </div>
