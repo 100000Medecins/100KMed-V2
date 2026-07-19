@@ -38,6 +38,9 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    // Deux sitemaps au contenu identique : /sitemap.xml (historique) et /sitemap-main.xml
+    // (URL neuve, pour repartir sur une entité GSC sans l'erreur « Impossible de récupérer »
+    // collante — cf docs/2026-07-19-audit-seo-indexation-gsc.md).
+    sitemap: [`${baseUrl}/sitemap.xml`, `${baseUrl}/sitemap-main.xml`],
   }
 }
