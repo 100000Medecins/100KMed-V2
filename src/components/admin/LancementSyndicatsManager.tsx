@@ -50,7 +50,7 @@ function motDuPresident(titre: string): string {
  *  Logique identique à scripts/generate-lancement-syndicats.mjs. */
 function buildLogoCell(s: SyndicatLancement, linkHome: string): string {
   const height = s.logo_height ?? 48
-  const src = `${STORAGE}/syndicats/${s.id}.png`
+  const src = `${STORAGE}/syndicats/${s.id}.png?v=2`
   const alt = esc(s.nom)
   const img = `<img src="${src}" alt="${alt}" height="${height}" style="display:block;height:${height}px;width:auto;border:0;" />`
   const link = `<a href="${linkHome}" style="text-decoration:none;display:block;line-height:0;">${img}</a>`
@@ -72,7 +72,7 @@ function composeFor(html: string, s: SyndicatLancement): string {
   const vars: Record<string, string> = {
     nom_syndicat: esc(s.nom),
     article_syndicat: esc(s.article ?? ''),
-    logo_syndicat: `${STORAGE}/syndicats/${s.id}.png`,
+    logo_syndicat: `${STORAGE}/syndicats/${s.id}.png?v=2`,
     logo_syndicat_cell: buildLogoCell(s, linkHome),
     citation: esc(s.citation),
     president_nom: esc(s.presidents),
