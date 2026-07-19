@@ -4,6 +4,7 @@ import StarRating from '@/components/ui/StarRating'
 import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { sanitizeHtml } from '@/lib/sanitize'
+import { ensureHttps } from '@/lib/url'
 import AcronymHtml from '@/components/AcronymHtml'
 import NoteGlobaleTooltip from '@/components/solutions/detail/NoteGlobaleTooltip'
 import type { SolutionWithRelations } from '@/types/models'
@@ -74,6 +75,7 @@ export default function SolutionHero({
   const hasCommercial = displayContactsCommerciaux && !!(sol.contact_email || sol.contact_telephone)
   const hasSupport = !!(sol.support_email || sol.support_telephone || sol.support_website)
   const hasContactsUtiles = hasCommercial || hasSupport
+  const website = ensureHttps(sol.website)
   const anchors = [
     { id: 'avis-redaction', label: 'Avis de la rédaction', show: !!solution.evaluation_redac_avis },
     { id: 'galerie', label: 'Galerie', show: !!(solution.galerie && solution.galerie.length > 0) },
@@ -159,9 +161,9 @@ export default function SolutionHero({
                   >
                     Évaluer {solution.nom}
                   </Button>
-                  {!!(solution as unknown as Record<string, unknown>).website && (
+                  {website && (
                     <a
-                      href={(solution as unknown as Record<string, unknown>).website as string}
+                      href={website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-button border-2 border-gray-200 text-gray-700 hover:border-navy hover:text-navy transition-colors text-xs font-medium sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"

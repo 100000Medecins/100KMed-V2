@@ -6,6 +6,7 @@ import { getEditeurWithSolutions } from '@/lib/db/editeurs'
 import { getCommunautesPubliques } from '@/lib/db/solution-communautes'
 import { getDisplayPrixFront } from '@/lib/db/settings'
 import { generateOrganizationJsonLd } from '@/lib/seo/jsonld'
+import { ensureHttps } from '@/lib/url'
 import SolutionList from '@/components/solutions/SolutionList'
 import EditeurCommunautes, { type EditeurCommunautesGroup } from '@/components/solutions/detail/EditeurCommunautes'
 import { sanitizeHtml } from '@/lib/sanitize'
@@ -66,6 +67,7 @@ export default async function EditeurPage(props: PageProps) {
   )
 
   const jsonLd = generateOrganizationJsonLd(editeur)
+  const editeurWebsite = ensureHttps(editeur.website)
 
   return (
     <>
@@ -99,9 +101,9 @@ export default async function EditeurPage(props: PageProps) {
                       dangerouslySetInnerHTML={{ __html: editeur.description }}
                     />
                   )}
-                  {editeur.website && (
+                  {editeurWebsite && (
                     <Button
-                      href={editeur.website}
+                      href={editeurWebsite}
                       target="_blank"
                       rel="noopener noreferrer"
                       variant="outline"

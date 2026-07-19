@@ -27,11 +27,14 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
+        // /solution/noter/ et /connexion NE sont PAS ici : un Disallow bloque le crawl
+        // mais PAS l'indexation (Google indexe l'URL nue si elle est liée). Ces routes
+        // portent désormais un <meta noindex> (cf. leurs layout.tsx) → il faut donc
+        // laisser Googlebot les crawler pour qu'il VOIE le noindex et les retire de
+        // l'index. Cf. audit SEO 2026-07-19 (« indexée malgré le blocage par robots.txt »).
         disallow: [
           '/mon-compte/',
-          '/solution/noter/',
           '/api/',
-          '/connexion',
         ],
       },
     ],

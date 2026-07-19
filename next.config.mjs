@@ -124,6 +124,9 @@ const nextConfig = {
       { source: '/communique.html', destination: '/lancement-100k', permanent: true },
       // Fichier racine Firebase pré-Quasar — n'a jamais existé en Next.js (404 historique).
       { source: '/index.html', destination: '/', permanent: true },
+      // URL numérique fantôme héritée de l'ancien site (ID Firebase/Quasar) — plus aucun
+      // lien interne, signalée en 404 par GSC. Redirige vers l'accueil (cf. audit SEO 2026-07-19).
+      { source: '/5', destination: '/', permanent: true },
     ];
   },
 };
