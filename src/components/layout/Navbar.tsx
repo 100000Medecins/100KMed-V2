@@ -7,6 +7,8 @@ import { Menu, X, ChevronDown, UserCircle, Search, LogOut } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { NavCategorie, NavResponse } from "@/app/api/nav-categories/route";
+import AnnonceBanner from "@/components/sections/AnnonceBanner";
+import type { Annonce } from "@/lib/db/annonces";
 import dynamic from 'next/dynamic';
 const SearchOverlay = dynamic(() => import('@/components/search/SearchOverlay'), { ssr: false });
 
@@ -55,9 +57,11 @@ interface NavbarProps {
    * Logo non cliquable. Utilisé sur les flux contraints (ex. /completer-profil).
    */
   minimal?: boolean
+  /** Bandeaux d'annonce affichés en haut de l'en-tête fixe (accueil uniquement). */
+  annonces?: Annonce[]
 }
 
-export default function Navbar({ minimal = false }: NavbarProps) {
+export default function Navbar({ minimal = false, annonces = [] }: NavbarProps) {
   const { user, isEditeur, loading, signOut } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
@@ -70,6 +74,8 @@ export default function Navbar({ minimal = false }: NavbarProps) {
     ? `/solution/noter/${solutionMatch[1]}/${solutionMatch[2]}`
     : '/solution/noter';
   const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const [bannerH, setBannerH] = useState(0);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobileComparatifOpen, setIsMobileComparatifOpen] = useState(true);
   const [isMobileCommunauteOpen, setIsMobileCommunauteOpen] = useState(false);
@@ -81,6 +87,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
   const [isCommunauteMenuOpen, setIsCommunauteMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const megaMenuRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const communauteMenuRef = useRef<HTMLDivElement>(null);
   const communauteCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,10 +119,33 @@ export default function Navbar({ minimal = false }: NavbarProps) {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
+    let ticking = false;
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setIsScrolled(y > 10);
+        setScrollY(y);
+        ticking = false;
+      });
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Bandeau d'annonce : mesure sa hauteur (ResizeObserver → gère aussi sa fermeture)
+  // pour faire glisser l'en-tête vers le haut au scroll.
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) { setBannerH(0); return; }
+    const update = () => setBannerH(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [annonces, minimal]);
 
   useEffect(() => {
     if (minimal) return
@@ -168,16 +198,26 @@ export default function Navbar({ minimal = false }: NavbarProps) {
   const navBg = isHome && !isScrolled
     ? 'transparent'
     : 'linear-gradient(135deg, rgba(10,90,90,0.80) 0%, rgba(80,30,130,0.75) 55%, rgba(20,50,110,0.82) 100%)'
+  // Le bandeau d'annonce défile avec la page : l'en-tête glisse vers le haut (borné à
+  // la hauteur du bandeau), puis la nav reste fixée en haut de l'écran.
+  const headerTop = -Math.min(scrollY, bannerH)
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+      className="fixed left-0 right-0 z-50"
       style={{
+        top: headerTop,
         background: navBg,
         backdropFilter: 'blur(16px)',
         boxShadow: isHome && !isScrolled ? 'none' : '0 2px 20px rgba(0,0,0,0.18)',
+        transition: 'background 500ms ease, box-shadow 500ms ease',
       }}
     >
+      {!minimal && annonces.length > 0 && (
+        <div ref={bannerRef}>
+          <AnnonceBanner annonces={annonces} />
+        </div>
+      )}
       <nav className="max-w-7xl mx-auto pl-0 pr-0 min-[1150px]:pl-6 min-[1150px]:pr-6 grid grid-cols-[auto_1fr_auto] items-center h-[72px] gap-4">
         {/*
           Col 1 : Logo (3 lignes).

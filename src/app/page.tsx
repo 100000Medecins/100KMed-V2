@@ -7,7 +7,6 @@ import StoriesSection from "@/components/sections/StoriesSection";
 import EditorCTA from "@/components/sections/EditorCTA";
 import BlogPreview from "@/components/sections/BlogPreview";
 import CommunautePreview from "@/components/sections/CommunautePreview";
-import AnnonceBanner from "@/components/sections/AnnonceBanner";
 import { getCategories } from "@/lib/db/categories";
 import { getSolutions, getNotesUtilisateursGlobales, getNotesRedacGlobales, getNbNotesUtilisateurs, getSiteStats } from "@/lib/db/solutions";
 import { getHomepageVideos } from "@/lib/db/misc";
@@ -60,8 +59,7 @@ export default async function Home() {
 
   return (
     <>
-      <Navbar />
-      {annonces.length > 0 && <AnnonceBanner annonces={annonces} />}
+      <Navbar annonces={annonces} />
       <main>
         <HeroSection nbSolutions={siteStats.nbSolutions} nbEvaluations={siteStats.nbEvaluations} nbInscrits={siteStats.nbInscrits} nbAcronymes={siteStats.nbAcronymes} />
         <RecommendedSoftware categories={categoriesData} />
