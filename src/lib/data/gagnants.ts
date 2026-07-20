@@ -1,5 +1,4 @@
 export type Gagnant = {
-  rang: number
   nom: string
   prix: string
   ville?: string
@@ -7,20 +6,21 @@ export type Gagnant = {
 
 /** Métadonnées du jeu concours — à mettre à jour à chaque édition. */
 export const JEU_CONCOURS = {
-  titre: 'Jeu concours 100 000 Médecins',
+  titre: 'Jeu concours — WONCA Europe 2026',
   sousTitre: 'Les gagnants',
   intro:
-    'Merci aux nombreux médecins qui ont participé ! Voici les gagnants tirés au sort parmi les participants.',
-  dateTirage: 'À compléter',
+    'Merci aux 56 médecins qui ont évalué une solution sur notre stand pendant la WONCA Europe 2026 à Paris ! ' +
+    'Trois d’entre eux ont été tirés au sort — les voici.',
+  dateTirage: '3 juillet 2026',
 }
 
 /**
- * Liste des gagnants — codée en dur (page sur-mesure, mise à jour = redéploiement).
- * ⚠️ Remplacer les placeholders ci-dessous par les vrais gagnants.
- * `rang` 1/2/3 = podium ; au-delà = liste « Autres gagnants ».
+ * Gagnants du tirage au sort — codés en dur (page sur-mesure, MAJ = redéploiement).
+ * Affichage : prénom + initiale du nom de famille (RGPD). Pas de hiérarchie entre
+ * les trois (3 lots distincts, aucun « 1er prix »).
  */
 export const GAGNANTS: Gagnant[] = [
-  { rang: 1, nom: 'À compléter', prix: 'À compléter' },
-  { rang: 2, nom: 'À compléter', prix: 'À compléter' },
-  { rang: 3, nom: 'À compléter', prix: 'À compléter' },
+  { nom: 'Dr Sarah R.', prix: 'Batterie externe portable' },
+  { nom: 'Dr Marion B.', prix: 'Lecteur de carte Vitale 3-en-1' },
+  { nom: 'Dr Léticia S.', prix: 'Mini-ECG portable' },
 ]
