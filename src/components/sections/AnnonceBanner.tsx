@@ -7,10 +7,17 @@ import { sanitizeHtml } from '@/lib/sanitize'
 import type { Annonce } from '@/lib/db/annonces'
 
 // Couleur du bandeau selon `variante` (thème Tailwind du projet).
+// Sobre, dans le thème : fond navy, texte blanc. La `variante` ne change qu'une
+// petite pastille d'accent (voir plus bas), plus de bandeau flashy pleine couleur.
 const VARIANTS: Record<string, string> = {
-  info: 'bg-accent-blue text-white',
-  success: 'bg-rating-green text-white',
-  warning: 'bg-accent-orange text-white',
+  info: 'bg-navy text-white',
+  success: 'bg-navy text-white',
+  warning: 'bg-navy text-white',
+}
+const DOT: Record<string, string> = {
+  info: 'bg-accent-blue',
+  success: 'bg-rating-green',
+  warning: 'bg-accent-orange',
 }
 
 const STORAGE_KEY = 'annonces_fermees'
@@ -54,14 +61,16 @@ export default function AnnonceBanner({ annonces }: { annonces: Annonce[] }) {
     <div>
       {visibles.map((a) => {
         const cls = VARIANTS[a.variante ?? 'info'] ?? VARIANTS.info
+        const dot = DOT[a.variante ?? 'info'] ?? DOT.info
         return (
-          <div key={a.id} className={`${cls} px-4 py-2.5`}>
+          <div key={a.id} className={`${cls} px-4 py-2`}>
             <div className="max-w-7xl mx-auto flex items-center gap-3">
               <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${dot}`} aria-hidden="true" />
                 <span className="font-semibold">{a.titre}</span>
                 {a.contenu && (
                   <span
-                    className="opacity-90 [&_a]:underline"
+                    className="hidden sm:inline opacity-90 [&_a]:underline"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.contenu) }}
                   />
                 )}
