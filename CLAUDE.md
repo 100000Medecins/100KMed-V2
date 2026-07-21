@@ -84,6 +84,19 @@ Deux chemins d'accès distincts, à ne pas confondre :
 - **DDL (CREATE/ALTER/DROP)** → le MCP ne peut pas (lecture seule). C'est David qui lance le SQL
   dans le SQL Editor Supabase (rôle `postgres`). Après tout DDL : régénérer `src/types/database.ts`.
 
+### Pages publiques & ISR (CPU Vercel Fluid)
+
+Les pages **publiques** doivent être **statiques/ISR** (`○`/`●`), pas dynamiques (`ƒ`), sinon elles se rendent à chaque visite → CPU Vercel qui grimpe (risque de pause du site sur Hobby). Une page bascule en `ƒ` **automatiquement** dès qu'elle lit des cookies (`createServerClient`), `searchParams`, `cookies()`/`headers()`, ou `force-dynamic`.
+
+**Réflexe pour toute NOUVELLE page publique** :
+- Lire les données avec **`createPublicClient()`** (anon, sans cookies — RLS conservée), **jamais** `createServerClient()`.
+- **Déporter filtre/tri côté client** : composant `'use client'` + `useSearchParams`, sous `<Suspense>`, avec la vue par défaut rendue serveur en `fallback` (SEO). Modèles : `/blog` et `/solutions/[cat]` (composants `*Browser` + `*View`).
+- Route avec `[param]` → ajouter `export async function generateStaticParams()` (même `return []` suffit pour de l'ISR à la demande).
+- Ajouter `export const revalidate = <sec>` (ex. 1800).
+- **Vérifier** après `npm run build` : la route doit sortir `○`/`●`, pas `ƒ`.
+
+À l'inverse, une page **privée/authentifiée** (`/mon-compte/*`, `/admin/*`) *doit* rester dynamique → `createServerClient()` est correct. Détails : `docs/2026-07-11-plan-isr-*.md`.
+
 ### Evaluation flow
 
 Multi-step form at `/solution/noter/[...slug]`. Scores stored in `evaluations.scores` JSONB. Aggregated results computed in `resultats` table per solution+critere. NPS calculated as `((promoters - detractors) / total) * 100`.

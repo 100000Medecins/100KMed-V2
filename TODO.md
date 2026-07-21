@@ -139,7 +139,8 @@ _(rien en cours)_
   - ✅ **Phase 1b FAITE (2026-07-11, build vert)** : `/glossaire` + `/stories-tutos` → `○` (email prérempli lu côté client via `useAuth`, `getUserEmail` serveur + `force-dynamic` retirés).
   - ✅ **Phase 2 FAITE (2026-07-11, build vert)** : `/blog/[slug]` → `●` (switch + `generateStaticParams`).
   - ✅ **Page catégorie `/solutions/[cat]` FAITE (2026-07-11, build vert)** : `ƒ→●` — filtrage/tri déportés côté client (fonction pure `filterAndSortSolutions` + `SolutionsCategoryBrowser`/`useSearchParams`, fallback Suspense = vue par défaut serveur pour le SEO). ⚠️ **Parité tri/tags à vérifier en local avant merge.** C'était le plus gros poste CPU public restant.
-  - **Reste (Recette C, ROI faible)** : `/blog` liste (filtre catégorie → client, → `○`) ; sous-page avis `/solutions/[cat]/[sol]/evaluations` (tri → client, → `●`). Recette dans [docs/2026-07-11-plan-isr-passe-2.md](docs/2026-07-11-plan-isr-passe-2.md).
+  - ✅ **`/blog` liste FAITE (2026-07-21, `ƒ→○`)** : `createPublicClient` + filtre catégorie déporté client (`BlogBrowser`/`BlogView` + `useSearchParams`, fallback Suspense = vue « Tous » serveur pour le SEO).
+  - **Sous-page avis `/solutions/[cat]/[sol]/evaluations` : classée « won't-do »** — ROI faible (page peu visitée) et conversion `●` coûteuse (generateStaticParams ~139 pages + tri/pagination client + redirect legacy CamelCase à déplacer). Laissée `ƒ` ; CPU négligeable, risque déjà réglé par les passes 1+2.
   - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
 - **Vercel Pro** : à garder en tête pour la rentrée (dépassement = **pause du site**, pas throttle ; cf. CHANGELOG 2026-07-10). La passe 1 réduit déjà fortement la CPU.
 
@@ -149,8 +150,8 @@ _(rien en cours)_
 - **Serveur 100 % sain** (vérifié en Googlebot le 2026-07-20) : `/sitemap.xml` **et** `/sitemap-main.xml` = HTTP 200, `application/xml`, **240 URLs**, ~0,5 s, ISR (helper partagé `getSitemapEntries`, repli try/catch → jamais de 5xx). `robots.txt` déclare les deux.
 - **Problème = côté GSC, pas le site** : `/sitemap.xml` bloqué depuis > 2 mois sur « Impossible de récupérer » (« Dernière lecture » VIDE) = état collant hérité d'un échec initial (mi-juin). L'outil « Tester l'URL active » plante aussi chez GSC (« Un problème est survenu »). **Non bloquant** : les pages sont indexées par crawl direct.
 - **Contournement déployé (2026-07-20, commit `cc38782`)** : nouvelle URL `/sitemap-main.xml` (même contenu, **entité GSC vierge** sans historique d'échec) + déclarée dans `robots.txt`.
-- **Reste** : **soumettre `sitemap-main.xml` dans GSC** (Sitemaps → Ajouter) et surveiller cette entrée neuve. Optionnel : supprimer l'ancienne entrée `/sitemap.xml` bloquée. Puis patience (2-4 sem).
-- **À surveiller aussi** : déréférencement progressif de `dev.*` (robots Disallow + noindex + demande de suppression soumise, effet ~6 mois).
+- ✅ **`sitemap-main.xml` soumis dans GSC (2026-07-21)** → surveiller que l'entrée neuve passe « lu ». Optionnel : supprimer l'ancienne entrée `/sitemap.xml` bloquée. Patience (2-4 sem).
+- ✅ **`dev.*` déréférencé (vérifié 2026-07-21)** : `site:dev.100000medecins.org` sur Google = « Aucun document ». Blocage durable en place (robots Disallow + noindex). Revérif passive occasionnelle.
 
 ### Mises à jour techniques
 
