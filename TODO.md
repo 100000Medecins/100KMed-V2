@@ -140,7 +140,7 @@ _(rien en cours)_
   - ✅ **Phase 2 FAITE (2026-07-11, build vert)** : `/blog/[slug]` → `●` (switch + `generateStaticParams`).
   - ✅ **Page catégorie `/solutions/[cat]` FAITE (2026-07-11, build vert)** : `ƒ→●` — filtrage/tri déportés côté client (fonction pure `filterAndSortSolutions` + `SolutionsCategoryBrowser`/`useSearchParams`, fallback Suspense = vue par défaut serveur pour le SEO). ⚠️ **Parité tri/tags à vérifier en local avant merge.** C'était le plus gros poste CPU public restant.
   - ✅ **`/blog` liste FAITE (2026-07-21, `ƒ→○`)** : `createPublicClient` + filtre catégorie déporté client (`BlogBrowser`/`BlogView` + `useSearchParams`, fallback Suspense = vue « Tous » serveur pour le SEO).
-  - **Sous-page avis `/solutions/[cat]/[sol]/evaluations` : classée « won't-do »** — ROI faible (page peu visitée) et conversion `●` coûteuse (generateStaticParams ~139 pages + tri/pagination client + redirect legacy CamelCase à déplacer). Laissée `ƒ` ; CPU négligeable, risque déjà réglé par les passes 1+2.
+  - ✅ **Sous-page avis `/solutions/[cat]/[sol]/evaluations` SUPPRIMÉE (2026-07-22)** : c'était un **vestige Quasar orphelin** (seul `UserReviewsSidebar`, composant mort, y menait) **et cassé** (lecture anon → RLS → « 0 avis » alors que la base en a, ex. Premiocare 6). Redondant : la fiche solution affiche déjà les avis en ligne (`#avis-utilisateurs`). Route + composants `AvisUtilisateurs`/`UserReviewsSidebar` supprimés (`getAvisUtilisateurs` laissé en dead export).
   - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
 - **Vercel Pro** : à garder en tête pour la rentrée (dépassement = **pause du site**, pas throttle ; cf. CHANGELOG 2026-07-10). La passe 1 réduit déjà fortement la CPU.
 
