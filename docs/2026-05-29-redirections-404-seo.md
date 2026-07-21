@@ -2,6 +2,7 @@
 
 > Diagnostic initial — **2026-05-28**
 > Mise à jour — **2026-06-11**
+> Mise à jour — **2026-07-19** (domaine accentué défensif `100000médecins.org`)
 > Contexte : des résultats Google encore indexés (ancien site) renvoient vers des 404 sur le nouveau site.
 > Ancien site : `c:\Users\david\Documents\ancien-site-frontend` (Quasar/Vue). Routes : `src/router/routes.ts`.
 
@@ -71,6 +72,26 @@ Audit lancé via `scripts/audit-slugs-firebase-vs-supabase.ts` après remarque c
   - `odaiji` → `/editeur/madeformed` (Odaiji racheté par MadeForMed ; la solution Odaiji existe encore sous cet éditeur)
 - **Catch-all pluriel→singulier** : règle générique `/editeurs/:slug → /editeur/:slug` ajoutée en fin de liste pour couvrir tous les éditeurs **non renommés** (les renommés étant traités explicitement avant).
 - **Pages HTML pré-Quasar** : `/manifeste.html` et `/communique.html` identifiées par David comme étant des URLs encore référencées depuis l'extérieur (réseaux sociaux, mails, articles). Redirections ajoutées.
+
+## Domaine accentué défensif `100000médecins.org` (2026-07-19)
+
+Domaine **secondaire/défensif** (IDN accentué, punycode `xn--100000mdecins-*`) acheté chez Gandi pour empêcher un tiers de l'enregistrer et pour rattraper les visiteurs qui saisiraient le nom **avec l'accent**. Le domaine **canonique** reste `www.100000medecins.org` (sans accent).
+
+**Config Gandi — Redirections Web (301 PERMANENT)** :
+
+| Adresse source | Redirige vers | Date |
+|---|---|---|
+| `https://100000médecins.org` + `http://100000médecins.org` (apex) | `https://www.100000medecins.org` | (initial) |
+| `www.100000médecins.org` | `https://www.100000medecins.org` | **2026-07-19** |
+
+- **Le manque initial** : seule la redirection de l'**apex** (sans `www`) existait. Gandi exige une redirection **par hôte** — taper `www.100000médecins.org` ne matchait donc rien. La 2ᵉ redirection (`www`) ajoutée le 2026-07-19 → couverture complète : apex/www × avec/sans accent → tous vers le canonique.
+
+> ⚠️ **Avertissement navigateur « site sosie » — PAS un problème DNS/Gandi.**
+> Chrome/Edge affichent « Le site semble faux… Vouliez-vous accéder à 100000medecins.org ? » **avant** même de charger la page. C'est la **protection anti-homographe (IDN lookalike)** du navigateur : `médecins` (avec `é`) ressemble au domaine principal `medecins` (sans accent). C'est **côté client**, non corrigeable dans Gandi, et ça **persiste** même après la redirection. Renforcé pour David car il visite en permanence le vrai domaine (Chrome le connaît → signale d'autant plus le quasi-jumeau).
+
+- **Règle de com'** : **ne jamais communiquer** le domaine accentué (flyers, emails, cartes, QR codes) → toujours promouvoir `www.100000medecins.org` (sans accent) comme adresse canonique.
+- **Impact SEO** : neutre à positif. La 301 permanente transmet l'éventuelle « link equity » vers le canonique ; pas de *duplicate content* (tout est redirigé, jamais servi en double). Le `<link rel="canonical">` / `metadataBase` du site pointe déjà sur le non-accentué.
+- **Test propre** : vérifier la redirection en **navigation privée** (pas d'historique → l'heuristique sosie ne se déclenche généralement pas).
 
 ## Cas volontairement non redirigés
 

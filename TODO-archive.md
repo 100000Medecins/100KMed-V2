@@ -5,6 +5,45 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-07-14**
+- [OK] 2026-07-14 : ⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (Nettoyage)
+  - Livré : règle « 0 = non noté ». Code — recalcResultatsPourSolution (src/lib/actions/evaluation.ts) exclut les scores ≤ 0, ancrage Firebase à 0 = « pas d'ancrage », critère sans note valide remis à NC. Données — scripts/fix-notes-zero-nc.ts (dry-run + backup) a corrigé 4 solutions : Med'Oc (fonctionnalités → NC, globale 2.47→3.09), Doctolib (editeur/qualité-prix remontés), MonMédecin.org (qualité-prix → NC), Tandem Health (5 critères orphelins → NC). Cf CHANGELOG 2026-07-14.
+  - Décision ≠ plan initial : approche resserrée — les notes Firebase figées non nulles NE sont PAS recalculées depuis les sous-critères. Premiocare reste 4.34 (litige connu), Medistory / MLM inchangées. Plan « recalculer les 22 solutions depuis le JSONB » abandonné.
+
+---
+
+**2026-07-13**
+- [OK] 2026-07-13 : Fiche de synthèse « pourquoi revendiquer sa fiche » pour les éditeurs (via FEIMA) (Communication)
+  - Livré : fiche de synthèse (ce qu'est 100 000 Médecins + pourquoi/comment revendiquer sa fiche solution) rédigée et transmise via Francis Mambrini (FEIMA).
+- [OK] 2026-07-13 : Flux d'activité + alertes admin (Supervision admin) — testé en conditions réelles, concluant
+  - Besoin : que l'admin voie en quasi temps réel les inscriptions/évaluations et les modifs de contenu sensibles des éditeurs, sans fouiller.
+  - Cadrage figé (2026-06-21) : événements sensibles uniquement, diff champ par champ, canaux in-app (/admin/activite + badge non-lus) + digest hebdo (pas de mail immédiat), rétention sans purge (~10 Mo/an, trace d'audit).
+  - Implémenté (2026-06-21) : table activity_log (GRANTs + RLS), helper logActivity() (src/lib/activity/log.ts, ne fait jamais échouer l'action métier), 12 événements branchés, page /admin/activite (flux filtrable + « tout marquer comme lu »), digest hebdo /api/cron/digest-activite (lundi 7h30 → david.azerad@). Doc : docs/2026-06-21-supervision-activite.md.
+  - Testé en conditions réelles (2026-07-13) — concluant.
+- [OK] 2026-07-13 : Vérifier le domaine 100000médecins.org sur Gandi (Déploiement final)
+  - Réglé : configuration corrigée sur Gandi ; le domaine accentué (IDN) 100000médecins.org pointe désormais vers www.100000medecins.org.
+
+---
+
+**2026-07-11**
+- [OK] 2026-07-11 : Cartes de solutions — compteur d'avis + clic vers les avis (UX / UI)
+  - (a) Nombre d'évaluations sur toutes les cartes (« X avis »), pas seulement l'index mais toutes les pages à cartes (comparatif catégorie, fiche éditeur, recherche, comparateur).
+  - (b) Clic sur « X avis » / la note utilisateurs → ancre bas de fiche (#avis-utilisateurs, déjà présente dans SolutionDetailPage.tsx). Reste livré : rendre le « X avis » cliquable sur les cartes → lien /solutions/[cat]/[sol]#avis-utilisateurs.
+
+---
+
+**2026-07-08**
+- [OK] 2026-07-08 : Question « user-friendly pour les médecins juniors avec e-CPF » (Contenu des questionnaires)
+  - Livré : question e-CPF ajoutée via scripts/add-question-ecpf-junior.ts dans questionnaire_questions ET criteres — clés tt_ecpf_remplacant (télétransmission, critère fonctionnalites) et detail_ecpf_junior (logiciel-medical, critère interface). Cf CHANGELOG 2026-07-07.
+- [OK] 2026-07-08 : Auditer le scoring des sous-critères sur toutes les catégories (Nettoyage)
+  - Résultat : requête questionnaire_questions.key LEFT JOIN criteres.identifiant_tech → 0 orphelin (toutes catégories). Données 100 % synchro.
+  - Cause racine (2026-07-07) : deux tables parallèles — questionnaire_questions (formulaire/admin) et criteres (scoring) ; l'admin (createQuestion) n'écrivait QUE dans questionnaire_questions → risque de désynchro. Correctif = l'item de synchro ci-dessous.
+- [OK] 2026-07-08 : Synchroniser questionnaire_questions ↔ criteres — supprimer la désynchro à la source (Nettoyage)
+  - Livré : miroir criteres dans createQuestion/updateQuestion/deleteQuestion/deleteSection (helper resolveCritereTwin) + colonne+input nom_court (Option A) + fix data tt_ecpf_remplacant. tsc OK + test d'intégration BDD 19/19 (0 orphelin). Cf CHANGELOG 2026-07-08 + docs/2026-07-08-plan-synchro-questionnaire-criteres.md.
+  - Approche retenue : A — miroir dans les server actions (resolver parent trivial : 5 critères majeurs uniques, UUID stables) ; deleteSection gère la cascade FK. Alternatives écartées : C (trigger Postgres, plus opaque), B (unifier en 1 table, migration risquée touchant scoring/public).
+
+---
+
 **2026-07-03**
 - [ABANDONNÉE] 2026-07-03 : Suivi PSC — piste A (correctif serveur verifyOtp) (En attente / Idées — PSC)
   - Verdict (entonnoir sur psc_session_events, 105 handoffs réels du 28/06 → 03/07) : verify_success 82,9 %, verify_error 1,0 % (1 seul cas « Email link is invalid or has expired »), abandon silencieux 16,2 %. Réparti régulièrement sur 6 jours → systématique, pas un incident.
