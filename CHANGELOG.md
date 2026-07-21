@@ -5,6 +5,30 @@
 
 ---
 
+## [2026-07-21] — Jeu concours WONCA (page gagnants) + bandeau d'annonce
+
+### Feature — Page publique `/jeu-concours`
+- Hero + **affiche WONCA 2026** en tête + **3 cartes à égalité** (pas de podium 1er/2e/3e) avec **photo du lot** (batterie / lecteur carte Vitale / mini-ECG — WebP sur Storage `images/jeu-concours/`), prénom + initiale du nom (RGPD), texte d'invitation au prochain jeu, lien **règlement** (PDF Storage, généré à la charte via `brand-templates/build-reglement-jeu.js`). Contenu 100 % éditable dans [gagnants.ts](src/lib/data/gagnants.ts) (pas d'admin dédié).
+- Gagnantes : Dr Sarah R. (batterie), Dr Marion B. (lecteur Vitale), Dr Léticia S. (mini-ECG). Tirage 03/07 (clôture WONCA Europe 2026), parmi 56 évaluateurs sur le stand.
+
+### UX / UI — Bandeau d'annonce (table `annonces`)
+- Le bandeau d'accueil s'affichait **derrière la navbar `fixed`** (conflit d'empilement). Corrigé : **intégré dans l'en-tête fixe** ([Navbar.tsx](src/components/layout/Navbar.tsx), prop `annonces`), et l'en-tête **glisse vers le haut au scroll** (borné à la hauteur du bandeau, mesurée par `ResizeObserver` → gère aussi sa fermeture) → le bandeau **défile et disparaît**, la nav reste fixée.
+- Style **sobre** (navy + pastille d'accent au lieu du fond pleine couleur), padding réduit ; sur **mobile, titre seul** (contenu `hidden sm:inline`).
+
+---
+
+## [2026-07-20] — PSC : validation de la bascule verifyOtp serveur (abandons 16 % → 0 %)
+
+### PSC — Bascule verifyOtp serveur confirmée par la mesure
+- Entonnoir rejoué sur `psc_session_events` (au niveau `correlation_id`) : **post-merge (≥ 05/07) = 85 handoffs → 84 `verify_success`, 1 `verify_error`, 0 abandon silencieux (0,0 %)**, contre **14,8 %** avant (17/115, ≈ baseline 16,2 %). Fix **validé** statistiquement (0/85 → borne haute ~3,5 % à 95 %).
+- Flux standard confirmé **100 % serveur** (`establishPscSession` dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts)) ; les commentaires « via /auth/psc-session » (l.345/459) sont **périmés** (code remplacé).
+- Nettoyage `/auth/psc-session` + `/api/psc-session-event` **encore bloqué** : [merge.ts](src/lib/actions/merge.ts) (fusion de comptes) redirige toujours vers `/auth/psc-session` (fusion non migrée). Le flux standard ne les utilise plus.
+
+### TODO — Mises à jour
+- « Suivi PSC — bascule verifyOtp » : **validation stat barrée (faite)** ; reste scindé en sous-item « migrer `merge.ts` (fusion) en session serveur → supprimer `/auth/psc-session` + `/api/psc-session-event` + nettoyer les commentaires périmés de psc-callback ».
+
+---
+
 ## [2026-07-19] — Refonte email de lancement syndicats + Vercel Web Analytics
 
 ### Email — Refonte du template « lancement_syndicat »

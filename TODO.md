@@ -12,8 +12,8 @@ _(rien d'urgent pour l'instant)_
 
 ## En attente / Idées
 
-#### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [MERGÉ PROD 2026-07-05 — reste validation stat + cleanup]
-- **✅ Statut (vérifié 2026-07-08)** : bascule **mergée sur `main` le 2026-07-05** (commit `b8ad50a`, feature `b92be61`), donc **en prod**. Smoke check 48 h passé. **Restent 2 bouts pour clôturer** : (1) **validation statistique ~1 semaine** (~120-200 handoffs, attendu ~12/07) — rejouer l'entonnoir sur `psc_session_events`, `abandon_silencieux` doit chuter de 16,2 % → ~1 % ; (2) **commit de nettoyage** : supprimer `src/app/auth/psc-session/page.tsx` + `src/app/api/psc-session-event/route.ts` (filet encore présent) — ⚠️ vérifier d'abord que `merge.ts` n'en dépend plus (fusion non migrée, cf. checklist).
+#### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [MERGÉ PROD 2026-07-05 — ✅ VALIDÉ 2026-07-20 (abandons 16 %→0 %) — reste : migrer merge.ts (fusion) + cleanup]
+- **✅ Statut** : bascule **mergée sur `main` le 2026-07-05** (commit `b8ad50a`), **en prod**. **(1) Validation stat FAITE (2026-07-20)** : entonnoir rejoué sur `psc_session_events` (par `correlation_id`) → post-merge **85 handoffs, 0 abandon silencieux (0,0 %)** vs **14,8 %** avant (17/115, ≈ baseline 16,2 %). Fix confirmé (0/85 → borne haute ~3,5 % à 95 %). **(2) Nettoyage encore BLOQUÉ** : `merge.ts` (fusion de comptes) redirige **encore** vers `/auth/psc-session` (non migrée) → supprimer `/auth/psc-session` + `/api/psc-session-event` casserait la fusion. Le flux standard, lui, est 100 % serveur (`establishPscSession`) et ne les utilise plus.
 - **Point de perte** : le roundtrip **`verifyOtp` côté client** (`/auth/psc-session`) après le retour de l'app PSC. ~16 % des handoffs démarrent (`handoff_start`) sans jamais émettre d'événement terminal → le navigateur perd le contexte avant l'aboutissement.
 - **Solution implémentée (branche `dev`, non mergée)** : `verifyOtp` déplacé **côté serveur** dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + cookies, modèle `/auth/confirm`), redirection directe vers `next`, plus de passage par `/auth/psc-session`. Appliqué aux flux standard + association. `tsc` OK. `/auth/psc-session` + `/api/psc-session-event` gardés en filet (à supprimer après validation).
 - **État (2026-07-04)** : mesuré en dev — entonnoir **strictement post-déploiement** (après 03/07 15h) = **7/7 handoffs → session établie côté serveur, 0 perdu (100 %)**, contre ~83 % avant. Les pertes se sont arrêtées net au déploiement (dernier « perdu » le 03/07 13:08). ⚠️ Échantillon **petit** (surtout mes tests) + **mobile pas encore validé**.
@@ -26,13 +26,12 @@ _(rien d'urgent pour l'instant)_
 - **Vérifs post-merge PROD (le compteur démarre au merge, pas avant)** :
   - **~48 h après merge — smoke check** : pas de régression → `verify_success` ≥ ~80 %, `verify_error` proche de 0. Si ça dérape → revert (re-router vers la page client).
   - **~1 semaine après merge (~120-200 handoffs) — vérif statistique** : rejouer l'entonnoir sur `psc_session_events`, comparer `abandon_silencieux` à la baseline **16,2 %** → attendu : chute vers ~1 %.
-- **Si validé** : supprimer `/auth/psc-session` + `/api/psc-session-event` (commit de nettoyage) et fermer l'item.
+- **🔧 Sous-item restant (tâche dédiée)** : **migrer `merge.ts` (fusion) en session serveur** (comme le flux standard, via `establishPscSession`), **puis** supprimer `src/app/auth/psc-session/page.tsx` + `src/app/api/psc-session-event/route.ts` + nettoyer les commentaires périmés de `psc-callback` (l.345/366/459 « via /auth/psc-session »). Bonus : la fusion porte encore le même risque ~16 % en mobile, donc la migrer a de la valeur en soi. Re-tester les 6 flux PSC + fusion (mobile) avant merge.
 - **Enjeu** : ~3 inscriptions/jour perdues à ce rythme.
 
 ### Contenu des questionnaires
 
-#### ~~Question « user-friendly pour les médecins juniors avec e-CPF » (2026-07-03)~~ [OK] Fait 2026-07-08
-- **Livré** : question e-CPF ajoutée via [scripts/add-question-ecpf-junior.ts](scripts/add-question-ecpf-junior.ts) dans `questionnaire_questions` **et** `criteres` — clés `tt_ecpf_remplacant` (télétransmission, critère `fonctionnalites`) et `detail_ecpf_junior` (logiciel-medical, critère `interface`). Cf CHANGELOG 2026-07-07.
+_(rien en cours)_
 
 ### Sécurité
 
@@ -40,11 +39,12 @@ _(rien en cours)_
 
 ### Communication
 
-#### ~~Fiche de synthèse « pourquoi revendiquer sa fiche » pour les éditeurs (via FEIMA)~~ [OK] Fait 2026-07-13
-- **Livré** : fiche de synthèse (ce qu'est 100 000 Médecins + pourquoi/comment revendiquer sa fiche solution) rédigée et transmise via Francis Mambrini (FEIMA).
+#### Informer l'ISNAR de la question e-CPF « médecins juniors » (2026-07-20)
+- Envoyer un mail à l'**ISNAR** (syndicat des internes) pour les informer que 100 000 Médecins a **ajouté une question sur la gestion de la carte e-CPF** (Carte de Professionnel en Formation) dans les questionnaires, à destination des remplaçants/internes. Cf. question livrée le 2026-07-08 (`tt_ecpf_remplacant` / `detail_ecpf_junior`).
 
-#### Système d'annonces sur l'index + section admin (2026-07-16)
-- **Besoin immédiat** : publier une **annonce sur la page d'accueil** (jeu concours) + créer une **page dédiée aux gagnants du jeu concours**.
+#### ~~Système d'annonces sur l'index + section admin (2026-07-16)~~ [OK] Fait 2026-07-21
+- **Livré & déployé (2026-07-21)** : table `annonces` + `/admin/annonces` (CRUD) + **bandeau piloté BDD** (intégré à l'en-tête, glisse/disparaît au scroll, sobre navy, titre seul sur mobile) + **page gagnants `/jeu-concours`** (affiche WONCA, photos des lots, prénom+initiale, texte « prochain jeu », lien règlement PDF). Cf CHANGELOG 2026-07-21.
+- **Besoin initial** : publier une **annonce sur la page d'accueil** (jeu concours) + créer une **page dédiée aux gagnants du jeu concours**.
 - **Système générique à construire** : une **section « Annonces » dans l'admin** pour gérer les annonces à affichage spécial sur l'index, avec :
   - **période d'affichage** : date de début / date de fin (masquage auto hors fenêtre)
   - **titre** + **contenu**
@@ -79,23 +79,6 @@ _(rien en cours)_
 
 ### Nettoyage
 
-#### ~~Auditer le scoring des sous-critères sur toutes les catégories (2026-07-07)~~ [OK] Fait 2026-07-08
-- **Résultat de l'audit** : requête `questionnaire_questions.key` LEFT JOIN `criteres.identifiant_tech` → **0 orphelin** (toutes catégories confondues). Les données sont **100 % synchro** : chaque question du formulaire a bien son jumeau `criteres` (moyenne de sous-critère + « Comparatif détaillé par sous-critères »).
-- **Cause racine identifiée (2026-07-07)** : deux tables parallèles — `questionnaire_questions` (formulaire, admin) et `criteres` (scoring). L'admin (`createQuestion`, [src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) n'écrit QUE dans `questionnaire_questions` → risque de désynchro à chaque question créée en admin. **Correctif = l'item de synchro ci-dessous** (aujourd'hui 0 orphelin car complétés à la main, mais fragile).
-
-#### ~~Synchroniser `questionnaire_questions` ↔ `criteres` — supprimer la désynchro à la source (2026-07-08)~~ [OK] Fait 2026-07-08
-- **Livré** : miroir `criteres` dans `createQuestion`/`updateQuestion`/`deleteQuestion`/`deleteSection` (helper `resolveCritereTwin`) + colonne+input `nom_court` (Option A) + fix data `tt_ecpf_remplacant`. `tsc` OK + test d'intégration BDD **19/19** (0 orphelin). Cf CHANGELOG 2026-07-08 + [docs/2026-07-08-plan-synchro-questionnaire-criteres.md](docs/2026-07-08-plan-synchro-questionnaire-criteres.md). **Reste (optionnel)** : smoke test UI dans `/admin/questionnaires`.
-- **But** : que créer/modifier/supprimer une question en admin maintienne automatiquement le sous-critère `criteres` jumeau (aujourd'hui l'admin n'écrit que `questionnaire_questions`). Correctif de la cause racine de l'item d'audit ci-dessus.
-- **Faisabilité vérifiée (2026-07-08)** : effort ~½ journée, risque faible. Le resolver du parent est trivial car les **5 critères majeurs sont uniques** dans `criteres` (`type='note'`, UUID stables) et **tous** les sous-critères (toutes catégories) pointent vers ces 5 mêmes parents. On n'ajoute que des lignes (comme les seeds), sans toucher au scoring/affichage public. Données déjà 100 % synchro (0 orphelin) → pas de backfill.
-- **Approche retenue : A — miroir dans les server actions** ([src/lib/actions/questionnaires.ts](src/lib/actions/questionnaires.ts)) :
-  1. Resolver `resolveCritere(categorieSlug, critereMajeur) → { id_categorie (via slug), parent_id (majeur canonique unique) }`.
-  2. **Décision à prendre — source du `nom_court`** (le form ne l'a pas) : colonne `nom_court` sur `questionnaire_questions` + input « Libellé court » dans `QuestionnaireEditor` (propre, 1 DDL + régé types) OU dérivé du texte (zéro DDL, moche).
-  3. `createQuestion` → INSERT jumeau `criteres` (`type='detail'`, `is_enfant=true`) ; `updateQuestion` → UPDATE (clé→`identifiant_tech`, majeur→`parent_id`, `nom_court`) ; `deleteQuestion` → DELETE jumeau ; `reorderQuestions` → rien (`criteres` n'a pas d'`ordre`).
-  4. Vérifier la FK de `deleteSection` : si cascade sur les questions, supprimer d'abord les jumeaux `criteres` des clés de la section.
-  5. Atomicité : pragmatique d'abord (écritures séquentielles + audit orphelins en filet) ; durcissement possible via fonction Postgres (RPC) atomique.
-  6. Garde-fou : requête d'orphelins (`questionnaire_questions.key` vs `criteres.identifiant_tech`) en mini-script / check santé admin.
-- **Alternatives écartées pour l'instant** : C — trigger Postgres (couvre aussi scripts + SQL manuel, mais PL/pgSQL + `nom_court` à sourcer + plus opaque) ; B — unifier en 1 table (théoriquement « le bien » mais migration de plusieurs jours touchant le scoring/affichage public → risque élevé, non).
-
 #### Statuer sur le comparateur orphelin `/solutions/comparer` (2026-07-08)
 - **Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx#L66)).
 - **À trancher** : (1) **laisser** (sert de cible SEO aux redirects legacy, coût nul) ; (2) **ré-activer** (boutons « Comparer » + barre « Comparer (N) » qui construit `?ids=`) ; (3) **nettoyer** (retirer l'état mort du store, garder page + redirect pour le SEO). ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.
@@ -104,10 +87,6 @@ _(rien en cours)_
 - **Découvert pendant la passe 2 ISR** : la page `/actualites` interroge `public.actualites` — table qui **n'existe pas** (SQL vérifié 2026-07-11 ; hint PostgREST : « articles »). Le contenu a migré vers `articles`/le blog. Route **non liée** dans la nav/footer → morte. Laissée dynamique pour ne pas casser le build ISR.
 - **À trancher** : supprimer la route + `getActualites` (misc.ts) + le type `Actualite` (models.ts), OU rediriger `/actualites → /blog`.
 - **Idem `documents`** : `public.documents` inexistante aussi → `getDocuments` (misc.ts) est probablement du code mort (vérifier s'il est appelé quelque part avant suppression).
-
-#### ~~⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (2026-07-11)~~ [OK] Fait 2026-07-14
-- **Livré (2026-07-14)** : règle **« 0 = non noté »** appliquée. **Code** — `recalcResultatsPourSolution` ([src/lib/actions/evaluation.ts](src/lib/actions/evaluation.ts)) exclut les scores `≤ 0`, traite un ancrage Firebase à 0 comme « pas d'ancrage », et remet à NC un critère sans note valide. **Données** — `scripts/fix-notes-zero-nc.ts` (dry-run + backup) a corrigé **4 solutions** : Med'Oc (fonctionnalités → NC, globale 2.47→3.09), Doctolib (editeur/qualité-prix remontés), MonMédecin.org (qualité-prix → NC), Tandem Health (5 critères orphelins → NC). Cf CHANGELOG 2026-07-14.
-- **Décision ≠ plan initial** : approche **resserrée** — les notes Firebase **figées non nulles NE sont PAS recalculées** depuis les sous-critères de l'ancien site. **Premiocare reste 4.34** (litige connu), Medistory / MLM / etc. inchangées. Le plan « recalculer les 22 solutions depuis le JSONB » est abandonné (aurait remonté Premiocare à ~4.88 à tort).
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
@@ -125,12 +104,6 @@ _(rien en cours)_
 - Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
 
 ### UX / UI
-
-#### ~~Cartes de solutions — compteur d'avis + clic vers les avis (2026-07-08)~~ [OK] Fait 2026-07-11
-- **(a) Nombre d'évaluations sur toutes les cartes** : afficher « X avis » sur chaque carte de solution — pas seulement l'index, mais **toutes** les pages qui affichent des cartes (comparatif catégorie, fiche éditeur, recherche, comparateur…). À faire : recenser les composants de carte (`SolutionList` + variantes), vérifier que le compteur (`nbNotesUtilisateurs`) est fourni partout par la couche `db`, ajouter l'affichage de façon cohérente.
-- **(b) Clic sur les avis → bas de la fiche solution (ancre)** : cliquer sur « X avis » / la note utilisateurs doit amener directement à la section des avis en bas de la fiche.
-  - **Déjà en place** : l'ancre existe — `<div id="avis-utilisateurs" className="scroll-mt-[140px]">` dans [SolutionDetailPage.tsx](src/components/solutions/SolutionDetailPage.tsx#L117) (la navbar interne de `SolutionHero` y pointe déjà). Rien à créer côté fiche.
-  - **Reste** : rendre le « X avis » cliquable **sur les cartes** → lien `/solutions/[categorieSlug]/[solutionSlug]#avis-utilisateurs` (le navigateur scrolle à l'ancre à l'arrivée ; `scroll-mt` gère la navbar fixe). Le compteur du (a) et la cible du clic = même élément → traiter (a) et (b) ensemble.
 
 #### Tooltip note globale — affiner après la livraison initiale (2026-05-30)
 
@@ -172,26 +145,23 @@ _(rien en cours)_
 
 ### SEO / Référencement
 
-#### Sitemap propre (demande Ben, 2026-05-28) — fait, en attente validation Google
-- ✅ **Sitemap dynamique** (`src/app/sitemap.ts`, `force-dynamic`) : recalculé à chaque requête HTTP. **Pas besoin de le régénérer manuellement** quand on crée/modifie un éditeur, une solution ou un article — le prochain GET sur `/sitemap.xml` reflète l'état BDD.
-- ✅ **Bug URLs éditeurs UUID brut** : résolu de facto par le passage en slug (2026-05-30). Le code ne génère plus jamais d'URL `/editeur/<uuid>`.
-- ✅ **Sitemap-v2 alternatif soumis dans Search Console** (2026-06-07) : `https://www.100000medecins.org/sitemap-v2.xml` créé pour tenter de casser le cache négatif Google qui maintenait `/sitemap.xml` en erreur depuis le 27/05. Soumis dans Search Console.
-- ✅ **Indexation `dev.100000medecins.org` bloquée** (2026-06-07) : robots.txt `Disallow: /` + meta robots noindex + sitemap vide hors prod. Demande de suppression du préfixe `dev.*` soumise dans Search Console (effet ~6 mois, masquage Google immédiat).
-- **Diagnostic 2026-07-09** : sitemap 100 % sain côté serveur (200, XML valide, 234 URLs, ~50 ms, canonique www propre, ISR + repli try/catch déployé sur `main`). GSC affiche **« Impossible de récupérer »** sur `sitemap.xml` **et** `sitemap-v2.xml`, avec **« Dernière lecture » VIDE** (jamais lus) depuis les soumissions du 14-16 juin → **échec unique au moment de la soumission (site/robots pas prêt à l'époque), jamais réessayé par Google**. Non bloquant : les pages sont indexées par crawl direct (le sitemap est cosmétique).
-- **Route `sitemap-v2.xml` supprimée (2026-07-09)** — le principal est robuste, le doublon n'a plus d'intérêt.
-- ✅ **Fait côté GSC (2026-07-09)** : les 2 entrées sitemap supprimées + `sitemap.xml` re-soumis (fetch neuf sur endpoint sain).
-- **À surveiller** : si `sitemap.xml` reste rouge après 48 h → *Inspection de l'URL* → **test en direct** sur `https://www.100000medecins.org/sitemap.xml` (révèlerait un blocage actif Googlebot). Surveiller aussi le déréférencement de `dev.*`.
+#### Sitemap — statut GSC « Impossible de récupérer » collant (contournement déployé 2026-07-20)
+- **Serveur 100 % sain** (vérifié en Googlebot le 2026-07-20) : `/sitemap.xml` **et** `/sitemap-main.xml` = HTTP 200, `application/xml`, **240 URLs**, ~0,5 s, ISR (helper partagé `getSitemapEntries`, repli try/catch → jamais de 5xx). `robots.txt` déclare les deux.
+- **Problème = côté GSC, pas le site** : `/sitemap.xml` bloqué depuis > 2 mois sur « Impossible de récupérer » (« Dernière lecture » VIDE) = état collant hérité d'un échec initial (mi-juin). L'outil « Tester l'URL active » plante aussi chez GSC (« Un problème est survenu »). **Non bloquant** : les pages sont indexées par crawl direct.
+- **Contournement déployé (2026-07-20, commit `cc38782`)** : nouvelle URL `/sitemap-main.xml` (même contenu, **entité GSC vierge** sans historique d'échec) + déclarée dans `robots.txt`.
+- **Reste** : **soumettre `sitemap-main.xml` dans GSC** (Sitemaps → Ajouter) et surveiller cette entrée neuve. Optionnel : supprimer l'ancienne entrée `/sitemap.xml` bloquée. Puis patience (2-4 sem).
+- **À surveiller aussi** : déréférencement progressif de `dev.*` (robots Disallow + noindex + demande de suppression soumise, effet ~6 mois).
 
 ### Mises à jour techniques
 
-#### ⚠️ Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy)
+#### Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy) [✅ SOUS CONTRÔLE — vérifié 20/07 : 17 %]
 - **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md).
 - **Cause (vérifiée)** : ~170 `<img src>` (84 fichiers) pointent en direct sur le Storage en **pleine résolution, non optimisé** ; seuls 4 fichiers utilisent `next/image` et `next.config.mjs` n'a pas de section `images`. L'endpoint d'upload stockait tel quel jusqu'à 5 Mo, sans compression ni `cacheControl`.
 - **Audit BDD (2026-07-08) — ce que le Storage sert** : **132 captures galerie** (`solutions_galerie`, bucket `media`, PNG pleine réso — **1er poste**) + **79 avatars** + 70 logos solutions + 29 logos éditeurs + 7 images catégories (sur la home) + 7 logos partenaires. Buckets : `media`, `images`, `avatars`. (Les 113 logos solutions/éditeurs « externes » sont déjà hors Supabase.)
 - ✅ **Fait (2026-07-08/09)** — code commité sur `dev` **+ recompression exécutée** : `media` −81 % (72,7→13,6 Mo), `images` −90 % (24→2,3 Mo), `avatars` déjà légers (rien à gagner). Originaux dans `storage-backups/` (gitignored). ⚠️ `cacheControl` ignoré par l'endpoint public (sert `no-cache`) — impact faible (ETag→304), cf. doc. Code :
   - **`scripts/optimize-storage-images.ts`** — recompresse en WebP l'existant d'un bucket, ré-uploadé **sous le même chemin** (⇒ **aucune URL à changer en base**). Dry-run par défaut, `--execute` requis, backup binaire des originaux + `manifest.json` avant écriture, GIF/SVG ignorés.
   - **`src/app/api/upload/route.ts`** patché — tout nouvel upload raster → resize ≤1600px + WebP q80 + `cacheControl` 1 an. GIF (logo animé email) / SVG conservés intacts. (`sharp` tourne en runtime Node, la route n'est pas `edge`.)
-- **Reste à faire** (recompression images + **patch upload : FAITS & déployés** — merge `dev→main` `a8f255a` du 08/07, `sharp`/WebP confirmés dans `main:upload/route.ts`) : **(b) ⏰ Vérifier l'egress du NOUVEAU cycle vers le 20/07** — les compteurs se remettent à 0 le ~12/07 avec les optims en place (images légères + `getNbNotes`) → le cached egress doit **plonger sous 5 Go**. *(Le 131 % au 11/07 = un mois d'images non optimisées cumulées AVANT le fix, qui franchit le seuil en fin de cycle ; ce n'est ni un bug de comptage ni notre travail — recompression + `getNbNotes` réduisent l'egress. **Grâce jusqu'au 06/08**, aucune restriction d'ici là. Vérifier aussi le détail journalier : régulier = trafic images / pic 08-09/07 = script de recompression one-shot.)* ; **(c) passer Pro UNIQUEMENT si** encore > 5 Go après un cycle complet post-optimisation (vrai signal de trafic). Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
+- **Reste à faire** (recompression images + **patch upload : FAITS & déployés** — merge `dev→main` `a8f255a` du 08/07, `sharp`/WebP confirmés dans `main:upload/route.ts`) : **(b) ✅ Vérifié le 2026-07-20** — nouveau cycle (12/07→12/08) à J+8 : **cached egress 0,857/5 Go = 17 %** (vs 131 % avant le fix), egress total 23 %. Projection plein cycle ~3,3 Go → confortablement sous 5 Go. Le fix a marché ; le bandeau « grace period jusqu'au 06/08 » concerne l'**ancien** cycle. *(Le 131 % au 11/07 = un mois d'images non optimisées cumulées AVANT le fix, qui franchit le seuil en fin de cycle ; ce n'est ni un bug de comptage ni notre travail — recompression + `getNbNotes` réduisent l'egress. **Grâce jusqu'au 06/08**, aucune restriction d'ici là. Vérifier aussi le détail journalier : régulier = trafic images / pic 08-09/07 = script de recompression one-shot.)* ; **(c) passer Pro UNIQUEMENT si** encore > 5 Go après un cycle complet post-optimisation (vrai signal de trafic). Le swap avatars→`public/` est **abandonné** (79 en base vs 48 fichiers ; les avatars sont déjà minuscules). Détail/historique des étapes ci-dessous :
   1. **Dry-run** (lecture seule, sans risque) pour les vrais Mo avant/après :
      ```bash
      npx tsx scripts/optimize-storage-images.ts             # bucket media
@@ -231,22 +201,7 @@ _(rien en cours)_
 
 ### Supervision admin — notifications d'activité du site
 
-#### ~~Flux d'activité + alertes admin (idée 2026-06-21)~~ [OK] Fait 2026-07-13 (testé en conditions réelles, concluant)
-- **Besoin** : que l'admin voie en quasi temps réel ce qui se passe (inscriptions, évaluations) **et** les modifications de contenu sensibles faites par les éditeurs (prix, texte, image, paramètres), pour modérer/surveiller sans fouiller.
-- **Événements à tracer (1er jet)** :
-  - Inscriptions (email + PSC), comptes incomplets / décrocheurs PSC
-  - Nouvelles évaluations (publiées / en attente PSC / partielles « à compléter »)
-  - Modifs éditeur sur leur fiche & solutions : prix, description, logo/image, coordonnées, mot de l'éditeur, toggles (visibilité…)
-  - Propositions (idée/correction/vidéo/acronyme) à modérer ; revendications de fiche ; demandes de référencement
-  - Changements admin sensibles (toggles globaux, suppressions)
-- **Pistes techniques** : table `activity_log` append-only (acteur, type, cible, **diff avant/après**, date) alimentée par les server actions ; page `/admin/activite` (flux filtrable, badges « non lu ») ; **digest email hebdomadaire** (SendGrid + master_layout).
-- **Cadrage figé (2026-06-21)** :
-  - **Périmètre** : événements *sensibles* uniquement (= crée/modifie/supprime une donnée métier OU attend une action admin). Hors périmètre : lectures, navigation, recherches, brouillons intermédiaires.
-  - **Diff** : avant/après **champ par champ**, on ne loggue que les champs modifiés.
-  - **Canaux** : in-app (`/admin/activite` + badge non-lus) **+ digest hebdo**. **Pas de mail immédiat** (mail à la suppression déjà en place ; alerte prix non souhaitée).
-  - **Rétention** : aucune purge (volume négligeable, ~10 Mo/an ; sert aussi de trace d'audit).
-- ✅ **Implémenté (2026-06-21)** : table `activity_log` (GRANTs + RLS), helper `logActivity()` ([src/lib/activity/log.ts](src/lib/activity/log.ts)), 12 événements branchés (inscriptions email/PSC, évals publiée/en attente/à compléter, modifs éditeur fiche+solution avec diff, propositions, revendications, demandes de référencement, suppression & paramètre admin), page [/admin/activite](src/app/admin/activite/page.tsx) (flux filtrable + badge non-lus + « tout marquer comme lu »), digest hebdo [/api/cron/digest-activite](src/app/api/cron/digest-activite/route.ts) (lundi 7h30 → david.azerad@). Doc : [docs/2026-06-21-supervision-activite.md](docs/2026-06-21-supervision-activite.md).
-  - ✅ **Testé en conditions réelles (2026-07-13)** — concluant. (Gater le digest via `digest_activite_actif` si besoin un jour — non fait, volontaire.)
+_(rien en cours)_
 
 ### Déploiement final
 
@@ -254,9 +209,6 @@ _(rien en cours)_
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
-
-#### ~~Vérifier le domaine `100000médecins.org` sur Gandi~~ [OK] Fait 2026-07-13
-- **Réglé** : configuration corrigée sur Gandi ; le domaine accentué (IDN) `100000médecins.org` pointe désormais vers `www.100000medecins.org`.
 
 ### Nouvelles catégories de solutions (en cours)
 
