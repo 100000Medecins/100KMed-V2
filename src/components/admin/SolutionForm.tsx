@@ -999,15 +999,19 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
       </Section>
 
       {/* Submit */}
+      {/* isEdit fiable via solutionId : en création `solution` vaut `{}` (truthy),
+          il ne peut donc pas servir à distinguer création/édition. */}
       <div className="flex items-center gap-4 pt-6 border-t border-gray-100 mt-4 flex-wrap">
         <Button loading={isPending}>
           {isPending
             ? 'Enregistrement...'
-            : solution
+            : solutionId
               ? 'Mettre à jour'
               : 'Créer la solution'}
         </Button>
-        {solution && !solution.actif && (
+        {/* Bouton "activer" : à la création (choix brouillon/actif) ou à l'édition
+            d'une solution encore inactive. Le bouton principal n'active jamais. */}
+        {(solutionId ? !solution?.actif : true) && (
           <button
             type="submit"
             name="_activer"
@@ -1015,7 +1019,7 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
             disabled={isPending}
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-button font-semibold text-sm bg-rating-green text-white hover:bg-rating-green/90 shadow-soft transition-all disabled:opacity-50"
           >
-            Mettre à jour et activer
+            {solutionId ? 'Mettre à jour et activer' : 'Créer et activer'}
           </button>
         )}
         <a

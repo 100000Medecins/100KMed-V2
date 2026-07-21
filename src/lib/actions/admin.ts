@@ -227,6 +227,11 @@ export async function createSolution(formData: FormData) {
   const supabase = createServiceRoleClient()
   const data = extractSolutionFromFormData(formData)
 
+  // Le bouton "Créer et activer" pose `_activer` ; le bouton "Créer la solution"
+  // ne le pose pas → création en brouillon (inactive). Sans ce set explicite, le
+  // défaut DB (actif=true) activerait toute solution créée, quel que soit le bouton.
+  ;(data as Record<string, unknown>).actif = formData.get('_activer') === 'true'
+
   const { data: inserted, error } = await supabase
     .from('solutions')
     .insert(data)
