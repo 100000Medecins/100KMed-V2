@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-07-22] — PSC : fusion migrée en session serveur + fix contrainte RPPS
+## [2026-07-22] — PSC (fusion serveur + RPPS) · Contacts multiples sur fiches solutions
 
 ### PSC — Fusion de comptes : session établie côté serveur (dernier verrou du nettoyage)
 - `mergeAccounts` ([merge.ts](src/lib/actions/merge.ts)) posait la session via un roundtrip client `/auth/psc-session` (magic link → `verifyOtp` en JS navigateur) — le point de perte des ~16 % d'abandons au retour de l'app mobile PSC. Bascule **100 % serveur** : `verifyOtp` via le client SSR (adaptateur cookies) **dans le Server Action**, cookie de session posé directement sur la réponse → l'utilisateur revient connecté. Même modèle que le flux standard (`establishPscSession` dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts)).
@@ -21,8 +21,20 @@
 - 3 serveurs `next start` (ports 3111/3112/3113, vestiges des tests ISR du 11-12/07) tournaient depuis 10 jours, invisibles, et l'un d'eux **bloquait un fichier supprimé** (`AvisUtilisateurs.tsx`, état « delete-pending » Windows) → `Build Error` Tailwind `ENOENT` sur un `.tsx` fantôme au démarrage du dev. Process tués + `.next` purgé → dev réparé.
 - Ajout d'une **Étape 0** à [/end](.claude/commands/end.md) : balaie/tue les `next dev|start` orphelins du projet à chaque fin de session (filtre projet-spécifique, épargne `tsserver` et les serveurs MCP).
 
+### Feature — Contacts multiples (commerciaux / support) par solution
+- Un éditeur peut renseigner **plusieurs contacts** par bloc (commercial **et** support), chacun avec **libellé optionnel + email + téléphone** (« contacts nommés »). Avant : un seul couple email/téléphone figé par bloc. Demande d'un éditeur (Tandem Health).
+- **Modèle** : colonnes JSONB `solutions.contacts_commerciaux` / `contacts_support` (array de `{libelle,email,telephone}`), **backfillées** depuis les anciennes colonnes scalaires ; types régénérés. `support_website` reste unique. Les anciennes colonnes scalaires (`contact_email`/`contact_telephone`/`support_email`/`support_telephone`) ne sont **plus ni lues ni écrites** → **à DROP en suivi** (cf. TODO).
+- **Composant** `ContactsListEditor` (ajout/suppression de lignes, bouton « + ») **réutilisé** par l'admin ([SolutionForm.tsx](src/components/admin/SolutionForm.tsx)) **et** l'espace éditeur ([mon-espace-editeur](src/app/mon-compte/mon-espace-editeur/page.tsx)). Helpers `normalizeContacts()`/`firstContact()` ([lib/contacts.ts](src/lib/contacts.ts)).
+- **Affichage** : [SupportSection.tsx](src/components/solutions/detail/SupportSection.tsx) mappe les listes ; le CTA sidebar (`TarificationCard`) et l'ancre hero prennent le **1er contact** renseigné. Sous-titre « Pour joindre… au sujet de cette solution » retiré (redondant avec les intitulés).
+- **Sauvegarde** : admin via champ caché JSON ([admin.ts](src/lib/actions/admin.ts)) ; éditeur via `updateSolutionByEditeur` (diff/audit `editeurs_edit_log` rendu JSON-aware pour les listes, [admin-users.ts](src/lib/actions/admin-users.ts)).
+
+### Fix — Revalidation ISR de la fiche solution après édition (contacts, prix, mot éditeur…)
+- **Cause** : après une modif (admin **ou** éditeur), seul `revalidatePath('/solutions', 'layout')` était appelé → **ne revalide pas** la fiche `/solutions/[cat]/[sol]` (route dynamique en ISR 1h) → une modif pouvait mettre **jusqu'à 1h** à s'afficher. Confirmé empiriquement sur Tandem Health (un contact ajouté restait invisible).
+- **Fix** : helper `revalidateSolution(slug, id_categorie)` ([lib/revalidate-solution.ts](src/lib/revalidate-solution.ts)) qui résout le slug catégorie et revalide la **fiche exacte** — branché dans les deux saves. Le toggle global `display_contacts_commerciaux` revalide en plus **toutes** les fiches.
+
 ### TODO — Mises à jour
 - Barré : « Suivi PSC — bascule verifyOtp serveur » — sous-item fusion + cleanup **fait** (fusion migrée, routes supprimées, commentaires nettoyés).
+- Ajout : SQL coordonnées (Medicab n° malformé, HyperMed commercial = support dupliqué) + activer toggle `display_contacts_commerciaux` au déploiement + DROP colonnes scalaires `contact_*`/`support_*` après validation prod.
 
 ---
 

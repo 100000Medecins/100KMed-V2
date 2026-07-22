@@ -31,6 +31,19 @@ export type PageStatique = Database['public']['Tables']['pages_statiques']['Row'
   metadata?: SyndicatFoundateur[] | null
 }
 
+/**
+ * Une ligne de contact (commercial ou support) d'une solution.
+ * Stockée dans les colonnes JSONB `solutions.contacts_commerciaux` /
+ * `solutions.contacts_support` (array de ContactLigne).
+ * `libelle` = intitulé optionnel (ex. « Commercial Nord »).
+ * Normalisation/parsing : `normalizeContacts()` dans `@/lib/contacts`.
+ */
+export type ContactLigne = {
+  libelle: string | null
+  email: string | null
+  telephone: string | null
+}
+
 export interface SyndicatFoundateur {
   id: string
   nom: string

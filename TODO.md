@@ -61,6 +61,7 @@ _(rien en cours)_
 - **Contexte** : nouveau module tarification livré (cf CHANGELOG 2026-06-04) mais peu de prix renseignés en BDD pour le moment. Le toggle global « Afficher les prix sur le site » est OFF tant qu'une masse critique n'est pas atteinte.
 - **Coordonnées éditeurs** : le bloc « Contacts commerciaux » est désormais masqué par défaut (toggle OFF dans `/admin/parametres`) car beaucoup de coordonnées en BDD sont incorrectes ou inappropriées. À nettoyer + compléter pour pouvoir réactiver le toggle.
 - **À faire** : demander à Agathe si elle veut s'en charger (collecte auprès des éditeurs des prix officiels + coordonnées commerciales + support à jour). Une fois la base à jour, activer les 2 toggles dans `/admin/parametres`.
+- **MAJ 2026-07-22** : les contacts sont désormais **multiples** (plusieurs commerciaux/support par solution, cf CHANGELOG). Réactivation du toggle commercial **décidée (globale)** — étapes concrètes dans l'item « Contacts multiples — suites » (§ Espace éditeur).
 
 #### Vidéos par solution — étendre la découverte YouTube
 - **Acquis (2026-05-24)** : plomberie complète livrée — table `video_solutions` (M-N) avec RLS, script `scripts/discover-videos-youtube.mjs` avec filtres (lang fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, blacklist termes dev, bonus mots pro-santé), galerie publique des fiches solutions affiche automatiquement les vidéos validées, admin a panneaux symétriques côté vidéo (multi-select solutions) et côté solution (chips vidéos), badges 🎬 dans le panel propositions à modérer.
@@ -127,7 +128,11 @@ _(rien en cours)_
 
 ### Espace éditeur
 
-_(rien en cours)_
+#### Contacts multiples — suites (2026-07-22)
+- **Lancer le SQL** : Medicab (n° commercial `04.66.81.88;80` → `04.66.81.88.80`) + HyperMed (contact « commercial » = adresse support dupliquée → vider `contacts_commerciaux`).
+- **Activer `display_contacts_commerciaux`** dans `/admin/parametres` **après déploiement** (sinon la revalidation globale du toggle n'existe pas encore en prod).
+- **DROP** des colonnes scalaires `contact_email`/`contact_telephone`/`support_email`/`support_telephone` de `solutions` une fois le multi-contacts validé en prod, puis régénérer `src/types/database.ts`.
+- *(optionnel, hors périmètre)* purger automatiquement la session Supabase périmée côté client (erreur console `Invalid Refresh Token`, bénigne) — cf. session 2026-07-22.
 
 ### Performance
 

@@ -15,6 +15,7 @@ import ComparisonSection from './detail/ComparisonSection'
 import PublisherWord from './detail/PublisherWord'
 import SupportSection from './detail/SupportSection'
 import type { SolutionWithRelations, ResultatWithCritere } from '@/types/models'
+import { firstContact } from '@/lib/contacts'
 import type { NoteRedac } from '@/lib/db/solutions'
 import type { NoteGlobaleTooltip as NoteGlobaleTooltipData } from '@/lib/db/tooltips'
 
@@ -75,6 +76,8 @@ export default function SolutionDetailPage({
   const noteRedaction = (solution as unknown as Record<string, unknown>).evaluation_redac_note != null
     ? Number((solution as unknown as Record<string, unknown>).evaluation_redac_note)
     : null
+  // Le CTA commercial de la carte Tarification utilise le 1er contact commercial renseigné.
+  const premierCommercial = firstContact(solution.contacts_commerciaux)
 
   return (
     <section>
@@ -176,8 +179,8 @@ export default function SolutionDetailPage({
                     prix_frequence: (solution as unknown as { prix_frequence: string | null }).prix_frequence ?? null,
                     prix_duree_engagement_mois: (solution as unknown as { prix_duree_engagement_mois: number | null }).prix_duree_engagement_mois ?? null,
                   }}
-                  contactEmail={(solution as unknown as { contact_email: string | null }).contact_email ?? null}
-                  contactTelephone={(solution as unknown as { contact_telephone: string | null }).contact_telephone ?? null}
+                  contactEmail={premierCommercial?.email ?? null}
+                  contactTelephone={premierCommercial?.telephone ?? null}
                 />
               )}
               <div className="hidden lg:block">

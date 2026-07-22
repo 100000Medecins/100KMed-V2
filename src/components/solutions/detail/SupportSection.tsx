@@ -1,5 +1,6 @@
 import { Mail, Phone, ExternalLink, Briefcase, Headphones } from 'lucide-react'
-import type { SolutionWithRelations } from '@/types/models'
+import type { SolutionWithRelations, ContactLigne } from '@/types/models'
+import { normalizeContacts } from '@/lib/contacts'
 import { ensureHttps } from '@/lib/url'
 
 interface SupportSectionProps {
@@ -34,35 +35,46 @@ function ContactButton({
   )
 }
 
+/** Une ligne de contact : libellé optionnel + boutons email / téléphone. */
+function ContactLigneItem({ contact }: { contact: ContactLigne }) {
+  return (
+    <div>
+      {contact.libelle && (
+        <p className="text-sm font-medium text-navy mb-1.5">{contact.libelle}</p>
+      )}
+      <div className="flex flex-wrap gap-3">
+        {contact.email && (
+          <ContactButton href={`mailto:${contact.email}`} icon={Mail} label={contact.email} />
+        )}
+        {contact.telephone && (
+          <ContactButton href={`tel:${contact.telephone.replace(/\s/g, '')}`} icon={Phone} label={contact.telephone} />
+        )}
+      </div>
+    </div>
+  )
+}
+
 /**
  * Section « Contacts utiles » en bas de chaque page solution.
- * Affiche jusqu'à deux sous-blocs (commercial / support) selon ce que l'éditeur a renseigné
- * pour CETTE solution (les contacts sont propres à chaque produit, pas à l'éditeur).
+ * Affiche deux sous-blocs (commercial / support), chacun pouvant contenir
+ * plusieurs contacts nommés (colonnes JSONB `contacts_commerciaux` / `contacts_support`).
+ * Les contacts sont propres à chaque solution (pas à l'éditeur).
  * Masquée si aucun contact n'est renseigné.
  */
 export default function SupportSection({ solution, displayCommercial = false }: SupportSectionProps) {
-  const sol = solution as unknown as Record<string, string | null>
-  const contactEmail = sol.contact_email
-  const contactTel = sol.contact_telephone
-  const supportEmail = sol.support_email
-  const supportTel = sol.support_telephone
-  const supportSite = sol.support_website
-  const supportSiteUrl = ensureHttps(supportSite)
+  const commerciaux = normalizeContacts(solution.contacts_commerciaux)
+  const support = normalizeContacts(solution.contacts_support)
+  const supportSiteUrl = ensureHttps(solution.support_website)
 
-  // Le bloc commercial n'est rendu QUE si le toggle admin est activé ET qu'il y a des coordonnées renseignées.
-  const hasCommercial = displayCommercial && !!(contactEmail || contactTel)
-  const hasSupport = !!(supportEmail || supportTel || supportSite)
+  // Le bloc commercial n'est rendu QUE si le toggle admin est activé ET qu'il y a des contacts.
+  const hasCommercial = displayCommercial && commerciaux.length > 0
+  const hasSupport = support.length > 0 || !!supportSiteUrl
   if (!hasCommercial && !hasSupport) return null
-
-  const nom = solution.editeur?.nom_commercial || solution.editeur?.nom || 'l\'éditeur'
 
   return (
     <section className="max-w-7xl mx-auto">
       <div className="bg-white rounded-card shadow-card p-6 md:p-8">
-        <h2 className="text-lg font-bold text-navy mb-1">Contacts utiles</h2>
-        <p className="text-sm text-gray-500 mb-6">
-          {`Pour joindre ${nom} au sujet de cette solution :`}
-        </p>
+        <h2 className="text-lg font-bold text-navy mb-6">Contacts utiles</h2>
 
         <div className="space-y-6">
           {hasCommercial && (
@@ -73,13 +85,10 @@ export default function SupportSection({ solution, displayCommercial = false }: 
                 </div>
                 <h3 className="text-sm font-semibold text-navy">Contacts commerciaux <span className="text-gray-400 font-normal">(demande de démo, devis…)</span></h3>
               </div>
-              <div className="flex flex-wrap gap-3 ml-10">
-                {contactEmail && (
-                  <ContactButton href={`mailto:${contactEmail}`} icon={Mail} label={contactEmail} />
-                )}
-                {contactTel && (
-                  <ContactButton href={`tel:${contactTel.replace(/\s/g, '')}`} icon={Phone} label={contactTel} />
-                )}
+              <div className="ml-10 space-y-4">
+                {commerciaux.map((c, i) => (
+                  <ContactLigneItem key={i} contact={c} />
+                ))}
               </div>
             </div>
           )}
@@ -92,15 +101,14 @@ export default function SupportSection({ solution, displayCommercial = false }: 
                 </div>
                 <h3 className="text-sm font-semibold text-navy">Contacts support <span className="text-gray-400 font-normal">(SAV, assistance technique)</span></h3>
               </div>
-              <div className="flex flex-wrap gap-3 ml-10">
-                {supportEmail && (
-                  <ContactButton href={`mailto:${supportEmail}`} icon={Mail} label={supportEmail} />
-                )}
-                {supportTel && (
-                  <ContactButton href={`tel:${supportTel.replace(/\s/g, '')}`} icon={Phone} label={supportTel} />
-                )}
+              <div className="ml-10 space-y-4">
+                {support.map((c, i) => (
+                  <ContactLigneItem key={i} contact={c} />
+                ))}
                 {supportSiteUrl && (
-                  <ContactButton href={supportSiteUrl} icon={ExternalLink} label="Page de support" />
+                  <div className="flex flex-wrap gap-3">
+                    <ContactButton href={supportSiteUrl} icon={ExternalLink} label="Page de support" />
+                  </div>
                 )}
               </div>
             </div>
