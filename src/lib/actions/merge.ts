@@ -1,6 +1,6 @@
 'use server'
 
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
 import { verifyFusionToken } from '@/lib/auth/fusionToken'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 
@@ -121,19 +121,19 @@ export async function mergeAccounts(
     }
   }
 
-  // Copier le RPPS du compte supprimé vers le compte conservé si besoin
-  const { data: keepProfile } = await s.from('users').select('rpps, email').eq('id', keepId).single()
+  // Préparer la copie du RPPS (+ identité PSC) du compte supprimé vers le compte conservé.
+  // ⚠️ L'UPDATE est DIFFÉRÉ après la suppression du compte source (plus bas) : l'appliquer
+  // ici créerait deux lignes avec le même RPPS → violation UNIQUE(users.rpps) dès qu'on
+  // conserve le compte email/mdp (rpps NULL) et supprime le compte PSC (porteur du RPPS).
+  const { data: keepProfile } = await s.from('users').select('rpps').eq('id', keepId).single()
   const { data: deleteProfile } = await s.from('users').select('rpps, nom, prenom, specialite, mode_exercice').eq('id', deleteId).single()
+  let rppsUpdate: Record<string, unknown> | null = null
   if (!keepProfile?.rpps && deleteProfile?.rpps) {
-    const rppsUpdate: Record<string, unknown> = { rpps: deleteProfile.rpps }
-    if (!keepProfile?.email?.includes('@') || keepProfile.email?.endsWith('@psc.sante.fr')) {
-      // pas besoin de toucher à l'email ici
-    }
+    rppsUpdate = { rpps: deleteProfile.rpps }
     if (deleteProfile.nom) rppsUpdate.nom = deleteProfile.nom
     if (deleteProfile.prenom) rppsUpdate.prenom = deleteProfile.prenom
     if (deleteProfile.specialite) rppsUpdate.specialite = deleteProfile.specialite
     if (deleteProfile.mode_exercice) rppsUpdate.mode_exercice = deleteProfile.mode_exercice
-    await s.from('users').update(rppsUpdate).eq('id', keepId)
   }
 
   // Migrer les questionnaires de thèse créés par le compte supprimé
@@ -156,6 +156,12 @@ export async function mergeAccounts(
   if (deleteAuthError) {
     console.error('[mergeAccounts] échec deleteUser auth:', deleteAuthError)
     return { ok: false, error: 'Erreur lors de la suppression du compte auth.' }
+  }
+
+  // Copier le RPPS (+ identité PSC) maintenant que le compte source est supprimé
+  // (impossible avant : contrainte UNIQUE(users.rpps) — cf. commentaire plus haut).
+  if (rppsUpdate) {
+    await s.from('users').update(rppsUpdate).eq('id', keepId)
   }
 
   // Publier les évaluations en attente uniquement si le compte conservé a un RPPS
@@ -190,7 +196,22 @@ export async function mergeAccounts(
   })
   if (!linkData?.properties) return { ok: false, error: 'Erreur lors de la génération de la session.' }
 
-  const tokenHash = linkData.properties.hashed_token
-  const redirectUrl = `/auth/psc-session?token=${tokenHash}&next=${encodeURIComponent('/mon-compte/profil?fusion=ok')}`
-  return { ok: true, redirectUrl }
+  // Établir la session CÔTÉ SERVEUR : verifyOtp via le client SSR (adaptateur cookies),
+  // de sorte que le cookie de session soit posé directement sur la réponse du Server Action.
+  // Supprime le roundtrip client /auth/psc-session (qui perdait ~16 % des sessions au retour
+  // de l'app mobile PSC) — même bascule que le flux standard dans psc-callback/route.ts.
+  const ssr = await createServerClient()
+  const { error: sessionError } = await ssr.auth.verifyOtp({
+    token_hash: linkData.properties.hashed_token,
+    type: 'magiclink',
+  })
+  if (sessionError) {
+    console.error('[mergeAccounts] verifyOtp échec:', sessionError.message)
+    return {
+      ok: false,
+      error: 'La fusion a été effectuée, mais la connexion automatique a échoué. Merci de vous reconnecter.',
+    }
+  }
+
+  return { ok: true, redirectUrl: '/mon-compte/profil?fusion=ok' }
 }

@@ -827,8 +827,9 @@ export async function submitEvaluation(
           diff: { note: { avant: null, apres: Math.round(moyenne * 100) / 100 } },
         })
       }
-
-      revalidatePath('/solutions')
+      // Pas de revalidatePath ici : recalcResultatsPourSolution() revalide déjà
+      // '/solutions' en mode 'layout' quand la note est publiée. Rien de public ne
+      // change dans le cas en_attente_psc.
     } catch (e) {
       console.error('[submitEvaluation] post-traitement échoué (ignoré):', e)
     }

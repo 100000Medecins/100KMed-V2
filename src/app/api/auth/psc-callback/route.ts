@@ -342,7 +342,7 @@ export async function GET(request: Request) {
       })
     }
 
-    // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)
+    // 5. Générer un magic link (consommé par verifyOtp côté serveur à l'étape 8)
     // Pour les utilisateurs existants : utiliser l'email auth.users réel (pas celui retourné par PSC)
     // PSC peut retourner un email différent (ex: email perso) alors que auth.users a l'email synthétique
     // → generateLink avec le mauvais email crée un utilisateur fantôme et établit une session invalide
@@ -363,9 +363,8 @@ export async function GET(request: Request) {
 
     const tokenHash = linkData.properties.hashed_token
 
-    // 6. (Supprimé) verifyOtp côté serveur — les cookies de session ne peuvent pas
-    // être attachés à un NextResponse.redirect() dans un Route Handler Next.js.
-    // On délègue au client via /auth/psc-session.
+    // 6. La session est établie côté serveur à l'étape 8 (establishPscSession) :
+    //    verifyOtp via le client SSR pose les cookies sur le NextResponse.redirect.
 
     // 7. Lier les évaluations anonymes en attente
     let evalsALier: Array<{ id: string; solution_id: string | null }> = []
@@ -456,7 +455,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 8. Rediriger vers /auth/psc-session pour établir la session côté client
+    // 8. Déterminer la destination selon l'état du profil, établir la session, rediriger
     const { data: profile } = await supabaseAdmin
       .from('users')
       .select('is_complete')

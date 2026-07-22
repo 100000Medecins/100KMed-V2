@@ -88,17 +88,12 @@ Pour les utilisateurs email/mdp :
 5. Crée `public.users` si inexistant (avec `rpps`, nom, prénom, spécialité)
 6. Rattache les évaluations anonymes `en_attente_psc` (voir §Flux 3)
 7. Génère un magiclink Supabase via `auth.admin.generateLink({ type: 'magiclink' })`
-8. Redirige vers `/auth/psc-session?token=<token_hash>&next=<destination>` où `destination` vaut `/completer-profil` si `is_complete=false`, sinon `/mon-compte/profil` (avec `?evaluation=publiee` si une éval a été rattachée)
+8. **Établit la session côté serveur** (`establishPscSession` : client SSR + adaptateur cookies → `verifyOtp`) puis `NextResponse.redirect(<destination>)` où `destination` vaut `/completer-profil` si `is_complete=false`, sinon `/mon-compte/profil` (avec `?evaluation=publiee` si une éval a été rattachée)
 
-> ⚠️ La session cookie **n'est pas créée par le callback**. Elle est créée à l'étape 3 ci-dessous, côté client.
+> ⚠️ La session cookie est **créée par le callback lui-même**, côté serveur. Depuis le 2026-07-20, il n'y a plus de roundtrip client `/auth/psc-session` (supprimé 2026-07-21 après migration de la fusion — cf CHANGELOG) : le `verifyOtp` était perdu ~16 % du temps au retour de l'app mobile PSC.
 
-### Étape 3 — Création de session (`/auth/psc-session`)
-**Page client** : `src/app/auth/psc-session/page.tsx`
-
-1. Lit le `token` en query string
-2. Appelle `supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' })` → consomme le magiclink et **crée la session cookie côté navigateur**
-3. En cas de succès : `window.location.replace(next)` (navigation native — voir [auth-navigation.md](2026-04-28-auth-navigation.md))
-4. Timeout 10s ou erreur : `window.location.replace('/connexion?error=psc_session_error')`
+### Étape 3 — (supprimée) Création de session côté client
+Historique : le `verifyOtp` était auparavant fait par une page cliente `/auth/psc-session`. Il est désormais fait côté serveur à l'étape 8 (route handler + fusion `merge.ts`).
 
 ### Étape 4 — Complétion du profil PSC
 **Page** : `/completer-profil` (flag `isFromPsc = true`)

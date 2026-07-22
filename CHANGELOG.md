@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-07-22] — PSC : fusion migrée en session serveur + fix contrainte RPPS
+
+### PSC — Fusion de comptes : session établie côté serveur (dernier verrou du nettoyage)
+- `mergeAccounts` ([merge.ts](src/lib/actions/merge.ts)) posait la session via un roundtrip client `/auth/psc-session` (magic link → `verifyOtp` en JS navigateur) — le point de perte des ~16 % d'abandons au retour de l'app mobile PSC. Bascule **100 % serveur** : `verifyOtp` via le client SSR (adaptateur cookies) **dans le Server Action**, cookie de session posé directement sur la réponse → l'utilisateur revient connecté. Même modèle que le flux standard (`establishPscSession` dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts)).
+- **Nettoyage débloqué** (`merge.ts` était le dernier consommateur) : suppression de `src/app/auth/psc-session/page.tsx` + `src/app/api/psc-session-event/route.ts`, et des commentaires périmés « via /auth/psc-session » dans psc-callback (l.345/366/459). Docs à jour ([2026-04-30-user-creation-flow.md](docs/2026-04-30-user-creation-flow.md), [2026-04-28-auth-navigation.md](docs/2026-04-28-auth-navigation.md)) + commentaire de [diag-psc-parcours.ts](scripts/diag-psc-parcours.ts). Table `psc_session_events` conservée (le `logHandoff` serveur de la callback l'alimente toujours).
+- **Bonus sécurité** : le token OTP n'est plus exposé dans une URL client (consommé côté serveur).
+- Validé en localhost (fixture jetable, 2 comptes) : arrivée connecté + bannière `fusion=ok`, dans les **deux sens** de fusion.
+
+### Fix — Fusion : violation `UNIQUE(users.rpps)` quand on conserve le compte sans RPPS
+- **Cause** : `mergeAccounts` copiait le RPPS du compte supprimé vers le compte conservé (`UPDATE users SET rpps=X WHERE id=keepId`) **avant** de supprimer la ligne source → deux lignes avec le même RPPS un court instant → `duplicate key value violates unique constraint "users_rpps_key"`. Déclenché ~50 % du temps (dès que l'utilisateur conserve son compte email/mdp plutôt que le compte PSC). Bug **préexistant** (sans rapport avec la migration de session), repéré en construisant la fixture de test.
+- **Fix** : l'`UPDATE` de copie du RPPS (+ nom/prénom/spécialité/mode d'exercice) est **différé après** la suppression du compte source.
+
+### Infrastructure — Serveurs de dev orphelins (Windows) + routine /end
+- 3 serveurs `next start` (ports 3111/3112/3113, vestiges des tests ISR du 11-12/07) tournaient depuis 10 jours, invisibles, et l'un d'eux **bloquait un fichier supprimé** (`AvisUtilisateurs.tsx`, état « delete-pending » Windows) → `Build Error` Tailwind `ENOENT` sur un `.tsx` fantôme au démarrage du dev. Process tués + `.next` purgé → dev réparé.
+- Ajout d'une **Étape 0** à [/end](.claude/commands/end.md) : balaie/tue les `next dev|start` orphelins du projet à chaque fin de session (filtre projet-spécifique, épargne `tsserver` et les serveurs MCP).
+
+### TODO — Mises à jour
+- Barré : « Suivi PSC — bascule verifyOtp serveur » — sous-item fusion + cleanup **fait** (fusion migrée, routes supprimées, commentaires nettoyés).
+
+---
+
 ## [2026-07-21] — Jeu concours WONCA (page gagnants) + bandeau d'annonce
 
 ### Feature — Page publique `/jeu-concours`

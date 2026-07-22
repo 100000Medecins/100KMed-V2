@@ -21,6 +21,7 @@ export type QuestionnaireThese = {
 }
 
 function revalidateAll() {
+  revalidatePath('/')
   revalidatePath('/admin/questionnaires-these')
   revalidatePath('/mon-compte/questionnaires-these')
   revalidatePath('/mon-compte/mes-questionnaires-these')
