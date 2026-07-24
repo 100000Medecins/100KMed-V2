@@ -129,8 +129,9 @@ _(rien en cours)_
 ### Espace éditeur
 
 #### Contacts multiples — suites (2026-07-22)
-- **Lancer le SQL** : Medicab (n° commercial `04.66.81.88;80` → `04.66.81.88.80`) + HyperMed (contact « commercial » = adresse support dupliquée → vider `contacts_commerciaux`).
-- **Activer `display_contacts_commerciaux`** dans `/admin/parametres` **après déploiement** (sinon la revalidation globale du toggle n'existe pas encore en prod).
+- ~~**Lancer le SQL** : Medicab + HyperMed~~ [OK] Fait 2026-07-23.
+- ~~**Activer `display_contacts_commerciaux`** dans `/admin/parametres`~~ [OK] Fait 2026-07-23.
+- **Merger `dev → main`** : 3 commits en attente (fusion PSC serveur `5622950`, contacts multiples + revalidation ISR `8f1cf69`, retry JWT transitoires `9fdc1b4`) — fusion validée sur dev le 2026-07-24. Après merge : activer le toggle est déjà fait, vérifier l'affichage multi-contacts en prod.
 - **DROP** des colonnes scalaires `contact_email`/`contact_telephone`/`support_email`/`support_telephone` de `solutions` une fois le multi-contacts validé en prod, puis régénérer `src/types/database.ts`.
 - *(optionnel, hors périmètre)* purger automatiquement la session Supabase périmée côté client (erreur console `Invalid Refresh Token`, bénigne) — cf. session 2026-07-22.
 
@@ -159,6 +160,10 @@ _(rien en cours)_
 - ✅ **`dev.*` déréférencé (vérifié 2026-07-21)** : `site:dev.100000medecins.org` sur Google = « Aucun document ». Blocage durable en place (robots Disallow + noindex). Revérif passive occasionnelle.
 
 ### Mises à jour techniques
+
+#### Surveiller l'intermittence `bad_jwt` de Supabase Auth (2026-07-24)
+- Appels Auth rejetés **par intermittence** (`unrecognized JWT kid <nil> for algorithm ES256`, ~1 sur 12) — incohérence côté **infra Supabase** (projet en ECC P-256, clés `sb_secret_`, **aucune rotation récente** côté *JWT Signing Keys*). Des **retries** sont en place comme filet (`retryTransientAuth`, cf. CHANGELOG 2026-07-24) → pas d'impact utilisateur visible.
+- **À faire** : re-mesurer d'ici quelques jours. Si l'intermittence persiste → **ticket Supabase support**. Ne **pas** revenir aux clés legacy (dépréciées, on en est sorti volontairement).
 
 #### Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy) [✅ SOUS CONTRÔLE — vérifié 20/07 : 17 %]
 - **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md).

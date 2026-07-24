@@ -5,6 +5,20 @@
 
 ---
 
+## [2026-07-24] — Auth : résilience aux erreurs JWT transitoires de Supabase
+
+### Fix — Retry des `bad_jwt` intermittents (inscription, PSC, fusion)
+- **Symptôme** : appels Supabase Auth rejetés **par intermittence** avec `invalid JWT … unrecognized JWT kid <nil> for algorithm ES256` (code `bad_jwt`), alors que le **même** appel passe sur une autre instance GoTrue. Mesuré **~1 échec / 12**. Repéré en validant la fusion de comptes sur dev.
+- **Cause** : incohérence côté **infra Supabase**, pas une clé invalide. Le projet signe en **ECC P-256** (migration il y a ~5 mois, HS256 en « previously used ») et utilise les clés `sb_secret_`/`sb_publishable_` ; **aucune rotation récente** (vérifié dans *JWT Signing Keys*). Certaines instances ne retombent pas sur la clé legacy pour vérifier un token sans `kid`.
+- **Impact avant fix** : un échec faisait planter une **inscription**, un **login PSC** ou une **fusion de comptes** — avec, pour la fusion, un risque d'**état partiel** (compte source supprimé mais session non établie).
+- **Fix** : helper `retryTransientAuth()` ([src/lib/supabase/retry.ts](src/lib/supabase/retry.ts)) — 4 tentatives, backoff 250/500/750 ms, déclenché **uniquement** sur cette signature (`unrecognized JWT kid` / `bad_jwt`) ; toute autre erreur remonte immédiatement. Appliqué à **17 appels** : `mergeAccounts` (4, [merge.ts](src/lib/actions/merge.ts)), [psc-callback](src/app/api/auth/psc-callback/route.ts) (8), [signincallback](src/app/onboarding/signincallback/route.ts) (4), `registerWithEmail` (1).
+- **À surveiller** : si l'intermittence persiste → **ticket Supabase** (leur infra de signature JWT). Ne **pas** revenir aux clés legacy (dépréciées, et le projet en est sorti volontairement).
+
+### Validation — Fusion de comptes PSC testée de bout en bout sur dev
+- Fixture jetable (2 comptes de test + lien de fusion signé HMAC) → **3 scénarios verts** : conserver le compte **sans RPPS** (le cas qui violait `UNIQUE(users.rpps)` avant le fix du 2026-07-22), conserver le compte **PSC**, et **sur mobile**. Arrivée **connecté** (`?fusion=ok`) dans les 3 cas, avec RPPS + identité + favori correctement rapatriés sur le compte conservé.
+
+---
+
 ## [2026-07-22] — PSC (fusion serveur + RPPS) · Contacts multiples sur fiches solutions
 
 ### PSC — Fusion de comptes : session établie côté serveur (dernier verrou du nettoyage)
