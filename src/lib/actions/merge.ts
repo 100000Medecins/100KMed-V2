@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
+import { retryTransientAuth } from '@/lib/supabase/retry'
 import { verifyFusionToken } from '@/lib/auth/fusionToken'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 
@@ -152,7 +153,9 @@ export async function mergeAccounts(
     return { ok: false, error: 'Erreur lors de la suppression du compte.' }
   }
 
-  const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(deleteId)
+  const { error: deleteAuthError } = await retryTransientAuth(() =>
+    supabase.auth.admin.deleteUser(deleteId)
+  )
   if (deleteAuthError) {
     console.error('[mergeAccounts] échec deleteUser auth:', deleteAuthError)
     return { ok: false, error: 'Erreur lors de la suppression du compte auth.' }
@@ -186,14 +189,18 @@ export async function mergeAccounts(
   // Générer un magic link pour établir la session sur le compte conservé
   // Utiliser auth.users.email (pas public.users.email) — évite de créer un utilisateur fantôme
   // si l'email PSC synthétique diffère de public.users.email
-  const { data: authUserData } = await supabase.auth.admin.getUserById(keepId)
+  const { data: authUserData } = await retryTransientAuth(() =>
+    supabase.auth.admin.getUserById(keepId)
+  )
   const keepEmail = authUserData.user?.email
   if (!keepEmail) return { ok: false, error: 'Impossible de récupérer l\'email du compte conservé.' }
 
-  const { data: linkData } = await supabase.auth.admin.generateLink({
-    type: 'magiclink',
-    email: keepEmail,
-  })
+  const { data: linkData } = await retryTransientAuth(() =>
+    supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: keepEmail,
+    })
+  )
   if (!linkData?.properties) return { ok: false, error: 'Erreur lors de la génération de la session.' }
 
   // Établir la session CÔTÉ SERVEUR : verifyOtp via le client SSR (adaptateur cookies),
@@ -201,10 +208,12 @@ export async function mergeAccounts(
   // Supprime le roundtrip client /auth/psc-session (qui perdait ~16 % des sessions au retour
   // de l'app mobile PSC) — même bascule que le flux standard dans psc-callback/route.ts.
   const ssr = await createServerClient()
-  const { error: sessionError } = await ssr.auth.verifyOtp({
-    token_hash: linkData.properties.hashed_token,
-    type: 'magiclink',
-  })
+  const { error: sessionError } = await retryTransientAuth(() =>
+    ssr.auth.verifyOtp({
+      token_hash: linkData.properties.hashed_token,
+      type: 'magiclink',
+    })
+  )
   if (sessionError) {
     console.error('[mergeAccounts] verifyOtp échec:', sessionError.message)
     return {
