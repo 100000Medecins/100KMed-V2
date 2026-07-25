@@ -10,8 +10,8 @@
 - **Prénom** : David
 - **Rôle** : fondateur / responsable produit de la plateforme 100 000 Médecins
 - **Profil technique** : non-développeur, travaille avec Claude Code comme principal outil de développement
-- **Postes** : deux machines Windows 11 synchronisées via Synology CloudStation (répertoire partagé). Toujours faire un `git pull origin dev` en arrivant sur un nouveau poste, même si le répertoire est synchronisé, car Synology et Git sont indépendants.
-- **Faux positifs git Synology** : Synology peut synchroniser les fichiers de travail avant que git soit mis à jour, ce qui fait apparaître des "modifications locales" dans `git status`. Ces modifications sont en réalité déjà commitées sur le remote. Diagnostic : `git diff HEAD` ne montre rien (faux positif CRLF/LF). Fix sans confirmation : `git checkout -- .` puis `git pull origin dev`.
+- **Postes** : deux machines Windows 11. Le dépôt se synchronise entre les postes **par git uniquement** (`git push` / `git pull origin dev`) — le **répertoire de travail n'est PLUS dans Synology** (migré hors Syno depuis longtemps). Toujours faire `git pull origin dev` en arrivant sur un poste.
+- **⚠️ `git status` = du VRAI travail non commité (plus de faux positifs Synology)** : le répertoire n'étant plus dans Synology, des « modifications locales » dans `git status` sont du **travail réel non sauvegardé**, PAS des artefacts CRLF/LF déjà commités ailleurs. **Ne JAMAIS lancer `git checkout -- .`, `git reset --hard` ou toute commande destructive sans confirmation explicite** — ça détruirait du travail (ex. le WIP « spécialité secondaire » du 2026-07-25 l'aurait été). En cas de doute sur des modifs inattendues : les inspecter (`git diff`) et **demander**, jamais les jeter d'office.
 
 ---
 
