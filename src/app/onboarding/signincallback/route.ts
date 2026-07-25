@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps } from '@/lib/auth/psc'
+import { retryTransientAuth } from '@/lib/supabase/retry'
 
 /**
  * GET /onboarding/signincallback
@@ -64,11 +65,13 @@ export async function GET(request: Request) {
 
     // 4. Créer l'utilisateur si inexistant
     if (!userId) {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: userEmail,
-        email_confirm: true,
-        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
-      })
+      const { data: newUser, error: createError } = await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.createUser({
+          email: userEmail,
+          email_confirm: true,
+          user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
+        })
+      )
 
       if (createError || !newUser.user) {
         console.error('[PSC] createUser error:', createError)
@@ -85,16 +88,22 @@ export async function GET(request: Request) {
         prenom,
       })
     } else {
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
-      })
+      // `const` local : la closure du retry perdrait le narrowing de `userId`
+      const uid = userId
+      await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.updateUserById(uid, {
+          user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
+        })
+      )
     }
 
     // 5. Générer un magic link
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userEmail,
-    })
+    const { data: linkData, error: linkError } = await retryTransientAuth(() =>
+      supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: userEmail,
+      })
+    )
 
     if (linkError || !linkData) {
       console.error('[PSC] generateLink error:', linkError)
@@ -119,10 +128,12 @@ export async function GET(request: Request) {
       }
     )
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: 'magiclink',
-    })
+    const { error: verifyError } = await retryTransientAuth(() =>
+      supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'magiclink',
+      })
+    )
 
     if (verifyError) {
       console.error('[PSC] verifyOtp error:', verifyError)

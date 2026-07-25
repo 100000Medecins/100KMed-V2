@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
+import { retryTransientAuth } from '@/lib/supabase/retry'
 import { resolveSpecialite } from '@/lib/constants/profil'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
@@ -52,7 +53,9 @@ async function establishPscSession(
   userId: string | null,
 ): Promise<boolean> {
   const supabase = await createServerClient()
-  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' })
+  const { error } = await retryTransientAuth(() =>
+    supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' })
+  )
   await logHandoff(admin, correlationId, userId, error ? 'verify_error' : 'verify_success', error?.message)
   return !error
 }
@@ -162,9 +165,11 @@ export async function GET(request: Request) {
       if (Object.keys(profileUpdates).length > 0) {
         await supabaseAdmin.from('users').update(profileUpdates).eq('id', currentUserId)
       }
-      await supabaseAdmin.auth.admin.updateUserById(currentUserId, {
-        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
-      })
+      await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.updateUserById(currentUserId, {
+          user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
+        })
+      )
 
       // Publier les évaluations en attente de PSC pour cet utilisateur
       const { data: pendingAssoc } = await supabaseAdmin
@@ -188,10 +193,12 @@ export async function GET(request: Request) {
       const { data: keepProfile } = await supabaseAdmin
         .from('users').select('email').eq('id', currentUserId).single()
       const keepEmail = keepProfile?.email || userEmail
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: keepEmail,
-      })
+      const { data: linkData, error: linkError } = await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: keepEmail,
+        })
+      )
       if (linkError || !linkData) {
         return NextResponse.redirect(`${origin}/connexion?error=psc_session_error`)
       }
@@ -238,20 +245,24 @@ export async function GET(request: Request) {
     // 4. Créer l'utilisateur si inexistant
     if (!userId) {
       isNewUser = true
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: userEmail,
-        email_confirm: true,
-        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
-      })
+      const { data: newUser, error: createError } = await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.createUser({
+          email: userEmail,
+          email_confirm: true,
+          user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
+        })
+      )
 
       if (createError || !newUser?.user) {
         // Cas "utilisateur orphelin" : présent dans auth.users mais absent de public.users
         // (typiquement après un premier callback qui a échoué après createUser).
         // On utilise generateLink pour récupérer l'UUID auth existant.
-        const { data: recoverLink } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email: userEmail,
-        })
+        const { data: recoverLink } = await retryTransientAuth(() =>
+          supabaseAdmin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: userEmail,
+          })
+        )
         const recoveredId = recoverLink?.user?.id
         if (!recoveredId) {
           console.error('[PSC] createUser error (unrecoverable):', createError)
@@ -290,9 +301,13 @@ export async function GET(request: Request) {
         })
       }
     } else {
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub, specialite, mode_exercice: modeExercice },
-      })
+      // `const` local : la closure du retry perdrait le narrowing de `userId`
+      const uid = userId
+      await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.updateUserById(uid, {
+          user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub, specialite, mode_exercice: modeExercice },
+        })
+      )
       // Mettre à jour le profil avec les données PSC fraîches
       // N'écraser nom/prenom que si PSC les fournit (évite d'effacer des valeurs saisies manuellement)
       const profileUpdates: Record<string, unknown> = {}
@@ -342,19 +357,24 @@ export async function GET(request: Request) {
       })
     }
 
-    // 5. Générer un magic link (le verifyOtp se fera côté client via /auth/psc-session)
+    // 5. Générer un magic link (consommé par verifyOtp côté serveur à l'étape 8)
     // Pour les utilisateurs existants : utiliser l'email auth.users réel (pas celui retourné par PSC)
     // PSC peut retourner un email différent (ex: email perso) alors que auth.users a l'email synthétique
     // → generateLink avec le mauvais email crée un utilisateur fantôme et établit une session invalide
     let emailForLink = userEmail
     if (!isNewUser && userId) {
-      const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(userId)
+      const uid = userId
+      const { data: authUserData } = await retryTransientAuth(() =>
+        supabaseAdmin.auth.admin.getUserById(uid)
+      )
       if (authUserData?.user?.email) emailForLink = authUserData.user.email
     }
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: emailForLink,
-    })
+    const { data: linkData, error: linkError } = await retryTransientAuth(() =>
+      supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: emailForLink,
+      })
+    )
 
     if (linkError || !linkData) {
       console.error('[PSC] generateLink error:', linkError)
@@ -363,9 +383,8 @@ export async function GET(request: Request) {
 
     const tokenHash = linkData.properties.hashed_token
 
-    // 6. (Supprimé) verifyOtp côté serveur — les cookies de session ne peuvent pas
-    // être attachés à un NextResponse.redirect() dans un Route Handler Next.js.
-    // On délègue au client via /auth/psc-session.
+    // 6. La session est établie côté serveur à l'étape 8 (establishPscSession) :
+    //    verifyOtp via le client SSR pose les cookies sur le NextResponse.redirect.
 
     // 7. Lier les évaluations anonymes en attente
     let evalsALier: Array<{ id: string; solution_id: string | null }> = []
@@ -456,7 +475,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 8. Rediriger vers /auth/psc-session pour établir la session côté client
+    // 8. Déterminer la destination selon l'état du profil, établir la session, rediriger
     const { data: profile } = await supabaseAdmin
       .from('users')
       .select('is_complete')

@@ -49,15 +49,14 @@ connectWithPsc() → window.location.href vers wallet PSC
     → create/update Supabase user (admin API)
     → rattachement évaluations anonymes en_attente_psc (voir user-creation-flow.md §Flux 3)
     → generateLink(magiclink)
-    → NextResponse.redirect('/auth/psc-session?token=...&next=...')
-  → /auth/psc-session [page client]
-    → supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })
-      → timeout 10s en fallback
-      → succès : window.location.replace(next)
+    → establishPscSession : verifyOtp côté serveur (client SSR + cookies) pose la session
+      → succès : NextResponse.redirect(next)
         → si évaluation liée : next = '/mon-compte/profil?evaluation=publiee'
         → sinon              : next = '/mon-compte/profil' (ou '/completer-profil')
-      → erreur  : window.location.replace('/connexion?error=psc_session_error')
+      → erreur  : NextResponse.redirect('/connexion?error=psc_session_error')
 ```
+
+> Depuis 2026-07-20, la session est établie **côté serveur** dans le callback (plus de page cliente `/auth/psc-session`, supprimée le 2026-07-21). La fusion de comptes (`merge.ts`) suit le même modèle.
 
 ### 4. PSC — association depuis le profil
 

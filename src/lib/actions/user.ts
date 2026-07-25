@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
+import { retryTransientAuth } from '@/lib/supabase/retry'
 import { generateConfirmToken } from '@/lib/email/confirm-token'
 import { generateResetToken, verifyResetToken } from '@/lib/email/reset-token'
 import { generateEmailChangeToken } from '@/lib/email/email-change-token'
@@ -297,11 +298,13 @@ export async function registerWithEmail(input: {
   const supabase = createServiceRoleClient()
 
   // Création du compte SANS email natif (email_confirm: false)
-  const { data: created, error: createError } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: false,
-  })
+  const { data: created, error: createError } = await retryTransientAuth(() =>
+    supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: false,
+    })
+  )
 
   if (createError) {
     const msg = createError.message?.toLowerCase() ?? ''

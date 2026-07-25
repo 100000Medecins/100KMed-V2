@@ -1544,6 +1544,8 @@ export type Database = {
           actif: boolean | null
           contact_email: string | null
           contact_telephone: string | null
+          contacts_commerciaux: Json
+          contacts_support: Json
           created_at: string | null
           date_maj: string | null
           description: string | null
@@ -1580,6 +1582,8 @@ export type Database = {
           actif?: boolean | null
           contact_email?: string | null
           contact_telephone?: string | null
+          contacts_commerciaux?: Json
+          contacts_support?: Json
           created_at?: string | null
           date_maj?: string | null
           description?: string | null
@@ -1616,6 +1620,8 @@ export type Database = {
           actif?: boolean | null
           contact_email?: string | null
           contact_telephone?: string | null
+          contacts_commerciaux?: Json
+          contacts_support?: Json
           created_at?: string | null
           date_maj?: string | null
           description?: string | null

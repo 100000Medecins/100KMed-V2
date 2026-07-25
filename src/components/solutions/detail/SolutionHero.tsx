@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { ensureHttps } from '@/lib/url'
+import { normalizeContacts } from '@/lib/contacts'
 import AcronymHtml from '@/components/AcronymHtml'
 import NoteGlobaleTooltip from '@/components/solutions/detail/NoteGlobaleTooltip'
 import type { SolutionWithRelations } from '@/types/models'
@@ -72,8 +73,8 @@ export default function SolutionHero({
   const sol = solution as unknown as Record<string, string | null>
   // Le bloc commercial n'est rendu QUE si le toggle admin est ON.
   // L'ancre "Contacts utiles" doit donc refléter la même condition pour ne pas pointer vers une section vide.
-  const hasCommercial = displayContactsCommerciaux && !!(sol.contact_email || sol.contact_telephone)
-  const hasSupport = !!(sol.support_email || sol.support_telephone || sol.support_website)
+  const hasCommercial = displayContactsCommerciaux && normalizeContacts(solution.contacts_commerciaux).length > 0
+  const hasSupport = normalizeContacts(solution.contacts_support).length > 0 || !!solution.support_website
   const hasContactsUtiles = hasCommercial || hasSupport
   const website = ensureHttps(sol.website)
   const anchors = [

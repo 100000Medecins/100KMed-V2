@@ -11,9 +11,21 @@ import FonctionnalitesAssocieesSection from '@/components/admin/FonctionnalitesA
 import VideosLieesManager from '@/components/admin/VideosLieesManager'
 import Button from '@/components/ui/Button'
 import ImageUploadField from '@/components/ui/ImageUploadField'
+import ContactsListEditor from '@/components/admin/ContactsListEditor'
+import { normalizeContacts } from '@/lib/contacts'
+import type { ContactLigne } from '@/types/models'
 
 function isVideoUrl(url: string): boolean {
   return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
+}
+
+// Init d'une liste de contacts : les colonnes JSONB font foi ; repli sur les
+// anciennes colonnes scalaires (contact_email/telephone…) si la liste est vide,
+// le temps de la transition avant leur suppression.
+function initContacts(arr: unknown, legacyEmail: string | null, legacyTel: string | null): ContactLigne[] {
+  const list = normalizeContacts(arr)
+  if (list.length > 0) return list
+  return normalizeContacts([{ libelle: null, email: legacyEmail, telephone: legacyTel }])
 }
 
 type Solution = Database['public']['Tables']['solutions']['Row']
@@ -126,6 +138,12 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [evaluationRedacAvis, setEvaluationRedacAvis] = useState(solution?.evaluation_redac_avis ?? '')
   const [motEditeur, setMotEditeur] = useState(solution?.mot_editeur ?? '')
   const [logoUrl, setLogoUrl] = useState(solution?.logo_url ?? '')
+  const [contactsCommerciaux, setContactsCommerciaux] = useState<ContactLigne[]>(() =>
+    initContacts(solution?.contacts_commerciaux, solution?.contact_email ?? null, solution?.contact_telephone ?? null)
+  )
+  const [contactsSupport, setContactsSupport] = useState<ContactLigne[]>(() =>
+    initContacts(solution?.contacts_support, solution?.support_email ?? null, solution?.support_telephone ?? null)
+  )
   const [prixMode, setPrixMode] = useState<'unique' | 'plage'>(
     solution?.prix_ttc_min != null || solution?.prix_ttc_max != null ? 'plage' : 'unique'
   )
@@ -471,58 +489,28 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
           Modifiables également par l&apos;éditeur depuis son espace pro.
         </p>
 
+        {/* Contacts commerciaux — liste de contacts nommés */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-navy uppercase tracking-wider">Contacts commerciaux (demande de démo, devis…)</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="contact_email" className={labelClass}>Email commercial</label>
-              <input
-                id="contact_email"
-                type="email"
-                name="contact_email"
-                defaultValue={solution?.contact_email ?? ''}
-                placeholder="contact@..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="contact_telephone" className={labelClass}>Téléphone commercial</label>
-              <input
-                id="contact_telephone"
-                type="text"
-                name="contact_telephone"
-                defaultValue={solution?.contact_telephone ?? ''}
-                className={inputClass}
-              />
-            </div>
-          </div>
+          <input type="hidden" name="contacts_commerciaux_json" value={JSON.stringify(contactsCommerciaux)} />
+          <ContactsListEditor
+            value={contactsCommerciaux}
+            onChange={setContactsCommerciaux}
+            addLabel="Ajouter un contact commercial"
+            emailPlaceholder="contact@…"
+          />
         </div>
 
+        {/* Contacts support — liste de contacts nommés + site de support */}
         <div className="space-y-3 pt-3 border-t border-gray-100">
           <h4 className="text-xs font-semibold text-navy uppercase tracking-wider">Contacts support (SAV, assistance technique)</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="support_email" className={labelClass}>Email support</label>
-              <input
-                id="support_email"
-                type="email"
-                name="support_email"
-                defaultValue={solution?.support_email ?? ''}
-                placeholder="support@..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="support_telephone" className={labelClass}>Téléphone support</label>
-              <input
-                id="support_telephone"
-                type="text"
-                name="support_telephone"
-                defaultValue={solution?.support_telephone ?? ''}
-                className={inputClass}
-              />
-            </div>
-          </div>
+          <input type="hidden" name="contacts_support_json" value={JSON.stringify(contactsSupport)} />
+          <ContactsListEditor
+            value={contactsSupport}
+            onChange={setContactsSupport}
+            addLabel="Ajouter un contact support"
+            emailPlaceholder="support@…"
+          />
           <div>
             <label htmlFor="support_website" className={labelClass}>Site / page de support</label>
             <input

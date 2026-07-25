@@ -6,8 +6,8 @@
  * seulement atteint la page `/completer-profil` après l'auth PSC ?
  *
  * Discriminant : `auth.users.last_sign_in_at`.
- *   - NULL  → la session n'a JAMAIS été établie (le verifyOtp client à
- *             /auth/psc-session a échoué) → l'utilisateur n'a jamais vu la page.
+ *   - NULL  → la session n'a JAMAIS été établie (échec du verifyOtp lors du
+ *             handoff PSC) → l'utilisateur n'a jamais vu la page.
  *   - non NULL → session établie → il a été redirigé vers /completer-profil ;
  *             s'il est is_complete=false, il a abandonné AVANT de saisir l'email.
  *

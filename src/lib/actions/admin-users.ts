@@ -4,6 +4,9 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 import { logActivity, ACTIVITY_TYPES, type ActivityDiff } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
+import { normalizeContacts } from '@/lib/contacts'
+import { revalidateSolution } from '@/lib/revalidate-solution'
+import type { ContactLigne } from '@/types/models'
 
 /** Construit un diff `{ champ: { avant, apres } }` à partir des lignes d'audit éditeur. */
 function diffFromLogRows(
@@ -180,7 +183,7 @@ export async function getEditeurDataForUser(userId: string) {
   // Récupérer les solutions du parent + des filiales (avec prix, galerie, mot éditeur par solution, contacts par solution)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, contact_email, contact_telephone, support_email, support_telephone, support_website, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, contact_email, contact_telephone, support_email, support_telephone, support_website, contacts_commerciaux, contacts_support, galerie:solutions_galerie(id, url, titre, ordre, type)')
     .in('id_editeur', editeurIds)
     .order('nom', { ascending: true })
 
@@ -341,11 +344,9 @@ export async function updateSolutionByEditeur(
     prix_devise?: string
     prix_frequence?: string
     prix_duree_engagement_mois?: number | null
-    contact_email?: string
-    contact_telephone?: string
-    support_email?: string
-    support_telephone?: string
     support_website?: string
+    contacts_commerciaux?: ContactLigne[]
+    contacts_support?: ContactLigne[]
   }
 ) {
   const supabase = createServiceRoleClient()
@@ -363,9 +364,27 @@ export async function updateSolutionByEditeur(
     .eq('id', solutionId)
     .single()
 
-  const updates: Record<string, string | number | null> = {}
+  const updates: Record<string, string | number | null | ContactLigne[]> = {}
   const logRows: Array<{ user_id: string; table_cible: string; id_cible: string; champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }> = []
   for (const [key, value] of requested) {
+    // Champs JSONB (listes de contacts) : comparaison/log via JSON.stringify.
+    if (key === 'contacts_commerciaux' || key === 'contacts_support') {
+      const newArr = normalizeContacts(value)
+      const newStr = JSON.stringify(newArr)
+      const oldStr = JSON.stringify(normalizeContacts(current?.[key]))
+      if (newStr !== oldStr) {
+        updates[key] = newArr
+        logRows.push({
+          user_id: userId,
+          table_cible: 'solutions',
+          id_cible: solutionId,
+          champ: key,
+          ancienne_valeur: oldStr,
+          nouvelle_valeur: newStr,
+        })
+      }
+      continue
+    }
     const newVal = value === '' || value == null ? null : value
     const oldVal = current?.[key] != null ? current[key] : null
     if (String(newVal) !== String(oldVal)) {
@@ -391,7 +410,7 @@ export async function updateSolutionByEditeur(
     // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
     const [{ data: u }, { data: sol }] = await Promise.all([
       supabase.from('users').select('prenom, nom').eq('id', userId).single(),
-      supabase.from('solutions').select('nom').eq('id', solutionId).single(),
+      supabase.from('solutions').select('nom, slug, id_categorie').eq('id', solutionId).single(),
     ])
     await logActivity({
       type: ACTIVITY_TYPES.EDITEUR_MODIF_SOLUTION,
@@ -403,6 +422,10 @@ export async function updateSolutionByEditeur(
       cibleLabel: sol?.nom ?? null,
       diff: diffFromLogRows(logRows),
     })
+
+    // Revalide la fiche solution (+ listings) : sans ça, une modif éditeur
+    // (contacts, mot éditeur, prix…) peut mettre jusqu'à 1h à s'afficher (ISR).
+    await revalidateSolution(sol?.slug, sol?.id_categorie)
   }
 }
 

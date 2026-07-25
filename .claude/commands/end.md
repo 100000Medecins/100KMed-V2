@@ -2,6 +2,29 @@ Routine de fin de session sur ce projet. Usage : /end.
 
 Sauvegarde le code, documente ce qui a ete fait, met a jour la TODO, push sur GitHub, et met a jour le vault Obsidian (base de connaissances) si pertinent. Le but : pouvoir reprendre proprement sur l'autre machine (laptop / desktop).
 
+## Etape 0 - Nettoyage des serveurs de dev orphelins (prealable, Windows)
+
+Avant tout, balaie les serveurs Next de CE projet restes en arriere-plan (`next dev`/`next start` oublies d'anciennes sessions). Sous Windows ils **survivent a la fermeture du terminal** et s'accumulent (RAM), et l'un d'eux peut **bloquer un fichier supprime** (handle ouvert -> suppression differee -> `Build Error` Tailwind `ENOENT` sur un `.tsx` fantome au demarrage suivant).
+
+Liste-les d'abord :
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+  Where-Object { $_.CommandLine -match '100000Medecins_websiteV2.*next (dev|start)' } |
+  Select-Object ProcessId, CreationDate, CommandLine | Format-Table -Wrap
+```
+
+- **Liste vide** : rien a faire, passe a l'etape 1 (ne le mentionne meme pas).
+- **Serveurs trouves** : signale-les (PID + heure de demarrage), puis tue-les :
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+  Where-Object { $_.CommandLine -match '100000Medecins_websiteV2.*next (dev|start)' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+Le filtre ne cible **que** les process `next dev`/`next start` de ce projet — il ne touche ni `tsserver` (VS Code/Cursor) ni les serveurs MCP. Mentionne le nombre de serveurs tues dans le bilan final (etape 8). Note : cela **arrete aussi le serveur dev de la session courante** — normal en fin de session.
+
 ## Etape 1 - Verification initiale
 
 Lance `git status` et `git branch --show-current`.

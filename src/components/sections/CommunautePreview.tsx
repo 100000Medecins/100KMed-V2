@@ -1,8 +1,14 @@
 import Link from 'next/link'
 import { createPublicClient } from '@/lib/supabase/server'
 
-type Etude = { id: string; titre: string; description: string | null; date_fin: string | null }
-type Questionnaire = { id: string; titre: string; description: string | null; date_fin: string | null }
+type CommunauteItem = {
+  kind: 'etude' | 'questionnaire'
+  id: string
+  titre: string
+  description: string | null
+  date_fin: string | null
+  created_at: string
+}
 
 async function getData() {
   const supabase = createPublicClient()
@@ -11,13 +17,25 @@ async function getData() {
   const today = new Date().toISOString().slice(0, 10)
 
   const [{ data: etudes }, { data: questionnaires }, { data: config }] = await Promise.all([
-    s.from('etudes_cliniques').select('id, titre, description, date_fin').or(`date_fin.is.null,date_fin.gte.${today}`).order('created_at', { ascending: false }).limit(2),
-    s.from('questionnaires_these').select('id, titre, description, date_fin').eq('statut', 'publie').or(`date_fin.is.null,date_fin.gte.${today}`).order('created_at', { ascending: false }).limit(2),
+    s.from('etudes_cliniques').select('id, titre, description, date_fin, created_at').eq('statut', 'publie').or(`date_fin.is.null,date_fin.gte.${today}`).order('created_at', { ascending: false }).limit(4),
+    s.from('questionnaires_these').select('id, titre, description, date_fin, created_at').eq('statut', 'publie').or(`date_fin.is.null,date_fin.gte.${today}`).order('created_at', { ascending: false }).limit(4),
     s.from('site_config').select('cle, valeur').eq('cle', 'section_communaute_visible').single(),
   ])
 
   const visible = config?.valeur !== 'false'
-  return { etudes: etudes ?? [], questionnaires: questionnaires ?? [], visible }
+
+  // Fusion études + questionnaires, triés par date de création décroissante,
+  // puis on ne garde que les 4 items les plus récents (toutes catégories confondues).
+  const items: CommunauteItem[] = [
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...(etudes ?? []).map((e: any): CommunauteItem => ({ kind: 'etude', ...e })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...(questionnaires ?? []).map((q: any): CommunauteItem => ({ kind: 'questionnaire', ...q })),
+  ]
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0))
+    .slice(0, 4)
+
+  return { items, visible }
 }
 
 function stripHtml(html: string | null) {
@@ -64,9 +82,9 @@ function Carte({ emoji, couleur, badge, titre, description, date_fin, href, cta 
 }
 
 export default async function CommunautePreview() {
-  const { etudes, questionnaires, visible } = await getData()
+  const { items, visible } = await getData()
   if (!visible) return null
-  if (etudes.length === 0 && questionnaires.length === 0) return null
+  if (items.length === 0) return null
 
   return (
     <section id="communaute" className="scroll-mt-24 py-10 md:py-14">
@@ -84,32 +102,33 @@ export default async function CommunautePreview() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {etudes.map((e: Etude) => (
-            <Carte
-              key={e.id}
-              emoji="🔬"
-              couleur="#10B981"
-              badge="Étude clinique"
-              titre={e.titre}
-              description={stripHtml(e.description)}
-              date_fin={e.date_fin}
-              href="/mon-compte/etudes-cliniques"
-              cta="En savoir plus"
-            />
-          ))}
-          {questionnaires.map((q: Questionnaire) => (
-            <Carte
-              key={q.id}
-              emoji="📋"
-              couleur="#8A5CF6"
-              badge="Questionnaire de thèse"
-              titre={q.titre}
-              description={stripHtml(q.description)}
-              date_fin={q.date_fin}
-              href="/mon-compte/questionnaires-these"
-              cta="Participer"
-            />
-          ))}
+          {items.map((item) =>
+            item.kind === 'etude' ? (
+              <Carte
+                key={`etude-${item.id}`}
+                emoji="🔬"
+                couleur="#10B981"
+                badge="Étude clinique"
+                titre={item.titre}
+                description={stripHtml(item.description)}
+                date_fin={item.date_fin}
+                href="/mon-compte/etudes-cliniques"
+                cta="En savoir plus"
+              />
+            ) : (
+              <Carte
+                key={`questionnaire-${item.id}`}
+                emoji="📋"
+                couleur="#8A5CF6"
+                badge="Questionnaire de thèse"
+                titre={item.titre}
+                description={stripHtml(item.description)}
+                date_fin={item.date_fin}
+                href="/mon-compte/questionnaires-these"
+                cta="Participer"
+              />
+            )
+          )}
         </div>
 
         <div className="mt-6 text-center sm:hidden">

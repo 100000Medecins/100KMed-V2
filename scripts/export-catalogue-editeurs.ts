@@ -76,11 +76,23 @@ interface Solution {
   prix_devise: string | null
   prix_frequence: string | null
   prix_duree_engagement_mois: number | null
-  contact_email: string | null
-  contact_telephone: string | null
-  support_email: string | null
-  support_telephone: string | null
   support_website: string | null
+  contacts_commerciaux: unknown
+  contacts_support: unknown
+}
+
+// Contacts stockés en JSONB (array de { libelle, email, telephone }) depuis 2026-07.
+type ContactLigne = { libelle: string | null; email: string | null; telephone: string | null }
+function contactsFrom(value: unknown): ContactLigne[] {
+  return Array.isArray(value)
+    ? value.filter((c): c is ContactLigne => !!c && typeof c === 'object')
+    : []
+}
+function joinEmails(value: unknown): string {
+  return contactsFrom(value).map((c) => c?.email).filter(Boolean).join(' ; ')
+}
+function joinTels(value: unknown): string {
+  return contactsFrom(value).map((c) => c?.telephone).filter(Boolean).join(' ; ')
 }
 
 // ─── Definition des colonnes regroupees par categorie ─────────
@@ -171,10 +183,10 @@ function buildRow(editeur: Editeur | null, solution: Solution | null, categorie:
     solution_devise: solution?.prix_devise ?? '',
     solution_frequence: solution?.prix_frequence ?? '',
     solution_engagement_mois: solution?.prix_duree_engagement_mois ?? '',
-    solution_contact_email: solution?.contact_email ?? '',
-    solution_contact_telephone: solution?.contact_telephone ?? '',
-    solution_support_email: solution?.support_email ?? '',
-    solution_support_telephone: solution?.support_telephone ?? '',
+    solution_contact_email: joinEmails(solution?.contacts_commerciaux),
+    solution_contact_telephone: joinTels(solution?.contacts_commerciaux),
+    solution_support_email: joinEmails(solution?.contacts_support),
+    solution_support_telephone: joinTels(solution?.contacts_support),
     solution_support_website: solution?.support_website ?? '',
   }
 }
@@ -250,7 +262,7 @@ async function main() {
     supabase
       .from('solutions')
       .select(
-        'id, nom, slug, actif, id_editeur, id_categorie, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, contact_email, contact_telephone, support_email, support_telephone, support_website'
+        'id, nom, slug, actif, id_editeur, id_categorie, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support'
       ),
     supabase.from('categories').select('id, nom, slug'),
   ])
@@ -379,10 +391,10 @@ async function main() {
     (s) => s.prix_ttc != null || s.prix_ttc_min != null || s.prix_ttc_max != null
   ).length
   const nbSolutionsAvecContactCommercial = solutions.filter(
-    (s) => s.contact_email || s.contact_telephone
+    (s) => contactsFrom(s.contacts_commerciaux).length > 0
   ).length
   const nbSolutionsAvecSupport = solutions.filter(
-    (s) => s.support_email || s.support_telephone || s.support_website
+    (s) => contactsFrom(s.contacts_support).length > 0 || s.support_website
   ).length
   const nbEditeursAvecSite = editeurs.filter((e) => e.website).length
 

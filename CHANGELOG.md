@@ -5,6 +5,53 @@
 
 ---
 
+## [2026-07-24] — Auth : résilience aux erreurs JWT transitoires de Supabase
+
+### Fix — Retry des `bad_jwt` intermittents (inscription, PSC, fusion)
+- **Symptôme** : appels Supabase Auth rejetés **par intermittence** avec `invalid JWT … unrecognized JWT kid <nil> for algorithm ES256` (code `bad_jwt`), alors que le **même** appel passe sur une autre instance GoTrue. Mesuré **~1 échec / 12**. Repéré en validant la fusion de comptes sur dev.
+- **Cause** : incohérence côté **infra Supabase**, pas une clé invalide. Le projet signe en **ECC P-256** (migration il y a ~5 mois, HS256 en « previously used ») et utilise les clés `sb_secret_`/`sb_publishable_` ; **aucune rotation récente** (vérifié dans *JWT Signing Keys*). Certaines instances ne retombent pas sur la clé legacy pour vérifier un token sans `kid`.
+- **Impact avant fix** : un échec faisait planter une **inscription**, un **login PSC** ou une **fusion de comptes** — avec, pour la fusion, un risque d'**état partiel** (compte source supprimé mais session non établie).
+- **Fix** : helper `retryTransientAuth()` ([src/lib/supabase/retry.ts](src/lib/supabase/retry.ts)) — 4 tentatives, backoff 250/500/750 ms, déclenché **uniquement** sur cette signature (`unrecognized JWT kid` / `bad_jwt`) ; toute autre erreur remonte immédiatement. Appliqué à **17 appels** : `mergeAccounts` (4, [merge.ts](src/lib/actions/merge.ts)), [psc-callback](src/app/api/auth/psc-callback/route.ts) (8), [signincallback](src/app/onboarding/signincallback/route.ts) (4), `registerWithEmail` (1).
+- **À surveiller** : si l'intermittence persiste → **ticket Supabase** (leur infra de signature JWT). Ne **pas** revenir aux clés legacy (dépréciées, et le projet en est sorti volontairement).
+
+### Validation — Fusion de comptes PSC testée de bout en bout sur dev
+- Fixture jetable (2 comptes de test + lien de fusion signé HMAC) → **3 scénarios verts** : conserver le compte **sans RPPS** (le cas qui violait `UNIQUE(users.rpps)` avant le fix du 2026-07-22), conserver le compte **PSC**, et **sur mobile**. Arrivée **connecté** (`?fusion=ok`) dans les 3 cas, avec RPPS + identité + favori correctement rapatriés sur le compte conservé.
+
+---
+
+## [2026-07-22] — PSC (fusion serveur + RPPS) · Contacts multiples sur fiches solutions
+
+### PSC — Fusion de comptes : session établie côté serveur (dernier verrou du nettoyage)
+- `mergeAccounts` ([merge.ts](src/lib/actions/merge.ts)) posait la session via un roundtrip client `/auth/psc-session` (magic link → `verifyOtp` en JS navigateur) — le point de perte des ~16 % d'abandons au retour de l'app mobile PSC. Bascule **100 % serveur** : `verifyOtp` via le client SSR (adaptateur cookies) **dans le Server Action**, cookie de session posé directement sur la réponse → l'utilisateur revient connecté. Même modèle que le flux standard (`establishPscSession` dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts)).
+- **Nettoyage débloqué** (`merge.ts` était le dernier consommateur) : suppression de `src/app/auth/psc-session/page.tsx` + `src/app/api/psc-session-event/route.ts`, et des commentaires périmés « via /auth/psc-session » dans psc-callback (l.345/366/459). Docs à jour ([2026-04-30-user-creation-flow.md](docs/2026-04-30-user-creation-flow.md), [2026-04-28-auth-navigation.md](docs/2026-04-28-auth-navigation.md)) + commentaire de [diag-psc-parcours.ts](scripts/diag-psc-parcours.ts). Table `psc_session_events` conservée (le `logHandoff` serveur de la callback l'alimente toujours).
+- **Bonus sécurité** : le token OTP n'est plus exposé dans une URL client (consommé côté serveur).
+- Validé en localhost (fixture jetable, 2 comptes) : arrivée connecté + bannière `fusion=ok`, dans les **deux sens** de fusion.
+
+### Fix — Fusion : violation `UNIQUE(users.rpps)` quand on conserve le compte sans RPPS
+- **Cause** : `mergeAccounts` copiait le RPPS du compte supprimé vers le compte conservé (`UPDATE users SET rpps=X WHERE id=keepId`) **avant** de supprimer la ligne source → deux lignes avec le même RPPS un court instant → `duplicate key value violates unique constraint "users_rpps_key"`. Déclenché ~50 % du temps (dès que l'utilisateur conserve son compte email/mdp plutôt que le compte PSC). Bug **préexistant** (sans rapport avec la migration de session), repéré en construisant la fixture de test.
+- **Fix** : l'`UPDATE` de copie du RPPS (+ nom/prénom/spécialité/mode d'exercice) est **différé après** la suppression du compte source.
+
+### Infrastructure — Serveurs de dev orphelins (Windows) + routine /end
+- 3 serveurs `next start` (ports 3111/3112/3113, vestiges des tests ISR du 11-12/07) tournaient depuis 10 jours, invisibles, et l'un d'eux **bloquait un fichier supprimé** (`AvisUtilisateurs.tsx`, état « delete-pending » Windows) → `Build Error` Tailwind `ENOENT` sur un `.tsx` fantôme au démarrage du dev. Process tués + `.next` purgé → dev réparé.
+- Ajout d'une **Étape 0** à [/end](.claude/commands/end.md) : balaie/tue les `next dev|start` orphelins du projet à chaque fin de session (filtre projet-spécifique, épargne `tsserver` et les serveurs MCP).
+
+### Feature — Contacts multiples (commerciaux / support) par solution
+- Un éditeur peut renseigner **plusieurs contacts** par bloc (commercial **et** support), chacun avec **libellé optionnel + email + téléphone** (« contacts nommés »). Avant : un seul couple email/téléphone figé par bloc. Demande d'un éditeur (Tandem Health).
+- **Modèle** : colonnes JSONB `solutions.contacts_commerciaux` / `contacts_support` (array de `{libelle,email,telephone}`), **backfillées** depuis les anciennes colonnes scalaires ; types régénérés. `support_website` reste unique. Les anciennes colonnes scalaires (`contact_email`/`contact_telephone`/`support_email`/`support_telephone`) ne sont **plus ni lues ni écrites** → **à DROP en suivi** (cf. TODO).
+- **Composant** `ContactsListEditor` (ajout/suppression de lignes, bouton « + ») **réutilisé** par l'admin ([SolutionForm.tsx](src/components/admin/SolutionForm.tsx)) **et** l'espace éditeur ([mon-espace-editeur](src/app/mon-compte/mon-espace-editeur/page.tsx)). Helpers `normalizeContacts()`/`firstContact()` ([lib/contacts.ts](src/lib/contacts.ts)).
+- **Affichage** : [SupportSection.tsx](src/components/solutions/detail/SupportSection.tsx) mappe les listes ; le CTA sidebar (`TarificationCard`) et l'ancre hero prennent le **1er contact** renseigné. Sous-titre « Pour joindre… au sujet de cette solution » retiré (redondant avec les intitulés).
+- **Sauvegarde** : admin via champ caché JSON ([admin.ts](src/lib/actions/admin.ts)) ; éditeur via `updateSolutionByEditeur` (diff/audit `editeurs_edit_log` rendu JSON-aware pour les listes, [admin-users.ts](src/lib/actions/admin-users.ts)).
+
+### Fix — Revalidation ISR de la fiche solution après édition (contacts, prix, mot éditeur…)
+- **Cause** : après une modif (admin **ou** éditeur), seul `revalidatePath('/solutions', 'layout')` était appelé → **ne revalide pas** la fiche `/solutions/[cat]/[sol]` (route dynamique en ISR 1h) → une modif pouvait mettre **jusqu'à 1h** à s'afficher. Confirmé empiriquement sur Tandem Health (un contact ajouté restait invisible).
+- **Fix** : helper `revalidateSolution(slug, id_categorie)` ([lib/revalidate-solution.ts](src/lib/revalidate-solution.ts)) qui résout le slug catégorie et revalide la **fiche exacte** — branché dans les deux saves. Le toggle global `display_contacts_commerciaux` revalide en plus **toutes** les fiches.
+
+### TODO — Mises à jour
+- Barré : « Suivi PSC — bascule verifyOtp serveur » — sous-item fusion + cleanup **fait** (fusion migrée, routes supprimées, commentaires nettoyés).
+- Ajout : SQL coordonnées (Medicab n° malformé, HyperMed commercial = support dupliqué) + activer toggle `display_contacts_commerciaux` au déploiement + DROP colonnes scalaires `contact_*`/`support_*` après validation prod.
+
+---
+
 ## [2026-07-21] — Jeu concours WONCA (page gagnants) + bandeau d'annonce
 
 ### Feature — Page publique `/jeu-concours`

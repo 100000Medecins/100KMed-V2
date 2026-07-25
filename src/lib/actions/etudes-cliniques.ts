@@ -36,6 +36,16 @@ async function assertDmhRole() {
   return user
 }
 
+/**
+ * Revalide les pages impactées par une modification d'étude clinique :
+ * la home (bloc « Participez à la recherche »), l'admin et l'espace compte.
+ */
+function revalidateEtudes() {
+  revalidatePath('/')
+  revalidatePath('/admin/questionnaires-these')
+  revalidatePath('/mon-compte/etudes-cliniques')
+}
+
 // ── Lecture ───────────────────────────────────────────────────────────────────
 
 /**
@@ -100,8 +110,7 @@ export async function createEtudeClinique(formData: FormData) {
     statut:            'en_attente',
   })
 
-  revalidatePath('/mon-compte/etudes-cliniques')
-  revalidatePath('/admin/questionnaires-these')
+  revalidateEtudes()
 }
 
 export async function updateEtudeClinique(id: string, formData: FormData) {
@@ -123,7 +132,7 @@ export async function updateEtudeClinique(id: string, formData: FormData) {
     updated_at:        new Date().toISOString(),
   }).eq('id', id)
 
-  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidateEtudes()
 }
 
 export async function deleteEtudeClinique(id: string) {
@@ -131,8 +140,7 @@ export async function deleteEtudeClinique(id: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   await supabase.from('etudes_cliniques').delete().eq('id', id)
-  revalidatePath('/mon-compte/etudes-cliniques')
-  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidateEtudes()
 }
 
 // ── Admin (accès superadmin sans garde DMH) ───────────────────────────────────
@@ -170,8 +178,7 @@ export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ er
     created_by:        null,
   })
   if (error) return { error: error.message }
-  revalidatePath('/admin/questionnaires-these')
-  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidateEtudes()
   return { error: null }
 }
 
@@ -195,8 +202,7 @@ export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): 
     updated_at:        new Date().toISOString(),
   }).eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/admin/questionnaires-these')
-  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidateEtudes()
   return { error: null }
 }
 
@@ -208,9 +214,7 @@ export async function deleteEtudeCliniqueAdmin(id: string): Promise<{ error: str
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('etudes_cliniques').delete().eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/admin/questionnaires-these')
-  revalidatePath('/mon-compte/etudes-cliniques')
-  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidateEtudes()
   return { error: null }
 }
 
@@ -228,8 +232,7 @@ export async function setStatutEtude(
     .update({ statut, updated_at: new Date().toISOString() })
     .eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/admin/questionnaires-these')
-  revalidatePath('/mon-compte/etudes-cliniques')
+  revalidateEtudes()
   return { error: null }
 }
 

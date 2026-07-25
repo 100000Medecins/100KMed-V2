@@ -9,6 +9,9 @@ import dynamic from 'next/dynamic'
 import { buildPrixDisplay } from '@/lib/prix'
 import ImageUploadField from '@/components/ui/ImageUploadField'
 import ProposeCommunauteModal from '@/components/solutions/detail/ProposeCommunauteModal'
+import ContactsListEditor from '@/components/admin/ContactsListEditor'
+import { normalizeContacts } from '@/lib/contacts'
+import type { ContactLigne } from '@/types/models'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
 
@@ -32,6 +35,8 @@ type Solution = {
   support_email: string | null
   support_telephone: string | null
   support_website: string | null
+  contacts_commerciaux: ContactLigne[] | null
+  contacts_support: ContactLigne[] | null
   galerie: GalerieItem[]
 }
 type Editeur = {
@@ -429,10 +434,14 @@ function SolutionEditeurCard({
   const [prixDevise, setPrixDevise] = useState(solution.prix_devise ?? 'EUR')
   const [prixFrequence, setPrixFrequence] = useState(solution.prix_frequence ?? '')
   const [prixDuree, setPrixDuree] = useState(solution.prix_duree_engagement_mois?.toString() ?? '')
-  const [contactEmail, setContactEmail] = useState(solution.contact_email ?? '')
-  const [contactTel, setContactTel] = useState(solution.contact_telephone ?? '')
-  const [supportEmail, setSupportEmail] = useState(solution.support_email ?? '')
-  const [supportTel, setSupportTel] = useState(solution.support_telephone ?? '')
+  const [contactsCommerciaux, setContactsCommerciaux] = useState<ContactLigne[]>(() => {
+    const list = normalizeContacts(solution.contacts_commerciaux)
+    return list.length ? list : normalizeContacts([{ libelle: null, email: solution.contact_email, telephone: solution.contact_telephone }])
+  })
+  const [contactsSupport, setContactsSupport] = useState<ContactLigne[]>(() => {
+    const list = normalizeContacts(solution.contacts_support)
+    return list.length ? list : normalizeContacts([{ libelle: null, email: solution.support_email, telephone: solution.support_telephone }])
+  })
   const [supportSite, setSupportSite] = useState(solution.support_website ?? '')
   const [galerie, setGalerie] = useState<GalerieItem[]>(solution.galerie ?? [])
   const [saving, setSaving] = useState(false)
@@ -458,11 +467,9 @@ function SolutionEditeurCard({
         prix_devise: prixDevise,
         prix_frequence: prixFrequence,
         prix_duree_engagement_mois: prixDuree === '' ? null : Number(prixDuree),
-        contact_email: contactEmail,
-        contact_telephone: contactTel,
-        support_email: supportEmail,
-        support_telephone: supportTel,
         support_website: supportSite,
+        contacts_commerciaux: contactsCommerciaux,
+        contacts_support: contactsSupport,
       }
       await Promise.all([
         updateSolutionByEditeur(userId, solution.id, fields),
@@ -478,11 +485,9 @@ function SolutionEditeurCard({
         prix_devise: prixDevise,
         prix_frequence: prixFrequence,
         prix_duree_engagement_mois: fields.prix_duree_engagement_mois,
-        contact_email: contactEmail || null,
-        contact_telephone: contactTel || null,
-        support_email: supportEmail || null,
-        support_telephone: supportTel || null,
         support_website: supportSite || null,
+        contacts_commerciaux: contactsCommerciaux,
+        contacts_support: contactsSupport,
         galerie,
       })
       setSaved(true)
@@ -729,16 +734,13 @@ function SolutionEditeurCard({
             <p className="text-xs text-gray-400 mb-3">
               Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts commerciaux ».
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Email commercial</label>
-                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contact@..." className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone commercial</label>
-                <input type="tel" value={contactTel} onChange={(e) => setContactTel(e.target.value)} className={inputClass} />
-              </div>
-            </div>
+            <ContactsListEditor
+              value={contactsCommerciaux}
+              onChange={setContactsCommerciaux}
+              addLabel="Ajouter un contact commercial"
+              emailPlaceholder="contact@…"
+              size="sm"
+            />
           </div>
 
           {/* Contacts support (par solution) */}
@@ -750,19 +752,16 @@ function SolutionEditeurCard({
             <p className="text-xs text-gray-400 mb-3">
               Si renseignés, apparaîtront en bas de cette page solution dans « Contacts utiles ▸ Contacts support ».
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Email support</label>
-                <input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} placeholder="support@..." className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone support</label>
-                <input type="tel" value={supportTel} onChange={(e) => setSupportTel(e.target.value)} className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Site / page de support</label>
-                <input type="url" value={supportSite} onChange={(e) => setSupportSite(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
+            <ContactsListEditor
+              value={contactsSupport}
+              onChange={setContactsSupport}
+              addLabel="Ajouter un contact support"
+              emailPlaceholder="support@…"
+              size="sm"
+            />
+            <div className="mt-3">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Site / page de support</label>
+              <input type="url" value={supportSite} onChange={(e) => setSupportSite(e.target.value)} placeholder="https://..." className={inputClass} />
             </div>
           </div>
 

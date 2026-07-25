@@ -12,7 +12,7 @@ _(rien d'urgent pour l'instant)_
 
 ## En attente / Idées
 
-#### Suivi PSC — bascule verifyOtp serveur (récupérer les ~16 % d'abandons silencieux) [MERGÉ PROD 2026-07-05 — ✅ VALIDÉ 2026-07-20 (abandons 16 %→0 %) — reste : migrer merge.ts (fusion) + cleanup]
+#### ~~Suivi PSC — bascule verifyOtp serveur~~ [OK] Fait 2026-07-22 — fusion migrée en session serveur (`verifyOtp` dans le Server Action), `/auth/psc-session` + `/api/psc-session-event` supprimées, commentaires psc-callback nettoyés. Bascule flux standard déjà validée 2026-07-20 (abandons 16 %→0 %).
 - **✅ Statut** : bascule **mergée sur `main` le 2026-07-05** (commit `b8ad50a`), **en prod**. **(1) Validation stat FAITE (2026-07-20)** : entonnoir rejoué sur `psc_session_events` (par `correlation_id`) → post-merge **85 handoffs, 0 abandon silencieux (0,0 %)** vs **14,8 %** avant (17/115, ≈ baseline 16,2 %). Fix confirmé (0/85 → borne haute ~3,5 % à 95 %). **(2) Nettoyage encore BLOQUÉ** : `merge.ts` (fusion de comptes) redirige **encore** vers `/auth/psc-session` (non migrée) → supprimer `/auth/psc-session` + `/api/psc-session-event` casserait la fusion. Le flux standard, lui, est 100 % serveur (`establishPscSession`) et ne les utilise plus.
 - **Point de perte** : le roundtrip **`verifyOtp` côté client** (`/auth/psc-session`) après le retour de l'app PSC. ~16 % des handoffs démarrent (`handoff_start`) sans jamais émettre d'événement terminal → le navigateur perd le contexte avant l'aboutissement.
 - **Solution implémentée (branche `dev`, non mergée)** : `verifyOtp` déplacé **côté serveur** dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + cookies, modèle `/auth/confirm`), redirection directe vers `next`, plus de passage par `/auth/psc-session`. Appliqué aux flux standard + association. `tsc` OK. `/auth/psc-session` + `/api/psc-session-event` gardés en filet (à supprimer après validation).
@@ -61,6 +61,7 @@ _(rien en cours)_
 - **Contexte** : nouveau module tarification livré (cf CHANGELOG 2026-06-04) mais peu de prix renseignés en BDD pour le moment. Le toggle global « Afficher les prix sur le site » est OFF tant qu'une masse critique n'est pas atteinte.
 - **Coordonnées éditeurs** : le bloc « Contacts commerciaux » est désormais masqué par défaut (toggle OFF dans `/admin/parametres`) car beaucoup de coordonnées en BDD sont incorrectes ou inappropriées. À nettoyer + compléter pour pouvoir réactiver le toggle.
 - **À faire** : demander à Agathe si elle veut s'en charger (collecte auprès des éditeurs des prix officiels + coordonnées commerciales + support à jour). Une fois la base à jour, activer les 2 toggles dans `/admin/parametres`.
+- **MAJ 2026-07-22** : les contacts sont désormais **multiples** (plusieurs commerciaux/support par solution, cf CHANGELOG). Réactivation du toggle commercial **décidée (globale)** — étapes concrètes dans l'item « Contacts multiples — suites » (§ Espace éditeur).
 
 #### Vidéos par solution — étendre la découverte YouTube
 - **Acquis (2026-05-24)** : plomberie complète livrée — table `video_solutions` (M-N) avec RLS, script `scripts/discover-videos-youtube.mjs` avec filtres (lang fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, blacklist termes dev, bonus mots pro-santé), galerie publique des fiches solutions affiche automatiquement les vidéos validées, admin a panneaux symétriques côté vidéo (multi-select solutions) et côté solution (chips vidéos), badges 🎬 dans le panel propositions à modérer.
@@ -127,7 +128,12 @@ _(rien en cours)_
 
 ### Espace éditeur
 
-_(rien en cours)_
+#### Contacts multiples — suites (2026-07-22)
+- ~~**Lancer le SQL** : Medicab + HyperMed~~ [OK] Fait 2026-07-23.
+- ~~**Activer `display_contacts_commerciaux`** dans `/admin/parametres`~~ [OK] Fait 2026-07-23.
+- **Merger `dev → main`** : 3 commits en attente (fusion PSC serveur `5622950`, contacts multiples + revalidation ISR `8f1cf69`, retry JWT transitoires `9fdc1b4`) — fusion validée sur dev le 2026-07-24. Après merge : activer le toggle est déjà fait, vérifier l'affichage multi-contacts en prod.
+- **DROP** des colonnes scalaires `contact_email`/`contact_telephone`/`support_email`/`support_telephone` de `solutions` une fois le multi-contacts validé en prod, puis régénérer `src/types/database.ts`.
+- *(optionnel, hors périmètre)* purger automatiquement la session Supabase périmée côté client (erreur console `Invalid Refresh Token`, bénigne) — cf. session 2026-07-22.
 
 ### Performance
 
@@ -154,6 +160,10 @@ _(rien en cours)_
 - ✅ **`dev.*` déréférencé (vérifié 2026-07-21)** : `site:dev.100000medecins.org` sur Google = « Aucun document ». Blocage durable en place (robots Disallow + noindex). Revérif passive occasionnelle.
 
 ### Mises à jour techniques
+
+#### Surveiller l'intermittence `bad_jwt` de Supabase Auth (2026-07-24)
+- Appels Auth rejetés **par intermittence** (`unrecognized JWT kid <nil> for algorithm ES256`, ~1 sur 12) — incohérence côté **infra Supabase** (projet en ECC P-256, clés `sb_secret_`, **aucune rotation récente** côté *JWT Signing Keys*). Des **retries** sont en place comme filet (`retryTransientAuth`, cf. CHANGELOG 2026-07-24) → pas d'impact utilisateur visible.
+- **À faire** : re-mesurer d'ici quelques jours. Si l'intermittence persiste → **ticket Supabase support**. Ne **pas** revenir aux clés legacy (dépréciées, on en est sorti volontairement).
 
 #### Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy) [✅ SOUS CONTRÔLE — vérifié 20/07 : 17 %]
 - **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md).
