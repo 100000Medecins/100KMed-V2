@@ -167,7 +167,7 @@ export async function getCurrentUserProfile() {
   const supabase = createServiceRoleClient()
   const { data } = await supabase
     .from('users')
-    .select('nom, prenom, specialite, mode_exercice, pseudo, contact_email, rpps, portrait')
+    .select('nom, prenom, specialite, specialite_secondaire, mode_exercice, mode_exercice_secondaire, pseudo, contact_email, rpps, portrait')
     .eq('id', user.id)
     .single()
 
@@ -647,7 +647,9 @@ export async function updateProfile(userData: {
   pseudo?: string | null
   annee_naissance?: number
   specialite?: string
+  specialite_secondaire?: string | null
   mode_exercice?: string
+  mode_exercice_secondaire?: string | null
   densite_population?: string
   niveau_outils_numeriques?: string
   gestion_accueil?: string

@@ -22,7 +22,7 @@ import type { NoteGlobaleTooltip as NoteGlobaleTooltipData } from '@/lib/db/tool
 interface AvisPagine {
   id: string
   userId: string
-  user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null
+  user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; specialite_secondaire: string | null; mode_exercice: string | null; mode_exercice_secondaire: string | null } | null
   moyenne: number | null
   date: string | null
   commentaire: string | null

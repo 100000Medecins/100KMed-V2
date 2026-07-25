@@ -290,6 +290,26 @@ export function specialiteConcernee(
   return specialitesCibles.some((c) => normaliserSpecialite(c) === user)
 }
 
+/**
+ * Variante de specialiteConcernee() prenant en compte une spécialité SECONDAIRE
+ * (saisie à la main par les médecins, ex. médecin PSC dont le champ primaire est
+ * verrouillé). L'utilisateur est concerné si sa spécialité primaire OU sa
+ * spécialité secondaire correspond aux cibles.
+ *
+ * Le secondaire ne compte QUE s'il est renseigné : un secondaire vide ne doit pas
+ * matcher par défaut (contrairement au primaire, où l'absence = « concerné par
+ * défaut » pour préserver le comportement historique).
+ */
+export function specialiteConcerneeAvecSecondaire(
+  primaire: string | null | undefined,
+  secondaire: string | null | undefined,
+  specialitesCibles: string[],
+): boolean {
+  if (!specialitesCibles || specialitesCibles.length === 0) return true
+  if (specialiteConcernee(primaire, specialitesCibles)) return true
+  return !!secondaire && specialiteConcernee(secondaire, specialitesCibles)
+}
+
 export const AVATARS = Array.from({ length: 48 }, (_, i) => ({
   id: `avatar-${i + 1}`,
   url: `/images/portraits/avatar-${i + 1}.png`,

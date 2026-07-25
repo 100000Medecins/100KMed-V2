@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { FlaskConical, ExternalLink, CheckCircle, Loader2, X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
 import type { EtudeClinique } from '@/lib/actions/etudes-cliniques'
 import { sanitizeHtml } from '@/lib/sanitize'
-import { specialiteConcernee } from '@/lib/constants/profil'
+import { specialiteConcerneeAvecSecondaire } from '@/lib/constants/profil'
 import Badge from '@/components/ui/Badge'
 
 function stripHtml(html: string): string {
@@ -18,6 +18,7 @@ export default function EtudesCliniquesPublic() {
   const router = useRouter()
   const [etudes, setEtudes] = useState<EtudeClinique[]>([])
   const [userSpecialite, setUserSpecialite] = useState<string | null>(null)
+  const [userSpecialiteSecondaire, setUserSpecialiteSecondaire] = useState<string | null>(null)
   const [fetching, setFetching] = useState(true)
   const [sentIds, setSentIds] = useState<Set<string>>(new Set())
   const [modalEtude, setModalEtude] = useState<EtudeClinique | null>(null)
@@ -36,10 +37,11 @@ export default function EtudesCliniquesPublic() {
         ])
         const [etudesData, profile] = await Promise.all([getEtudesActives(), getCurrentUserProfile()])
         setUserSpecialite(profile?.specialite ?? null)
+        setUserSpecialiteSecondaire(profile?.specialite_secondaire ?? null)
         // Items concernés par la spécialité en premier
         const sorted = [...etudesData].sort((a, b) => {
-          const aOk = specialiteConcernee(profile?.specialite, a.specialites_cibles)
-          const bOk = specialiteConcernee(profile?.specialite, b.specialites_cibles)
+          const aOk = specialiteConcerneeAvecSecondaire(profile?.specialite, profile?.specialite_secondaire, a.specialites_cibles)
+          const bOk = specialiteConcerneeAvecSecondaire(profile?.specialite, profile?.specialite_secondaire, b.specialites_cibles)
           return aOk === bOk ? 0 : aOk ? -1 : 1
         })
         setEtudes(sorted)
@@ -103,7 +105,7 @@ export default function EtudesCliniquesPublic() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {etudes.map((etude) => {
-            const concerne = specialiteConcernee(userSpecialite, etude.specialites_cibles)
+            const concerne = specialiteConcerneeAvecSecondaire(userSpecialite, userSpecialiteSecondaire, etude.specialites_cibles)
             return (
               <EtudeCard
                 key={etude.id}

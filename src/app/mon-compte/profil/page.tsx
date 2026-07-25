@@ -27,6 +27,12 @@ export default function ProfilPage() {
   const [pseudo, setPseudo] = useState('')
   const [specialite, setSpecialite] = useState('')
   const [modeExercice, setModeExercice] = useState('')
+  // Champs secondaires (facultatifs, saisis à la main) — s'ajoutent aux champs
+  // primaires figés par PSC (ex. exercice mixte libéral/salarié inexprimable via PSC).
+  const [specialiteSecondaire, setSpecialiteSecondaire] = useState('')
+  const [modeExerciceSecondaire, setModeExerciceSecondaire] = useState('')
+  const [secSpecOpen, setSecSpecOpen] = useState(false)
+  const [secModeOpen, setSecModeOpen] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [hasNoAvatar, setHasNoAvatar] = useState(false)
   const [avatars, setAvatars] = useState<Array<{ id: string; url: string; isPersonal: boolean }>>([])
@@ -78,7 +84,7 @@ export default function ProfilPage() {
   const [resetSent, setResetSent] = useState(false)
 
   const supabaseRef = useRef(createClient())
-  const initialValuesRef = useRef({ nom: '', prenom: '', pseudo: '', specialite: '', modeExercice: '', selectedAvatar: null as string | null })
+  const initialValuesRef = useRef({ nom: '', prenom: '', pseudo: '', specialite: '', specialiteSecondaire: '', modeExercice: '', modeExerciceSecondaire: '', selectedAvatar: null as string | null })
 
   // Charger le profil existant
   useEffect(() => {
@@ -93,7 +99,7 @@ export default function ProfilPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase as any)
           .from('users')
-          .select('nom, prenom, pseudo, specialite, mode_exercice, portrait, rpps, contact_email')
+          .select('nom, prenom, pseudo, specialite, specialite_secondaire, mode_exercice, mode_exercice_secondaire, portrait, rpps, contact_email')
           .eq('id', user.id)
           .single()
 
@@ -126,6 +132,8 @@ export default function ProfilPage() {
           const resolved = SM_SPECIALITES[sp] ?? sp
           const loadedSpecialite = SPECIALITES.includes(resolved) ? resolved : sp
           const loadedModeExercice = data.mode_exercice || ''
+          const loadedSpecialiteSecondaire = data.specialite_secondaire || ''
+          const loadedModeExerciceSecondaire = data.mode_exercice_secondaire || ''
           const loadedAvatar = data.portrait || null
 
           const loadedPseudo = data.pseudo || ''
@@ -135,8 +143,10 @@ export default function ProfilPage() {
           setContactEmail(data.contact_email || null)
           setSpecialite(loadedSpecialite)
           setModeExercice(loadedModeExercice)
+          setSpecialiteSecondaire(loadedSpecialiteSecondaire)
+          setModeExerciceSecondaire(loadedModeExerciceSecondaire)
           setSelectedAvatar(loadedAvatar)
-          initialValuesRef.current = { nom: loadedNom, prenom: loadedPrenom, pseudo: loadedPseudo, specialite: loadedSpecialite, modeExercice: loadedModeExercice, selectedAvatar: loadedAvatar }
+          initialValuesRef.current = { nom: loadedNom, prenom: loadedPrenom, pseudo: loadedPseudo, specialite: loadedSpecialite, specialiteSecondaire: loadedSpecialiteSecondaire, modeExercice: loadedModeExercice, modeExerciceSecondaire: loadedModeExerciceSecondaire, selectedAvatar: loadedAvatar }
 
           const fromPsc = !!data.rpps
           setIsFromPsc(fromPsc)
@@ -260,7 +270,9 @@ export default function ProfilPage() {
     prenom !== initialValuesRef.current.prenom ||
     pseudo !== initialValuesRef.current.pseudo ||
     specialite !== initialValuesRef.current.specialite ||
+    specialiteSecondaire !== initialValuesRef.current.specialiteSecondaire ||
     modeExercice !== initialValuesRef.current.modeExercice ||
+    modeExerciceSecondaire !== initialValuesRef.current.modeExerciceSecondaire ||
     selectedAvatar !== initialValuesRef.current.selectedAvatar
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -276,7 +288,9 @@ export default function ProfilPage() {
         prenom: prenom.trim(),
         pseudo: pseudo.trim() || null,
         specialite: isEditeur ? '' : specialite,
+        specialite_secondaire: isEditeur ? null : (specialiteSecondaire || null),
         mode_exercice: modeExercice,
+        mode_exercice_secondaire: isEditeur ? null : (modeExerciceSecondaire || null),
       })
 
       // Ne créer un nouveau claim que si aucun claim verrouillé (approuvé ou en attente) n'existe
@@ -304,7 +318,7 @@ export default function ProfilPage() {
       if (selectedAvatar !== initialValuesRef.current.selectedAvatar) {
         window.dispatchEvent(new Event('avatar-changed'))
       }
-      initialValuesRef.current = { nom: nom.trim(), prenom: prenom.trim(), pseudo: pseudo.trim(), specialite, modeExercice, selectedAvatar }
+      initialValuesRef.current = { nom: nom.trim(), prenom: prenom.trim(), pseudo: pseudo.trim(), specialite, specialiteSecondaire, modeExercice, modeExerciceSecondaire, selectedAvatar }
       setSuccess('Profil mis à jour avec succès.')
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
@@ -414,6 +428,104 @@ export default function ProfilPage() {
   // l'utilisateur. emailReel = le vrai email s'il existe (contact_email puis auth non
   // synthétique), sinon null (→ « Non renseignée »).
   const emailReel = contactEmail || (user?.email?.endsWith('@psc.sante.fr') ? null : user?.email) || null
+
+  // Style pill des champs secondaires — accent-blue (vs navy des primaires) pour
+  // signaler visuellement qu'il s'agit d'un exercice/spécialité complémentaire.
+  const secondaryPillClass = (selected: boolean) =>
+    `px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+      selected
+        ? 'bg-accent-blue text-white border-accent-blue'
+        : 'bg-white text-gray-600 border-gray-200 hover:border-accent-blue'
+    }`
+
+  // Déclencheurs « + Ajouter… » — placés à droite du label du champ primaire (inline),
+  // pas sous le champ. Le sélecteur correspondant s'ouvre juste sous ce champ.
+  const renderModeSecondaireTrigger = () => {
+    if (isEditeur || !modeExercice || modeExerciceSecondaire || secModeOpen) return null
+    return (
+      <button
+        type="button"
+        onClick={() => setSecModeOpen(true)}
+        className="text-xs font-medium text-accent-blue hover:underline shrink-0"
+      >
+        + Ajouter un mode d&apos;exercice secondaire
+      </button>
+    )
+  }
+
+  const renderSpecialiteSecondaireTrigger = () => {
+    if (isEditeur || !specialite || specialiteSecondaire || secSpecOpen) return null
+    return (
+      <button
+        type="button"
+        onClick={() => setSecSpecOpen(true)}
+        className="text-xs font-medium text-accent-blue hover:underline shrink-0"
+      >
+        + Ajouter une autre spécialité
+      </button>
+    )
+  }
+
+  // Sélecteur du mode d'exercice secondaire — rendu juste sous le champ primaire,
+  // seulement une fois déplié (ou déjà renseigné). Hors éditeurs.
+  const renderModeSecondaire = () => {
+    if (isEditeur || !modeExercice || (!modeExerciceSecondaire && !secModeOpen)) return null
+    return (
+      <div className="mt-3">
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          Mode d&apos;exercice secondaire <span className="text-gray-400 font-normal">(facultatif)</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {MODES_EXERCICE.filter((mode) => mode !== 'Éditeur' && mode !== modeExercice).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setModeExerciceSecondaire(mode === modeExerciceSecondaire ? '' : mode)}
+              className={secondaryPillClass(modeExerciceSecondaire === mode)}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => { setModeExerciceSecondaire(''); setSecModeOpen(false) }}
+          className="text-xs text-gray-400 hover:text-gray-600 mt-2"
+        >
+          Retirer
+        </button>
+      </div>
+    )
+  }
+
+  // Sélecteur de la spécialité secondaire — même logique, via un <select> filtré.
+  const renderSpecialiteSecondaire = () => {
+    if (isEditeur || !specialite || (!specialiteSecondaire && !secSpecOpen)) return null
+    return (
+      <div className="mt-3">
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          Autre spécialité <span className="text-gray-400 font-normal">(facultatif)</span>
+        </label>
+        <select
+          value={specialiteSecondaire}
+          onChange={(e) => setSpecialiteSecondaire(e.target.value)}
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue bg-white"
+        >
+          <option value="">Sélectionnez une autre spécialité</option>
+          {SPECIALITES.filter((s) => s !== specialite).map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => { setSpecialiteSecondaire(''); setSecSpecOpen(false) }}
+          className="text-xs text-gray-400 hover:text-gray-600 mt-2"
+        >
+          Retirer
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -571,13 +683,17 @@ export default function ProfilPage() {
                   via CPF sans spécialité renvoyée) — sinon champ requis invisible = blocage. */}
               {specialite ? (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité</label>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <label className="block text-xs font-medium text-gray-600">Spécialité</label>
+                    {renderSpecialiteSecondaireTrigger()}
+                  </div>
                   <input
                     type="text"
                     value={specialite}
                     readOnly
                     className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
                   />
+                  {renderSpecialiteSecondaire()}
                 </div>
               ) : !isEditeur && (
                 <div>
@@ -598,13 +714,17 @@ export default function ProfilPage() {
               {/* Mode d'exercice : idem — éditable si PSC ne l'a pas fourni (Éditeur exclu). */}
               {modeExercice ? (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice</label>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <label className="block text-xs font-medium text-gray-600">Mode d&apos;exercice</label>
+                    {renderModeSecondaireTrigger()}
+                  </div>
                   <input
                     type="text"
                     value={modeExercice}
                     readOnly
                     className="w-full px-3 py-2.5 border border-gray-100 rounded-xl text-sm bg-surface-light text-gray-500 cursor-not-allowed"
                   />
+                  {renderModeSecondaire()}
                 </div>
               ) : (
                 <div>
@@ -689,7 +809,10 @@ export default function ProfilPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {!isEditeur && (
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Spécialité <span className="text-red-500 font-bold">*</span></label>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <label className="block text-xs font-medium text-gray-600">Spécialité <span className="text-red-500 font-bold">*</span></label>
+                      {renderSpecialiteSecondaireTrigger()}
+                    </div>
                     <select
                       value={specialite}
                       onChange={(e) => setSpecialite(e.target.value)}
@@ -701,10 +824,14 @@ export default function ProfilPage() {
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
+                    {renderSpecialiteSecondaire()}
                   </div>
                 )}
                 <div className={isEditeur ? 'sm:col-span-2' : ''}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Mode d&apos;exercice <span className="text-red-500 font-bold">*</span></label>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <label className="block text-xs font-medium text-gray-600">Mode d&apos;exercice <span className="text-red-500 font-bold">*</span></label>
+                    {renderModeSecondaireTrigger()}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {MODES_EXERCICE.map((mode) => (
                       <button
@@ -721,6 +848,7 @@ export default function ProfilPage() {
                       </button>
                     ))}
                   </div>
+                  {renderModeSecondaire()}
                 </div>
               </div>
 

@@ -168,7 +168,7 @@ export async function getAvisUtilisateursPaginated(
       moyenne_utilisateur,
       last_date_note,
       temps_precedente_solution,
-      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, mode_exercice)
+      user:users(pseudo, nom, prenom, avatar:avatars!users_portrait_fkey(url), specialite, specialite_secondaire, mode_exercice, mode_exercice_secondaire)
     `, { count: 'exact' })
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
@@ -205,8 +205,8 @@ export async function getAvisUtilisateursPaginated(
     }
   }
 
-  type UserRow = { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null }
-  type UserRowRaw = { pseudo: string | null; nom: string | null; prenom: string | null; avatar: { url: string | null } | null; specialite: string | null; mode_exercice: string | null }
+  type UserRow = { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; specialite_secondaire: string | null; mode_exercice: string | null; mode_exercice_secondaire: string | null }
+  type UserRowRaw = { pseudo: string | null; nom: string | null; prenom: string | null; avatar: { url: string | null } | null; specialite: string | null; specialite_secondaire: string | null; mode_exercice: string | null; mode_exercice_secondaire: string | null }
 
   const avis = (data || []).map((row: Record<string, unknown>) => {
     const scores = (row.scores || {}) as Record<string, unknown>
@@ -214,7 +214,7 @@ export async function getAvisUtilisateursPaginated(
     const userId = row.user_id as string
     const uRaw = row.user as UserRowRaw | null
     const user: UserRow | null = uRaw
-      ? { pseudo: uRaw.pseudo, nom: uRaw.nom, prenom: uRaw.prenom, portrait: uRaw.avatar?.url ?? null, specialite: uRaw.specialite, mode_exercice: uRaw.mode_exercice }
+      ? { pseudo: uRaw.pseudo, nom: uRaw.nom, prenom: uRaw.prenom, portrait: uRaw.avatar?.url ?? null, specialite: uRaw.specialite, specialite_secondaire: uRaw.specialite_secondaire, mode_exercice: uRaw.mode_exercice, mode_exercice_secondaire: uRaw.mode_exercice_secondaire }
       : null
 
     return {
