@@ -151,6 +151,12 @@ _(rien en cours)_
   - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
 - ✅ **Fix fraîcheur des notes utilisateur sur la fiche (2026-07-25)** : à l'occasion de l'alerte Vercel Fluid CPU (~93 %), diag = l'ISR tient (pas de régression) ; la remontée = **croissance + cap 4h**, pas de correctif miracle. Au passage, bug découvert : les **nouvelles notes utilisateur ne s'affichaient sur la fiche qu'après ~1h** (le chemin évaluation `recalcResultatsPourSolution` revalidait en `'layout'`, pas via `revalidateSolution` comme le fix admin du 22/07). Corrigé → revalidation ciblée de la fiche. **⚠️ Ce n'est PAS un fix CPU** (1er diagnostic erroné corrigé : le `'layout'` ne re-rendait pas les 139 fiches). Fenêtres blog 30m→1h ; crons audités (RAS). Sur `dev` (`11f5357`), à déployer. Cf CHANGELOG 2026-07-25.
 - **Vrai levier CPU (reste à faire)** : le cap gratuit (4h) est minuscule et le trafic grandit → surveiller le compteur, envisager **Vercel Pro** (fin de la pause auto), et/ou **alléger `recalcResultatsPourSolution`** (dizaines de requêtes séquentielles par évaluation).
+
+#### Optimiser `recalcResultatsPourSolution` (2026-07-25, à planifier)
+- **Constat** : lancé (via `after()`) à **chaque évaluation** = **des dizaines de requêtes BDD séquentielles** (boucle par critère : SELECT résultat existant + UPDATE/INSERT, puis la ligne `type='moyenne'`). Comme l'évaluation est l'action centrale, c'est un poste réel de **CPU Vercel Fluid** qui grandit avec le trafic.
+- **Pistes** : (a) **batcher** lectures et écritures (un `SELECT` groupé de tous les `resultats` de la solution + un `upsert` groupé au lieu d'une requête par critère) ; (b) **recompute incrémental** — ne recalculer que le(s) critère(s) réellement touché(s) par la note plutôt que tous.
+- ⚠️ **Garde-fous à préserver** : l'**ancrage Firebase figé** (`firebase_moyenne_base5`/`firebase_nb_notes` en Supabase, blend legacy pondéré) et la règle **« 0 = NC »**. C'est la logique délicate — indépendante du fait de « couper le cordon Firebase » (infra), qui reste un chantier séparé et sûr.
+- **Gain** : CPU Vercel réduit + facture à l'usage plus basse si passage Pro. Bénéfice même sans Pro.
 - **Vercel Pro** : à garder en tête pour la rentrée (dépassement = **pause du site**, pas throttle ; cf. CHANGELOG 2026-07-10). La passe 1 réduit déjà fortement la CPU.
 
 ### SEO / Référencement
