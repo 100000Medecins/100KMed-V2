@@ -9,7 +9,7 @@ import BlogBrowser from '@/components/blog/BlogBrowser'
 
 // ISR 30 min (page ○). Aucune lecture de cookies/searchParams côté serveur → statique.
 // Le filtre par catégorie est fait côté client (BlogBrowser + useSearchParams).
-export const revalidate = 1800
+export const revalidate = 3600 // ISR 1h (aligné sur les autres pages publiques) — publication (cron) et édition (admin) revalident à la volée
 
 export const metadata: Metadata = {
   title: 'Blog — 100000médecins.org',

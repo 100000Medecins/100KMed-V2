@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-07-25] — Perf : revalidation ISR ciblée des fiches solution (CPU Vercel Fluid)
+
+### Contexte — alerte Vercel « Fluid Active CPU 75 % » (quota Hobby 4h/mois)
+- Le compteur **Fluid Active CPU** était remonté à ~93 % du quota gratuit malgré le chantier ISR de juillet. Diagnostic : l'ISR **tient toujours** (build vérifié — toutes les pages publiques restent `○`/`●`, `jeu-concours` inclus) → la remontée n'est **pas** une régression de mode de rendu. Région iad1 à 93 % = **normal** (région par défaut des fonctions ; le middleware ~8 % s'exécute à l'edge, d'où les régions EU dans le détail).
+
+### Fix — `revalidatePath('/solutions','layout')` à chaque évaluation invalidait les ~139 fiches
+- **Cause** : `recalcResultatsPourSolution()` ([evaluation.ts](src/lib/actions/evaluation.ts)) revalidait `/solutions` en mode **`'layout'`** après chaque évaluation publiée → cascade sur **tout le sous-arbre `/solutions/**`** (les ~139 fiches). Le prochain visiteur de *n'importe quelle* fiche déclenchait un re-rendu complet (~10-13 requêtes BDD). Le `revalidate=3600` des fiches était donc **court-circuité en permanence** → 1er moteur de la remontée du CPU, amplifié par la croissance (l'évaluation est l'action centrale du site).
+- **Fix** : revalidation **ciblée** — la seule fiche concernée + le listing `/solutions` (en `page`, plus `'layout'`), via `revalidateSolution(slug, id_categorie)` ([revalidate-solution.ts](src/lib/revalidate-solution.ts), qui passe lui aussi de `'layout'` à `page` → bénéficie aussi aux modifs admin). **Aucun compromis de fraîcheur** : la solution notée se rafraîchit toujours instantanément ; les 138 autres ne se re-rendaient que pour rien.
+- **Vérif** : `tsc --noEmit` OK ; table de routes inchangée (changement de logique de revalidation, pas de mode de rendu).
+
+### Perf — Fenêtres ISR blog alignées à 1h
+- `blog` et `blog/[slug]` passent de **30 min → 1h** (comme les autres pages publiques). La publication (cron `publier-articles-programmes`) et l'édition (admin) revalident déjà **à la volée** → le délai temporel n'est qu'un filet.
+
+### Audit crons — RAS
+- Les 10 crons ([vercel.json](vercel.json)) **sortent tôt** quand il n'y a rien à faire (flag `crons_routiniers_actifs` + requête → early-exit si vide) et ne font du travail lourd (SendGrid, publication) que quand c'est nécessaire. **Aucune optimisation pertinente** : réduire leur fréquence casserait la programmation à date pour un gain négligeable.
+
+### À déployer
+- Fix sur `dev` → **merger `dev→main`** pour prise d'effet (réduit le CPU **futur**, pas rétroactif).
+
+---
+
 ## [2026-07-24] — Auth : résilience aux erreurs JWT transitoires de Supabase
 
 ### Fix — Retry des `bad_jwt` intermittents (inscription, PSC, fusion)
