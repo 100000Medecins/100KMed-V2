@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { getSiteConfig } from '@/lib/actions/siteConfig'
-import { specialiteConcernee } from '@/lib/constants/profil'
+import { specialiteConcerneeAvecSecondaire } from '@/lib/constants/profil'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
@@ -55,14 +55,14 @@ export async function GET(req: NextRequest) {
     const userIds = (prefs ?? []).map((p: any) => p.user_id)
     const { data: allUsers } = await supabase
       .from('users')
-      .select('id, email, nom, specialite')
+      .select('id, email, nom, specialite, specialite_secondaire')
       .in('id', userIds.length > 0 ? userIds : ['00000000-0000-0000-0000-000000000000'])
 
-    // Filtrage par spécialité via specialiteConcernee() : les libellés PSC et
-    // ceux de la liste admin diffèrent, un filtre SQL `.in()` raterait les
-    // utilisateurs authentifiés via Pro Santé Connect.
+    // Filtrage par spécialité via specialiteConcerneeAvecSecondaire() : les libellés
+    // PSC et ceux de la liste admin diffèrent (un filtre SQL `.in()` raterait les
+    // utilisateurs PSC), et on inclut la spécialité secondaire saisie à la main.
     const users = specialitesCibles.length > 0
-      ? (allUsers ?? []).filter((u: any) => specialiteConcernee(u.specialite, specialitesCibles))
+      ? (allUsers ?? []).filter((u: any) => specialiteConcerneeAvecSecondaire(u.specialite, u.specialite_secondaire, specialitesCibles))
       : (allUsers ?? [])
     const total = (users ?? []).length
     let sent = 0

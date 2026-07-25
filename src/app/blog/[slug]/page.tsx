@@ -1,4 +1,4 @@
-export const revalidate = 1800 // ISR 30 min (au lieu de 5 min) — réduit la CPU Vercel Fluid.
+export const revalidate = 3600 // ISR 1h — publication (cron) et édition (admin) revalident à la volée ; le délai temporel n'est qu'un filet.
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'

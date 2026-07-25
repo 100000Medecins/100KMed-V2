@@ -12,7 +12,7 @@ const CRITERE_ORDER = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', '
 interface Avis {
   id: string
   userId: string
-  user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; mode_exercice: string | null } | null
+  user: { pseudo: string | null; nom: string | null; prenom: string | null; portrait: string | null; specialite: string | null; specialite_secondaire: string | null; mode_exercice: string | null; mode_exercice_secondaire: string | null } | null
   moyenne: number | null
   date: string | null
   commentaire: string | null
@@ -143,9 +143,17 @@ export default function ConfrereTestimonials({
                       {getDisplayName(item.user)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {item.user?.mode_exercice && `${item.user.mode_exercice}`}
-                      {item.user?.mode_exercice && item.user?.specialite && ' · '}
-                      {resolveSpecialite(item.user?.specialite ?? null)}
+                      {(() => {
+                        // Mode(s) et spécialité(s) : primaire + secondaire éventuel, joints par « & »
+                        const modes = [item.user?.mode_exercice, item.user?.mode_exercice_secondaire]
+                          .filter(Boolean)
+                          .join(' & ')
+                        const specialites = [item.user?.specialite, item.user?.specialite_secondaire]
+                          .map((s) => resolveSpecialite(s ?? null))
+                          .filter(Boolean)
+                          .join(' & ')
+                        return [modes, specialites].filter(Boolean).join(' · ')
+                      })()}
                     </p>
                     {item.dureeMois != null && (
                       <p className="text-xs text-accent-blue mt-0.5">

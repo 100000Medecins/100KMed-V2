@@ -27,10 +27,10 @@ function ContactButton({
       href={href}
       target={href.startsWith('http') ? '_blank' : undefined}
       rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
-      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 hover:border-accent-blue hover:bg-accent-blue/5 transition-colors text-sm text-navy"
+      className="inline-flex items-start gap-2 max-w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-accent-blue hover:bg-accent-blue/5 transition-colors text-sm text-navy"
     >
-      <Icon className="w-4 h-4 text-accent-blue" />
-      <span className="font-medium">{label}</span>
+      <Icon className="w-4 h-4 text-accent-blue shrink-0 mt-0.5" />
+      <span className="font-medium min-w-0 break-all">{label}</span>
     </a>
   )
 }
@@ -85,7 +85,7 @@ export default function SupportSection({ solution, displayCommercial = false }: 
                 </div>
                 <h3 className="text-sm font-semibold text-navy">Contacts commerciaux <span className="text-gray-400 font-normal">(demande de démo, devis…)</span></h3>
               </div>
-              <div className="ml-10 space-y-4">
+              <div className="space-y-4 sm:ml-10">
                 {commerciaux.map((c, i) => (
                   <ContactLigneItem key={i} contact={c} />
                 ))}
@@ -101,7 +101,7 @@ export default function SupportSection({ solution, displayCommercial = false }: 
                 </div>
                 <h3 className="text-sm font-semibold text-navy">Contacts support <span className="text-gray-400 font-normal">(SAV, assistance technique)</span></h3>
               </div>
-              <div className="ml-10 space-y-4">
+              <div className="space-y-4 sm:ml-10">
                 {support.map((c, i) => (
                   <ContactLigneItem key={i} contact={c} />
                 ))}

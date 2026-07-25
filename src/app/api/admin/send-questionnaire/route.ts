@@ -41,15 +41,16 @@ export async function POST(req: NextRequest) {
   const userIds = prefs.map((p: any) => p.user_id)
   const { data: allUsers } = await (supabase as any)
     .from('users')
-    .select('id, email, nom, specialite')
+    .select('id, email, nom, specialite, specialite_secondaire')
     .in('id', userIds)
 
   // Filtrage par spécialité si des spécialités sont ciblées.
-  // Comparaison via specialiteConcernee() : les libellés PSC et ceux de la
-  // liste admin diffèrent, un filtre SQL `.in()` raterait les utilisateurs PSC.
-  const { specialiteConcernee } = await import('@/lib/constants/profil')
+  // Comparaison via specialiteConcerneeAvecSecondaire() : les libellés PSC et ceux
+  // de la liste admin diffèrent (un filtre SQL `.in()` raterait les utilisateurs PSC),
+  // et on inclut la spécialité secondaire saisie à la main.
+  const { specialiteConcerneeAvecSecondaire } = await import('@/lib/constants/profil')
   const users = Array.isArray(specialites_cibles) && specialites_cibles.length > 0
-    ? (allUsers ?? []).filter((u: any) => specialiteConcernee(u.specialite, specialites_cibles))
+    ? (allUsers ?? []).filter((u: any) => specialiteConcerneeAvecSecondaire(u.specialite, u.specialite_secondaire, specialites_cibles))
     : (allUsers ?? [])
 
   if (!users || users.length === 0) {

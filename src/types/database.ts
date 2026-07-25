@@ -1956,6 +1956,7 @@ export type Database = {
           is_complete: boolean | null
           is_etudiant: boolean | null
           mode_exercice: string | null
+          mode_exercice_secondaire: string | null
           niveau_outils_numeriques: string | null
           nom: string | null
           portrait: string | null
@@ -1964,6 +1965,7 @@ export type Database = {
           role: string | null
           rpps: string | null
           specialite: string | null
+          specialite_secondaire: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1984,6 +1986,7 @@ export type Database = {
           is_complete?: boolean | null
           is_etudiant?: boolean | null
           mode_exercice?: string | null
+          mode_exercice_secondaire?: string | null
           niveau_outils_numeriques?: string | null
           nom?: string | null
           portrait?: string | null
@@ -1992,6 +1995,7 @@ export type Database = {
           role?: string | null
           rpps?: string | null
           specialite?: string | null
+          specialite_secondaire?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2012,6 +2016,7 @@ export type Database = {
           is_complete?: boolean | null
           is_etudiant?: boolean | null
           mode_exercice?: string | null
+          mode_exercice_secondaire?: string | null
           niveau_outils_numeriques?: string | null
           nom?: string | null
           portrait?: string | null
@@ -2020,6 +2025,7 @@ export type Database = {
           role?: string | null
           rpps?: string | null
           specialite?: string | null
+          specialite_secondaire?: string | null
           updated_at?: string | null
         }
         Relationships: [

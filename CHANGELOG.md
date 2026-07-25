@@ -5,6 +5,25 @@
 
 ---
 
+## [2026-07-25] — ISR : fraîcheur des notes utilisateur sur la fiche solution
+
+### Contexte — alerte Vercel « Fluid Active CPU 75 % » (quota Hobby 4h/mois)
+- Alerte Vercel : Fluid CPU remonté à ~93 % du quota gratuit. Diagnostic : l'ISR **tient** (build vérifié — pages publiques `○`/`●`, `jeu-concours` inclus, pas de régression) ; région iad1 à 93 % = **normal** (région par défaut des fonctions ; middleware ~8 % à l'edge). **La remontée = croissance du trafic + cap gratuit minuscule (4h)**, pas une régression. **Pas de correctif CPU miracle** : leviers réels = surveiller / passer Vercel Pro / alléger le recompute par évaluation (`recalcResultatsPourSolution` = dizaines de requêtes séquentielles).
+
+### Fix — Une nouvelle note utilisateur ne s'affichait sur la fiche qu'après ~1h
+- **Cause** : le fix de revalidation ciblée du 2026-07-22 (`revalidateSolution`) avait été branché sur les saves **admin/éditeur**, mais **pas** sur le chemin **évaluation**. `recalcResultatsPourSolution()` ([evaluation.ts](src/lib/actions/evaluation.ts)) revalidait encore `/solutions` en `'layout'` — qui, **d'après la note interne du 22/07 (cas Tandem Health), ne cascade pas jusqu'aux fiches** `/solutions/[cat]/[sol]` (ISR 1h). Donc une **nouvelle note utilisateur** (ou son retrait) n'apparaissait sur la fiche qu'à l'expiration ISR, **jusqu'à 1h après**.
+- **Fix** : `recalcResultatsPourSolution()` appelle désormais `revalidateSolution(slug, id_categorie)` ([revalidate-solution.ts](src/lib/revalidate-solution.ts)) → la fiche concernée + le listing sont revalidés **immédiatement**. `revalidate-solution.ts` passe aussi son listing de `'layout'` à `page`.
+- **⚠️ Honnêteté (correction d'un 1er diagnostic erroné)** : ce changement **n'est PAS un correctif CPU**. J'avais d'abord cru que le `'layout'` re-rendait les 139 fiches à chaque évaluation — **faux** (la note du 22/07 documente que `'layout'` ne cascade pas aux fiches ; il n'y avait donc pas de cascade à supprimer). C'est un **fix de fraîcheur** ; effet CPU négligeable (une revalidation de fiche en plus par évaluation). Le comportement exact de `'layout'` sur le segment parent n'est pas formellement re-vérifié.
+- **Vérif** : `tsc --noEmit` OK ; table de routes inchangée.
+
+### Perf — Fenêtres ISR blog alignées à 1h
+- `blog` et `blog/[slug]` : 30 min → 1h (comme les autres pages publiques ; publication via cron + édition admin revalident déjà à la volée).
+
+### Audit crons — RAS
+- Les 10 crons ([vercel.json](vercel.json)) **sortent tôt** quand il n'y a rien à faire (flag `crons_routiniers_actifs` + requête → early-exit si vide). **Aucune optimisation pertinente** : réduire leur fréquence casserait la programmation à date pour un gain négligeable.
+
+---
+
 ## [2026-07-24] — Auth : résilience aux erreurs JWT transitoires de Supabase
 
 ### Fix — Retry des `bad_jwt` intermittents (inscription, PSC, fusion)

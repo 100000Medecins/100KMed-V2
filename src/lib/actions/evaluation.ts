@@ -3,6 +3,7 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
+import { revalidateSolution } from '@/lib/revalidate-solution'
 import { after } from 'next/server'
 import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
@@ -134,14 +135,18 @@ const DATE_MISE_EN_LIGNE = '2026-04-12T00:00:00Z'
 export async function recalcResultatsPourSolution(solutionId: string) {
   const supabase = createServiceRoleClient()
 
-  // Mode legacy ?
+  // Mode legacy ? + slug/catégorie pour une revalidation CIBLÉE de la fiche
   const { data: solRow } = await supabase
     .from('solutions')
-    .select('is_firebase_legacy')
+    .select('is_firebase_legacy, slug, id_categorie')
     .eq('id', solutionId)
     .maybeSingle()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isLegacy = (solRow as any)?.is_firebase_legacy === true
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const solSlug = (solRow as any)?.slug as string | null | undefined
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const solCategorieId = (solRow as any)?.id_categorie as string | null | undefined
 
   const { data: criteres } = await supabase
     .from('criteres')
@@ -171,7 +176,7 @@ export async function recalcResultatsPourSolution(solutionId: string) {
       .from('resultats')
       .update({ notes: {}, nb_notes: 0, moyenne_utilisateurs: null, moyenne_utilisateurs_base5: null })
       .eq('solution_id', solutionId)
-    revalidatePath('/solutions', 'layout')
+    await revalidateSolution(solSlug, solCategorieId)
     return
   }
 
@@ -342,7 +347,7 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     }
   }
 
-  revalidatePath('/solutions', 'layout')
+  await revalidateSolution(solSlug, solCategorieId)
 }
 
 /**

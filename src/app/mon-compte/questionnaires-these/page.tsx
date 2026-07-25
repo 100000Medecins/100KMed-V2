@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ExternalLink, GraduationCap, CalendarDays, X, ZoomIn, BookOpen } from 'lucide-react'
 import type { QuestionnaireThese } from '@/lib/actions/questionnaires-these'
 import { sanitizeHtml } from '@/lib/sanitize'
-import { specialiteConcernee } from '@/lib/constants/profil'
+import { specialiteConcerneeAvecSecondaire } from '@/lib/constants/profil'
 import Badge from '@/components/ui/Badge'
 
 function stripHtml(html: string): string {
@@ -20,6 +20,7 @@ export default function QuestionnairesThesePage() {
   const router = useRouter()
   const [questionnaires, setQuestionnaires] = useState<QuestionnaireThese[]>([])
   const [userSpecialite, setUserSpecialite] = useState<string | null>(null)
+  const [userSpecialiteSecondaire, setUserSpecialiteSecondaire] = useState<string | null>(null)
   const [fetching, setFetching] = useState(true)
   const [modalQ, setModalQ] = useState<QuestionnaireThese | null>(null)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
@@ -39,11 +40,13 @@ export default function QuestionnairesThesePage() {
           getCurrentUserProfile(),
         ])
         const specialite = profile?.specialite ?? null
+        const specialiteSec = profile?.specialite_secondaire ?? null
         setUserSpecialite(specialite)
+        setUserSpecialiteSecondaire(specialiteSec)
         // Tri : concernés d'abord, non-concernés ensuite
         const sorted = [...items].sort((a, b) => {
-          const aOk = specialiteConcernee(specialite, a.specialites_cibles)
-          const bOk = specialiteConcernee(specialite, b.specialites_cibles)
+          const aOk = specialiteConcerneeAvecSecondaire(specialite, specialiteSec, a.specialites_cibles)
+          const bOk = specialiteConcerneeAvecSecondaire(specialite, specialiteSec, b.specialites_cibles)
           return aOk === bOk ? 0 : aOk ? -1 : 1
         })
         setQuestionnaires(sorted)
@@ -100,7 +103,7 @@ export default function QuestionnairesThesePage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {questionnaires.map((q) => {
-            const concerne = specialiteConcernee(userSpecialite, q.specialites_cibles)
+            const concerne = specialiteConcerneeAvecSecondaire(userSpecialite, userSpecialiteSecondaire, q.specialites_cibles)
             return <QuestionnaireCard key={q.id} q={q} concerne={concerne} onExpand={() => setModalQ(q)} />
           })}
         </div>
