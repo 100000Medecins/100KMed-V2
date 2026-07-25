@@ -170,6 +170,16 @@ _(rien en cours)_
 
 ### Mises à jour techniques
 
+#### Rapatrier l'email transactionnel en Europe : SendGrid → Brevo (2026-07-25)
+- **Moteur** : souveraineté / « revenir en Europe » pour l'hébergement du site. **Pas d'obligation légale HDS** (pas de données de santé de patients ici, seulement de l'identité pro — à confirmer par un DPO), donc **choix de principe**, faisable incrémentalement.
+- **État de la pile après la session 2026-07-25** : Supabase déjà en **UE** (`eu-west-1` Irlande, vérifié) ; région Vercel **fixée en `cdg1`** (Paris 🇫🇷) dans `vercel.json` — ⚠️ prend effet **au prochain déploiement** (avant : compute par défaut `iad1`/US → aller-retour transatlantique vers la DB). Compute à Paris, DB en Irlande (`eu-west-1`) : ~20 ms intra-UE, négligeable. **SendGrid (Twilio, US) = dernier maillon US** de la chaîne.
+- **Chantier Brevo** (société française, Sarcelles) — effort **faible/moyen (~1-2 j)** :
+  - Réécrire le **transport** d'envoi (SDK/API Brevo) là où on utilise `@sendgrid/mail` (`src/lib/email/`, `EMAIL_SENDER`, les routes cron d'envoi).
+  - Refaire l'authentification DNS de l'expéditeur côté Brevo : **SPF / DKIM / DMARC**.
+  - Re-tester : rendu des **templates** (`email_templates`), le **tracking**, et les **liens de désinscription** (`generateUnsubscribeLink`).
+  - Vérifier les quotas Brevo (gratuit 300 mails/j ; les crons campagnes/newsletter peuvent dépasser → plan payant ~9-18 €/mois).
+- **Ne PAS faire** (tranché en session 2026-07-25) : quitter Supabase (auto-hébergement = trop risqué en solo ; Postgres nu ailleurs = réécriture de l'Auth/PSC). On s'arrête à « données en UE + email FR ». Supabase = Postgres **+ Auth (GoTrue/PSC) + PostgREST/RLS + Storage** → ce n'est pas « juste une base » remplaçable à la volée.
+
 #### Surveiller l'intermittence `bad_jwt` de Supabase Auth (2026-07-24)
 - Appels Auth rejetés **par intermittence** (`unrecognized JWT kid <nil> for algorithm ES256`, ~1 sur 12) — incohérence côté **infra Supabase** (projet en ECC P-256, clés `sb_secret_`, **aucune rotation récente** côté *JWT Signing Keys*). Des **retries** sont en place comme filet (`retryTransientAuth`, cf. CHANGELOG 2026-07-24) → pas d'impact utilisateur visible.
 - **À faire** : re-mesurer d'ici quelques jours. Si l'intermittence persiste → **ticket Supabase support**. Ne **pas** revenir aux clés legacy (dépréciées, on en est sorti volontairement).
