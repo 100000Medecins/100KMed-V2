@@ -5,24 +5,22 @@
 
 ---
 
-## [2026-07-25] — Perf : revalidation ISR ciblée des fiches solution (CPU Vercel Fluid)
+## [2026-07-25] — ISR : fraîcheur des notes utilisateur sur la fiche solution
 
 ### Contexte — alerte Vercel « Fluid Active CPU 75 % » (quota Hobby 4h/mois)
-- Le compteur **Fluid Active CPU** était remonté à ~93 % du quota gratuit malgré le chantier ISR de juillet. Diagnostic : l'ISR **tient toujours** (build vérifié — toutes les pages publiques restent `○`/`●`, `jeu-concours` inclus) → la remontée n'est **pas** une régression de mode de rendu. Région iad1 à 93 % = **normal** (région par défaut des fonctions ; le middleware ~8 % s'exécute à l'edge, d'où les régions EU dans le détail).
+- Alerte Vercel : Fluid CPU remonté à ~93 % du quota gratuit. Diagnostic : l'ISR **tient** (build vérifié — pages publiques `○`/`●`, `jeu-concours` inclus, pas de régression) ; région iad1 à 93 % = **normal** (région par défaut des fonctions ; middleware ~8 % à l'edge). **La remontée = croissance du trafic + cap gratuit minuscule (4h)**, pas une régression. **Pas de correctif CPU miracle** : leviers réels = surveiller / passer Vercel Pro / alléger le recompute par évaluation (`recalcResultatsPourSolution` = dizaines de requêtes séquentielles).
 
-### Fix — `revalidatePath('/solutions','layout')` à chaque évaluation invalidait les ~139 fiches
-- **Cause** : `recalcResultatsPourSolution()` ([evaluation.ts](src/lib/actions/evaluation.ts)) revalidait `/solutions` en mode **`'layout'`** après chaque évaluation publiée → cascade sur **tout le sous-arbre `/solutions/**`** (les ~139 fiches). Le prochain visiteur de *n'importe quelle* fiche déclenchait un re-rendu complet (~10-13 requêtes BDD). Le `revalidate=3600` des fiches était donc **court-circuité en permanence** → 1er moteur de la remontée du CPU, amplifié par la croissance (l'évaluation est l'action centrale du site).
-- **Fix** : revalidation **ciblée** — la seule fiche concernée + le listing `/solutions` (en `page`, plus `'layout'`), via `revalidateSolution(slug, id_categorie)` ([revalidate-solution.ts](src/lib/revalidate-solution.ts), qui passe lui aussi de `'layout'` à `page` → bénéficie aussi aux modifs admin). **Aucun compromis de fraîcheur** : la solution notée se rafraîchit toujours instantanément ; les 138 autres ne se re-rendaient que pour rien.
-- **Vérif** : `tsc --noEmit` OK ; table de routes inchangée (changement de logique de revalidation, pas de mode de rendu).
+### Fix — Une nouvelle note utilisateur ne s'affichait sur la fiche qu'après ~1h
+- **Cause** : le fix de revalidation ciblée du 2026-07-22 (`revalidateSolution`) avait été branché sur les saves **admin/éditeur**, mais **pas** sur le chemin **évaluation**. `recalcResultatsPourSolution()` ([evaluation.ts](src/lib/actions/evaluation.ts)) revalidait encore `/solutions` en `'layout'` — qui, **d'après la note interne du 22/07 (cas Tandem Health), ne cascade pas jusqu'aux fiches** `/solutions/[cat]/[sol]` (ISR 1h). Donc une **nouvelle note utilisateur** (ou son retrait) n'apparaissait sur la fiche qu'à l'expiration ISR, **jusqu'à 1h après**.
+- **Fix** : `recalcResultatsPourSolution()` appelle désormais `revalidateSolution(slug, id_categorie)` ([revalidate-solution.ts](src/lib/revalidate-solution.ts)) → la fiche concernée + le listing sont revalidés **immédiatement**. `revalidate-solution.ts` passe aussi son listing de `'layout'` à `page`.
+- **⚠️ Honnêteté (correction d'un 1er diagnostic erroné)** : ce changement **n'est PAS un correctif CPU**. J'avais d'abord cru que le `'layout'` re-rendait les 139 fiches à chaque évaluation — **faux** (la note du 22/07 documente que `'layout'` ne cascade pas aux fiches ; il n'y avait donc pas de cascade à supprimer). C'est un **fix de fraîcheur** ; effet CPU négligeable (une revalidation de fiche en plus par évaluation). Le comportement exact de `'layout'` sur le segment parent n'est pas formellement re-vérifié.
+- **Vérif** : `tsc --noEmit` OK ; table de routes inchangée.
 
 ### Perf — Fenêtres ISR blog alignées à 1h
-- `blog` et `blog/[slug]` passent de **30 min → 1h** (comme les autres pages publiques). La publication (cron `publier-articles-programmes`) et l'édition (admin) revalident déjà **à la volée** → le délai temporel n'est qu'un filet.
+- `blog` et `blog/[slug]` : 30 min → 1h (comme les autres pages publiques ; publication via cron + édition admin revalident déjà à la volée).
 
 ### Audit crons — RAS
-- Les 10 crons ([vercel.json](vercel.json)) **sortent tôt** quand il n'y a rien à faire (flag `crons_routiniers_actifs` + requête → early-exit si vide) et ne font du travail lourd (SendGrid, publication) que quand c'est nécessaire. **Aucune optimisation pertinente** : réduire leur fréquence casserait la programmation à date pour un gain négligeable.
-
-### À déployer
-- Fix sur `dev` → **merger `dev→main`** pour prise d'effet (réduit le CPU **futur**, pas rétroactif).
+- Les 10 crons ([vercel.json](vercel.json)) **sortent tôt** quand il n'y a rien à faire (flag `crons_routiniers_actifs` + requête → early-exit si vide). **Aucune optimisation pertinente** : réduire leur fréquence casserait la programmation à date pour un gain négligeable.
 
 ---
 

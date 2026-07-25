@@ -132,6 +132,7 @@ _(rien en cours)_
 - ~~**Lancer le SQL** : Medicab + HyperMed~~ [OK] Fait 2026-07-23.
 - ~~**Activer `display_contacts_commerciaux`** dans `/admin/parametres`~~ [OK] Fait 2026-07-23.
 - **Merger `dev → main`** : 3 commits en attente (fusion PSC serveur `5622950`, contacts multiples + revalidation ISR `8f1cf69`, retry JWT transitoires `9fdc1b4`) — fusion validée sur dev le 2026-07-24. Après merge : activer le toggle est déjà fait, vérifier l'affichage multi-contacts en prod.
+- **MAJ 2026-07-25** : `dev` a avancé — le prochain merge `dev→main` emportera **aussi** `706de8a` (fix UI mobile contacts), `11f5357` (fix ISR fraîcheur des notes utilisateur) **et le `feat` spécialité secondaire**. ⚠️ Vérifier que la **feature spécialité secondaire est prod-ready** avant de merger (sinon elle part en prod avec le reste) — ou merger sélectivement.
 - **DROP** des colonnes scalaires `contact_email`/`contact_telephone`/`support_email`/`support_telephone` de `solutions` une fois le multi-contacts validé en prod, puis régénérer `src/types/database.ts`.
 - *(optionnel, hors périmètre)* purger automatiquement la session Supabase périmée côté client (erreur console `Invalid Refresh Token`, bénigne) — cf. session 2026-07-22.
 
@@ -148,6 +149,8 @@ _(rien en cours)_
   - ✅ **`/blog` liste FAITE (2026-07-21, `ƒ→○`)** : `createPublicClient` + filtre catégorie déporté client (`BlogBrowser`/`BlogView` + `useSearchParams`, fallback Suspense = vue « Tous » serveur pour le SEO).
   - ✅ **Sous-page avis `/solutions/[cat]/[sol]/evaluations` SUPPRIMÉE (2026-07-22)** : c'était un **vestige Quasar orphelin** (seul `UserReviewsSidebar`, composant mort, y menait) **et cassé** (lecture anon → RLS → « 0 avis » alors que la base en a, ex. Premiocare 6). Redondant : la fiche solution affiche déjà les avis en ligne (`#avis-utilisateurs`). Route + composants `AvisUtilisateurs`/`UserReviewsSidebar` supprimés (`getAvisUtilisateurs` laissé en dead export).
   - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
+- ✅ **Fix fraîcheur des notes utilisateur sur la fiche (2026-07-25)** : à l'occasion de l'alerte Vercel Fluid CPU (~93 %), diag = l'ISR tient (pas de régression) ; la remontée = **croissance + cap 4h**, pas de correctif miracle. Au passage, bug découvert : les **nouvelles notes utilisateur ne s'affichaient sur la fiche qu'après ~1h** (le chemin évaluation `recalcResultatsPourSolution` revalidait en `'layout'`, pas via `revalidateSolution` comme le fix admin du 22/07). Corrigé → revalidation ciblée de la fiche. **⚠️ Ce n'est PAS un fix CPU** (1er diagnostic erroné corrigé : le `'layout'` ne re-rendait pas les 139 fiches). Fenêtres blog 30m→1h ; crons audités (RAS). Sur `dev` (`11f5357`), à déployer. Cf CHANGELOG 2026-07-25.
+- **Vrai levier CPU (reste à faire)** : le cap gratuit (4h) est minuscule et le trafic grandit → surveiller le compteur, envisager **Vercel Pro** (fin de la pause auto), et/ou **alléger `recalcResultatsPourSolution`** (dizaines de requêtes séquentielles par évaluation).
 - **Vercel Pro** : à garder en tête pour la rentrée (dépassement = **pause du site**, pas throttle ; cf. CHANGELOG 2026-07-10). La passe 1 réduit déjà fortement la CPU.
 
 ### SEO / Référencement
