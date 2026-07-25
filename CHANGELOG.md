@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-07-26] — Coupure du cordon Firebase + nettoyage routes/colonnes mortes
+
+### Firebase — Désinstallation de `firebase-admin` + suppression des scripts de migration
+- `firebase-admin` retiré du `package.json` (−160 packages). Les **16 scripts** qui l'importaient (migration/audit Firebase→Supabase, one-shots déjà exécutés) supprimés. **0 import résiduel** dans `src/` (l'app ne l'utilisait plus, seulement les scripts).
+- **Backup exporté AVANT coupure** : `evaluations_firebase_backup` (679 lignes) → `firebase-final-backup/…json` (1,26 Mo, gitignoré, local). Le count serveur (679 = 679) confirme l'export complet.
+- ⏳ **Restant (DDL, David)** : `DROP TABLE public.evaluations_firebase_backup` + régé types. Résiliation du projet Firebase côté Google : plus tard (coût nul, sans urgence).
+
+### Nettoyage — Routes/tables mortes `/actualites` + `documents` (vestiges Firebase)
+- Les tables `public.actualites` / `public.documents` **n'existent pas** (contenu migré vers le blog/`articles`). Route `/actualites` (non liée, plantait à l'exécution) supprimée, avec `getActualites` + `getDocuments` (cette dernière = **code mort jamais appelé**), types `Actualite`/`DocumentRow`, et leurs re-exports (`db/index.ts`). Aucune table à DROP.
+
+### Nettoyage — Colonnes scalaires de contact sur `solutions`
+- Fallbacks legacy vers `solutions.contact_email`/`contact_telephone`/`support_email`/`support_telephone` (repli quand le JSONB `contacts_*` est vide) retirés de [SolutionForm.tsx](src/components/admin/SolutionForm.tsx), [mon-espace-editeur](src/app/mon-compte/mon-espace-editeur/page.tsx) et du SELECT de [admin-users.ts](src/lib/actions/admin-users.ts). Le JSONB multi-contacts (backfillé, en prod depuis le 24/07 ; toggle ON) est la seule source. **Le CHANGELOG du 22/07 disait « plus lues » — inexact, ces 3 fallbacks subsistaient.**
+- ⏳ **Restant (DDL, David)** : `ALTER TABLE public.solutions DROP COLUMN` sur les 4 scalaires + régé types.
+
+### Audit — Grants Supabase (anticipation deadline 30/10/2026)
+- Vérifié via `has_table_privilege` : les **51 tables `public` ont la RLS active** ; **aucune** table exposée en écriture à `anon` sans RLS. Pattern « GRANT large + RLS filtre les lignes » = défaut Supabase sain. **Rien à corriger.** La deadline du 30/10 ne concerne que les **nouvelles** tables.
+
+### Vulnérabilités npm — coupure + `npm audit fix` (non-`--force`) appliqué
+- La chaîne firebase (`uuid`/`gaxios`/`google-gax`…) a disparu avec `firebase-admin`. `npm audit fix` **sans `--force`** appliqué → **critique `tar` (via CLI `supabase`) + highs fixables (axios, ws, form-data, js-yaml, linkify-it, markdown-it, `@babel/*`, next patch 16.2.6→16.2.12) résolus**. **Build vert**, **aucune dépendance directe modifiée** (`git diff package.json` = seul `firebase-admin` retiré ; le reste = patches transitifs dans `package-lock`).
+- **Résidu = 6 packages uniques** (le « 22 » du compte npm est par-chemin) : `esbuild` (low, dev), et **5 corrigeables uniquement en `--force` = breaking, non appliqués** : `postcss` (→ downgrade **next@9.3.3**), `uuid` (→ downgrade **exceljs@3.4.0**), `sharp` (→0.35.3, seul enjeu runtime = parsing images `/api/upload`), `@anthropic-ai/sdk` (→0.115), `brace-expansion` (→eslint@10). `--force` **confirmé destructeur** (Next 16→9) → jamais.
+
+### Vérif
+- `npm run build` **vert** (route `/actualites` absente de la table de routes). `tsc` propre (la régé des types reste à faire après le DROP).
+
+---
+
 ## [2026-07-25] — ISR : fraîcheur des notes utilisateur sur la fiche solution
 
 ### Contexte — alerte Vercel « Fluid Active CPU 75 % » (quota Hobby 4h/mois)

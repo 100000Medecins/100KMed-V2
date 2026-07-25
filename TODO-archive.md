@@ -5,6 +5,40 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-07-26**
+- [OK] 2026-07-26 : Routes/tables mortes (vestiges Firebase) : /actualites + documents (Nettoyage)
+  - Supprimés : route /actualites (src/app/(static)/actualites/), getActualites + getDocuments (misc.ts ; getDocuments était du code mort jamais appelé), types Actualite/DocumentRow (models.ts), re-exports (db/index.ts). Build vert. Aucune table à DROP (elles n'ont jamais existé — vestiges Firebase). Contenu déjà repris par le blog/articles.
+- [OK] 2026-07-26 : Audit grants Supabase avant le 30 octobre 2026 (Mises à jour techniques) — sain
+  - Audit via has_table_privilege : les 51 tables public ont toutes la RLS active ; aucune table exposée en écriture à anon sans RLS. Pattern « GRANT large à anon + RLS filtre les lignes » = défaut Supabase sain → rien à corriger.
+  - Rappel deadline 30/10 : ne concerne QUE les nouvelles tables (les existantes gardent leurs grants). Réflexe GRANT explicite déjà dans CLAUDE.md. Re-vérif rapide via Security Advisor fin septembre par acquit de conscience.
+- [OK] 2026-07-26 : Contacts multiples — suites (Espace éditeur) — entièrement clos
+  - Lancer le SQL Medicab + HyperMed → Fait 2026-07-23.
+  - Activer display_contacts_commerciaux dans /admin/parametres → Fait 2026-07-23.
+  - Merger dev → main (fusion PSC serveur + contacts multiples + retry JWT) → Fait 2026-07-24 (683e088), en prod.
+  - Merge dev → main SUIVANT (UI mobile, fix ISR fraîcheur notes, feat spécialité secondaire, docs) → Fait 2026-07-24 (ff96989), en prod ; dev et main synchronisés.
+  - DROP colonnes scalaires contact_*/support_* de solutions → code nettoyé 2026-07-26 (fallbacks legacy retirés de SolutionForm / espace éditeur / admin-users.ts) + SQL ALTER TABLE ... DROP COLUMN exécuté 2026-07-26 (vérifié BDD : 0 colonne scalaire restante, 2 JSONB conservées) + types régénérés.
+  - Purge session Supabase périmée client (Invalid Refresh Token) → abandonné 2026-07-26 (cosmétique, log gotrue-js avant le code app, pas de fix propre).
+
+---
+
+**2026-07-22**
+- [OK] 2026-07-22 : Suivi PSC — bascule verifyOtp serveur (En attente / Idées)
+  - Bascule mergée sur main le 2026-07-05 (b8ad50a), en prod. Validation stat (2026-07-20) : entonnoir sur psc_session_events → post-merge 85 handoffs, 0 abandon silencieux (0,0 %) vs 14,8 % avant (baseline 16,2 %). Fix confirmé.
+  - Point de perte initial : le roundtrip verifyOtp côté client (/auth/psc-session) après le retour de l'app PSC (~16 % des handoffs perdus). Solution : verifyOtp déplacé côté serveur dans psc-callback/route.ts (client SSR + cookies), redirection directe vers next. Appliqué aux flux standard + association.
+  - MOBILE testé OK 2026-07-11 (scénario cible du fix, retour de l'app e-CPS).
+  - Sous-item merge.ts (fusion) : migré en session serveur + suppression de /auth/psc-session + /api/psc-session-event + nettoyage commentaires → Fait 2026-07-22 (vérifié code 2026-07-26 : fichiers supprimés, roundtrip retiré), validé mobile 2026-07-24, en prod. Item entièrement clos.
+  - Enjeu : ~3 inscriptions/jour perdues au rythme d'avant.
+
+---
+
+**2026-07-21**
+- [OK] 2026-07-21 : Système d'annonces sur l'index + section admin (Communication)
+  - Livré & déployé : table annonces + /admin/annonces (CRUD) + bandeau piloté BDD (intégré à l'en-tête, glisse/disparaît au scroll, sobre navy, titre seul sur mobile) + page gagnants /jeu-concours (affiche WONCA, photos des lots, prénom+initiale, texte « prochain jeu », lien règlement PDF). Cf CHANGELOG 2026-07-21.
+  - Besoin initial : publier une annonce sur la page d'accueil (jeu concours) + créer une page dédiée aux gagnants.
+  - Système générique : section « Annonces » admin avec période d'affichage (début/fin), titre + contenu, CTA (libellé + lien). Table annonces (GRANTs + RLS), server actions CRUD, page /admin/annonces, composant d'affichage accueil.
+
+---
+
 **2026-07-14**
 - [OK] 2026-07-14 : ⚠️ Notes utilisateurs faussées : critère à 0 (score « NC » compté + ancrage Firebase à 0) (Nettoyage)
   - Livré : règle « 0 = non noté ». Code — recalcResultatsPourSolution (src/lib/actions/evaluation.ts) exclut les scores ≤ 0, ancrage Firebase à 0 = « pas d'ancrage », critère sans note valide remis à NC. Données — scripts/fix-notes-zero-nc.ts (dry-run + backup) a corrigé 4 solutions : Med'Oc (fonctionnalités → NC, globale 2.47→3.09), Doctolib (editeur/qualité-prix remontés), MonMédecin.org (qualité-prix → NC), Tandem Health (5 critères orphelins → NC). Cf CHANGELOG 2026-07-14.

@@ -12,23 +12,6 @@ _(rien d'urgent pour l'instant)_
 
 ## En attente / Idées
 
-#### ~~Suivi PSC — bascule verifyOtp serveur~~ [OK] Fait 2026-07-22 — fusion migrée en session serveur (`verifyOtp` dans le Server Action), `/auth/psc-session` + `/api/psc-session-event` supprimées, commentaires psc-callback nettoyés. Bascule flux standard déjà validée 2026-07-20 (abandons 16 %→0 %).
-- **✅ Statut** : bascule **mergée sur `main` le 2026-07-05** (commit `b8ad50a`), **en prod**. **(1) Validation stat FAITE (2026-07-20)** : entonnoir rejoué sur `psc_session_events` (par `correlation_id`) → post-merge **85 handoffs, 0 abandon silencieux (0,0 %)** vs **14,8 %** avant (17/115, ≈ baseline 16,2 %). Fix confirmé (0/85 → borne haute ~3,5 % à 95 %). **(2) Nettoyage encore BLOQUÉ** : `merge.ts` (fusion de comptes) redirige **encore** vers `/auth/psc-session` (non migrée) → supprimer `/auth/psc-session` + `/api/psc-session-event` casserait la fusion. Le flux standard, lui, est 100 % serveur (`establishPscSession`) et ne les utilise plus.
-- **Point de perte** : le roundtrip **`verifyOtp` côté client** (`/auth/psc-session`) après le retour de l'app PSC. ~16 % des handoffs démarrent (`handoff_start`) sans jamais émettre d'événement terminal → le navigateur perd le contexte avant l'aboutissement.
-- **Solution implémentée (branche `dev`, non mergée)** : `verifyOtp` déplacé **côté serveur** dans [psc-callback/route.ts](src/app/api/auth/psc-callback/route.ts) (client SSR + cookies, modèle `/auth/confirm`), redirection directe vers `next`, plus de passage par `/auth/psc-session`. Appliqué aux flux standard + association. `tsc` OK. `/auth/psc-session` + `/api/psc-session-event` gardés en filet (à supprimer après validation).
-- **État (2026-07-04)** : mesuré en dev — entonnoir **strictement post-déploiement** (après 03/07 15h) = **7/7 handoffs → session établie côté serveur, 0 perdu (100 %)**, contre ~83 % avant. Les pertes se sont arrêtées net au déploiement (dernier « perdu » le 03/07 13:08). ⚠️ Échantillon **petit** (surtout mes tests) + **mobile pas encore validé**.
-- **Tests à faire AVANT le merge en main** :
-  - **Persistance de session** (le vrai risque du changement) : après chaque login PSC, **F5 sur `/mon-compte/profil`** → toujours connecté ; enchaîner `/mon-compte/*` → `/solution/noter/*` sans déconnexion ni boucle.
-  - **Les 6 flux PSC** : (1) nouveau compte → completer-profil → /mon-compte/profil ; (2) reconnexion d'un compte complet → **direct** /mon-compte/profil ; (3) **association** (connecté email/mdp + bouton « Connecter PSC » → `?psc=associe`, toujours connecté, RPPS rattaché) ; (4) **validation avis anonyme** (anonyme → mail → PSC → avis publié **et** connecté) ; (5) évals `en_attente_psc` d'un compte existant → publiées ; (6) **interne/CPF sans spécialité** → completer-profil éditable.
-  - **⚠️ Fusion** (compte email/mdp + compte PSC même RPPS) : `merge.ts` utilise **encore l'ancien `/auth/psc-session`** (non migré) → tester que la fusion aboutit **et** qu'on est connecté. À harmoniser plus tard (même risque mobile ~16 %).
-  - ~~**⭐ MOBILE (prioritaire)** : dérouler un login PSC depuis un smartphone (app e-CPS) sur `dev.100000medecins.org`~~ [OK] Fait 2026-07-11 — testé OK sur mobile (le scénario cible du fix, retour de l'app e-CPS).
-  - **Mesure dev** : relancer l'entonnoir par `correlation_id` sur `psc_session_events` (cf [docs/2026-06-16-diagnostic-emails-psc.md](docs/2026-06-16-diagnostic-emails-psc.md)) une fois plus de volume → `perdus_sans_issue` doit rester ~0.
-- **Vérifs post-merge PROD (le compteur démarre au merge, pas avant)** :
-  - **~48 h après merge — smoke check** : pas de régression → `verify_success` ≥ ~80 %, `verify_error` proche de 0. Si ça dérape → revert (re-router vers la page client).
-  - **~1 semaine après merge (~120-200 handoffs) — vérif statistique** : rejouer l'entonnoir sur `psc_session_events`, comparer `abandon_silencieux` à la baseline **16,2 %** → attendu : chute vers ~1 %.
-- **🔧 Sous-item restant (tâche dédiée)** : **migrer `merge.ts` (fusion) en session serveur** (comme le flux standard, via `establishPscSession`), **puis** supprimer `src/app/auth/psc-session/page.tsx` + `src/app/api/psc-session-event/route.ts` + nettoyer les commentaires périmés de `psc-callback` (l.345/366/459 « via /auth/psc-session »). Bonus : la fusion porte encore le même risque ~16 % en mobile, donc la migrer a de la valeur en soi. Re-tester les 6 flux PSC + fusion (mobile) avant merge.
-- **Enjeu** : ~3 inscriptions/jour perdues à ce rythme.
-
 ### Contenu des questionnaires
 
 _(rien en cours)_
@@ -42,17 +25,6 @@ _(rien en cours)_
 #### Informer l'ISNAR de la question e-CPF « médecins juniors » (2026-07-20)
 - Envoyer un mail à l'**ISNAR** (syndicat des internes) pour les informer que 100 000 Médecins a **ajouté une question sur la gestion de la carte e-CPF** (Carte de Professionnel en Formation) dans les questionnaires, à destination des remplaçants/internes. Cf. question livrée le 2026-07-08 (`tt_ecpf_remplacant` / `detail_ecpf_junior`).
 
-#### ~~Système d'annonces sur l'index + section admin (2026-07-16)~~ [OK] Fait 2026-07-21
-- **Livré & déployé (2026-07-21)** : table `annonces` + `/admin/annonces` (CRUD) + **bandeau piloté BDD** (intégré à l'en-tête, glisse/disparaît au scroll, sobre navy, titre seul sur mobile) + **page gagnants `/jeu-concours`** (affiche WONCA, photos des lots, prénom+initiale, texte « prochain jeu », lien règlement PDF). Cf CHANGELOG 2026-07-21.
-- **Besoin initial** : publier une **annonce sur la page d'accueil** (jeu concours) + créer une **page dédiée aux gagnants du jeu concours**.
-- **Système générique à construire** : une **section « Annonces » dans l'admin** pour gérer les annonces à affichage spécial sur l'index, avec :
-  - **période d'affichage** : date de début / date de fin (masquage auto hors fenêtre)
-  - **titre** + **contenu**
-  - **CTA** : libellé + lien (ex. vers la page des gagnants)
-  - À cadrer : toggle actif/inactif, variante visuelle (bandeau / encart / modale), ordre si plusieurs annonces simultanées.
-- **Pistes techniques** : table `annonces` (⚠️ GRANTs explicites + RLS, cf. CLAUDE.md — `date_debut`/`date_fin`/`titre`/`contenu`/`cta_label`/`cta_url`/`actif`), server actions CRUD, page `/admin/annonces`, composant d'affichage sur l'accueil (filtre `actif` + fenêtre de dates courante). La 1re annonce (jeu concours) pointe via son CTA vers la page gagnants.
-- **Livrables** : (a) système annonces + `/admin/annonces` ; (b) bannière/encart index piloté par la BDD ; (c) page « gagnants du jeu concours ».
-
 #### Contacter les créateurs de contenu pour la section tutos / articles / vidéos
 - **Whydoc** — intégration vidéos/stories
 - Objectif : associer ces créateurs à la section tutos, articles et vidéos stories de la plateforme
@@ -61,7 +33,7 @@ _(rien en cours)_
 - **Contexte** : nouveau module tarification livré (cf CHANGELOG 2026-06-04) mais peu de prix renseignés en BDD pour le moment. Le toggle global « Afficher les prix sur le site » est OFF tant qu'une masse critique n'est pas atteinte.
 - **Coordonnées éditeurs** : le bloc « Contacts commerciaux » est désormais masqué par défaut (toggle OFF dans `/admin/parametres`) car beaucoup de coordonnées en BDD sont incorrectes ou inappropriées. À nettoyer + compléter pour pouvoir réactiver le toggle.
 - **À faire** : demander à Agathe si elle veut s'en charger (collecte auprès des éditeurs des prix officiels + coordonnées commerciales + support à jour). Une fois la base à jour, activer les 2 toggles dans `/admin/parametres`.
-- **MAJ 2026-07-22** : les contacts sont désormais **multiples** (plusieurs commerciaux/support par solution, cf CHANGELOG). Réactivation du toggle commercial **décidée (globale)** — étapes concrètes dans l'item « Contacts multiples — suites » (§ Espace éditeur).
+- **MAJ 2026-07-22** : les contacts sont désormais **multiples** (plusieurs commerciaux/support par solution, cf CHANGELOG). ✅ **Toggle commercial réactivé (global, 2026-07-23)** — l'item « Contacts multiples — suites » est clos (archivé le 2026-07-26). Reste ici la **collecte** des coordonnées/prix à jour (Agathe, cf. ci-dessus).
 
 #### Vidéos par solution — étendre la découverte YouTube
 - **Acquis (2026-05-24)** : plomberie complète livrée — table `video_solutions` (M-N) avec RLS, script `scripts/discover-videos-youtube.mjs` avec filtres (lang fr, durée ≥ 60s, vues ≥ 100, date < 5 ans, blacklist termes dev, bonus mots pro-santé), galerie publique des fiches solutions affiche automatiquement les vidéos validées, admin a panneaux symétriques côté vidéo (multi-select solutions) et côté solution (chips vidéos), badges 🎬 dans le panel propositions à modérer.
@@ -84,25 +56,17 @@ _(rien en cours)_
 - **Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx#L66)).
 - **À trancher** : (1) **laisser** (sert de cible SEO aux redirects legacy, coût nul) ; (2) **ré-activer** (boutons « Comparer » + barre « Comparer (N) » qui construit `?ids=`) ; (3) **nettoyer** (retirer l'état mort du store, garder page + redirect pour le SEO). ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.
 
-#### Routes/tables mortes (vestiges Firebase) : `/actualites` + `documents` (2026-07-11)
-- **Découvert pendant la passe 2 ISR** : la page `/actualites` interroge `public.actualites` — table qui **n'existe pas** (SQL vérifié 2026-07-11 ; hint PostgREST : « articles »). Le contenu a migré vers `articles`/le blog. Route **non liée** dans la nav/footer → morte. Laissée dynamique pour ne pas casser le build ISR.
-- **À trancher** : supprimer la route + `getActualites` (misc.ts) + le type `Actualite` (models.ts), OU rediriger `/actualites → /blog`.
-- **Idem `documents`** : `public.documents` inexistante aussi → `getDocuments` (misc.ts) est probablement du code mort (vérifier s'il est appelé quelque part avant suppression).
-
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
 - **Cause principale** : schema drift (`actualites`, `documents` absentes des types Supabase auto-générés) → contournement légitime via `as any`. Le vrai remède = régénérer `src/types/database.ts` (`npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo --schema public > src/types/database.ts`), pas du typage manuel.
 - **Pas de chantier dédié prévu** sauf si un jour on veut un lint propre en CI.
 
-#### *(~2 mois après la mise en prod du site)* Couper définitivement le cordon Firebase — tout d'un coup
-- `DROP TABLE evaluations_firebase_backup` (Supabase)
-- Désinstaller `firebase-admin` du `package.json`
-- Supprimer les scripts `scripts/*firebase*.ts` qui ne servent plus
-- Vérifier qu'aucun import résiduel de `firebase-admin` ne traîne dans `src/`
-- Exporter une dernière fois les collections clés (`users`, `evaluations`, `criteres`, `categories`) en JSON local au cas où (archive longue durée)
-- **Résilier le projet Firebase** côté console Google
-- Révoquer le service-account `medecins-7a4ed-firebase-adminsdk-setys-436f7cbc9c.json`
+#### Couper définitivement le cordon Firebase — EN COURS (2026-07-26)
+- ✅ **Fait (code, 2026-07-26)** : `firebase-admin` désinstallé (−160 packages) ; **16 scripts** important `firebase-admin` supprimés ; **0 import résiduel** dans `src/` ; `npm run build` vert.
+- ✅ **Backup exporté avant coupure** : `evaluations_firebase_backup` (679 lignes) → `firebase-final-backup/…json` (1,26 Mo, gitignoré — **local à ce poste**, à copier vers une archive durable si besoin cross-machine).
+- ⏳ **Reste (DDL, David)** : `DROP TABLE public.evaluations_firebase_backup;` puis régénérer `src/types/database.ts`.
+- ⏳ **Côté Google (quand tu veux, sans urgence — coût nul)** : **résilier le projet Firebase** + révoquer le service-account `medecins-7a4ed-firebase-adminsdk-*.json`.
 
 ### UX / UI
 
@@ -128,13 +92,7 @@ _(rien en cours)_
 
 ### Espace éditeur
 
-#### Contacts multiples — suites (2026-07-22)
-- ~~**Lancer le SQL** : Medicab + HyperMed~~ [OK] Fait 2026-07-23.
-- ~~**Activer `display_contacts_commerciaux`** dans `/admin/parametres`~~ [OK] Fait 2026-07-23.
-- ~~**Merger `dev → main`** : fusion PSC serveur + contacts multiples + retry JWT~~ [OK] Fait — mergé le 2026-07-24 (`683e088`), **en prod** (toggle contacts commerciaux activé).
-- **Merge `dev → main` SUIVANT — à faire (= l'étape qui déploie en prod)** : `dev` est en avance de 4 commits — `706de8a` (UI mobile), `11f5357` (fix ISR fraîcheur des notes), `094185e` (**feat spécialité secondaire**), `6ab7c9a` (docs). ⚠️ **Traçabilité / vérif avant de merger** : le merge déploie **tout** en prod → confirmer que la **feature spécialité secondaire est prod-ready** (sinon merge sélectif). Rien n'est en prod tant que ce merge n'est pas fait (le fix ISR fraîcheur non plus).
-- **DROP** des colonnes scalaires `contact_email`/`contact_telephone`/`support_email`/`support_telephone` de `solutions` une fois le multi-contacts validé en prod, puis régénérer `src/types/database.ts`.
-- *(optionnel, hors périmètre)* purger automatiquement la session Supabase périmée côté client (erreur console `Invalid Refresh Token`, bénigne) — cf. session 2026-07-22.
+_(rien en cours)_
 
 ### Performance
 
@@ -182,7 +140,7 @@ _(rien en cours)_
 
 #### Surveiller l'intermittence `bad_jwt` de Supabase Auth (2026-07-24)
 - Appels Auth rejetés **par intermittence** (`unrecognized JWT kid <nil> for algorithm ES256`, ~1 sur 12) — incohérence côté **infra Supabase** (projet en ECC P-256, clés `sb_secret_`, **aucune rotation récente** côté *JWT Signing Keys*). Des **retries** sont en place comme filet (`retryTransientAuth`, cf. CHANGELOG 2026-07-24) → pas d'impact utilisateur visible.
-- **À faire** : re-mesurer d'ici quelques jours. Si l'intermittence persiste → **ticket Supabase support**. Ne **pas** revenir aux clés legacy (dépréciées, on en est sorti volontairement).
+- **⏰ RAPPEL — re-mesurer à partir du ~2026-08-02** (≈1 sem après le fix du 24/07) : **Dashboard Supabase → Logs → Auth**, filtre `unrecognized JWT kid` / `bad_jwt` sur ~1 sem, compter vs volume total (le helper `retryTransientAuth` retente **en silence**, il ne loggue rien). Si l'intermittence persiste → **ticket Supabase support**. *(Option compteur passif : ajouter un `console.warn` dans `retryTransientAuth` → occurrences visibles dans les logs Vercel.)* Ne **pas** revenir aux clés legacy (dépréciées).
 
 #### Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy) [✅ SOUS CONTRÔLE — vérifié 20/07 : 17 %]
 - **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md).
@@ -213,19 +171,14 @@ _(rien en cours)_
 - **Optionnel plus tard** : brancher `next/image` (`remotePatterns` Supabase) → Vercel sert du WebP redimensionné depuis son CDN (egress Supabase ÷ nb visiteurs, mais consomme les quotas d'optimisation Vercel) ; vérifier les logs Storage (écarter bot/scraper/hotlinking).
 - **Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour.
 
-#### Audit grants Supabase avant le 30 octobre 2026
-- **Contexte** : à partir du 30/10/2026, Supabase n'exposera plus automatiquement les nouvelles tables `public` à la Data API (PostgREST/`supabase-js`). Les tables existantes ne sont pas touchées — elles conservent leurs grants implicites.
-- **Réflexe déjà actif** dans [CLAUDE.md](CLAUDE.md) : tout nouveau `CREATE TABLE` doit inclure les `GRANT` explicites par rôle.
-- **À faire ~1 mois avant la deadline (≈ fin septembre 2026)** :
-  - Utiliser le Security Advisor du dashboard Supabase pour lister les tables actuellement exposées
-  - Vérifier qu'aucune table sensible n'est ouverte au rôle `anon` sans raison
-  - Vérifier qu'aucune table dont on a besoin n'est en `permission denied` (cf. cas `solution_liens` fixé le 2026-05-27)
-- **Pas urgent** : informatif tant que la deadline est lointaine.
-
 #### Vulnérabilités npm restantes
 - **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
 - **État 2026-06-06** : `xlsx` désinstallé (vulnérabilité high éliminée) + `xlsx-js-style` désinstallé en préventif. Audit npm : **12 moderate, 0 high**. Cf CHANGELOG 2026-06-06.
 - **12 moderate restantes** : toute la chaîne `uuid` / `@google-cloud/storage` / `@google-cloud/firestore` / `gaxios` / `google-gax` / `teeny-request` / `retry-request` / `firebase-admin`. **Partira automatiquement** quand on désinstallera `firebase-admin` (cf. item Nettoyage « Couper le cordon Firebase », prévu ~2 mois post-prod).
+- **✅ 2026-07-26 (coupure Firebase + `npm audit fix` NON-`--force` appliqué)** : chaîne firebase disparue ; fix appliqué → **critique `tar` + highs fixables (axios, ws, form-data, js-yaml, linkify-it, next patches) résolus**, **build vert, AUCUNE dép directe changée** (que des patches transitifs dans `package-lock`). **Reste 6 packages uniques** (le « 22 » du compte npm est par-chemin, gonflé) :
+  - `esbuild` (low, dev-only) — correctif non-force théorique mais bloqué par un parent, négligeable.
+  - **5 en `--force` UNIQUEMENT = BREAKING → NE PAS FAIRE** : `postcss` (→ downgrade **next@9.3.3** ⚠️ catastrophe), `uuid` (→ downgrade **exceljs@3.4.0**, annule la migration xlsx→exceljs), `sharp` (→0.35.3 ; **seul vrai enjeu prod** : parsing d'images uploadées libvips — upgrade dédié + test `/api/upload` un jour), `@anthropic-ai/sdk` (→0.115), `brace-expansion` (→eslint@10).
+  - **Confirmation** : `--force` est bien destructeur (next 16→9). Rien de plus à faire sans chantier de MAJ dédié.
 - ~~**1 high — `xlsx`** (Prototype Pollution + ReDoS)~~ **[OK] Fait 2026-06-06** : migration vers `exceljs` (4 scripts migrés via helper `scripts/lib/excel-helper.ts`). 5ᵉ script `export-catalogue-editeurs.ts` désactivé proprement (réutilisera `xlsx-js-style` au moment du besoin, à réinstaller ou à migrer alors).
 - ⚠️ **NE JAMAIS utiliser `npm audit fix --force`** — breaking changes silencieux (downgraderait Next 16 → 9).
 

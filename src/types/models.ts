@@ -22,10 +22,6 @@ export type SolutionUtilisee = Database['public']['Tables']['solutions_utilisees
 export type SolutionFavorite = Database['public']['Tables']['solutions_favorites']['Row']
 export type Avatar = Database['public']['Tables']['avatars']['Row']
 export type Video = Database['public']['Tables']['videos']['Row']
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Actualite = any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type DocumentRow = any
 export type GalerieItem = Database['public']['Tables']['solutions_galerie']['Row']
 export type PageStatique = Database['public']['Tables']['pages_statiques']['Row'] & {
   metadata?: SyndicatFoundateur[] | null
