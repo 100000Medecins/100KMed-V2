@@ -149,7 +149,7 @@ export async function getAvisUtilisateursPaginated(
   options: {
     page: number
     limit: number
-    tri?: 'date' | 'note'
+    tri?: 'date' | 'note' | 'date_asc' | 'note_asc'
   }
 ) {
   // evaluations.solution_id est UUID — retourner vide si l'ID n'est pas un UUID
@@ -173,7 +173,7 @@ export async function getAvisUtilisateursPaginated(
     .eq('solution_id', solutionId)
     .not('last_date_note', 'is', null)
     .or('statut.eq.publiee,statut.is.null')
-    .order(tri === 'note' ? 'moyenne_utilisateur' : 'last_date_note', { ascending: false })
+    .order(tri === 'note' || tri === 'note_asc' ? 'moyenne_utilisateur' : 'last_date_note', { ascending: tri === 'date_asc' || tri === 'note_asc' })
     .range(offset, offset + limit - 1)
 
   if (error) throw error

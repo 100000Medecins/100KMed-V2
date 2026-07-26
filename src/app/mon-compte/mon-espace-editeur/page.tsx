@@ -30,10 +30,6 @@ type Solution = {
   prix_devise: string | null
   prix_frequence: string | null
   prix_duree_engagement_mois: number | null
-  contact_email: string | null
-  contact_telephone: string | null
-  support_email: string | null
-  support_telephone: string | null
   support_website: string | null
   contacts_commerciaux: ContactLigne[] | null
   contacts_support: ContactLigne[] | null
@@ -434,14 +430,12 @@ function SolutionEditeurCard({
   const [prixDevise, setPrixDevise] = useState(solution.prix_devise ?? 'EUR')
   const [prixFrequence, setPrixFrequence] = useState(solution.prix_frequence ?? '')
   const [prixDuree, setPrixDuree] = useState(solution.prix_duree_engagement_mois?.toString() ?? '')
-  const [contactsCommerciaux, setContactsCommerciaux] = useState<ContactLigne[]>(() => {
-    const list = normalizeContacts(solution.contacts_commerciaux)
-    return list.length ? list : normalizeContacts([{ libelle: null, email: solution.contact_email, telephone: solution.contact_telephone }])
-  })
-  const [contactsSupport, setContactsSupport] = useState<ContactLigne[]>(() => {
-    const list = normalizeContacts(solution.contacts_support)
-    return list.length ? list : normalizeContacts([{ libelle: null, email: solution.support_email, telephone: solution.support_telephone }])
-  })
+  const [contactsCommerciaux, setContactsCommerciaux] = useState<ContactLigne[]>(() =>
+    normalizeContacts(solution.contacts_commerciaux)
+  )
+  const [contactsSupport, setContactsSupport] = useState<ContactLigne[]>(() =>
+    normalizeContacts(solution.contacts_support)
+  )
   const [supportSite, setSupportSite] = useState(solution.support_website ?? '')
   const [galerie, setGalerie] = useState<GalerieItem[]>(solution.galerie ?? [])
   const [saving, setSaving] = useState(false)

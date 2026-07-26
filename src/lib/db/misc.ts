@@ -1,5 +1,5 @@
 import { createServerClient, createPublicClient } from '@/lib/supabase/server'
-import type { Avatar, Actualite, DocumentRow, Tag, Critere } from '@/types/models'
+import type { Avatar, Tag, Critere } from '@/types/models'
 
 /**
  * Récupère tous les avatars disponibles.
@@ -131,33 +131,6 @@ export async function getVideos(options?: {
 }
 
 /**
- * Récupère les actualités, avec limite optionnelle.
- * Remplace : fetchActualites
- */
-export async function getActualites(limit?: number) {
-  // ⚠️ La table `public.actualites` N'EXISTE PAS (vérifié 2026-07-11 : vestige Firebase, le
-  // contenu « actualités » a migré vers `articles`/le blog). getActualites échoue donc à
-  // l'exécution → on garde `createServerClient` (cookies) pour que `/actualites` reste
-  // DYNAMIQUE et ne casse pas le build par un prérendu ISR. À nettoyer (cf TODO : route morte).
-  const supabase = await createServerClient()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
-    .from('actualites')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (limit) {
-    query = query.limit(limit)
-  }
-
-  const { data, error } = await query
-
-  if (error) throw error
-  return data as Actualite[]
-}
-
-/**
  * Récupère les tags d'une catégorie (directement depuis id_categorie).
  * Remplace : fetchTags
  */
@@ -232,18 +205,3 @@ export async function getCriteresMajeurs(categorieId: string): Promise<Critere[]
   return (data ?? []) as Critere[]
 }
 
-/**
- * Récupère les documents.
- */
-export async function getDocuments() {
-  const supabase = await createServerClient()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('documents')
-    .select('*')
-    .order('ordre', { ascending: true })
-
-  if (error) throw error
-  return data as DocumentRow[]
-}

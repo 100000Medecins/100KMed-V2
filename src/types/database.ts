@@ -934,66 +934,6 @@ export type Database = {
           },
         ]
       }
-      evaluations_firebase_backup: {
-        Row: {
-          created_at: string | null
-          email_temp: string | null
-          id: string | null
-          last_date_note: string | null
-          last_relance_psc_sent_at: string | null
-          last_relance_sent_at: string | null
-          moyenne_utilisateur: number | null
-          relance_count: number | null
-          relance_incomplet_sent_at: string | null
-          relance_psc_count: number | null
-          scores: Json | null
-          solution_id: string | null
-          statut: string | null
-          temps_precedente_solution: string | null
-          token_verification: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email_temp?: string | null
-          id?: string | null
-          last_date_note?: string | null
-          last_relance_psc_sent_at?: string | null
-          last_relance_sent_at?: string | null
-          moyenne_utilisateur?: number | null
-          relance_count?: number | null
-          relance_incomplet_sent_at?: string | null
-          relance_psc_count?: number | null
-          scores?: Json | null
-          solution_id?: string | null
-          statut?: string | null
-          temps_precedente_solution?: string | null
-          token_verification?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email_temp?: string | null
-          id?: string | null
-          last_date_note?: string | null
-          last_relance_psc_sent_at?: string | null
-          last_relance_sent_at?: string | null
-          moyenne_utilisateur?: number | null
-          relance_count?: number | null
-          relance_incomplet_sent_at?: string | null
-          relance_psc_count?: number | null
-          scores?: Json | null
-          solution_id?: string | null
-          statut?: string | null
-          temps_precedente_solution?: string | null
-          token_verification?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       groupes_categories: {
         Row: {
           id: string
@@ -1542,8 +1482,6 @@ export type Database = {
       solutions: {
         Row: {
           actif: boolean | null
-          contact_email: string | null
-          contact_telephone: string | null
           contacts_commerciaux: Json
           contacts_support: Json
           created_at: string | null
@@ -1572,16 +1510,12 @@ export type Database = {
           prix_ttc_max: number | null
           prix_ttc_min: number | null
           slug: string | null
-          support_email: string | null
-          support_telephone: string | null
           support_website: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
           actif?: boolean | null
-          contact_email?: string | null
-          contact_telephone?: string | null
           contacts_commerciaux?: Json
           contacts_support?: Json
           created_at?: string | null
@@ -1610,16 +1544,12 @@ export type Database = {
           prix_ttc_max?: number | null
           prix_ttc_min?: number | null
           slug?: string | null
-          support_email?: string | null
-          support_telephone?: string | null
           support_website?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
           actif?: boolean | null
-          contact_email?: string | null
-          contact_telephone?: string | null
           contacts_commerciaux?: Json
           contacts_support?: Json
           created_at?: string | null
@@ -1648,8 +1578,6 @@ export type Database = {
           prix_ttc_max?: number | null
           prix_ttc_min?: number | null
           slug?: string | null
-          support_email?: string | null
-          support_telephone?: string | null
           support_website?: string | null
           updated_at?: string | null
           website?: string | null

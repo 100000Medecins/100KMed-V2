@@ -47,6 +47,8 @@ docs/backup-backfill-*.json
 backups/
 # Originaux binaires sauvegardés par scripts/optimize-storage-images.ts (rollback local, lourd)
 storage-backups/
+# Export final de evaluations_firebase_backup avant DROP (coupure cordon Firebase, 2026-07-26)
+firebase-final-backup/
 
 # Gabarits de marque Office (gros binaires .pptx/.docx — gérés hors repo)
 brand-templates/

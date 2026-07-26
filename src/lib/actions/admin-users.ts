@@ -183,7 +183,7 @@ export async function getEditeurDataForUser(userId: string) {
   // Récupérer les solutions du parent + des filiales (avec prix, galerie, mot éditeur par solution, contacts par solution)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, contact_email, contact_telephone, support_email, support_telephone, support_website, contacts_commerciaux, contacts_support, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, galerie:solutions_galerie(id, url, titre, ordre, type)')
     .in('id_editeur', editeurIds)
     .order('nom', { ascending: true })
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BarChart3 } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
 import RatingBadge from '@/components/ui/RatingBadge'
 import PriceTag from './PriceTag'
@@ -183,6 +184,17 @@ export default function SolutionList({ solutions, categorieSlug, tri, displayPri
                     </>
                   ) : (
                     <span className="text-xs text-gray-400">Pas encore noté</span>
+                  )}
+                  {/* Lien discret vers le radar comparatif de la fiche — hover desktop uniquement, masqué sur mobile. */}
+                  {href !== '#' && (solution.noteUtilisateursBase5 ?? solution.noteRedacBase5) != null && (
+                    <Link
+                      href={`${href}#comparaison`}
+                      aria-label={`Comparer ${solution.nom}`}
+                      className="relative z-10 ml-auto hidden sm:inline-flex items-center gap-1 text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 hover:text-accent-blue transition-all whitespace-nowrap"
+                    >
+                      <BarChart3 className="w-3 h-3" />
+                      Comparer
+                    </Link>
                   )}
                 </div>
               )

@@ -13,6 +13,21 @@ interface SupportSectionProps {
   displayCommercial?: boolean
 }
 
+/**
+ * Réduit légèrement la taille du texte pour les libellés longs (surtout les emails
+ * sur mobile), afin d'éviter un retour à la ligne disgracieux au milieu de l'adresse.
+ * Rendu serveur → on connaît la longueur au build. Calibré pour un écran ~360px
+ * (≈ 30 caractères sur une ligne à 14px) ; `break-all` reste le filet de sécurité
+ * pour les cas vraiment extrêmes. Sur desktop il y a toujours la place → `sm:text-sm`.
+ */
+function labelSizeClass(len: number): string {
+  if (len <= 30) return 'text-sm'
+  if (len <= 32) return 'text-[13px]'
+  if (len <= 35) return 'text-xs'
+  if (len <= 38) return 'text-[11px]'
+  return 'text-[10px]'
+}
+
 function ContactButton({
   href,
   icon: Icon,
@@ -27,10 +42,10 @@ function ContactButton({
       href={href}
       target={href.startsWith('http') ? '_blank' : undefined}
       rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
-      className="inline-flex items-start gap-2 max-w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-accent-blue hover:bg-accent-blue/5 transition-colors text-sm text-navy"
+      className="inline-flex items-start gap-2 max-w-full px-4 py-2.5 rounded-xl border border-gray-200 hover:border-accent-blue hover:bg-accent-blue/5 transition-colors text-navy"
     >
       <Icon className="w-4 h-4 text-accent-blue shrink-0 mt-0.5" />
-      <span className="font-medium min-w-0 break-all">{label}</span>
+      <span className={`font-medium min-w-0 break-all ${labelSizeClass(label.length)} sm:text-sm`}>{label}</span>
     </a>
   )
 }

@@ -83,8 +83,6 @@ export {
 export {
   getAvatars,
   getVideos,
-  getActualites,
   getTags,
   getTagsPrincipauxForSolution,
-  getDocuments,
 } from './misc'

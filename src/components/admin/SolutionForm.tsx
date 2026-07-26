@@ -19,15 +19,6 @@ function isVideoUrl(url: string): boolean {
   return /youtube\.com|youtu\.be|vimeo\.com/.test(url)
 }
 
-// Init d'une liste de contacts : les colonnes JSONB font foi ; repli sur les
-// anciennes colonnes scalaires (contact_email/telephone…) si la liste est vide,
-// le temps de la transition avant leur suppression.
-function initContacts(arr: unknown, legacyEmail: string | null, legacyTel: string | null): ContactLigne[] {
-  const list = normalizeContacts(arr)
-  if (list.length > 0) return list
-  return normalizeContacts([{ libelle: null, email: legacyEmail, telephone: legacyTel }])
-}
-
 type Solution = Database['public']['Tables']['solutions']['Row']
 type Categorie = { id: string; nom: string }
 type Editeur = { id: string; nom: string | null }
@@ -139,10 +130,10 @@ export default function SolutionForm({ solution, categories, editeurs, notesReda
   const [motEditeur, setMotEditeur] = useState(solution?.mot_editeur ?? '')
   const [logoUrl, setLogoUrl] = useState(solution?.logo_url ?? '')
   const [contactsCommerciaux, setContactsCommerciaux] = useState<ContactLigne[]>(() =>
-    initContacts(solution?.contacts_commerciaux, solution?.contact_email ?? null, solution?.contact_telephone ?? null)
+    normalizeContacts(solution?.contacts_commerciaux)
   )
   const [contactsSupport, setContactsSupport] = useState<ContactLigne[]>(() =>
-    initContacts(solution?.contacts_support, solution?.support_email ?? null, solution?.support_telephone ?? null)
+    normalizeContacts(solution?.contacts_support)
   )
   const [prixMode, setPrixMode] = useState<'unique' | 'plage'>(
     solution?.prix_ttc_min != null || solution?.prix_ttc_max != null ? 'plage' : 'unique'
