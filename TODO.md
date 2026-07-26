@@ -52,9 +52,10 @@ _(rien en cours)_
 
 ### Nettoyage
 
-#### Statuer sur le comparateur orphelin `/solutions/comparer` (2026-07-08)
-- **Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx#L66)).
-- **À trancher** : (1) **laisser** (sert de cible SEO aux redirects legacy, coût nul) ; (2) **ré-activer** (boutons « Comparer » + barre « Comparer (N) » qui construit `?ids=`) ; (3) **nettoyer** (retirer l'état mort du store, garder page + redirect pour le SEO). ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.
+#### ~~Statuer sur le comparateur orphelin `/solutions/comparer` (2026-07-08)~~ [OK] Fait 2026-07-26
+- **Décision : option (3) « nettoyer », poussée jusqu'à la suppression.** Page `/solutions/comparer` **supprimée**, état mort `comparaisonSolutionIds` + actions retirés de `useAppStore`. La redirection `slug-vs-slug` ne pointe plus vers le comparateur : elle envoie désormais vers la **fiche de la 1re solution ancrée sur `#comparaison`** ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx)) — le radar de la fiche assure la comparaison, avec deux nouveaux points d'entrée (bouton « Comparer » dans le hero + lien discret au survol sur les cartes).
+- ~~**Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug`.~~
+- ~~**À trancher** : (1) **laisser** ; (2) **ré-activer** ; (3) **nettoyer**. ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.~~
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.

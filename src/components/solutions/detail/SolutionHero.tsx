@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, BarChart3 } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
 import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -18,6 +18,8 @@ interface SolutionHeroProps {
   nbEvaluations: number
   categorieSlug: string
   hasDetailedRatings: boolean
+  /** Vrai si le radar comparatif est rendu (≥ 3 critères) → affiche le bouton "Comparer" du hero et son ancre. */
+  hasComparaison?: boolean
   noteGlobaleTooltip?: NoteGlobaleTooltipData | null
   /** Toggle global : si false, on n'affiche pas l'ancre "Contacts utiles" quand seules des coordonnées commerciales sont renseignées. */
   displayContactsCommerciaux?: boolean
@@ -67,6 +69,7 @@ export default function SolutionHero({
   nbEvaluations,
   categorieSlug,
   hasDetailedRatings,
+  hasComparaison = false,
   noteGlobaleTooltip,
   displayContactsCommerciaux = false,
 }: SolutionHeroProps) {
@@ -77,11 +80,15 @@ export default function SolutionHero({
   const hasSupport = normalizeContacts(solution.contacts_support).length > 0 || !!solution.support_website
   const hasContactsUtiles = hasCommercial || hasSupport
   const website = ensureHttps(sol.website)
-  const anchors = [
+  const hasTemoignages = nbEvaluations > 0
+  const anchors: { id: string; label: string; labelMobile?: string; show: boolean; className?: string }[] = [
     { id: 'avis-redaction', label: 'Avis de la rédaction', show: !!solution.evaluation_redac_avis },
     { id: 'galerie', label: 'Galerie', show: !!(solution.galerie && solution.galerie.length > 0) },
     { id: 'notes-detaillees', label: 'Evaluation détaillée', show: hasDetailedRatings },
-    { id: 'avis-utilisateurs', label: 'Notes utilisateurs', show: true },
+    // Distribution des notes : sur mobile on la masque dès qu'un accès direct aux témoignages existe (évite la surcharge d'onglets).
+    { id: 'avis-utilisateurs', label: 'Notes utilisateurs', show: true, className: hasTemoignages ? 'hidden md:inline-block' : undefined },
+    // Témoignages de confrères : libellé court "Avis utilisateurs" sur mobile, "Avis des confrères" sur desktop.
+    { id: 'temoignages', label: 'Avis des confrères', labelMobile: 'Avis utilisateurs', show: hasTemoignages },
     { id: 'mot-editeur', label: 'Mot éditeur', show: !!solution.mot_editeur },
     { id: 'support', label: 'Contacts utiles', show: hasContactsUtiles },
   ].filter(a => a.show)
@@ -143,6 +150,16 @@ export default function SolutionHero({
                       </div>
                     )}
                   </div>
+                  {/* Bandeau à droite du titre : ancre discrète vers le radar comparatif (desktop uniquement). */}
+                  {hasComparaison && (
+                    <a
+                      href="#comparaison"
+                      className="hidden lg:inline-flex items-center gap-1.5 ml-auto lg:mr-12 self-center px-4 py-2 rounded-full border border-gray-200 text-gray-600 text-sm font-medium hover:border-navy hover:text-navy transition-colors"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Comparer
+                    </a>
+                  )}
                 </div>
 
                 {/* Description */}
@@ -214,9 +231,16 @@ export default function SolutionHero({
               <a
                 key={anchor.id}
                 href={`#${anchor.id}`}
-                className="px-2.5 py-1.5 md:px-6 md:py-2.5 text-[11px] md:text-sm font-medium text-gray-700 bg-white rounded-full shadow-sm hover:shadow-md hover:text-navy transition-all whitespace-nowrap"
+                className={`px-2.5 py-1.5 md:px-6 md:py-2.5 text-[11px] md:text-sm font-medium text-gray-700 bg-white rounded-full shadow-sm hover:shadow-md hover:text-navy transition-all whitespace-nowrap${anchor.className ? ` ${anchor.className}` : ''}`}
               >
-                {anchor.label}
+                {anchor.labelMobile ? (
+                  <>
+                    <span className="md:hidden">{anchor.labelMobile}</span>
+                    <span className="hidden md:inline">{anchor.label}</span>
+                  </>
+                ) : (
+                  anchor.label
+                )}
               </a>
             ))}
           </nav>

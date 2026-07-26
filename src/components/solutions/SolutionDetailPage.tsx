@@ -70,6 +70,8 @@ export default function SolutionDetailPage({
   const filteredResultats = resultats.filter(
     (r) => r.critere?.nom_capital != null
   )
+  // Le radar comparatif (ComparisonSection) n'est rendu qu'à partir de 3 critères → conditionne le bouton "Comparer" du hero.
+  const hasComparaison = filteredResultats.length >= 3
   // Note utilisateurs calculée dynamiquement depuis les scores (gère l'échelle 0-10 et 0-5)
   const noteUtilisateurs = noteUtilisateursData?.note ?? null
   const nbEvaluations = noteUtilisateursData?.total ?? 0
@@ -89,6 +91,7 @@ export default function SolutionDetailPage({
         nbEvaluations={nbEvaluations}
         categorieSlug={categorieSlug}
         hasDetailedRatings={notesRedac.length > 0}
+        hasComparaison={hasComparaison}
         noteGlobaleTooltip={noteGlobaleTooltip}
         displayContactsCommerciaux={displayContactsCommerciaux}
       />

@@ -9,6 +9,8 @@ import { getDisplayName } from '@/lib/displayName'
 
 const CRITERE_ORDER = ['interface', 'fonctionnalites', 'fiabilite', 'editeur', 'qualite_prix']
 
+type TriAvis = 'date' | 'date_asc' | 'note' | 'note_asc'
+
 interface Avis {
   id: string
   userId: string
@@ -62,9 +64,9 @@ export default function ConfrereTestimonials({
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [total, setTotal] = useState(initialTotal)
   const [loading, setLoading] = useState(false)
-  const [tri, setTri] = useState<'date' | 'note'>('date')
+  const [tri, setTri] = useState<TriAvis>('date')
 
-  const fetchPage = useCallback(async (newPage: number, newTri: 'date' | 'note') => {
+  const fetchPage = useCallback(async (newPage: number, newTri: TriAvis) => {
     setLoading(true)
     try {
       const res = await fetch(
@@ -89,7 +91,7 @@ export default function ConfrereTestimonials({
     fetchPage(newPage, tri)
   }
 
-  const handleTriChange = (newTri: 'date' | 'note') => {
+  const handleTriChange = (newTri: TriAvis) => {
     setTri(newTri)
     fetchPage(1, newTri)
   }
@@ -107,11 +109,13 @@ export default function ConfrereTestimonials({
           <span className="text-xs text-gray-400">Trier par</span>
           <select
             value={tri}
-            onChange={(e) => handleTriChange(e.target.value as 'date' | 'note')}
+            onChange={(e) => handleTriChange(e.target.value as TriAvis)}
             className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white"
           >
             <option value="date">Avis les plus récents</option>
+            <option value="date_asc">Avis les plus anciens</option>
             <option value="note">Meilleures notes</option>
+            <option value="note_asc">Pires notes</option>
           </select>
         </div>
       </div>

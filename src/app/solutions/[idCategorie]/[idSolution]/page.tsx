@@ -66,13 +66,14 @@ export default async function SolutionPage(props: PageProps) {
     )
   }
 
-  // Ancienne URL de comparaison Quasar `/solutions/:cat/:slugA-vs-:slugB` → redirige 301 vers /solutions/comparer?ids=
+  // Ancienne URL de comparaison Quasar `/solutions/:cat/:slugA-vs-:slugB` → le comparateur dédié a été retiré
+  // (comparaison désormais assurée par le radar de la fiche). On redirige vers la fiche de la 1re solution,
+  // ancrée sur son radar comparatif, où l'autre solution peut être ajoutée manuellement.
   if (params.idSolution.includes('-vs-')) {
-    const [slugA, slugB] = params.idSolution.split('-vs-')
-    const idMap = await getSolutionIdsBySlugs([slugA, slugB])
-    const ids = [idMap.get(slugA), idMap.get(slugB)].filter(Boolean)
-    if (ids.length === 2) redirect(`/solutions/comparer?ids=${ids.join(',')}`)
-    redirect('/solutions') // au moins un slug introuvable : fallback vers le listing
+    const [slugA] = params.idSolution.split('-vs-')
+    const idMap = await getSolutionIdsBySlugs([slugA])
+    if (idMap.get(slugA)) redirect(`/solutions/${params.idCategorie}/${slugA}#comparaison`)
+    redirect('/solutions') // slug introuvable : fallback vers le listing
   }
 
   const solution = await getSolutionBySlug(params.idSolution).catch(() => null)

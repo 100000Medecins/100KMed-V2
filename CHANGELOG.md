@@ -5,7 +5,22 @@
 
 ---
 
-## [2026-07-26] — Coupure du cordon Firebase + nettoyage routes/colonnes mortes
+## [2026-07-26] — Points d'entrée du comparateur (fiche + cartes) + tri des avis · Coupure du cordon Firebase
+
+### Feature — Le radar comparatif devient accessible depuis partout
+- Le radar + comparatif détaillé par critères ([ComparisonSection.tsx](src/components/solutions/detail/ComparisonSection.tsx), ancre `#comparaison`) existait déjà sur chaque fiche mais **sans point d'entrée visible**. Constat clé : les demandes ne visaient pas à construire un comparateur (déjà fait) mais à **ajouter des accès**. Deux points d'entrée ajoutés :
+  - **Fiche solution** : bouton discret « Comparer » dans le bandeau à droite du titre ([SolutionHero.tsx](src/components/solutions/detail/SolutionHero.tsx)), **desktop uniquement** (`lg:`, marge `lg:mr-12` pour le recentrer), simple ancre vers `#comparaison`. Affiché seulement si le radar existe (≥ 3 critères → flag `hasComparaison` calculé dans [SolutionDetailPage.tsx](src/components/solutions/SolutionDetailPage.tsx)).
+  - **Cartes solutions** ([SolutionList.tsx](src/components/solutions/SolutionList.tsx)) : lien « Comparer » à droite des étoiles, **révélé au survol en desktop, masqué en mobile** (`relative z-10` pour passer au-dessus du lien étiré de la carte), vers `…/[solution]#comparaison`. Affiché seulement si la solution a des notes. La carte reste en **rendu serveur** → ISR/SEO des pages catégorie intacts. (Cas du tri « Nom » à deux notes : lien non ajouté, layout en grille sans emplacement propre.)
+
+### UX / UI — Tri des avis élargi + accès direct aux témoignages
+- **Tri des témoignages** ([ConfrereTestimonials.tsx](src/components/solutions/detail/ConfrereTestimonials.tsx), [avis/route.ts](src/app/api/solutions/[solutionId]/avis/route.ts), [evaluations.ts](src/lib/db/evaluations.ts)) : ajout de « **Avis les plus anciens** » et « **Pires notes** » aux deux tris existants (récents / meilleures notes). `tri` passe à 4 valeurs (`date`/`date_asc`/`note`/`note_asc`), une seule ligne d'`order` paramétrée (colonne + sens).
+- **Accès aux avis des confrères** ([SolutionHero.tsx](src/components/solutions/detail/SolutionHero.tsx)) : la barre d'ancres n'avait **aucun lien vers les témoignages** (`#temoignages`) — « Notes utilisateurs » pointait vers la distribution des notes (`#avis-utilisateurs`). **Desktop** : puce « Avis des confrères » (→ `#temoignages`) ajoutée. **Mobile** (anti-surcharge) : « Notes utilisateurs » masquée, remplacée par « Avis utilisateurs » (→ `#temoignages`). Fallback : si 0 avis, « Notes utilisateurs » reste visible.
+
+### Nettoyage — Comparateur orphelin `/solutions/comparer` supprimé (résout un TODO)
+- La page (`src/app/solutions/comparer/page.tsx`, tableau brut sans radar) et l'état mort `comparaisonSolutionIds` + ses actions de [useAppStore.ts](src/stores/useAppStore.ts) (vestige du portage Quasar, **jamais recâblé**, aucun appelant) sont **supprimés**. La redirection des vieilles URLs `slug-vs-slug` ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx)) ne pointe plus vers ce comparateur : elle envoie désormais vers la **fiche de la 1re solution ancrée sur `#comparaison`** (le radar de la fiche assure la comparaison ; `getSolutionIdsBySlugs` reste utilisé pour valider le slug). Décision : option « nettoyer » poussée jusqu'à la suppression.
+
+### Vérif — Comparateur / tri des avis
+- `npm run build` **vert** — routes `/solutions/[cat]` et `[cat]/[sol]` toujours en `●`/ISR, `/solutions/comparer` retirée de la table de routes ; `tsc --noEmit` **propre**.
 
 ### Firebase — Désinstallation de `firebase-admin` + suppression des scripts de migration
 - `firebase-admin` retiré du `package.json` (−160 packages). Les **16 scripts** qui l'importaient (migration/audit Firebase→Supabase, one-shots déjà exécutés) supprimés. **0 import résiduel** dans `src/` (l'app ne l'utilisait plus, seulement les scripts).
