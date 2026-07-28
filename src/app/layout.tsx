@@ -40,6 +40,11 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     siteName: "100 000 Médecins",
   },
+  // L'image de partage vient de src/app/opengraph-image.png (convention Next, appliquée à toutes
+  // les pages sans image propre). On force la grande vignette Twitter/X.
+  twitter: {
+    card: "summary_large_image",
+  },
   ...(IS_PROD ? {} : {
     robots: {
       index: false,
