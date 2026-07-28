@@ -34,8 +34,10 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       openGraph: {
         title: meta?.title || fallbackTitle,
         description: meta?.description || solution.description || undefined,
-        // Pas d'image propre : on hérite de l'image de partage du site (src/app/opengraph-image.png)
-        // plutôt que le logo éditeur brut (petit, hébergé chez un tiers → fragile).
+        // Image de partage du site (src/app/opengraph-image.png), pointée explicitement : Next ne
+        // propage PAS l'opengraph-image racine vers une route qui redéfinit son openGraph (sinon
+        // Facebook, sans image déclarée, va piocher le logo éditeur dans la page).
+        images: ['/opengraph-image.png'],
       },
     }
   } catch {
