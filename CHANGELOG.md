@@ -5,6 +5,25 @@
 
 ---
 
+## [2026-07-28] — Aperçu de partage Open Graph : image du site partout + vérification du domaine Meta
+
+### SEO / Réseaux sociaux — Image de partage Open Graph propre sur tout le site
+- **Symptôme** (repéré en partageant le lien sur Facebook) : l'aperçu affichait une **image tierce** (un logo « …Care » avec stéthoscope), pas celle du site.
+- **Cause** : l'accueil et les pages génériques ne servaient **aucune** balise `og:image` (vérifié en interrogeant la prod comme le robot `facebookexternalhit`). Sans image déclarée, Facebook pioche une `<img>` au hasard dans la page ou ressort un vieux cache (~30 j). Les fiches solutions, elles, sortaient le **logo éditeur brut** (`solution.logo_url`, souvent petit et hébergé chez le tiers → fragile).
+- **Fix** : image de partage unique **1200×630** à la charte ([opengraph-image.png](src/app/opengraph-image.png) — fond hero signature + logo + baseline), générée par script reproductible [scripts/build-og-image.js](scripts/build-og-image.js) (sharp, buffer RGBA brut, sans dépendance pngjs). Convention Next `opengraph-image` → servie par défaut sur toutes les pages. `twitter:card` passé en `summary_large_image` ([layout.tsx](src/app/layout.tsx)).
+- **Fiches solutions** : le logo éditeur en `og:image` est **retiré** au profit de l'image du site. ⚠️ **Piège Next** : une route qui **redéfinit son `openGraph`** via `generateMetadata` **n'hérite PAS** de l'`opengraph-image` racine → la fiche se retrouvait **sans aucune** `og:image` (Facebook repiochait alors le logo éditeur dans la page). Corrigé en pointant **explicitement** `images: ['/opengraph-image.png']` dans [[idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx). Les pages qui ne redéfinissent pas `openGraph` (accueil, catégorie…) héritent bien du fichier — vérifié.
+- **⚠️ Cache Facebook** : après déploiement, forcer le re-scrape via le **Sharing Debugger** (developers.facebook.com/tools/debug) → « Scrape Again », sinon l'ancien aperçu persiste des semaines.
+- **Blog** : chaque article **garde sa propre image** (aperçu pertinent et non fragile) — hors périmètre.
+
+### SEO — Vérification du domaine côté Meta Business
+- Sujet **distinct** de l'image : le panneau « À propos de ce contenu » de Facebook affichait « Impossible de trouver une Page Facebook pour 100000medecins.org » (association domaine ↔ Page).
+- Ajout de la balise `facebook-domain-verification` ([layout.tsx](src/app/layout.tsx), via `metadata.verification.other`). Domaine ajouté + **vérifié** dans Meta Business (Sécurité de la marque → Domaines) ; Page déjà rattachée au portefeuille. Le panneau « À propos » se met à jour côté Meta avec un délai de propagation. **Cosmétique** — n'affecte pas l'aperçu du lien.
+
+### Vérif
+- Confirmé en prod (`curl` en `facebookexternalhit`) : accueil, fiche Weda et page catégorie servent bien `og:image = /opengraph-image.png` ; balise `facebook-domain-verification` présente sur `www` **et** apex.
+
+---
+
 ## [2026-07-26] — Points d'entrée du comparateur (fiche + cartes) + tri des avis · Coupure du cordon Firebase
 
 ### Feature — Le radar comparatif devient accessible depuis partout
