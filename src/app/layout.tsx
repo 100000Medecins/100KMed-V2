@@ -45,6 +45,12 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+  // Vérification du domaine pour Meta (Facebook Business → Domaines) → <meta name="facebook-domain-verification">
+  verification: {
+    other: {
+      "facebook-domain-verification": "sljgihcnymnx9ht9jat6a543zdpbbz",
+    },
+  },
   ...(IS_PROD ? {} : {
     robots: {
       index: false,
