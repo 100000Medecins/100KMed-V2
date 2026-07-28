@@ -34,7 +34,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       openGraph: {
         title: meta?.title || fallbackTitle,
         description: meta?.description || solution.description || undefined,
-        images: solution.logo_url ? [{ url: solution.logo_url }] : undefined,
+        // Pas d'image propre : on hérite de l'image de partage du site (src/app/opengraph-image.png)
+        // plutôt que le logo éditeur brut (petit, hébergé chez un tiers → fragile).
       },
     }
   } catch {
