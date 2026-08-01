@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-08-01] — Encadré « cadre juridique » sur la page catégorie IA Documentaires
+
+### Feature — Renvois externes vers les bonnes pratiques IA (demande DNS)
+- **Origine** : demande de **Pauline Choné** (Directrice de Projets – Stratégie IA en santé, **Délégation au Numérique en Santé**, Ministère de la Santé) — signaler aux visiteurs le cadre d'usage de l'IA avant qu'ils ne choisissent un outil.
+- Encadré ajouté dans le **hero** de [/solutions/ia-documentaires](src/app/solutions/[idCategorie]/page.tsx), sous l'intro : rappel du cadre (aucune donnée nominative, connaître le corpus, souveraineté) + deux renvois externes — l'article **« Utiliser l'IA sans aller en prison »** de *Médecins Malins* (substack) et le **guide pratique IA générative** de *e-santé Pays de la Loire* (PDF).
+- Nouveau composant [CategoryCallout.tsx](src/components/solutions/CategoryCallout.tsx) (verre dépoli sur fond sombre, tokens `rounded-card` / `bg-white/10`). Liens en `target="_blank"` + `rel="noopener noreferrer"`, icône « lien externe », mention « nouvel onglet » en `sr-only`, marqueur **(PDF)** sur le guide (vérifié : l'URL renvoie bien `application/pdf`) pour éviter le téléchargement surprise.
+- **Placé hors du flex row** du hero → pleine largeur, et **visible sur mobile**, contrairement à `categorie.intro` qui est en `hidden md:block`.
+
+### Choix technique — contenu en dur, pas en base
+- Contenu dans une map indexée par **slug de catégorie** ([category-callouts.ts](src/lib/constants/category-callouts.ts)), avec une liste de liens (`liens[]`) pour en ajouter d'autres sans retoucher le composant.
+- **Pourquoi pas en base** : `categories` n'a **aucune colonne JSONB libre** — une gestion en admin imposerait une migration (colonne `callout` jsonb) + UI, disproportionné pour un encadré sur une page. Le jour où ces encadrés se multiplient, faire la migration plutôt que d'allonger la map (noté en commentaire dans le fichier).
+- ⚠️ **Doc à corriger** : `CLAUDE.md` mentionne un `categories.meta` (JSONB) qui **n'existe pas** en base — les colonnes réelles sont `intro`, `meta_description`, `label_filtres`, `label_fonctionnalites`, `has_note_redac`…
+
+### Nettoyage au fil de l'eau
+- Suppression de 2 `as any` devenus inutiles dans [page.tsx](src/app/solutions/[idCategorie]/page.tsx) : `has_note_redac` et `label_filtres` **existent** dans `database.ts` et `Categorie = categories['Row']` les expose.
+
+### Vérif
+- `tsc --noEmit` et lint OK ; build OK et la route `/solutions/[idCategorie]` sort toujours **`●` (ISR)**, pas `ƒ` — l'encadré est en rendu serveur pur, aucune lecture de cookies/searchParams ajoutée.
+- HTML rendu contrôlé en dev : encadré présent sur `ia-documentaires`, **absent** sur `logiciel-medical` ; les deux URL externes répondent `200`.
+
+---
+
 ## [2026-07-28] — Aperçu de partage Open Graph : image du site partout + vérification du domaine Meta
 
 ### SEO / Réseaux sociaux — Image de partage Open Graph propre sur tout le site
