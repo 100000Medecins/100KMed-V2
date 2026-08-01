@@ -21,6 +21,8 @@ import { getCitationsActives } from '@/lib/db/citations'
 import CitationCarousel from '@/components/CitationCarousel'
 import SolutionsCategoryBrowser from '@/components/solutions/SolutionsCategoryBrowser'
 import SolutionsCategoryView from '@/components/solutions/SolutionsCategoryView'
+import CategoryCallout from '@/components/solutions/CategoryCallout'
+import { CATEGORY_CALLOUTS } from '@/lib/constants/category-callouts'
 import { filterAndSortSolutions, type CategoryBrowseData } from '@/lib/solutions-filter-sort'
 
 /**
@@ -110,8 +112,9 @@ export default async function SolutionsPage(props: PageProps) {
   }
 
   const categorieSlug = categorie.slug || ''
-  const hasNoteRedac = !!(categorie as any).has_note_redac
-  const labelFiltres = (categorie as any).label_filtres || undefined
+  const hasNoteRedac = !!categorie.has_note_redac
+  const labelFiltres = categorie.label_filtres || undefined
+  const callout = CATEGORY_CALLOUTS[categorieSlug]
 
   // Vue par défaut (tri note_utilisateurs, sans filtre) rendue côté serveur → sert de fallback
   // au <Suspense> : garantit que la liste complète des solutions est dans le HTML statique (SEO).
@@ -159,6 +162,14 @@ export default async function SolutionsPage(props: PageProps) {
                 </div>
               )}
             </div>
+
+            {/* Encadré de renvoi externe (ex. IA documentaires → cadre juridique).
+                Hors du flex row → pleine largeur, visible mobile ET desktop. */}
+            {callout && (
+              <div className="mt-4 md:mt-6">
+                <CategoryCallout callout={callout} />
+              </div>
+            )}
           </div>
         </section>
 

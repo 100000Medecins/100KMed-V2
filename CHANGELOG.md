@@ -5,6 +5,47 @@
 
 ---
 
+## [2026-08-01] — Encadré « cadre juridique » sur la page catégorie IA Documentaires
+
+### Feature — Renvois externes vers les bonnes pratiques IA (demande DNS)
+- **Origine** : demande de **Pauline Choné** (Directrice de Projets – Stratégie IA en santé, **Délégation au Numérique en Santé**, Ministère de la Santé) — signaler aux visiteurs le cadre d'usage de l'IA avant qu'ils ne choisissent un outil.
+- Encadré ajouté dans le **hero** de [/solutions/ia-documentaires](src/app/solutions/[idCategorie]/page.tsx), sous l'intro : rappel du cadre (aucune donnée nominative, connaître le corpus, souveraineté) + deux renvois externes — l'article **« Utiliser l'IA sans aller en prison »** de *Médecins Malins* (substack) et le **guide pratique IA générative** de *e-santé Pays de la Loire* (PDF).
+- Nouveau composant [CategoryCallout.tsx](src/components/solutions/CategoryCallout.tsx) (verre dépoli sur fond sombre, tokens `rounded-card` / `bg-white/10`). Liens en `target="_blank"` + `rel="noopener noreferrer"`, icône « lien externe », mention « nouvel onglet » en `sr-only`, marqueur **(PDF)** sur le guide (vérifié : l'URL renvoie bien `application/pdf`) pour éviter le téléchargement surprise.
+- **Placé hors du flex row** du hero → pleine largeur, et **visible sur mobile**, contrairement à `categorie.intro` qui est en `hidden md:block`.
+
+### Choix technique — contenu en dur, pas en base
+- Contenu dans une map indexée par **slug de catégorie** ([category-callouts.ts](src/lib/constants/category-callouts.ts)), avec une liste de liens (`liens[]`) pour en ajouter d'autres sans retoucher le composant.
+- **Pourquoi pas en base** : `categories` n'a **aucune colonne JSONB libre** — une gestion en admin imposerait une migration (colonne `callout` jsonb) + UI, disproportionné pour un encadré sur une page. Le jour où ces encadrés se multiplient, faire la migration plutôt que d'allonger la map (noté en commentaire dans le fichier).
+- ⚠️ **Doc à corriger** : `CLAUDE.md` mentionne un `categories.meta` (JSONB) qui **n'existe pas** en base — les colonnes réelles sont `intro`, `meta_description`, `label_filtres`, `label_fonctionnalites`, `has_note_redac`…
+
+### Nettoyage au fil de l'eau
+- Suppression de 2 `as any` devenus inutiles dans [page.tsx](src/app/solutions/[idCategorie]/page.tsx) : `has_note_redac` et `label_filtres` **existent** dans `database.ts` et `Categorie = categories['Row']` les expose.
+
+### Vérif
+- `tsc --noEmit` et lint OK ; build OK et la route `/solutions/[idCategorie]` sort toujours **`●` (ISR)**, pas `ƒ` — l'encadré est en rendu serveur pur, aucune lecture de cookies/searchParams ajoutée.
+- HTML rendu contrôlé en dev : encadré présent sur `ia-documentaires`, **absent** sur `logiciel-medical` ; les deux URL externes répondent `200`.
+
+---
+
+## [2026-07-28] — Aperçu de partage Open Graph : image du site partout + vérification du domaine Meta
+
+### SEO / Réseaux sociaux — Image de partage Open Graph propre sur tout le site
+- **Symptôme** (repéré en partageant le lien sur Facebook) : l'aperçu affichait une **image tierce** (un logo « …Care » avec stéthoscope), pas celle du site.
+- **Cause** : l'accueil et les pages génériques ne servaient **aucune** balise `og:image` (vérifié en interrogeant la prod comme le robot `facebookexternalhit`). Sans image déclarée, Facebook pioche une `<img>` au hasard dans la page ou ressort un vieux cache (~30 j). Les fiches solutions, elles, sortaient le **logo éditeur brut** (`solution.logo_url`, souvent petit et hébergé chez le tiers → fragile).
+- **Fix** : image de partage unique **1200×630** à la charte ([opengraph-image.png](src/app/opengraph-image.png) — fond hero signature + logo + baseline), générée par script reproductible [scripts/build-og-image.js](scripts/build-og-image.js) (sharp, buffer RGBA brut, sans dépendance pngjs). Convention Next `opengraph-image` → servie par défaut sur toutes les pages. `twitter:card` passé en `summary_large_image` ([layout.tsx](src/app/layout.tsx)).
+- **Fiches solutions** : le logo éditeur en `og:image` est **retiré** au profit de l'image du site. ⚠️ **Piège Next** : une route qui **redéfinit son `openGraph`** via `generateMetadata` **n'hérite PAS** de l'`opengraph-image` racine → la fiche se retrouvait **sans aucune** `og:image` (Facebook repiochait alors le logo éditeur dans la page). Corrigé en pointant **explicitement** `images: ['/opengraph-image.png']` dans [[idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx). Les pages qui ne redéfinissent pas `openGraph` (accueil, catégorie…) héritent bien du fichier — vérifié.
+- **⚠️ Cache Facebook** : après déploiement, forcer le re-scrape via le **Sharing Debugger** (developers.facebook.com/tools/debug) → « Scrape Again », sinon l'ancien aperçu persiste des semaines.
+- **Blog** : chaque article **garde sa propre image** (aperçu pertinent et non fragile) — hors périmètre.
+
+### SEO — Vérification du domaine côté Meta Business
+- Sujet **distinct** de l'image : le panneau « À propos de ce contenu » de Facebook affichait « Impossible de trouver une Page Facebook pour 100000medecins.org » (association domaine ↔ Page).
+- Ajout de la balise `facebook-domain-verification` ([layout.tsx](src/app/layout.tsx), via `metadata.verification.other`). Domaine ajouté + **vérifié** dans Meta Business (Sécurité de la marque → Domaines) ; Page déjà rattachée au portefeuille. Le panneau « À propos » se met à jour côté Meta avec un délai de propagation. **Cosmétique** — n'affecte pas l'aperçu du lien.
+
+### Vérif
+- Confirmé en prod (`curl` en `facebookexternalhit`) : accueil, fiche Weda et page catégorie servent bien `og:image = /opengraph-image.png` ; balise `facebook-domain-verification` présente sur `www` **et** apex.
+
+---
+
 ## [2026-07-26] — Points d'entrée du comparateur (fiche + cartes) + tri des avis · Coupure du cordon Firebase
 
 ### Feature — Le radar comparatif devient accessible depuis partout
