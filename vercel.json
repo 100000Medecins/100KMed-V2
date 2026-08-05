@@ -40,6 +40,10 @@
     {
       "path": "/api/cron/digest-activite",
       "schedule": "30 7 * * 1"
+    },
+    {
+      "path": "/api/cron/verif-backup",
+      "schedule": "0 10 * * *"
     }
   ]
 }

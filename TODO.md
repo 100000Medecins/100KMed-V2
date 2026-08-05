@@ -20,6 +20,18 @@ _(rien en cours)_
 
 _(rien en cours)_
 
+### Sauvegardes de la base
+
+#### Supervision + archivage mensuel — livré le 2026-08-05, reste à brancher (David)
+- **Contexte de l'incident** : les dumps tournaient bien (tous les 3-4 jours, tâche `Backup Supabase 100KMed` sur le desktop `MSF-MG1`), mais leur **réplication Synology vers le portable s'est arrêtée du 28 juin au 5 août** sans qu'aucun signal ne le révèle. Découvert par hasard. Rappel : Supabase est en plan **Free** → aucune sauvegarde côté serveur, le dump local est le seul filet.
+- **Livré (code)** : `scripts/backup-supabase.ps1` versionné dans le repo (source de vérité unique), archive mensuelle hors rotation, route `/api/backup-ping`, cron quotidien `/api/cron/verif-backup` (alerte email si le dernier dump dépasse 8 jours).
+- ⏳ **Reste (David)** :
+  1. Exécuter la migration SQL `backup_pings` dans le SQL Editor Supabase, puis régénérer `src/types/database.ts`
+  2. Ajouter `BACKUP_PING_SECRET` dans Vercel (Production) **et** en variable d'environnement utilisateur sur le desktop
+  3. Repointer la tâche planifiée du desktop vers `scripts/backup-supabase.ps1` du repo, puis supprimer les copies hors repo (`C:\Users\david\scripts\backup-supabase\`) sur les deux postes
+  4. Fusionner le journal : `backup_MSF-MG1_août-05-213056-2026_Conflict.log` (123 lignes, historique complet) est plus complet que le `backup.log` courant (87 lignes, trou du 28/06 au 05/08)
+- **Après branchement** : retirer les `as any` sur `backup_pings` dans les deux routes (le cast n'est là que le temps de la régénération des types).
+
 ### Communication
 
 #### Informer l'ISNAR de la question e-CPF « médecins juniors » (2026-07-20)
@@ -129,20 +141,21 @@ _(rien en cours)_
 
 ### Mises à jour techniques
 
-#### Rapatrier l'email transactionnel en Europe : SendGrid → Brevo (2026-07-25)
-- **Moteur** : souveraineté / « revenir en Europe » pour l'hébergement du site. **Pas d'obligation légale HDS** (pas de données de santé de patients ici, seulement de l'identité pro — à confirmer par un DPO), donc **choix de principe**, faisable incrémentalement.
-- **État de la pile après la session 2026-07-25** : Supabase déjà en **UE** (`eu-west-1` Irlande, vérifié) ; région Vercel **fixée en `cdg1`** (Paris 🇫🇷) dans `vercel.json` — ⚠️ prend effet **au prochain déploiement** (avant : compute par défaut `iad1`/US → aller-retour transatlantique vers la DB). Compute à Paris, DB en Irlande (`eu-west-1`) : ~20 ms intra-UE, négligeable. **SendGrid (Twilio, US) = dernier maillon US** de la chaîne.
-- **Chantier Brevo** (société française, Sarcelles) — effort **faible/moyen (~1-2 j)** :
-  - Réécrire le **transport** d'envoi (SDK/API Brevo) là où on utilise `@sendgrid/mail` (`src/lib/email/`, `EMAIL_SENDER`, les routes cron d'envoi).
-  - Refaire l'authentification DNS de l'expéditeur côté Brevo : **SPF / DKIM / DMARC**.
-  - Re-tester : rendu des **templates** (`email_templates`), le **tracking**, et les **liens de désinscription** (`generateUnsubscribeLink`).
-  - Vérifier les quotas Brevo (gratuit 300 mails/j ; les crons campagnes/newsletter peuvent dépasser → plan payant ~9-18 €/mois).
-- **Ne PAS faire** (tranché en session 2026-07-25) : quitter Supabase (auto-hébergement = trop risqué en solo ; Postgres nu ailleurs = réécriture de l'Auth/PSC). On s'arrête à « données en UE + email FR ». Supabase = Postgres **+ Auth (GoTrue/PSC) + PostgREST/RLS + Storage** → ce n'est pas « juste une base » remplaçable à la volée.
+#### ~~Rapatrier l'email transactionnel en Europe : SendGrid → Brevo (2026-07-25)~~ ⏸️ EN VEILLE 2026-08-01
+- **Décision (2026-08-01) : mis en veille, sans échéance.** Aucune urgence — c'est un **choix de principe** (souveraineté), pas une contrainte légale ni un problème constaté. SendGrid fonctionne, personne ne s'en plaint. **Déclencheur de réouverture** : une plainte/exigence explicite (adhérent, partenaire institutionnel, DPO), une évolution réglementaire, ou un problème réel de délivrabilité côté SendGrid.
+- **État de la pile (à conserver, toujours vrai)** : Supabase en **UE** (`eu-west-1` Irlande, vérifié) ; région Vercel **fixée en `cdg1`** (Paris 🇫🇷) dans `vercel.json` — avant, compute par défaut `iad1`/US → aller-retour transatlantique vers la DB. Compute à Paris + DB en Irlande : ~20 ms intra-UE, négligeable. **SendGrid (Twilio, US) = dernier maillon US** de la chaîne, et il le reste.
+- ~~**Chantier Brevo** (société française, Sarcelles) — effort **faible/moyen (~1-2 j)** :~~
+  - ~~Réécrire le **transport** d'envoi (SDK/API Brevo) là où on utilise `@sendgrid/mail` (`src/lib/email/`, `EMAIL_SENDER`, les routes cron d'envoi).~~
+  - ~~Refaire l'authentification DNS de l'expéditeur côté Brevo : **SPF / DKIM / DMARC**.~~
+  - ~~Re-tester : rendu des **templates** (`email_templates`), le **tracking**, et les **liens de désinscription** (`generateUnsubscribeLink`).~~
+  - ~~Vérifier les quotas Brevo (gratuit 300 mails/j ; les crons campagnes/newsletter peuvent dépasser → plan payant ~9-18 €/mois).~~
+- **Ne PAS faire** (tranché en session 2026-07-25, toujours valable) : quitter Supabase (auto-hébergement = trop risqué en solo ; Postgres nu ailleurs = réécriture de l'Auth/PSC). Supabase = Postgres **+ Auth (GoTrue/PSC) + PostgREST/RLS + Storage** → ce n'est pas « juste une base » remplaçable à la volée.
 
 #### Brancher les rapports DMARC (`rua`) sur un agrégateur lisible (2026-08-01)
 - **Constat** : le domaine est **déjà au maximum DMARC** (`p=reject; sp=reject; np=reject`, DKIM Gandi RSA 2048 — rien à durcir), mais `rua=mailto:david.azerad@100000medecins.org` → les rapports d'agrégation arrivent en **XML brut dans une boîte perso**, donc illisibles et jamais lus. On applique donc une politique de **rejet à l'aveugle** : aucune visibilité sur ce qui est bloqué en notre nom, ni sur un service légitime qui se ferait rejeter au passage.
 - **À faire (effort : 5 min)** : créer un compte sur un agrégateur gratuit (**Postmark DMARC Digests** = rapport hebdo lisible par mail, le plus simple ; alternatives URIports, dmarcian free tier), puis remplacer la valeur `rua=` dans la zone DNS **Gandi** → une seule ligne TXT à modifier sur `_dmarc.100000medecins.org`.
-- ⚠️ **Ne PAS toucher au reste** : garder `adkim=r` / `aspf=r` (alignement *relaxed*). Passer en strict ne bloquerait rien de plus et casserait le jour où on enverra depuis un sous-domaine ou via un routeur tiers — **cf. chantier Brevo ci-dessus, qui refait précisément SPF/DKIM/DMARC**. Idéalement faire cet item **avant ou pendant** la bascule Brevo : c'est justement pendant une migration d'expéditeur que les rapports servent.
+- ⚠️ **Ne PAS toucher au reste** : garder `adkim=r` / `aspf=r` (alignement *relaxed*). Passer en strict ne bloquerait rien de plus et casserait le jour où on enverrait depuis un sous-domaine ou via un routeur tiers avec return-path personnalisé.
+- **Item autonome** : à faire quand ça arrange, indépendamment de tout autre chantier. *(Si la migration Brevo ci-dessus sortait un jour de veille, brancher les rapports **avant** la bascule — c'est pendant un changement d'expéditeur qu'ils servent le plus.)*
 - **Origine (2026-07-30)** : deux mails à des adresses `@urps-med-idf.org` rejetés (Orange `501 OFR_515` + Yahoo `554 5.7.9`, deux opérateurs indépendants, même motif). Cause = **redirection automatique sans SRS côté URPS**, pas notre configuration ; le message était authentifié `spf=pass / dkim=pass / dmarc=pass` à l'entrée chez eux. Aucun réglage DMARC de notre côté n'y changerait quoi que ce soit (durcir = aggraver, desserrer = se découvrir). Courrier de signalement rédigé pour l'URPS IdF.
 - **Axes voisins non couverts, priorité basse** : `MTA-STS` + `TLS-RPT` absents (chiffrement du transport, complémentaire de DMARC) ; `BIMI` absent (logo affiché dans la boîte de réception — exige `p=reject`, déjà satisfait, mais certificat VMC ~1 000-1 500 €/an → hors budget asso).
 
@@ -210,6 +223,12 @@ _(rien en cours)_
 - **Reste** : une fois la masse critique atteinte, **activer le toggle** dans `/admin/parametres` + retirer le badge « Bientôt affiché sur le site » (`src/app/mon-compte/mon-espace-editeur/page.tsx`).
 
 ---
+
+### Sauvegardes hors site — bucket européen
+- Aujourd'hui les dumps ne vivent que sur les postes Windows + le NAS : un sinistre au domicile (incendie, vol, ransomware qui chiffre le NAS monté) emporte tout. Il manque une copie **hors site**.
+- Cible : une GitHub Action planifiée qui `pg_dump` et pousse vers un bucket **européen** (Scaleway ou OVH object storage, hébergement français, quelques centimes/mois, rétention illimitée). L'Action supprime au passage la dépendance à un PC allumé.
+- ⚠️ **Écarté : les artifacts GitHub comme destination** — le dump contient les nom, prénom, RPPS, email et évaluations nominatives de ~6 300 professionnels de santé. Les stocker chez GitHub (États-Unis) ajoute un transfert de données de santé vers un sous-traitant américain, dans un service qui n'est pas fait pour ça, avec une rétention plafonnée à 90 jours. Décision du 2026-08-05.
+- À cadrer : fournisseur, chiffrement au repos (`age` / `gpg` avant upload), politique de rétention, où stocker la clé de déchiffrement.
 
 ### Thèmes alternatifs du site
 - Implémenter un système de thème global switchable (CSS variables ou Tailwind config)
