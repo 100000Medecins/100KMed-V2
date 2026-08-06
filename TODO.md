@@ -6,7 +6,25 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## URGENT
 
-_(rien d'urgent pour l'instant)_
+### Terminer le branchement de la supervision des sauvegardes (2026-08-06)
+
+Le code est livré et poussé (`df03fec` sur `dev`), la migration SQL est jouée et les types régénérés. Il reste **deux gestes**, et tant qu'ils ne sont pas faits la supervision ne tourne pas : aucun ping n'est émis, aucune alerte ne peut partir. Les sauvegardes elles-mêmes continuent normalement (ancien script sur le desktop), donc **la base reste protégée** — c'est la détection du silence qui manque encore.
+
+**1. Repointer la tâche planifiée du desktop** — ⛔ bloqué : pas d'accès au poste au 2026-08-06.
+
+D'abord `git pull` sur `dev` sur le desktop (sinon le script n'existe pas à ce chemin et le backup échouera), puis :
+
+```powershell
+$a = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" `
+  -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\Users\david\Documents\100000Medecins_websiteV2\scripts\backup-supabase.ps1"'
+Set-ScheduledTask -TaskName "Backup Supabase 100KMed" -Action $a
+```
+
+Le déclencheur est conservé. Vérifier aussi que `BACKUP_PING_SECRET` est bien défini en variable utilisateur **sur ce poste-là** (c'est lui qui exécute la tâche). Ensuite, supprimer les copies hors repo `C:\Users\david\scripts\backup-supabase\` sur les deux postes — c'est leur divergence qui a masqué l'incident de juin-juillet.
+
+**2. Merger `dev` → `main`** pour que `/api/backup-ping` et le cron `/api/cron/verif-backup` existent en production. Vercel ne déploie que `main` ([deploy.yml](.github/workflows/deploy.yml)), et les crons `vercel.json` ne tournent que sur un déploiement de production. Sans ce merge, le script pinguera dans le vide (avertissement journalisé, backup OK malgré tout).
+
+Ordre conseillé : merge d'abord, repointage ensuite — ainsi le premier dump après repointage pingue pour de vrai et tu vois la chaîne fonctionner de bout en bout.
 
 ---
 
@@ -25,12 +43,11 @@ _(rien en cours)_
 #### Supervision + archivage mensuel — livré le 2026-08-05, reste à brancher (David)
 - **Contexte de l'incident** : les dumps tournaient bien (tous les 3-4 jours, tâche `Backup Supabase 100KMed` sur le desktop `MSF-MG1`), mais leur **réplication Synology vers le portable s'est arrêtée du 28 juin au 5 août** sans qu'aucun signal ne le révèle. Découvert par hasard. Rappel : Supabase est en plan **Free** → aucune sauvegarde côté serveur, le dump local est le seul filet.
 - **Livré (code)** : `scripts/backup-supabase.ps1` versionné dans le repo (source de vérité unique), archive mensuelle hors rotation, route `/api/backup-ping`, cron quotidien `/api/cron/verif-backup` (alerte email si le dernier dump dépasse 8 jours).
-- ⏳ **Reste (David)** :
-  1. Exécuter la migration SQL `backup_pings` dans le SQL Editor Supabase, puis régénérer `src/types/database.ts`
-  2. Ajouter `BACKUP_PING_SECRET` dans Vercel (Production) **et** en variable d'environnement utilisateur sur le desktop
-  3. Repointer la tâche planifiée du desktop vers `scripts/backup-supabase.ps1` du repo, puis supprimer les copies hors repo (`C:\Users\david\scripts\backup-supabase\`) sur les deux postes
-  4. Fusionner le journal : `backup_MSF-MG1_août-05-213056-2026_Conflict.log` (123 lignes, historique complet) est plus complet que le `backup.log` courant (87 lignes, trou du 28/06 au 05/08)
-- **Après branchement** : retirer les `as any` sur `backup_pings` dans les deux routes (le cast n'est là que le temps de la régénération des types).
+- ✅ **Fait (2026-08-06)** : migration SQL `backup_pings` jouée (table + index, RLS active **sans policy** = inaccessible hors `service_role`, comme `activity_log`), `src/types/database.ts` régénéré, `BACKUP_PING_SECRET` posé dans Vercel.
+- ⏳ **Reste** : les deux gestes de branchement sont remontés en **URGENT** en haut de ce fichier (repointage de la tâche du desktop + merge `dev` → `main`).
+- ⏳ **Fusionner le journal de backup** : `backup_MSF-MG1_août-05-213056-2026_Conflict.log` (123 lignes, historique complet du 26/04 au 05/08) est plus complet que le `backup.log` courant (87 lignes, trou du 28/06 au 05/08). La copie de conflit est la bonne référence — il n'y manque que les 4 lignes du backup manuel du 05/08 17h28. Faisable depuis le portable, le dossier est synchronisé.
+- 🔒 **Durcissement optionnel (non urgent)** : l'ACL de `backup_pings` porte `anon=arwdDxtm` et `authenticated=arwdDxtm` — Supabase applique encore l'auto-grant d'avant le 30 octobre 2026. **Sans danger aujourd'hui** (la RLS sans policy bloque toute ligne), mais ces droits de table ne servent à rien et deviendraient effectifs si une policy permissive était ajoutée un jour. Moindre privilège : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;`
+- 🧹 **Nettoyage possible** : les types étant régénérés, les descriptions de surface temporaires (`ClientAvecBackupPings`) dans les deux routes peuvent laisser place aux types générés.
 
 ### Communication
 
