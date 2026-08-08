@@ -5,6 +5,44 @@
 
 ---
 
+## [2026-08-08] — Alerte Vercel Fluid CPU (3ᵉ) : diagnostic chiffré + le recalcul d'agrégats ne part plus pour rien
+
+### Contexte — 3ᵉ alerte « Fluid Active CPU 75 % » (3h05 / 4h)
+- Diagnostic chiffré depuis le graphe Vercel (fenêtre **8 juillet → 7 août**, somme des barres ≈ 3h03 ≈ compteur affiché → la fenêtre montrée est bien la période comptée) : le rythme est passé de **~8-10 min/jour début juillet à ~4,7 min/jour depuis le 26/07**. Le travail ISR de juillet a bien divisé la consommation par deux — **ce n'est pas une régression**. Répartition : function 2h48 (91 %), middleware 16m45 (9 %), ce dernier déjà borné à 5 routes d'auth ([proxy.ts](src/proxy.ts)) → rien à gratter.
+- **Projection au rythme actuel : ~2h20 / 30 j, soit ~59 % du cap.** Marge de croissance ≈ **×1,7 sur le trafic** avant le mur.
+- **Décision : pas de passage à Pro maintenant, mais avant la campagne de rentrée** (envoi syndicats). Le mode de défaillance Hobby est une **mise en pause du site**, pas un throttle, et une campagne multiplie les **conversions** (inscriptions + évaluations = le chemin CPU coûteux ; les lectures de pages, elles, sont absorbées par l'ISR). Coût : **20 $/mois/siège** ; Active CPU on-demand en `iad1` = **0,128 $/CPU-heure** → à ce volume ~0,40 $/mois de compute, absorbé par le crédit d'usage Pro. On paierait une **assurance anti-downtime**, pas du calcul.
+
+### Perf — Le recalcul complet des agrégats ne part plus quand seul du texte a changé
+- **Constat** : le commentaire d'un avis vit dans `evaluations.scores.commentaire` (clé du JSONB, pas une colonne). Toute sauvegarde du formulaire de notation embarquait donc le commentaire **et** déclenchait `recalcResultatsPourSolution()` — un recalcul de **tous** les critères de la solution (dizaines de requêtes séquentielles) pour un texte qui n'entre dans aucune moyenne. Corriger une faute de frappe coûtait un recalcul complet.
+- **Fix** : helper `notesInchangees()` ([evaluation.ts](src/lib/actions/evaluation.ts)) qui compare deux jeux de `scores` en ignorant `commentaire`/`date_debut`/`date_fin`. Branché dans `saveDraftEvaluation` **et** `submitEvaluation` : si rien de numérique n'a bougé → on saute le recalcul et on appelle le nouveau `revalidateSolutionById()` ([revalidate-solution.ts](src/lib/revalidate-solution.ts)). **La fraîcheur est préservée à l'identique** ; seul le recalcul disparaît.
+- ⚠️ **Garde-fous** (c'est là que ça pouvait casser silencieusement) : on ne saute le recalcul que si l'éval était **déjà** `statut='publiee'` **et** que sa `moyenne_utilisateur` stockée est identique à celle qu'on écrit. Sans ça, une éval qui **entre** dans les agrégats à cette sauvegarde (passage `en_attente_psc` → `publiee` après validation PSC, ou moyenne jusque-là nulle) n'aurait jamais été comptée — `recalcResultatsPourSolution` filtre précisément sur ces deux champs. La comparaison est volontairement laxiste (`3` == `'3'`) et renvoie `false` au moindre doute : **l'erreur sûre est de recalculer pour rien**.
+- **Non fait (assumé)** : le **batching** de `recalcResultatsPourSolution` lui-même — quand les notes changent vraiment, la boucle reste séquentielle. Elle touche l'ancrage Firebase figé et la règle « 0 = NC » ; pas voulu la réécrire dans le même lot. L'item reste en TODO mais perd de son urgence (le cas fréquent ne l'atteint plus).
+
+### Fix — Deux chemins réordonnaient la liste publique des avis sans revalider
+- **Cause** : `reconfirmerEvaluation()` ([evaluation.ts](src/lib/actions/evaluation.ts)) et [/api/revalider-avis](src/app/api/revalider-avis/route.ts) mettent à jour `last_date_note` — qui est la **clé du tri par défaut des témoignages** sur la fiche (`getAvisUtilisateursPaginated`, [db/evaluations.ts](src/lib/db/evaluations.ts)). Un médecin qui reconfirme son avis depuis un email de relance **réordonnait la liste publique**, invisible jusqu'à l'expiration ISR (1h). Le premier ne revalidait que `/mon-compte/mes-evaluations`, le second rien du tout.
+- **Fix** : `revalidateSolutionById()` sur les deux (best-effort côté route API : une revalidation ratée ne doit pas casser la confirmation de l'avis).
+- **Portée réelle, à ne pas surestimer** : `ConfrereTestimonials` est un composant client qui ne reçoit du serveur que `initialAvis` (1ʳᵉ page, tri par défaut) puis refetch l'API dès que le visiteur change de tri ou de page. **Seule la première vue** était figée.
+
+### Nettoyage — `submitScores` et sa chaîne morte supprimées (~140 lignes)
+- `submitScores()` n'avait **aucun appelant** dans `src/`. Avec elle disparaissent `updateResultat()` (déjà marquée `@deprecated`, « conservée pour compatibilité avec submitScores() ») et `updateMoyenneGlobale()`, plus l'interface `CritereScore`.
+- `updateResultat` portait encore l'ancienne **moyenne incrémentale avec division par 2** pour la base 5 — vestige d'avant la conversion 0-10 → 0-5 du 12/04. Elle n'avait plus rien à faire dans le fichier.
+- Elle se terminait par un `revalidatePath('/solutions')` qui, d'après la note du 22/07, **ne cascade pas** jusqu'aux fiches : un faux ami de moins.
+
+### Nettoyage au fil de l'eau
+- `SCORES_META_KEYS` factorisé dans [constants/criteres.ts](src/lib/constants/criteres.ts) : la liste `['commentaire','date_debut','date_fin']` était dupliquée à l'identique dans **trois** endroits ([actions/solutions.ts](src/lib/actions/solutions.ts), [noter/page.tsx](src/app/solution/noter/[...slug]/page.tsx), et le nouveau code) — exactement le genre de constante qui dérive.
+
+### Infrastructure — Types Supabase régénérés
+- `src/types/database.ts` : ajout de la table `backup_pings` (créée à la session « supervision des sauvegardes » du 2026-08-05, commit `df03fec` ; la régé était restée en attente dans le working tree).
+
+### Vérif
+- `tsc --noEmit` **propre**, `eslint` **propre** sur les 5 fichiers touchés, `npm run build` **vert** — routes inchangées : `/solutions/[cat]` et `[cat]/[sol]` toujours en `●` (ISR), `/solutions` en `○`.
+
+### TODO — Mises à jour
+- « Optimiser `recalcResultatsPourSolution` » : **partiellement traité** (cas « seul le texte a changé » réglé ; batching de la boucle toujours à faire).
+- « Vrai levier CPU » : décision datée du jour ajoutée (Pro avant la campagne de rentrée, pas maintenant) + chiffres de marge.
+
+---
+
 ## [2026-08-01] — Encadré « cadre juridique » sur la page catégorie IA Documentaires
 
 ### Feature — Renvois externes vers les bonnes pratiques IA (demande DNS)

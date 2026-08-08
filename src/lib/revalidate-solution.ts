@@ -32,3 +32,23 @@ export async function revalidateSolution(
     revalidatePath(`/solutions/${cat.slug}/${solutionSlug}`)
   }
 }
+
+/**
+ * Variante de `revalidateSolution` quand on n'a que l'id de la solution.
+ * Résout `slug` + `id_categorie` puis délègue.
+ *
+ * Utile pour les chemins qui changent l'affichage public d'une fiche **sans**
+ * toucher aux agrégats (commentaire modifié, reconfirmation d'un avis qui
+ * réordonne la liste des témoignages) : ils n'ont pas de raison de passer par
+ * `recalcResultatsPourSolution`, mais doivent quand même casser le cache ISR.
+ */
+export async function revalidateSolutionById(solutionId: string): Promise<void> {
+  const supabase = createServiceRoleClient()
+  const { data } = await supabase
+    .from('solutions')
+    .select('slug, id_categorie')
+    .eq('id', solutionId)
+    .maybeSingle()
+
+  await revalidateSolution(data?.slug, data?.id_categorie)
+}

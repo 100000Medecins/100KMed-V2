@@ -117,10 +117,10 @@ Identifie la categorie selon le domaine fonctionnel :
 
 ### Processus
 
-1. **Propose une EBAUCHE** d'entree a l'utilisateur basee sur le diff
-2. **Demande validation** avant d'ecrire dans le fichier
-3. **Si l'utilisateur veut modifier**, prends ses corrections en compte et repropose
-4. **Une fois valide**, ecris dans le fichier
+1. **Redige l'entree** a partir du diff de la session
+2. **Ecris-la directement** dans le fichier, sans demander de validation prealable
+3. **Montre a l'utilisateur ce que tu as ecrit** (le texte exact de l'entree ajoutee)
+4. **S'il veut modifier**, prends ses corrections en compte et reecris
 
 ## Etape 4 - Mise a jour du TODO.md
 
@@ -130,24 +130,27 @@ Lis `TODO.md` a la racine du projet.
 
 Pour chaque commit ou modification de cette session, verifie :
 
-1. **Items potentiellement termines** : si le travail fait correspond a un item de la TODO, propose de le barrer avec `~~texte~~ [OK] Fait YYYY-MM-DD`
-2. **Nouvelles taches detectees** : si tu vois apparaitre dans le code des `// TODO`, des bugs decouverts mentionnes dans les commentaires, des limitations notees dans la doc - propose de les ajouter a la TODO
+1. **Items termines** : si le travail fait couvre entierement un item de la TODO, barre-le avec `~~texte~~ [OK] Fait YYYY-MM-DD`
+2. **Nouvelles taches detectees** : si tu vois apparaitre dans le code des `// TODO`, des bugs decouverts mentionnes dans les commentaires, des limitations notees dans la doc - ajoute-les a la TODO
 
-### Demandes a l'utilisateur
+### Ce que tu montres apres coup
 
-Presente sous forme de propositions :
+Ecris d'abord, puis rends compte :
 
-> "**Taches a barrer ?**
-> - 'Bug X' : semble fait dans le commit, je propose de le barrer
-> - 'Feature Y' : partiellement fait, a confirmer
+> "**TODO mise a jour :**
+> - 'Bug X' : barre (fait dans le commit `abc1234`)
+> - Ajout : 'Optimiser la requete de `src/lib/db/foo.ts`' (vu un `// TODO` dans le code)
 >
-> **Nouvelles idees a ajouter ?**
-> - J'ai vu un `// TODO: optimiser cette requete` dans `src/lib/db/foo.ts`
-> - As-tu d'autres taches a ajouter ?"
+> As-tu d'autres taches a ajouter ?"
 
 ### Validation
 
-Comme pour le CHANGELOG : propose, attends validation, puis ecris.
+Ecris directement dans le fichier, puis montre ce que tu as ecrit. Pas de validation prealable.
+
+**Deux exceptions** ou tu poses la question AVANT d'ecrire :
+
+1. **Item partiellement fait** : ne le barre pas de toi-meme, demande a l'utilisateur s'il le considere termine
+2. **Travail qui contredit une tache** au lieu de l'achever (la session a pris une direction opposee a ce que l'item prevoyait) : signale-le et demande quoi faire de l'item
 
 ### Suggestion de nettoyage
 
@@ -316,7 +319,7 @@ Si l'etape 4 a detecte plus de 10 items barres dans TODO.md, ajoute a la fin :
 - **Jamais de force-push** (`--force`, `-f`) sans demande explicite et comprehension claire des consequences.
 - **Si la branche est `main`** : double-confirmation avant de pusher.
 - **Si Git est dans un etat bizarre** (rebase, merge, conflit non resolu) : arrete et demande a l'utilisateur.
-- **Le CHANGELOG et le TODO ne sont JAMAIS modifies sans validation explicite** sur le contenu propose.
+- **Le CHANGELOG et le TODO sont ecrits directement**, sans validation prealable : tu ecris, puis tu montres le texte exact. Deux exceptions ou tu demandes avant : un item de TODO partiellement fait (ne le barre pas seul) et un travail qui contredit une tache au lieu de l'achever.
 - **Toujours en francais**, ton conversationnel.
 - **Jamais de tableaux Markdown** pour afficher des donnees : listes a puces.
 - **Le vault Obsidian est un repo distinct** : ne lance jamais de git dessus (le plugin Obsidian Git synchronise). L'etape 7 ecrit seulement des fichiers.

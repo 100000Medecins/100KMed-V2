@@ -68,3 +68,7 @@ supabase/.temp/
 exports/
 captures-brutes/
 captures-encadrees/
+
+# Matière première des imports de catalogues (CSV bruts, visuels produits, docs
+# sources des nouvelles catégories). Dossier de travail local, jamais versionné.
+imports/

@@ -2,6 +2,7 @@
 
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { SCORES_META_KEYS } from '@/lib/constants/criteres'
 
 /**
  * Marque une solution comme utilisée par l'utilisateur.
@@ -138,11 +139,10 @@ export async function getEvaluationCompletionMap(
 
   // Construire la map solution_id -> scores keys
   const scoresMap: Record<string, Set<string>> = {}
-  const nonScoreKeys = new Set(['commentaire', 'date_debut', 'date_fin'])
   for (const ev of evals) {
     if (!ev.solution_id) continue
     const keys = Object.keys((ev.scores || {}) as Record<string, unknown>)
-      .filter((k) => !nonScoreKeys.has(k))
+      .filter((k) => !SCORES_META_KEYS.has(k))
     scoresMap[ev.solution_id] = new Set(keys)
   }
 

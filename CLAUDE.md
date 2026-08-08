@@ -61,7 +61,8 @@ PSC-authenticated users have `rpps` set in `users` table. Fields sourced from PS
 
 ### Database patterns
 
-- Heavy use of **JSONB** for flexible data: `evaluations.scores`, `categories.meta`
+- Heavy use of **JSONB** for flexible data: `evaluations.scores`, `resultats.notes` / `resultats.repartition`, `solutions.meta`, `solutions.contacts_commerciaux` / `contacts_support`, `app_settings.value`, `pages_statiques.metadata`
+- ⚠️ **`categories` n'a AUCUNE colonne JSONB** (ce fichier mentionnait un `categories.meta` qui n'a jamais existé — la colonne `meta` est sur `solutions`). Colonnes réelles : `nom`, `slug`, `intro`, `icon`, `image_url`, `position`, `actif`, `categorie_defaut`, `groupe_id`, `has_note_redac`, `label_filtres`, `label_fonctionnalites`, `meta_description`. **Conséquence** : tout contenu libre à attacher à une catégorie exige une vraie migration (nouvelle colonne), pas un `meta` existant — vérifier `src/types/database.ts` avant de supposer un champ disponible.
 - **Criteres** are hierarchical (self-referencing `parent_id`)
 - **RLS** enabled on most tables — use service role only when needed (admin ops, registration before user is authenticated)
 - Supabase join syntax: `.select('*, editeur:editeurs(*), categorie:categories(*)')`
