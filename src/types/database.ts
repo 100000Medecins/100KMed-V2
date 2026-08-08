@@ -346,6 +346,33 @@ export type Database = {
           },
         ]
       }
+      backup_pings: {
+        Row: {
+          created_at: string
+          effectue_le: string
+          fichier: string
+          id: string
+          machine: string | null
+          taille_octets: number
+        }
+        Insert: {
+          created_at?: string
+          effectue_le: string
+          fichier: string
+          id?: string
+          machine?: string | null
+          taille_octets: number
+        }
+        Update: {
+          created_at?: string
+          effectue_le?: string
+          fichier?: string
+          id?: string
+          machine?: string | null
+          taille_octets?: number
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           actif: boolean | null
