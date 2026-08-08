@@ -3,88 +3,46 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
-import { revalidateSolution } from '@/lib/revalidate-solution'
+import { revalidateSolution, revalidateSolutionById } from '@/lib/revalidate-solution'
+import { SCORES_META_KEYS } from '@/lib/constants/criteres'
 import { after } from 'next/server'
 import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
-interface CritereScore {
-  id: string
-  identifiantTech: string
-  type: string // 'note', 'nps', etc.
-  value: string | number
-}
+type ScoresRecord = Record<string, unknown>
 
 /**
- * Soumet les scores d'évaluation pour une solution.
- * Remplace : mutation setScoresSolution + updateEvaluation + updateResultats
+ * Vrai si AUCUNE note n'a changé entre deux jeux de `scores` — seules les clés
+ * hors-note (`commentaire`, `date_debut`, `date_fin`) diffèrent, voire rien.
  *
- * Logique métier clé :
- * 1. Stocke les scores de l'utilisateur dans `evaluations.scores` (JSONB)
- * 2. Pour chaque critère, met à jour le résultat agrégé dans `resultats`
- *    - Moyenne incrémentale : ((avg * n) - oldNote + newNote) / n
- *    - NPS : ((promoteurs/total) - (détracteurs/total)) * 100
+ * Sert à éviter un `recalcResultatsPourSolution()` inutile : corriger une faute
+ * de frappe dans un commentaire déclenchait un recalcul complet des agrégats de
+ * la solution (des dizaines de requêtes séquentielles) alors que le texte
+ * n'entre dans aucune moyenne. C'est un poste réel de CPU Vercel Fluid.
+ *
+ * Comparaison volontairement laxiste (`String()`) : `3` et `'3'` sont la même
+ * note. En cas de doute (clé absente d'un côté, valeur exotique), la fonction
+ * renvoie `false` → on recalcule. L'erreur sûre est de recalculer pour rien.
  */
-export async function submitScores(
-  solutionId: string,
-  step: string,
-  criteres: CritereScore[]
-) {
-  const supabase = await createServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non authentifié')
-
-  // 1. Mettre à jour l'évaluation utilisateur
-  const { data: evalRows } = await supabase
-    .from('evaluations')
-    .select('*')
-    .eq('solution_id', solutionId)
-    .eq('user_id', user.id)
-    .limit(1)
-
-  const existingEval = evalRows && evalRows.length > 0 ? evalRows[0] : null
-  const existingScores = (existingEval?.scores as Record<string, string | number> | null) ?? {}
-
-  // Fusionner les nouveaux scores
-  const updatedScores = { ...existingScores }
-  for (const critere of criteres) {
-    updatedScores[critere.identifiantTech] = critere.value
+function notesInchangees(avant: ScoresRecord | null | undefined, apres: ScoresRecord | null | undefined): boolean {
+  const notesSeules = (scores: ScoresRecord | null | undefined) => {
+    const out: Record<string, string> = {}
+    for (const [cle, valeur] of Object.entries(scores ?? {})) {
+      if (SCORES_META_KEYS.has(cle)) continue
+      out[cle] = String(valeur)
+    }
+    return out
   }
 
-  if (existingEval) {
-    await supabase
-      .from('evaluations')
-      .update({
-        scores: updatedScores,
-        last_date_note: new Date().toISOString(),
-      })
-      .eq('id', existingEval.id)
-  } else {
-    await supabase.from('evaluations').insert({
-      user_id: user.id,
-      solution_id: solutionId,
-      scores: updatedScores,
-      last_date_note: new Date().toISOString(),
-    })
+  const a = notesSeules(avant)
+  const b = notesSeules(apres)
+  const cles = new Set([...Object.keys(a), ...Object.keys(b)])
+  for (const cle of cles) {
+    if (a[cle] !== b[cle]) return false
   }
-
-  // 2. Mettre à jour les résultats agrégés pour chaque critère
-  for (const critere of criteres) {
-    await updateResultat(solutionId, user.id, critere, existingScores)
-  }
-
-  // 3. Si step === 'general', recalculer la moyenne globale utilisateurs
-  if (step === 'general') {
-    await updateMoyenneGlobale(solutionId, user.id)
-  }
-
-  revalidatePath(`/solutions`)
-  return { status: 'SUCCESS' }
+  return true
 }
 
 /**
@@ -351,148 +309,6 @@ export async function recalcResultatsPourSolution(solutionId: string) {
 }
 
 /**
- * Met à jour un résultat agrégé pour un critère.
- * @deprecated Remplacé par recalcResultatsPourSolution (full recalc, filtre statut='publiee').
- * Conservé pour compatibilité avec submitScores().
- */
-async function updateResultat(
-  solutionId: string,
-  userId: string,
-  critere: CritereScore,
-  existingScores: Record<string, string | number>
-) {
-  const supabase = await createServerClient()
-
-  // Chercher le résultat existant
-  const { data: resultat } = await supabase
-    .from('resultats')
-    .select('*')
-    .eq('solution_id', solutionId)
-    .eq('critere_id', critere.id)
-    .single()
-
-  const notes = (resultat?.notes as Record<string, number>) || {}
-  const oldNote = notes[userId]
-  const newNote = typeof critere.value === 'string' ? parseFloat(critere.value) : critere.value
-
-  if (isNaN(newNote)) return
-
-  notes[userId] = newNote
-  const nbNotes = Object.keys(notes).length
-
-  if (critere.type === 'nps') {
-    // Calcul NPS
-    const repartition = (resultat?.repartition as Record<string, number>) || {}
-
-    // Retirer l'ancienne valeur de la répartition
-    if (oldNote !== undefined) {
-      const oldKey = String(oldNote)
-      if (repartition[oldKey]) repartition[oldKey]--
-    }
-
-    // Ajouter la nouvelle valeur
-    const newKey = String(newNote)
-    repartition[newKey] = (repartition[newKey] || 0) + 1
-
-    // Calculer le NPS : ((promoteurs/total) - (détracteurs/total)) * 100
-    const total = Object.values(repartition).reduce((sum, v) => sum + v, 0)
-    let promoteurs = 0
-    let detracteurs = 0
-
-    for (const [score, count] of Object.entries(repartition)) {
-      const s = parseInt(score)
-      if (s >= 9) promoteurs += count
-      else if (s <= 6) detracteurs += count
-    }
-
-    const nps = total > 0 ? ((promoteurs / total) - (detracteurs / total)) * 100 : 0
-
-    const updateData = {
-      solution_id: solutionId,
-      critere_id: critere.id,
-      notes,
-      nb_notes: nbNotes,
-      nps: Math.round(nps * 100) / 100,
-      repartition,
-    }
-
-    if (resultat) {
-      await supabase.from('resultats').update(updateData).eq('id', resultat.id)
-    } else {
-      await supabase.from('resultats').insert(updateData)
-    }
-  } else {
-    // Calcul de la moyenne incrémentale pour les notes classiques
-    let moyenne: number
-
-    if (resultat && oldNote !== undefined) {
-      // Mise à jour : ((avg * n) - oldNote + newNote) / n
-      const currentMoyenne = resultat.moyenne_utilisateurs || 0
-      moyenne = ((currentMoyenne * nbNotes) - oldNote + newNote) / nbNotes
-    } else if (resultat) {
-      // Nouvelle note : ((avg * (n-1)) + newNote) / n
-      const currentMoyenne = resultat.moyenne_utilisateurs || 0
-      const previousN = nbNotes - 1
-      moyenne = previousN > 0 ? ((currentMoyenne * previousN) + newNote) / nbNotes : newNote
-    } else {
-      moyenne = newNote
-    }
-
-    // Conversion en base 5 (si la note est sur 10)
-    const moyenneBase5 = Math.round((moyenne / 2) * 100) / 100
-
-    const updateData = {
-      solution_id: solutionId,
-      critere_id: critere.id,
-      notes,
-      nb_notes: nbNotes,
-      moyenne_utilisateurs: Math.round(moyenne * 100) / 100,
-      moyenne_utilisateurs_base5: moyenneBase5,
-    }
-
-    if (resultat) {
-      await supabase.from('resultats').update(updateData).eq('id', resultat.id)
-    } else {
-      await supabase.from('resultats').insert(updateData)
-    }
-  }
-}
-
-/**
- * Recalcule la moyenne globale des utilisateurs pour une solution.
- * Remplace : updateMoyenneUtilisateursResultat
- */
-async function updateMoyenneGlobale(solutionId: string, userId: string) {
-  const supabase = await createServerClient()
-
-  // Récupérer l'évaluation de l'utilisateur
-  const { data: evaluation } = await supabase
-    .from('evaluations')
-    .select('scores')
-    .eq('solution_id', solutionId)
-    .eq('user_id', userId)
-    .single()
-
-  if (!evaluation?.scores) return
-
-  const scores = evaluation.scores as Record<string, string | number>
-  const numericScores = Object.values(scores)
-    .map((v) => (typeof v === 'string' ? parseFloat(v) : v))
-    .filter((v) => !isNaN(v))
-
-  if (numericScores.length === 0) return
-
-  const moyenne =
-    numericScores.reduce((sum, v) => sum + v, 0) / numericScores.length
-
-  await supabase
-    .from('evaluations')
-    .update({ moyenne_utilisateur: Math.round(moyenne * 100) / 100 })
-    .eq('solution_id', solutionId)
-    .eq('user_id', userId)
-}
-
-/**
  * Initialise une session d'évaluation.
  * Remplace : mutation setupEvaluation
  */
@@ -571,6 +387,10 @@ export async function reconfirmerEvaluation(solutionId: string) {
 
   if (error) throw new Error(error.message)
   revalidatePath('/mon-compte/mes-evaluations')
+  // `last_date_note` est la clé du tri par défaut des témoignages sur la fiche
+  // (cf. getAvisUtilisateursPaginated) : une reconfirmation réordonne donc la liste
+  // publique. Sans revalidation, le nouvel ordre n'apparaît qu'à l'expiration ISR (1h).
+  await revalidateSolutionById(solutionId)
   return { status: 'SUCCESS' }
 }
 
@@ -651,10 +471,23 @@ export async function saveDraftEvaluation(
 
   const { data: existingEval } = await supabase
     .from('evaluations')
-    .select('id')
+    .select('id, scores, statut, moyenne_utilisateur')
     .eq('solution_id', solutionId)
     .eq('user_id', user.id)
     .limit(1)
+
+  // Seul du texte a changé (commentaire / dates) sur une éval DÉJÀ comptabilisée ?
+  // Alors les agrégats ne peuvent pas bouger → recalcul inutile (cf. notesInchangees).
+  // Les garde-fous (`statut='publiee'` + moyenne stockée identique à celle qu'on écrit)
+  // couvrent le cas où l'éval ENTRE dans les agrégats à cette sauvegarde : là il faut
+  // recalculer même à notes identiques, car `recalcResultatsPourSolution` filtre sur
+  // statut + `moyenne_utilisateur` non nulle, et repart de la moyenne stockée.
+  const evalAvant = existingEval?.[0]
+  const seulTexteModifie =
+    !!evalAvant &&
+    evalAvant.statut === 'publiee' &&
+    evalAvant.moyenne_utilisateur === moyenne &&
+    notesInchangees(evalAvant.scores as ScoresRecord | null, scores)
 
   if (!existingEval || existingEval.length === 0) {
     await supabase.from('evaluations').insert({
@@ -677,7 +510,11 @@ export async function saveDraftEvaluation(
   // La note reste comptabilisée (agrégats à jour) quelques instants après, en arrière-plan.
   after(async () => {
     try {
-      if (estValide) {
+      if (estValide && seulTexteModifie) {
+        // Agrégats inchangés : on saute le recalcul mais on revalide quand même,
+        // sinon le commentaire modifié resterait invisible jusqu'à 1h (ISR fiche).
+        await revalidateSolutionById(solutionId)
+      } else if (estValide) {
         await recalcResultatsPourSolution(solutionId)
       }
 
@@ -744,12 +581,23 @@ export async function submitEvaluation(
   // Vérifier si une évaluation existe déjà
   const { data: existingEvals } = await supabase
     .from('evaluations')
-    .select('id')
+    .select('id, scores, statut, moyenne_utilisateur')
     .eq('solution_id', solutionId)
     .eq('user_id', user.id)
     .limit(1)
 
   const existingEval = existingEvals?.[0]
+  const moyenneArrondie = Math.round(moyenne * 100) / 100
+
+  // Rien qui puisse bouger les agrégats ? (mêmes notes, même moyenne, éval déjà publiée)
+  // → recalcul inutile. Le test sur `moyenne_utilisateur` couvre aussi le cas de l'éval
+  // qui ENTRE dans les agrégats maintenant (passage en_attente_psc → publiee, ou moyenne
+  // jusqu'ici nulle) : `recalcResultatsPourSolution` filtre sur statut + moyenne non nulle.
+  const seulTexteModifie =
+    !!existingEval &&
+    existingEval.statut === 'publiee' &&
+    existingEval.moyenne_utilisateur === moyenneArrondie &&
+    notesInchangees(existingEval.scores as ScoresRecord | null, scores)
 
   // Gérer la solution_utilisee (créer ou mettre à jour)
   const { data: existingSU } = await supabase
@@ -783,7 +631,7 @@ export async function submitEvaluation(
       .from('evaluations')
       .update({
         scores,
-        moyenne_utilisateur: Math.round(moyenne * 100) / 100,
+        moyenne_utilisateur: moyenneArrondie,
         last_date_note: new Date().toISOString(),
         statut,
       })
@@ -795,7 +643,7 @@ export async function submitEvaluation(
       user_id: user.id,
       solution_id: solutionId,
       scores,
-      moyenne_utilisateur: Math.round(moyenne * 100) / 100,
+      moyenne_utilisateur: moyenneArrondie,
       last_date_note: new Date().toISOString(),
       statut,
     })
@@ -809,7 +657,11 @@ export async function submitEvaluation(
   // dépassait le timeout serverless → promesse jamais résolue. cf docs/2026-04-26-evaluation-scoring.md.
   after(async () => {
     try {
-      if (statut === 'publiee') {
+      if (statut === 'publiee' && seulTexteModifie) {
+        // Agrégats inchangés : on saute le recalcul mais on revalide quand même,
+        // sinon le commentaire modifié resterait invisible jusqu'à 1h (ISR fiche).
+        await revalidateSolutionById(solutionId)
+      } else if (statut === 'publiee') {
         await recalcResultatsPourSolution(solutionId)
       }
 
@@ -829,7 +681,7 @@ export async function submitEvaluation(
           cibleType: 'solution',
           cibleId: solutionId,
           cibleLabel: sol?.nom ?? null,
-          diff: { note: { avant: null, apres: Math.round(moyenne * 100) / 100 } },
+          diff: { note: { avant: null, apres: moyenneArrondie } },
         })
       }
       // Pas de revalidatePath ici : recalcResultatsPourSolution() revalide déjà

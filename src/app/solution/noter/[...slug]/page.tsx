@@ -9,7 +9,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { submitEvaluation, submitEvaluationAnonyme, saveDraftEvaluation } from '@/lib/actions/evaluation'
 import { Star, ChevronDown, ChevronRight, ArrowLeft, ArrowRight, SkipForward, Mail, CheckCircle } from 'lucide-react'
-import { getCritereLabel } from '@/lib/constants/criteres'
+import { getCritereLabel, SCORES_META_KEYS } from '@/lib/constants/criteres'
 import AcronymText from '@/components/AcronymText'
 
 interface PageProps {
@@ -369,9 +369,8 @@ export default function NoterPage(props: PageProps) {
 
               // Restaurer les scores détaillés depuis toutes les clés inconnues des CRITERES
               const critereKeys = new Set(CRITERES.map((c) => c.key))
-              const metaKeys = new Set(['commentaire', 'date_debut', 'date_fin'])
               for (const [key, value] of Object.entries(existing)) {
-                if (critereKeys.has(key) || metaKeys.has(key)) continue
+                if (critereKeys.has(key) || SCORES_META_KEYS.has(key)) continue
                 if (value === null) {
                   restoredDetailScores[key] = null
                 } else if (typeof value === 'number') {

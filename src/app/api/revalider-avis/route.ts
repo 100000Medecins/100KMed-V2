@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { revalidateSolutionById } from '@/lib/revalidate-solution'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,15 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(`${siteUrl}/avis-confirme?erreur=revalidation-echouee`)
+  }
+
+  // `last_date_note` est la clé du tri par défaut des témoignages sur la fiche
+  // (cf. getAvisUtilisateursPaginated) : reconfirmer réordonne la liste publique.
+  // Best-effort : une revalidation ratée ne doit pas casser la confirmation.
+  try {
+    await revalidateSolutionById(sid)
+  } catch (e) {
+    console.error('[revalider-avis] revalidation échouée (ignorée):', e)
   }
 
   return NextResponse.redirect(`${siteUrl}/avis-confirme`)

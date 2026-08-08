@@ -1,3 +1,11 @@
+/**
+ * Clés de `evaluations.scores` qui ne sont PAS des notes : elles n'entrent dans
+ * aucune moyenne / aucun agrégat de `resultats`. Une modification qui ne touche
+ * que ces clés ne justifie donc pas un recalcul des agrégats (cf.
+ * `notesInchangees()` dans lib/actions/evaluation.ts).
+ */
+export const SCORES_META_KEYS = new Set(['commentaire', 'date_debut', 'date_fin'])
+
 export const CRITERE_LABELS_DEFAULT: Record<string, string> = {
   interface: 'Interface utilisateur',
   fonctionnalites: 'Fonctionnalités',
