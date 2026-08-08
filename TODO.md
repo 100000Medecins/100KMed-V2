@@ -22,9 +22,9 @@ Set-ScheduledTask -TaskName "Backup Supabase 100KMed" -Action $a
 
 Le déclencheur est conservé. Vérifier aussi que `BACKUP_PING_SECRET` est bien défini en variable utilisateur **sur ce poste-là** (c'est lui qui exécute la tâche). Ensuite, supprimer les copies hors repo `C:\Users\david\scripts\backup-supabase\` sur les deux postes — c'est leur divergence qui a masqué l'incident de juin-juillet.
 
-**2. Merger `dev` → `main`** pour que `/api/backup-ping` et le cron `/api/cron/verif-backup` existent en production. Vercel ne déploie que `main` ([deploy.yml](.github/workflows/deploy.yml)), et les crons `vercel.json` ne tournent que sur un déploiement de production. Sans ce merge, le script pinguera dans le vide (avertissement journalisé, backup OK malgré tout).
+~~**2. Merger `dev` → `main`** pour que `/api/backup-ping` et le cron `/api/cron/verif-backup` existent en production.~~ ✅ **Fait 2026-08-08** (merge `--no-ff`, `main` = `475696d`) → la prod expose désormais `/api/backup-ping` et le cron `verif-backup` est enregistré.
 
-Ordre conseillé : merge d'abord, repointage ensuite — ainsi le premier dump après repointage pingue pour de vrai et tu vois la chaîne fonctionner de bout en bout.
+**Il ne reste donc que le geste 1** (repointage de la tâche planifiée sur le desktop). Après repointage, le premier dump pinguera pour de vrai — c'est là qu'on verra la chaîne fonctionner de bout en bout. **Vérification à faire à ce moment-là** : une ligne dans `backup_pings` et aucune alerte du cron.
 
 ---
 
