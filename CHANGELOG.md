@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-08-07] — Alerte Vercel Fluid CPU (3ᵉ) : diagnostic chiffré + le recalcul d'agrégats ne part plus pour rien
+## [2026-08-08] — Alerte Vercel Fluid CPU (3ᵉ) : diagnostic chiffré + le recalcul d'agrégats ne part plus pour rien
 
 ### Contexte — 3ᵉ alerte « Fluid Active CPU 75 % » (3h05 / 4h)
 - Diagnostic chiffré depuis le graphe Vercel (fenêtre **8 juillet → 7 août**, somme des barres ≈ 3h03 ≈ compteur affiché → la fenêtre montrée est bien la période comptée) : le rythme est passé de **~8-10 min/jour début juillet à ~4,7 min/jour depuis le 26/07**. Le travail ISR de juillet a bien divisé la consommation par deux — **ce n'est pas une régression**. Répartition : function 2h48 (91 %), middleware 16m45 (9 %), ce dernier déjà borné à 5 routes d'auth ([proxy.ts](src/proxy.ts)) → rien à gratter.
