@@ -5,6 +5,20 @@
 
 ---
 
+## [2026-08-09] — Intermittence `bad_jwt` : mesurée puis close (aucun impact utilisateur)
+
+### Audit — L'entonnoir PSC comme preuve indirecte, à défaut de logs
+- **Contexte** : l'item « surveiller l'intermittence `bad_jwt` » (cf. CHANGELOG 2026-07-24) prévoyait un comptage dans *Dashboard Supabase → Logs → Auth* une semaine après le fix. **Méthode impraticable** : la rétention des logs l'interdit (**Vercel Hobby = 1 h** de Runtime Logs, vérifié dans la doc ; Supabase Free = fenêtre courte). Aucun comptage rétrospectif n'était possible, ni chez l'un ni chez l'autre. Le rôle MCP `claude_readonly` est par ailleurs **refusé sur le schéma `auth`** — et de toute façon les erreurs de vérification JWT de GoTrue ne vivent pas dans Postgres mais dans Logflare.
+- **Mesure de substitution** : `psc_session_events` (toujours alimenté) apparié par `correlation_id`, depuis le fix du 24/07 → **75 handoffs PSC, 73 aboutis, 2 en échec, 0 abandon silencieux**. Les 2 échecs portent `detail = "Email link is invalid or has expired"` (magic link expiré ou rejoué) — **aucun `unrecognized JWT kid`**. 55 comptes PSC créés sur la période, donc échantillon réel et non un désert de trafic.
+- ⚠️ **Portée exacte du résultat** : c'est **« aucun impact utilisateur »**, **pas** « l'erreur a disparu ». `retryTransientAuth` retente **en silence** → une occurrence rattrapée au 1er essai se présente comme un `verify_success`. La question « est-ce que ça se produit encore ? » reste ouverte **par construction** et le resterait sans instrumentation dédiée.
+- **Décision : item clos, instrumentation écartée sciemment.** Persister le signal en base (table dédiée + insert sur le chemin d'auth) aurait répondu à la question résiduelle, mais celle-ci n'a pas de conséquence actionnable : même au taux d'origine (~1 échec/12), épuiser les 4 tentatives suppose 4 échecs d'affilée (~1 sur 20 000 appels) sur un volume d'inscriptions/logins. *Réserve assumée : ce calcul suppose les tentatives indépendantes — si une instance GoTrue restait durablement en vrac, le backoff court (250/500/750 ms) pourrait retomber dessus. Scénario jamais observé en 75 parcours.*
+- **Déclencheur de réouverture** inscrit au TODO : un `verify_error` dont le `detail` mentionne `JWT`/`kid`, ou une inscription qui échoue réellement → instrumenter, puis ticket Supabase.
+
+### Leçon transverse — ne pas compter sur les logs pour une mesure différée
+- Sur ces plans, **les logs ne sont pas un support de mesure** : toute question du type « est-ce que X arrive encore ? » posée à J+7 doit être instrumentée **en base** au moment où on se la pose, sinon elle est structurellement sans réponse. Vaut pour les prochains items de surveillance.
+
+---
+
 ## [2026-08-08] — Alerte Vercel Fluid CPU (3ᵉ) : diagnostic chiffré + le recalcul d'agrégats ne part plus pour rien
 
 ### Contexte — 3ᵉ alerte « Fluid Active CPU 75 % » (3h05 / 4h)
