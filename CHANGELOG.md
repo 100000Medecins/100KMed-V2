@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-08-09] — Intermittence `bad_jwt` : mesurée puis close (aucun impact utilisateur)
+## [2026-08-09] — Intermittence `bad_jwt` close + rapports DMARC branchés sur un agrégateur
 
 ### Audit — L'entonnoir PSC comme preuve indirecte, à défaut de logs
 - **Contexte** : l'item « surveiller l'intermittence `bad_jwt` » (cf. CHANGELOG 2026-07-24) prévoyait un comptage dans *Dashboard Supabase → Logs → Auth* une semaine après le fix. **Méthode impraticable** : la rétention des logs l'interdit (**Vercel Hobby = 1 h** de Runtime Logs, vérifié dans la doc ; Supabase Free = fenêtre courte). Aucun comptage rétrospectif n'était possible, ni chez l'un ni chez l'autre. Le rôle MCP `claude_readonly` est par ailleurs **refusé sur le schéma `auth`** — et de toute façon les erreurs de vérification JWT de GoTrue ne vivent pas dans Postgres mais dans Logflare.
@@ -16,6 +16,22 @@
 
 ### Leçon transverse — ne pas compter sur les logs pour une mesure différée
 - Sur ces plans, **les logs ne sont pas un support de mesure** : toute question du type « est-ce que X arrive encore ? » posée à J+7 doit être instrumentée **en base** au moment où on se la pose, sinon elle est structurellement sans réponse. Vaut pour les prochains items de surveillance.
+
+### Infrastructure email — Les rapports DMARC agrégés arrivent enfin dans quelque chose de lisible
+- **Constat** : le domaine était déjà au maximum DMARC (`p=reject; sp=reject; np=reject`, DKIM Gandi RSA 2048), mais `rua=` pointait sur une **boîte perso** → rapports d'agrégation reçus en **XML brut, jamais lus**. On appliquait donc un **rejet à l'aveugle** : aucune visibilité sur ce qui est bloqué en notre nom, ni sur un expéditeur **légitime** qui se ferait rejeter au passage. `p=reject` est la protection ; les rapports en sont l'**instrumentation** — c'est elle qui manquait.
+- **Fait** : compte **Postmark DMARC Digests** (plan **gratuit**) sur `contact@100000medecins.org` (adresse confirmée), TXT `_dmarc` repointé dans la zone **Gandi** vers `re+fbhc07ckyap@dmarc.postmarkapp.com`. **Aucun autre paramètre touché** : `p`/`sp`/`np=reject` et l'alignement *relaxed* (`adkim=r`/`aspf=r`) conservés à l'identique. Pas de `ruf=` ajouté — les rapports forensic embarquent des extraits de messages réels, donc potentiellement des données de santé chez un tiers.
+- ⚠️ **Piège évité** : l'écran d'installation de Postmark propose un enregistrement tout prêt contenant `p=none; sp=none`. Le coller tel quel aurait **désactivé la protection** du domaine. Seule l'adresse `rua` était à reprendre de leur bloc.
+- **Plan gratuit assumé** : 1 domaine, top 10 sources, 7 j d'historique, digest hebdo — très au-dessus de nos **2 sources réelles** (SendGrid via `em1895` + `s1`/`s2._domainkey`, et Gandi). Le payant (14 $/mois/domaine) n'ajoute qu'un dashboard web et 60 j d'historique. **Changer de plan ne touche pas le DNS** → upgradable un mois pendant la campagne syndicats, puis retour au gratuit. Les digests conservés dans un dossier de `contact@` tiennent lieu d'historique.
+- **Vérification** : valeur en ligne comparée **caractère par caractère** sur les **3 NS autoritatifs Gandi** + Google/Cloudflare/Quad9 → conforme, **un seul** enregistrement TXT sur `_dmarc`. Reste le contrôle du 1er digest hebdo au 2026-08-16, inscrit au TODO.
+- **Effet de bord utile** : la lecture du fichier de zone confirme que la chaîne SendGrid est complète (`em1895 → sendgrid.net` en return-path aligné, `s1`/`s2._domainkey` pour DKIM). C'est ce qui fait passer DMARC alors que le SPF racine n'autorise que Gandi — et c'est précisément ce que les rapports permettront de surveiller.
+
+### Incident — Le TXT `_dmarc` enregistré vide : domaine sans politique DMARC pendant ~1 h
+- **Symptôme** : après la première sauvegarde chez Gandi, `_dmarc` renvoyait `""`. Plus de `v=DMARC1`, donc **plus aucune politique DMARC**. Les envois n'étaient **pas** affectés (SPF et DKIM intacts) ; c'est la protection anti-usurpation qui était tombée, **silencieusement**.
+- **Cause** : un **saut de ligne** embarqué par le copier-coller dans le champ de valeur — l'éditeur de zone Gandi l'a explicité ensuite (`newline in quoted string`) — puis, en tentant la correction, le préfixe `_dmarc 3600 IN TXT` collé **à l'intérieur** des guillemets, produisant une valeur imbriquée dans elle-même.
+- **Réflexe à garder pour toute modif DNS** : interroger les **serveurs autoritatifs** (`Resolve-DnsName -Name _dmarc.100000medecins.org -Type TXT -Server ns-68-b.gandi.net`) plutôt qu'un résolveur public → réponse **immédiate**, sans attendre le TTL, et contrôle que l'enregistrement est **unique**. Corollaire : la **prévisualisation de l'interface Gandi affichait une valeur correcte alors que l'enregistré était vide** — elle est calculée côté navigateur et ne prouve rien sur ce qui est réellement stocké.
+
+### TODO — Mises à jour
+- « Brancher les rapports DMARC (`rua`) sur un agrégateur lisible » : **partie DNS faite et vérifiée**, item laissé **ouvert** sur ses deux points de contrôle datés (1er digest au 2026-08-16, diagnostic de repli au 2026-08-18).
 
 ---
 
