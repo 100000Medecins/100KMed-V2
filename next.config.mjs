@@ -12,6 +12,23 @@ const nextConfig = {
     // Le code runtime est correct — les vraies erreurs sont détectées en dev.
     ignoreBuildErrors: true,
   },
+  // Anti-indexation hors prod, niveau HTTP. Ceinture du <meta noindex> de
+  // src/app/layout.tsx, qui a deux angles morts : (1) une route qui redéfinit `robots`
+  // dans son generateMetadata n'hérite plus du layout racine — exactement le piège qui
+  // avait fait sauter l'og:image des fiches solutions le 2026-07-28 ; (2) le meta ne
+  // couvre que le HTML, pas les réponses non-HTML.
+  // L'en-tête, lui, s'applique à TOUT. Vérifié en ligne le 2026-08-16 : VERCEL_ENV vaut
+  // 'production' sur www uniquement (prod ne sert aucun noindex, dev en sert un) — donc
+  // aucun risque de fuite de ce noindex vers la prod.
+  async headers() {
+    if (process.env.VERCEL_ENV === 'production') return [];
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ];
+  },
   // Redirections 301 des anciennes URLs Quasar renommées sur le nouveau site Next.js.
   // Cas certains uniquement (renommage camelCase -> kebab-case + pages équivalentes).
   // Les fiches solutions/catégories/éditeurs gardent le même schéma d'URL (pas de redirect).
