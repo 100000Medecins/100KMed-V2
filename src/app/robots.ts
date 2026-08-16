@@ -49,9 +49,17 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    // Deux sitemaps au contenu identique : /sitemap.xml (historique) et /sitemap-main.xml
-    // (URL neuve, pour repartir sur une entité GSC sans l'erreur « Impossible de récupérer »
-    // collante — cf docs/2026-07-19-audit-seo-indexation-gsc.md).
-    sitemap: [`${baseUrl}/sitemap.xml`, `${baseUrl}/sitemap-main.xml`],
+    // Trois entrées pour un seul et même contenu (240 URLs), empilées par les tentatives
+    // successives de déblocage du « Impossible de récupérer » collant de GSC :
+    //  - /sitemap.xml       `<urlset>` historique (entrée GSC bloquée depuis le 27/05/2026)
+    //  - /sitemap-main.xml  `<urlset>` à URL neuve (19/07/2026, bloqué lui aussi)
+    //  - /sitemap-index.xml `<sitemapindex>` — TYPE de document différent (16/08/2026)
+    // Cf. docs/2026-08-16-diagnostic-sitemap-gsc.md. À élaguer une fois qu'une entrée
+    // passe en « Réussite » : garder l'index seul et retirer les deux autres.
+    sitemap: [
+      `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/sitemap-main.xml`,
+      `${baseUrl}/sitemap-index.xml`,
+    ],
   }
 }
