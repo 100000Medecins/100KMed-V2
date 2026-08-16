@@ -5,6 +5,20 @@
 
 ---
 
+## [2026-08-16] — SEO dev : le robots.txt bloquait le crawl qui aurait dû faire sortir une URL de l'index
+
+### Fix — « Indexée malgré le blocage par robots.txt » sur dev.100000medecins.org
+- **Déclencheur** : mail GSC, nouveau motif d'indexation sur `dev.100000medecins.org` — un article de blog (Ségur vague 2) indexé malgré le `Disallow: /` du dev.
+- **Cause, même piège que l'audit du 2026-07-19** (`docs/2026-07-19-audit-seo-indexation-gsc.md`, alors appliqué à `/connexion` et `/solution/noter`) : `Disallow` bloque le **crawl**, pas l'**indexation**. Le dev servait à la fois `Disallow: /` (`src/app/robots.ts`) et un `<meta noindex>` correct (`src/app/layout.tsx`) — mais Googlebot ne pouvait jamais **lire** ce noindex puisqu'il lui était interdit de charger la page. Une URL de dev déjà connue de Google y restait donc indéfiniment.
+- **Fix** :
+  - `src/app/robots.ts` — hors prod, `Allow: /` au lieu de `Disallow: /` (`/mon-compte/` et `/api/` restent exclus). Aucun `sitemap` n'est déclaré hors prod (`src/lib/seo/sitemap-entries.ts`), donc ça autorise la relecture des URLs déjà connues sans en offrir de nouvelles à la découverte.
+  - `next.config.mjs` — nouvel en-tête `X-Robots-Tag: noindex, nofollow` hors prod (`headers()`, no-op si `VERCEL_ENV=production`), en ceinture du `<meta>` : couvre le non-HTML et les routes qui redéfinissent `robots` dans leur `generateMetadata` (angle mort déjà rencontré avec l'og:image des fiches solutions le 2026-07-28 — ces routes n'héritent pas du layout racine).
+- **Vérifié en ligne après déploiement** : dev sert `Allow: /` + `X-Robots-Tag: noindex, nofollow` + le `<meta noindex>` ; l'article visé répond `200` avec le header noindex (donc désormais crawlable **et** lisible par Googlebot). Prod contrôlée en parallèle, strictement inchangée (`Allow: /`, ses deux sitemaps, aucun `X-Robots-Tag`).
+- **Pas de merge vers `main`** : la branche non-prod de `robots.ts` et le `headers()` de `next.config.mjs` ne sont jamais empruntés en prod (`VERCEL_ENV=production`), donc rien à propager. Poussé directement sur `dev` (`35c7dad`).
+- **Suivi GSC** : les deux autres lignes du mail (« Bloquée par robots.txt », « Explorée actuellement non indexée ») ne sont pas des erreurs — comportement voulu sur un environnement de dev, aucune action. Reste à cliquer « Valider la correction » sur la ligne « Indexée malgré le blocage » (fait par David) ; délai de sortie d'index attendu : plusieurs semaines.
+
+---
+
 ## [2026-08-09] — Intermittence `bad_jwt` close + rapports DMARC branchés sur un agrégateur
 
 ### Audit — L'entonnoir PSC comme preuve indirecte, à défaut de logs
