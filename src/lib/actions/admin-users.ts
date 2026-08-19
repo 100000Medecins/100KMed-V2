@@ -183,7 +183,7 @@ export async function getEditeurDataForUser(userId: string) {
   // Récupérer les solutions du parent + des filiales (avec prix, galerie, mot éditeur par solution, contacts par solution)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, categorie:categories(slug), galerie:solutions_galerie(id, url, titre, ordre, type)')
     .in('id_editeur', editeurIds)
     .order('nom', { ascending: true })
 
@@ -336,6 +336,7 @@ export async function updateSolutionByEditeur(
   userId: string,
   solutionId: string,
   fields: {
+    nom?: string
     logo_url?: string
     mot_editeur?: string
     prix_ttc?: number | null
@@ -352,7 +353,15 @@ export async function updateSolutionByEditeur(
   const supabase = createServiceRoleClient()
   await assertEditeurAccessToSolution(supabase, userId, solutionId)
 
-  const requested = Object.entries(fields).filter(([, v]) => v !== undefined)
+  // solutions.nom est NOT NULL, or la boucle ci-dessous convertit toute chaîne vide
+  // en null → l'UPDATE partirait quand même et Postgres rejetterait la sauvegarde entière.
+  // On coupe ici avec un message exploitable côté formulaire.
+  if (fields.nom !== undefined && fields.nom.trim() === '') {
+    throw new Error('Le nom de la solution est obligatoire.')
+  }
+  const champs = fields.nom !== undefined ? { ...fields, nom: fields.nom.trim() } : fields
+
+  const requested = Object.entries(champs).filter(([, v]) => v !== undefined)
   if (requested.length === 0) return
 
   // Lire valeurs actuelles pour audit
