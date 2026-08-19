@@ -8,6 +8,43 @@ import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
 import type { ContactLigne } from '@/types/models'
 
+/**
+ * Revalidation **élargie**, réservée aux sauvegardes de l'espace éditeur.
+ *
+ * `revalidateSolution()` ne couvre que la fiche + le listing `/solutions`, et son périmètre
+ * est volontairement étroit : elle est sur le chemin chaud des **évaluations** (appelée à
+ * chaque notation). Ici on est sur un chemin rare — ~2 sauvegardes/jour, mesuré sur
+ * `editeurs_edit_log` — donc on peut aussi revalider les pages où le **nom** et le **logo**
+ * de la solution s'affichent, sinon elles gardent l'ancienne valeur jusqu'à 1 h (ISR 3600).
+ *
+ * Coût réel : `revalidatePath` ne recalcule rien, il pose un marqueur ; le re-rendu est payé
+ * à la visite suivante — et ces pages se re-rendaient de toute façon dans l'heure.
+ */
+async function revalidatePagesEditeur(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  categorieId: string | null | undefined,
+  editeurId: string | null | undefined
+): Promise<void> {
+  if (categorieId) {
+    const { data: cat } = await supabase
+      .from('categories')
+      .select('slug')
+      .eq('id', categorieId)
+      .maybeSingle()
+    if (cat?.slug) revalidatePath(`/solutions/${cat.slug}`)
+  }
+  if (editeurId) {
+    const { data: ed } = await supabase
+      .from('editeurs')
+      .select('slug')
+      .eq('id', editeurId)
+      .maybeSingle()
+    // `/editeur/[slug]` ne liste que les solutions de CET éditeur (pas celles des filiales)
+    // → une seule page à revalider, pas de cascade maison-mère.
+    if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
+  }
+}
+
 /** Construit un diff `{ champ: { avant, apres } }` à partir des lignes d'audit éditeur. */
 function diffFromLogRows(
   logRows: Array<{ champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }>
@@ -312,7 +349,7 @@ export async function updateEditeurByUser(
     // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
     const { data: ed } = await supabase
       .from('editeurs')
-      .select('nom_commercial')
+      .select('nom_commercial, slug')
       .eq('id', editeurId)
       .single()
     await logActivity({
@@ -325,6 +362,11 @@ export async function updateEditeurByUser(
       cibleLabel: ed?.nom_commercial ?? null,
       diff: diffFromLogRows(logRows),
     })
+
+    // Ce chemin ne revalidait rien : un nom commercial, un logo ou un mot de l'éditeur
+    // modifié ici mettait jusqu'à 1 h à apparaître sur sa page publique et sur l'annuaire.
+    if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
+    revalidatePath('/editeurs')
   }
 }
 
@@ -419,7 +461,7 @@ export async function updateSolutionByEditeur(
     // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
     const [{ data: u }, { data: sol }] = await Promise.all([
       supabase.from('users').select('prenom, nom').eq('id', userId).single(),
-      supabase.from('solutions').select('nom, slug, id_categorie').eq('id', solutionId).single(),
+      supabase.from('solutions').select('nom, slug, id_categorie, id_editeur').eq('id', solutionId).single(),
     ])
     await logActivity({
       type: ACTIVITY_TYPES.EDITEUR_MODIF_SOLUTION,
@@ -435,6 +477,8 @@ export async function updateSolutionByEditeur(
     // Revalide la fiche solution (+ listings) : sans ça, une modif éditeur
     // (contacts, mot éditeur, prix…) peut mettre jusqu'à 1h à s'afficher (ISR).
     await revalidateSolution(sol?.slug, sol?.id_categorie)
+    // + page catégorie et page éditeur, où s'affichent le nom et le logo de la solution.
+    await revalidatePagesEditeur(supabase, sol?.id_categorie, sol?.id_editeur)
   }
 }
 
