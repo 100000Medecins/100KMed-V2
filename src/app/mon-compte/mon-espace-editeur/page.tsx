@@ -33,6 +33,7 @@ type Solution = {
   support_website: string | null
   contacts_commerciaux: ContactLigne[] | null
   contacts_support: ContactLigne[] | null
+  categorie: { slug: string | null } | null
   galerie: GalerieItem[]
 }
 type Editeur = {
@@ -420,6 +421,7 @@ function SolutionEditeurCard({
   onToggle: () => void
   onSaved: (s: Solution) => void
 }) {
+  const [nom, setNom] = useState(solution.nom)
   const [logoUrl, setLogoUrl] = useState(solution.logo_url ?? '')
   const [motEditeur, setMotEditeur] = useState(solution.mot_editeur ?? '')
   const initialPrixMode: PrixMode = solution.prix_ttc_min != null || solution.prix_ttc_max != null ? 'plage' : 'unique'
@@ -440,6 +442,7 @@ function SolutionEditeurCard({
   const [galerie, setGalerie] = useState<GalerieItem[]>(solution.galerie ?? [])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [erreur, setErreur] = useState<string | null>(null)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [galerieUploadingIndex, setGalerieUploadingIndex] = useState<number | null>(null)
   const [galerieBulkUploading, setGalerieBulkUploading] = useState(false)
@@ -450,9 +453,16 @@ function SolutionEditeurCard({
   const [communauteModalOpen, setCommunauteModalOpen] = useState(false)
 
   const handleSave = async () => {
+    const nomTrim = nom.trim()
+    if (nomTrim === '') {
+      setErreur('Le nom de la solution est obligatoire.')
+      return
+    }
+    setErreur(null)
     setSaving(true)
     try {
       const fields = {
+        nom: nomTrim,
         logo_url: logoUrl,
         mot_editeur: motEditeur,
         prix_ttc: prixMode === 'unique' && prixTtc !== '' ? Number(prixTtc) : null,
@@ -471,6 +481,7 @@ function SolutionEditeurCard({
       ])
       onSaved({
         ...solution,
+        nom: nomTrim,
         logo_url: logoUrl,
         mot_editeur: motEditeur,
         prix_ttc: fields.prix_ttc,
@@ -486,6 +497,8 @@ function SolutionEditeurCard({
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : "Erreur lors de l'enregistrement.")
     } finally {
       setSaving(false)
     }
@@ -583,6 +596,15 @@ function SolutionEditeurCard({
 
       {isOpen && (
         <div className="border-t border-gray-100 px-6 pb-6 pt-5 space-y-6">
+
+          {/* Nom de la solution */}
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1.5">Nom de la solution</label>
+            <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} className={inputClass} />
+            <p className="text-xs text-gray-400 mt-1">
+              Nom affiché sur la fiche publique et dans les listes. L&apos;adresse de la page (URL) reste inchangée.
+            </p>
+          </div>
 
           {/* Logo solution */}
           <div>
@@ -918,9 +940,9 @@ function SolutionEditeurCard({
 
           {/* Footer : voir la page + bouton enregistrer */}
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            {solution.slug && (
+            {solution.slug && solution.categorie?.slug && (
               <Link
-                href={`/solutions/${solution.slug}`}
+                href={`/solutions/${solution.categorie.slug}/${solution.slug}`}
                 target="_blank"
                 className="text-xs text-accent-blue hover:underline"
               >
@@ -928,6 +950,7 @@ function SolutionEditeurCard({
               </Link>
             )}
             <div className="flex items-center gap-3 ml-auto">
+              {erreur && <span className="text-xs text-red-600 font-medium">{erreur}</span>}
               {saved && <span className="text-xs text-green-600 font-medium">Enregistré ✓</span>}
               <button
                 onClick={handleSave}

@@ -6,7 +6,15 @@ Liste des idées et fonctionnalités à implémenter, mise à jour au fil des se
 
 ## URGENT
 
-### Terminer le branchement de la supervision des sauvegardes (2026-08-06)
+_(rien en cours)_
+
+---
+
+## En cours
+
+### ~~Terminer le branchement de la supervision des sauvegardes (2026-08-06)~~ ✅ Fait — vérifié 2026-08-19
+
+> _Ci-dessous : l'état au 2026-08-06, conservé pour la trace. Le bilan à jour est en bas de section._
 
 Le code est livré et poussé (`df03fec` sur `dev`), la migration SQL est jouée et les types régénérés. Il reste **deux gestes**, et tant qu'ils ne sont pas faits la supervision ne tourne pas : aucun ping n'est émis, aucune alerte ne peut partir. Les sauvegardes elles-mêmes continuent normalement (ancien script sur le desktop), donc **la base reste protégée** — c'est la détection du silence qui manque encore.
 
@@ -24,7 +32,11 @@ Le déclencheur est conservé. Vérifier aussi que `BACKUP_PING_SECRET` est bien
 
 ~~**2. Merger `dev` → `main`** pour que `/api/backup-ping` et le cron `/api/cron/verif-backup` existent en production.~~ ✅ **Fait 2026-08-08** (merge `--no-ff`, `main` = `475696d`) → la prod expose désormais `/api/backup-ping` et le cron `verif-backup` est enregistré.
 
-**Il ne reste donc que le geste 1** (repointage de la tâche planifiée sur le desktop). Après repointage, le premier dump pinguera pour de vrai — c'est là qu'on verra la chaîne fonctionner de bout en bout. **Vérification à faire à ce moment-là** : une ligne dans `backup_pings` et aucune alerte du cron.
+✅ **Geste 1 fait, chaîne vérifiée de bout en bout le 2026-08-19.** Les pings arrivent depuis **MSF-MG1** (desktop) à cadence régulière mardi/samedi 03:00 : 09/08, 12/08, 16/08, 19/08. **Preuve que c'est bien le script du repo qui tourne** : lui seul porte l'URL de ping, l'ancienne copie hors repo l'ignore. Côté fichiers, le dossier synchro `Documents\100 000 Médecins\Site\Dump BDD` contient **8 dumps** (~1,5 Mo) + l'archive mensuelle = exactement la rotation `KEEP_COUNT = 8`.
+
+⏳ **Reste un seul geste, sans urgence** : supprimer la copie périmée hors repo `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` — **encore présente sur le laptop** (datée du 03/05/2026), absente de toute tâche planifiée donc inerte, mais c'est ce type de divergence qui avait masqué l'incident de juin-juillet. À vérifier aussi sur le desktop.
+
+ℹ️ Détail mineur : un `backup_MSF-MG1_..._Conflict.log` (05/08) traîne dans le dossier — conflit de synchro sur le fichier de log, sans conséquence.
 
 ---
 
@@ -126,7 +138,7 @@ _(rien en cours)_
 
 ### Performance
 
-#### Réduire la CPU Vercel Fluid — passe 2 (extension ISR aux autres pages publiques)
+#### ~~Réduire la CPU Vercel Fluid — passe 2 (extension ISR aux autres pages publiques)~~ ✅ CLOS — vérifié 2026-08-19
 - **Contexte** : alerte Vercel Fluid Active CPU (~91 % des 4h Hobby → **risque de pause du site**). Cause : les pages publiques lisaient les cookies (via `createServerClient`) → rendues **dynamiquement à chaque requête**. Preuve + recette : [docs/2026-07-11-plan-isr-pages-publiques.md](docs/2026-07-11-plan-isr-pages-publiques.md).
 - ✅ **Passe 1 FAITE + déployée (2026-07-11)** : `createPublicClient()` (anon sans cookies, RLS conservée) + bascule des lectures publiques + `generateStaticParams` → **accueil `ƒ→○`** et **139 fiches solutions `ƒ→●`** (les 2 gros postes). Build + `tsc` OK. Cf CHANGELOG 2026-07-11.
 - **Passe 2 — plan détaillé (3 recettes, phasé ROI/risque)** : [docs/2026-07-11-plan-isr-passe-2.md](docs/2026-07-11-plan-isr-passe-2.md). Recette de base : bascule vers `createPublicClient` (+ `generateStaticParams() { return [] }` pour les segments dynamiques), **fichier par fichier avec build de vérif `ƒ→○/●`**.
@@ -137,6 +149,7 @@ _(rien en cours)_
   - ✅ **`/blog` liste FAITE (2026-07-21, `ƒ→○`)** : `createPublicClient` + filtre catégorie déporté client (`BlogBrowser`/`BlogView` + `useSearchParams`, fallback Suspense = vue « Tous » serveur pour le SEO).
   - ✅ **Sous-page avis `/solutions/[cat]/[sol]/evaluations` SUPPRIMÉE (2026-07-22)** : c'était un **vestige Quasar orphelin** (seul `UserReviewsSidebar`, composant mort, y menait) **et cassé** (lecture anon → RLS → « 0 avis » alors que la base en a, ex. Premiocare 6). Redondant : la fiche solution affiche déjà les avis en ligne (`#avis-utilisateurs`). Route + composants `AvisUtilisateurs`/`UserReviewsSidebar` supprimés (`getAvisUtilisateurs` laissé en dead export).
   - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
+- ✅ **Chantier CLOS — revérifié le 2026-08-19** : toutes les phases sont ✅, il ne reste **aucun reliquat**. Contrôle du jour : `/blog` est bien prérendue en **ISR 1 h** dans le manifeste de build, et la sous-page avis n'existe plus (supprimée le 22/07). Seule `/recherche` reste `ƒ`, **par nature**. Le levier CPU restant n'est plus l'ISR mais le **plan Vercel** (item ci-dessous).
 - ✅ **Fix fraîcheur des notes utilisateur sur la fiche (2026-07-25)** : à l'occasion de l'alerte Vercel Fluid CPU (~93 %), diag = l'ISR tient (pas de régression) ; la remontée = **croissance + cap 4h**, pas de correctif miracle. Au passage, bug découvert : les **nouvelles notes utilisateur ne s'affichaient sur la fiche qu'après ~1h** (le chemin évaluation `recalcResultatsPourSolution` revalidait en `'layout'`, pas via `revalidateSolution` comme le fix admin du 22/07). Corrigé → revalidation ciblée de la fiche. **⚠️ Ce n'est PAS un fix CPU** (1er diagnostic erroné corrigé : le `'layout'` ne re-rendait pas les 139 fiches). Fenêtres blog 30m→1h ; crons audités (RAS). Sur `dev` (`11f5357`), à déployer. Cf CHANGELOG 2026-07-25.
 - **Vrai levier CPU** : le cap gratuit (4h) est minuscule et le trafic grandit → surveiller le compteur, envisager **Vercel Pro** (fin de la pause auto), et/ou **alléger `recalcResultatsPourSolution`**.
   - ✅ **Point chiffré au 2026-08-08 (3ᵉ alerte, 3h05 / 4h)** : rythme retombé de ~8-10 min/jour (début juillet) à **~4,7 min/jour** → projection **~2h20 / 30 j = ~59 % du cap**, soit **×1,7 de marge** sur le trafic. Répartition function 2h48 (91 %) / middleware 16m45 (9 %, déjà borné à 5 routes d'auth). Pas de régression : c'est la croissance face à un cap minuscule. Cf CHANGELOG 2026-08-08.
@@ -147,12 +160,13 @@ _(rien en cours)_
 - **Coût** : 20 $/mois/siège. L'Active CPU on-demand `iad1` = 0,128 $/CPU-heure → ~0,40 $/mois de compute à ce volume, absorbé par le crédit d'usage Pro. **C'est une prime d'assurance anti-downtime, pas une facture de calcul.**
 - Réversible : on peut redescendre en Hobby après la campagne si le trafic retombe.
 
-#### Optimiser `recalcResultatsPourSolution` — batching (2026-07-25, partiellement traité le 2026-08-08)
+#### ~~Optimiser `recalcResultatsPourSolution` — batching~~ ❌ Écarté sciemment le 2026-08-19
 - **Constat initial** : lancé (via `after()`) à **chaque évaluation** = **des dizaines de requêtes BDD séquentielles** (boucle par critère : SELECT résultat existant + UPDATE/INSERT, puis la ligne `type='moyenne'`). Comme l'évaluation est l'action centrale, c'est un poste réel de **CPU Vercel Fluid** qui grandit avec le trafic.
 - ✅ **Fait le 2026-08-08 — le cas fréquent ne l'atteint plus** : quand une sauvegarde ne change **que** du texte (commentaire, dates), le recalcul est **sauté** au profit d'une simple revalidation (`notesInchangees()` + `revalidateSolutionById()`). Modifier un commentaire ne déclenche plus un recalcul complet des agrégats. Garde-fous : on ne saute que si l'éval était déjà `statut='publiee'` **et** que sa moyenne stockée est inchangée. Cf CHANGELOG 2026-08-08.
 - **Reste à faire** : le **batching de la boucle elle-même**, pour le cas où les notes changent vraiment. Pistes : (a) un `SELECT` groupé de tous les `resultats` de la solution + un `upsert` groupé au lieu d'une requête par critère ; (b) **recompute incrémental** — ne recalculer que le(s) critère(s) réellement touché(s).
 - ⚠️ **Garde-fous à préserver** : l'**ancrage Firebase figé** (`firebase_moyenne_base5`/`firebase_nb_notes` en Supabase, blend legacy pondéré) et la règle **« 0 = NC »**. C'est la logique délicate — indépendante du fait de « couper le cordon Firebase » (infra), qui reste un chantier séparé et sûr.
-- **Gain restant** : CPU réduit sur les vraies nouvelles notes + facture à l'usage plus basse une fois en Pro. **Priorité redescendue** : le gros du gaspillage (re-sauvegardes sans changement de note) est traité.
+- ❌ **Décision du 2026-08-19 : on ne fait pas le batching.** Chiffres du jour : la boucle parcourt **226 critères**, soit jusqu'à ~450 allers-retours BDD séquentiels par recalcul — le gain serait réel. Mais grouper ces requêtes veut dire **réécrire précisément le code qui porte l'ancrage Firebase figé** (**2 013** lignes de `resultats` en portent un, sur 24 solutions legacy) **et la règle « 0 = NC »**. Une erreur là ne planterait pas : elle **corromprait silencieusement les notes**. Face à ça, le gain restant est faible depuis le 08/08, puisque le cas fréquent (texte seul modifié) ne déclenche plus de recalcul du tout. **Mauvais rapport risque/bénéfice → item clos.**
+- 🔁 **Rouvrir seulement si** : le volume d'évaluations augmente au point que le recalcul redevienne un poste CPU visible, **ou** si on doit de toute façon toucher cette fonction pour une autre raison (le batching se greffe alors sur un travail déjà engagé, à coût marginal).
 
 ### SEO / Référencement
 
@@ -161,6 +175,9 @@ _(rien en cours)_
 - **Problème = côté GSC, pas le site** : `/sitemap.xml` bloqué depuis > 2 mois sur « Impossible de récupérer » (« Dernière lecture » VIDE) = état collant hérité d'un échec initial (mi-juin). L'outil « Tester l'URL active » plante aussi chez GSC (« Un problème est survenu »). **Non bloquant** : les pages sont indexées par crawl direct.
 - **Contournement déployé (2026-07-20, commit `cc38782`)** : nouvelle URL `/sitemap-main.xml` (même contenu, **entité GSC vierge** sans historique d'échec) + déclarée dans `robots.txt`.
 - ✅ **`sitemap-main.xml` soumis dans GSC (2026-07-21)** → surveiller que l'entrée neuve passe « lu ». Optionnel : supprimer l'ancienne entrée `/sitemap.xml` bloquée. Patience (2-4 sem).
+- 🆕 **6ᵉ tentative déployée (~2026-08-16/17, commit `7da3424`)** : le statut traîne depuis le **27/05** et a survécu à 5 tentatives. Diagnostic verrouillé — serveur, DNS et réseau **hors de cause** (65/65 réponses 200 en Googlebot, XML sans BOM, 240 URLs identiques entre les deux sitemaps, gzip/304 OK, ni DNSSEC ni AAAA, pare-feu Vercel sans Bot Protection). **Seul paramètre jamais modifié en 5 tentatives : le TYPE de document** → nouvelle route `/sitemap-index.xml` servant un `<sitemapindex>` (les deux autres sont des `<urlset>`), déclarée en 3ᵉ entrée de `robots.ts`. Détail : [docs/2026-08-16-diagnostic-sitemap-gsc.md](docs/2026-08-16-diagnostic-sitemap-gsc.md).
+- 🔒 **Critère d'ARRÊT à appliquer à la prochaine lecture GSC** : index **lu** mais enfant en échec → le blocage vise le `<urlset>` ; index **en échec aussi** → blocage au niveau de la **propriété GSC**, plus rien à tenter côté code, **on clôt le sujet**. Élaguer les entrées `Sitemap` de `robots.ts` dès qu'une passe en « Réussite ».
+- ⚠️ **Trou de doc** : cette session n'a **pas d'entrée au CHANGELOG** (seulement le commit et le doc dédié).
 - ✅ **`dev.*` déréférencé (vérifié 2026-07-21)** : `site:dev.100000medecins.org` sur Google = « Aucun document ». Blocage durable en place (robots Disallow + noindex). Revérif passive occasionnelle.
 
 ### Mises à jour techniques

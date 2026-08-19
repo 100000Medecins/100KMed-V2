@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-08-19] — Espace éditeur : renommage de solution + lien de fiche réparé
+
+### Fix — Le lien « Voir la page solution » renvoyait un 404 (remonté par un éditeur)
+- **Cause** : le lien de bas de page de l'onglet « Pages solutions » pointait sur `/solutions/{slugSolution}` ([mon-espace-editeur/page.tsx](src/app/mon-compte/mon-espace-editeur/page.tsx)), alors que la fiche vit sous `/solutions/{slugCatégorie}/{slugSolution}`. Next interprétait donc le slug **solution** comme un slug **catégorie** → `notFound()`. Le slug catégorie n'était tout simplement pas dans les données du formulaire : `getEditeurDataForUser` ne remontait que `id_categorie` (un uuid, inutilisable en URL).
+- **Fix** : embed `categorie:categories(slug)` ajouté à la requête solutions de `getEditeurDataForUser` ([admin-users.ts](src/lib/actions/admin-users.ts)) et lien reconstruit avec les deux segments. FK unique `solutions_id_categorie_fkey` → l'embed PostgREST est non ambigu.
+- **Vérifié en base avant de rendre le lien conditionnel** : les **141 solutions** ont toutes un `slug` **et** une catégorie, et **aucune** catégorie n'a de slug vide → la condition `slug && categorie?.slug` ne masque le lien pour personne aujourd'hui. Cas de la remontée (Up-To-Date / Wolters Kluwer) : `/solutions/ia-documentaires/up-to-date`.
+
+### Feature — L'éditeur peut renommer sa solution
+- Champ « Nom de la solution » en tête du panneau déplié de chaque solution, et `nom` ajouté aux champs autorisés de `updateSolutionByEditeur`. Il hérite donc automatiquement de la plomberie existante : journal `editeurs_edit_log`, événement `EDITEUR_MODIF_SOLUTION` dans le flux Activité, et `revalidateSolution()` (fiche + listing `/solutions` rafraîchis immédiatement).
+- ⚠️ **Garde-fou indispensable** : `solutions.nom` est **NOT NULL**, or la boucle de diff de `updateSolutionByEditeur` convertit toute chaîne vide en `null`. Un nom effacé n'aurait pas juste échoué sur le nom — il aurait fait échouer l'**UPDATE entier**, donc perdu au passage prix, contacts et mot de l'éditeur saisis dans la même sauvegarde. Validation posée **des deux côtés** : côté client (message inline, aucun appel réseau) et côté serveur (`throw` explicite).
+- Le `handleSave` de la carte solution gagne un `catch` : jusqu'ici une erreur de sauvegarde était **silencieuse** (spinner qui s'arrête, rien d'autre).
+- **Choix assumé — le `slug` reste figé.** Le régénérer depuis le nouveau nom casserait l'URL publique, les liens déjà partagés et le référencement de la fiche. Le slug reste modifiable en admin uniquement ; une mention sous le champ prévient l'éditeur que l'adresse de la page ne bouge pas.
+- **Limite connue (comportement déjà en place pour logo/prix)** : le nouveau nom est immédiat sur la fiche et `/solutions`, mais met jusqu'à **1 h** à apparaître sur la page catégorie `/solutions/[cat]` et sur `/editeur/[slug]` (ISR 3600 s, non revalidés par `revalidateSolution` — qui est aussi sur le chemin chaud des évaluations, d'où le périmètre volontairement étroit).
+
+### Vérification — Nom affiché sur l'onglet « Page éditeur »
+- Demande de contrôle : que la barre affiche le **nom commercial**, pas le nom interne. **Déjà le cas** — `nom_commercial || nom || 'Mon entreprise'`, le nom interne n'étant qu'un repli si le nom commercial est vide (idem pour les pastilles maison-mère/filiales). Aucune modification. L'ambiguïté venait du cas observé (Wolters Kluwer), où les deux champs sont identiques.
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert ; `/mon-compte/mon-espace-editeur` toujours en `○`. Lint : seules les erreurs préexistantes du fichier (`set-state-in-effect` ligne 77, `<img>`), sur du code non touché.
+
+---
+
 ## [2026-08-16] — SEO dev : le robots.txt bloquait le crawl qui aurait dû faire sortir une URL de l'index
 
 ### Fix — « Indexée malgré le blocage par robots.txt » sur dev.100000medecins.org
