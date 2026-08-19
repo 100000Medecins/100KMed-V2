@@ -6,6 +6,7 @@ import { logActivity, ACTIVITY_TYPES, type ActivityDiff } from '@/lib/activity/l
 import { revalidatePath } from 'next/cache'
 import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 import type { ContactLigne } from '@/types/models'
 
 /**
@@ -220,11 +221,23 @@ export async function getEditeurDataForUser(userId: string) {
   // Récupérer les solutions du parent + des filiales (avec prix, galerie, mot éditeur par solution, contacts par solution)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, categorie:categories(slug), galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, nom_seo, meta, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, categorie:categories(slug), galerie:solutions_galerie(id, url, titre, ordre, type)')
     .in('id_editeur', editeurIds)
     .order('nom', { ascending: true })
 
-  return { editeur, solutions: solutions ?? [], filiales: filiales ?? [] }
+  // L'espace éditeur affiche un aperçu du <title> Google sous le champ « Nom ». Cet aperçu
+  // n'est honnête que si le titre stocké (`meta.title`) est encore l'auto-généré : sinon
+  // il a été rédigé par l'équipe, et le renommage ne le touchera pas (cf.
+  // `updateSolutionByEditeur`). On calcule donc le drapeau ici plutôt que de laisser le
+  // client deviner.
+  const solutionsAvecSeo = (solutions ?? []).map((sol) => {
+    const meta = sol.meta as Record<string, unknown> | null
+    const titreStocke = typeof meta?.title === 'string' ? meta.title : null
+    const titreAuto = buildSolutionSeoTitle({ nom: sol.nom, nom_seo: sol.nom_seo }).title
+    return { ...sol, seo_titre_personnalise: titreStocke !== null && titreStocke !== titreAuto }
+  })
+
+  return { editeur, solutions: solutionsAvecSeo, filiales: filiales ?? [] }
 }
 
 /**
@@ -415,7 +428,7 @@ export async function updateSolutionByEditeur(
     .eq('id', solutionId)
     .single()
 
-  const updates: Record<string, string | number | null | ContactLigne[]> = {}
+  const updates: Record<string, string | number | null | ContactLigne[] | Record<string, unknown>> = {}
   const logRows: Array<{ user_id: string; table_cible: string; id_cible: string; champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }> = []
   for (const [key, value] of requested) {
     // Champs JSONB (listes de contacts) : comparaison/log via JSON.stringify.
@@ -451,9 +464,51 @@ export async function updateSolutionByEditeur(
     }
   }
 
+  // ─── Titre SEO : le suivre quand le nom change, sans jamais écraser un titre rédigé ───
+  // Le <title> de la fiche ne vient PAS de `nom` : `generateMetadata` lit `meta.title`
+  // en priorité, et les 141 solutions en ont un. Sans ce bloc, renommer changeait le <h1>
+  // mais laissait Google sur l'ancien nom, indéfiniment et sans que personne le voie.
+  //
+  // Règle de sûreté : on ne remplace le titre QUE s'il correspond encore **exactement** au
+  // patron auto-généré pour l'ANCIEN nom. Un titre écrit à la main ne matche pas le patron,
+  // donc il n'est jamais touché. (Au 2026-08-19 : 140 titres sur 141 suivent le patron.)
+  // La `meta.description`, elle, est rédigée et propre à chaque produit → jamais touchée
+  // automatiquement ; le diff du nom remonte dans le flux Activité pour relecture humaine.
+  if (typeof updates.nom === 'string') {
+    const ancienNom = typeof current?.nom === 'string' ? current.nom : null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: seoRow } = await (supabase as any)
+      .from('solutions')
+      .select('meta, nom_seo')
+      .eq('id', solutionId)
+      .maybeSingle()
+    const meta = (seoRow?.meta ?? null) as Record<string, unknown> | null
+    const nomSeo = (seoRow?.nom_seo ?? null) as string | null
+    const titreActuel = typeof meta?.title === 'string' ? meta.title : null
+
+    if (ancienNom && titreActuel) {
+      const titreAttendu = buildSolutionSeoTitle({ nom: ancienNom, nom_seo: nomSeo }).title
+      if (titreActuel === titreAttendu) {
+        const nouveauTitre = buildSolutionSeoTitle({ nom: updates.nom, nom_seo: nomSeo }).title
+        if (nouveauTitre !== titreActuel) {
+          updates.meta = { ...(meta ?? {}), title: nouveauTitre }
+          logRows.push({
+            user_id: userId,
+            table_cible: 'solutions',
+            id_cible: solutionId,
+            champ: 'meta.title',
+            ancienne_valeur: titreActuel,
+            nouvelle_valeur: nouveauTitre,
+          })
+        }
+      }
+    }
+  }
+
   if (Object.keys(updates).length === 0) return
 
-  await supabase.from('solutions').update(updates).eq('id', solutionId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('solutions').update(updates).eq('id', solutionId)
   if (logRows.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('editeurs_edit_log').insert(logRows)

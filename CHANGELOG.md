@@ -27,6 +27,21 @@
 - **Vérifié** : `/editeur/[slug]` ne liste que les solutions de **son** éditeur (`eq('id_editeur', …)`), pas celles des filiales → une seule page éditeur à revalider, **pas de cascade maison-mère**.
 - **Effet de bord utile** : le même décalage touchait le **logo** (2ᵉ champ le plus modifié par les éditeurs : 15 fois, contre 29 pour le mot de l'éditeur) — corrigé par la même occasion, puisque la revalidation est branchée sur la sauvegarde et non sur le champ.
 
+### SEO — Le titre Google suit le renommage, sans jamais écraser un titre rédigé
+- **Trou trouvé en se posant la question « faut-il forcer le SEO ? »** : le `<title>` de la fiche ne vient **pas** de `nom`. `generateMetadata` lit **`meta.title` en priorité** et ne retombe sur le titre généré que si ce champ est vide — or **les 141 solutions ont `meta.title` ET `meta.description` renseignés**, donc le repli n'est *jamais* emprunté. Et `meta.title` embarque le nom en dur (« Les avis de vos confrères sur Up-To-Date - 100 000 Médecins »). Sans correctif, un renommage changeait le `<h1>` et tout le corps de page mais laissait **Google sur l'ancien nom, indéfiniment**, sans que l'éditeur puisse le voir ni le corriger.
+- **Fix** : à chaque renommage, `updateSolutionByEditeur` recalcule le titre qu'auraient produit les règles auto **pour l'ANCIEN nom** et ne remplace `meta.title` que s'il lui est **exactement** égal. Un titre écrit à la main ne matche pas le patron → intouchable. Le remplacement est journalisé (`champ: meta.title`) donc visible dans le flux Activité.
+- ⚠️ **`meta.description` n'est jamais touchée automatiquement** : elles sont rédigées et propres à chaque produit, aucune règle ne peut les réécrire correctement. C'est le diff du nom dans le flux Activité qui signale qu'il faut éventuellement repasser dessus à la main.
+- **Estimation vérifiée avec la vraie fonction** (`buildSolutionSeoTitle`), pas avec une approximation SQL : **140 titres sur 141** seront régénérés. ⚠️ Le seul « personnalisé » n'est pas un titre éditorial mais un **artefact du backfill** — `Agenda-en-ligne.com` stocke `Les avis sur agenda-en-ligne.com…` là où l'auto donne `…Agenda-en-ligne.com…` (une majuscule d'écart). La règle de sûreté le classe donc « personnalisé » et n'y touchera pas : comportement voulu, mais si on veut réaligner cette fiche c'est une correction d'une ligne en base, à part.
+
+### UX éditeur — Compteur 60 caractères sous le champ « Nom »
+- L'espace éditeur affiche désormais le titre exact qui s'affichera dans Google, son compteur `n/60` et une alerte si ça déborde — le formulaire admin l'avait, pas celui de l'éditeur, qui pouvait donc saisir un nom long et faire tronquer le titre **en silence**.
+- Pour la fiche dont le titre est personnalisé, **pas d'aperçu trompeur** : une mention indique que le titre est défini par l'équipe et ne suivra pas le renommage. Le drapeau `seo_titre_personnalise` est calculé **côté serveur** dans `getEditeurDataForUser`, pas deviné côté client.
+- **Aucun nom actuel ne déborde des 60 caractères** : l'alerte est purement préventive.
+
+### Sitemap — Rien à faire, et c'est démontré
+- Question posée avant d'envoyer : faut-il aussi toucher au sitemap ? **Non.** Il ne contient que des URLs et des `lastmod`, jamais le nom ; le **slug étant figé**, l'ensemble des URLs est inchangé → rien à ajouter, retirer ou re-soumettre à GSC.
+- Le `lastModified` des fiches vient de `solutions.updated_at`, et le trigger `update_solutions_updated_at` le bumpe à chaque UPDATE → le sitemap porte une date fraîche tout seul, dans sa fenêtre ISR d'1 h. Forcer sa revalidation n'aurait rien gagné : Google relit les sitemaps à son rythme (jours), et chez nous le statut GSC est de toute façon bloqué (cf. la 6ᵉ tentative du 16/08).
+
 ### Vérification — Nom affiché sur l'onglet « Page éditeur »
 - Demande de contrôle : que la barre affiche le **nom commercial**, pas le nom interne. **Déjà le cas** — `nom_commercial || nom || 'Mon entreprise'`, le nom interne n'étant qu'un repli si le nom commercial est vide (idem pour les pastilles maison-mère/filiales). Aucune modification. L'ambiguïté venait du cas observé (Wolters Kluwer), où les deux champs sont identiques.
 
