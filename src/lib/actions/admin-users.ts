@@ -6,7 +6,45 @@ import { logActivity, ACTIVITY_TYPES, type ActivityDiff } from '@/lib/activity/l
 import { revalidatePath } from 'next/cache'
 import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 import type { ContactLigne } from '@/types/models'
+
+/**
+ * Revalidation **élargie**, réservée aux sauvegardes de l'espace éditeur.
+ *
+ * `revalidateSolution()` ne couvre que la fiche + le listing `/solutions`, et son périmètre
+ * est volontairement étroit : elle est sur le chemin chaud des **évaluations** (appelée à
+ * chaque notation). Ici on est sur un chemin rare — ~2 sauvegardes/jour, mesuré sur
+ * `editeurs_edit_log` — donc on peut aussi revalider les pages où le **nom** et le **logo**
+ * de la solution s'affichent, sinon elles gardent l'ancienne valeur jusqu'à 1 h (ISR 3600).
+ *
+ * Coût réel : `revalidatePath` ne recalcule rien, il pose un marqueur ; le re-rendu est payé
+ * à la visite suivante — et ces pages se re-rendaient de toute façon dans l'heure.
+ */
+async function revalidatePagesEditeur(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  categorieId: string | null | undefined,
+  editeurId: string | null | undefined
+): Promise<void> {
+  if (categorieId) {
+    const { data: cat } = await supabase
+      .from('categories')
+      .select('slug')
+      .eq('id', categorieId)
+      .maybeSingle()
+    if (cat?.slug) revalidatePath(`/solutions/${cat.slug}`)
+  }
+  if (editeurId) {
+    const { data: ed } = await supabase
+      .from('editeurs')
+      .select('slug')
+      .eq('id', editeurId)
+      .maybeSingle()
+    // `/editeur/[slug]` ne liste que les solutions de CET éditeur (pas celles des filiales)
+    // → une seule page à revalider, pas de cascade maison-mère.
+    if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
+  }
+}
 
 /** Construit un diff `{ champ: { avant, apres } }` à partir des lignes d'audit éditeur. */
 function diffFromLogRows(
@@ -183,11 +221,23 @@ export async function getEditeurDataForUser(userId: string) {
   // Récupérer les solutions du parent + des filiales (avec prix, galerie, mot éditeur par solution, contacts par solution)
   const { data: solutions } = await supabase
     .from('solutions')
-    .select('id, nom, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, categorie:categories(slug), galerie:solutions_galerie(id, url, titre, ordre, type)')
+    .select('id, nom, nom_seo, meta, slug, id_categorie, logo_url, actif, id_editeur, mot_editeur, prix_ttc, prix_ttc_min, prix_ttc_max, prix_devise, prix_frequence, prix_duree_engagement_mois, support_website, contacts_commerciaux, contacts_support, categorie:categories(slug), galerie:solutions_galerie(id, url, titre, ordre, type)')
     .in('id_editeur', editeurIds)
     .order('nom', { ascending: true })
 
-  return { editeur, solutions: solutions ?? [], filiales: filiales ?? [] }
+  // L'espace éditeur affiche un aperçu du <title> Google sous le champ « Nom ». Cet aperçu
+  // n'est honnête que si le titre stocké (`meta.title`) est encore l'auto-généré : sinon
+  // il a été rédigé par l'équipe, et le renommage ne le touchera pas (cf.
+  // `updateSolutionByEditeur`). On calcule donc le drapeau ici plutôt que de laisser le
+  // client deviner.
+  const solutionsAvecSeo = (solutions ?? []).map((sol) => {
+    const meta = sol.meta as Record<string, unknown> | null
+    const titreStocke = typeof meta?.title === 'string' ? meta.title : null
+    const titreAuto = buildSolutionSeoTitle({ nom: sol.nom, nom_seo: sol.nom_seo }).title
+    return { ...sol, seo_titre_personnalise: titreStocke !== null && titreStocke !== titreAuto }
+  })
+
+  return { editeur, solutions: solutionsAvecSeo, filiales: filiales ?? [] }
 }
 
 /**
@@ -312,7 +362,7 @@ export async function updateEditeurByUser(
     // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
     const { data: ed } = await supabase
       .from('editeurs')
-      .select('nom_commercial')
+      .select('nom_commercial, slug')
       .eq('id', editeurId)
       .single()
     await logActivity({
@@ -325,6 +375,11 @@ export async function updateEditeurByUser(
       cibleLabel: ed?.nom_commercial ?? null,
       diff: diffFromLogRows(logRows),
     })
+
+    // Ce chemin ne revalidait rien : un nom commercial, un logo ou un mot de l'éditeur
+    // modifié ici mettait jusqu'à 1 h à apparaître sur sa page publique et sur l'annuaire.
+    if (ed?.slug) revalidatePath(`/editeur/${ed.slug}`)
+    revalidatePath('/editeurs')
   }
 }
 
@@ -373,7 +428,7 @@ export async function updateSolutionByEditeur(
     .eq('id', solutionId)
     .single()
 
-  const updates: Record<string, string | number | null | ContactLigne[]> = {}
+  const updates: Record<string, string | number | null | ContactLigne[] | Record<string, unknown>> = {}
   const logRows: Array<{ user_id: string; table_cible: string; id_cible: string; champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }> = []
   for (const [key, value] of requested) {
     // Champs JSONB (listes de contacts) : comparaison/log via JSON.stringify.
@@ -409,9 +464,51 @@ export async function updateSolutionByEditeur(
     }
   }
 
+  // ─── Titre SEO : le suivre quand le nom change, sans jamais écraser un titre rédigé ───
+  // Le <title> de la fiche ne vient PAS de `nom` : `generateMetadata` lit `meta.title`
+  // en priorité, et les 141 solutions en ont un. Sans ce bloc, renommer changeait le <h1>
+  // mais laissait Google sur l'ancien nom, indéfiniment et sans que personne le voie.
+  //
+  // Règle de sûreté : on ne remplace le titre QUE s'il correspond encore **exactement** au
+  // patron auto-généré pour l'ANCIEN nom. Un titre écrit à la main ne matche pas le patron,
+  // donc il n'est jamais touché. (Au 2026-08-19 : 140 titres sur 141 suivent le patron.)
+  // La `meta.description`, elle, est rédigée et propre à chaque produit → jamais touchée
+  // automatiquement ; le diff du nom remonte dans le flux Activité pour relecture humaine.
+  if (typeof updates.nom === 'string') {
+    const ancienNom = typeof current?.nom === 'string' ? current.nom : null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: seoRow } = await (supabase as any)
+      .from('solutions')
+      .select('meta, nom_seo')
+      .eq('id', solutionId)
+      .maybeSingle()
+    const meta = (seoRow?.meta ?? null) as Record<string, unknown> | null
+    const nomSeo = (seoRow?.nom_seo ?? null) as string | null
+    const titreActuel = typeof meta?.title === 'string' ? meta.title : null
+
+    if (ancienNom && titreActuel) {
+      const titreAttendu = buildSolutionSeoTitle({ nom: ancienNom, nom_seo: nomSeo }).title
+      if (titreActuel === titreAttendu) {
+        const nouveauTitre = buildSolutionSeoTitle({ nom: updates.nom, nom_seo: nomSeo }).title
+        if (nouveauTitre !== titreActuel) {
+          updates.meta = { ...(meta ?? {}), title: nouveauTitre }
+          logRows.push({
+            user_id: userId,
+            table_cible: 'solutions',
+            id_cible: solutionId,
+            champ: 'meta.title',
+            ancienne_valeur: titreActuel,
+            nouvelle_valeur: nouveauTitre,
+          })
+        }
+      }
+    }
+  }
+
   if (Object.keys(updates).length === 0) return
 
-  await supabase.from('solutions').update(updates).eq('id', solutionId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('solutions').update(updates).eq('id', solutionId)
   if (logRows.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('editeurs_edit_log').insert(logRows)
@@ -419,7 +516,7 @@ export async function updateSolutionByEditeur(
     // Événement résumé dans le flux de supervision (détail champ par champ : editeurs_edit_log)
     const [{ data: u }, { data: sol }] = await Promise.all([
       supabase.from('users').select('prenom, nom').eq('id', userId).single(),
-      supabase.from('solutions').select('nom, slug, id_categorie').eq('id', solutionId).single(),
+      supabase.from('solutions').select('nom, slug, id_categorie, id_editeur').eq('id', solutionId).single(),
     ])
     await logActivity({
       type: ACTIVITY_TYPES.EDITEUR_MODIF_SOLUTION,
@@ -435,6 +532,8 @@ export async function updateSolutionByEditeur(
     // Revalide la fiche solution (+ listings) : sans ça, une modif éditeur
     // (contacts, mot éditeur, prix…) peut mettre jusqu'à 1h à s'afficher (ISR).
     await revalidateSolution(sol?.slug, sol?.id_categorie)
+    // + page catégorie et page éditeur, où s'affichent le nom et le logo de la solution.
+    await revalidatePagesEditeur(supabase, sol?.id_categorie, sol?.id_editeur)
   }
 }
 

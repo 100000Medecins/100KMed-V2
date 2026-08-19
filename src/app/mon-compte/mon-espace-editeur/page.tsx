@@ -11,6 +11,7 @@ import ImageUploadField from '@/components/ui/ImageUploadField'
 import ProposeCommunauteModal from '@/components/solutions/detail/ProposeCommunauteModal'
 import ContactsListEditor from '@/components/admin/ContactsListEditor'
 import { normalizeContacts } from '@/lib/contacts'
+import { buildSolutionSeoTitle } from '@/lib/seo/title'
 import type { ContactLigne } from '@/types/models'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), { ssr: false })
@@ -19,6 +20,9 @@ type GalerieItem = { id?: number; url: string; titre: string | null; ordre: numb
 type Solution = {
   id: string
   nom: string
+  nom_seo: string | null
+  /** `meta.title` a été rédigé par l'équipe → le renommage ne le régénère pas. */
+  seo_titre_personnalise: boolean
   slug: string | null
   logo_url: string | null
   actif: boolean | null
@@ -604,6 +608,32 @@ function SolutionEditeurCard({
             <p className="text-xs text-gray-400 mt-1">
               Nom affiché sur la fiche publique et dans les listes. L&apos;adresse de la page (URL) reste inchangée.
             </p>
+            {/* Aperçu du <title> Google : le renommage régénère `meta.title` tant qu'il suit
+                le patron auto-généré. Si l'équipe l'a personnalisé, on le dit au lieu de
+                promettre un aperçu qui ne se réalisera pas. */}
+            {solution.seo_titre_personnalise ? (
+              <p className="text-xs text-gray-400 mt-2">
+                Le titre affiché dans Google a été personnalisé par notre équipe pour cette fiche : il ne suivra pas
+                automatiquement le changement de nom.
+              </p>
+            ) : nom.trim() !== '' && (() => {
+              const seo = buildSolutionSeoTitle({ nom: nom.trim(), nom_seo: solution.nom_seo })
+              return (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-500">
+                    Titre affiché dans Google{' '}
+                    <span className={seo.overflow ? 'text-rose-600' : 'text-gray-400'}>{seo.title.length}/60</span>
+                  </p>
+                  <p className="text-xs font-mono text-gray-600 break-all">{seo.title}</p>
+                  {seo.overflow && (
+                    <p className="mt-1.5 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                      Ce nom est trop long : Google tronquera le titre. Notre équipe pourra définir un nom court dédié
+                      au référencement.
+                    </p>
+                  )}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Logo solution */}
