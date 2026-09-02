@@ -26,7 +26,7 @@ interface AvisPagine {
   moyenne: number | null
   date: string | null
   commentaire: string | null
-  dureeMois: number | null
+  duree: { annees: number; auMoins: boolean } | null
   ancienUtilisateur?: boolean
   scores: Record<string, number | null>
 }

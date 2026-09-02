@@ -5,6 +5,41 @@
 
 ---
 
+## [2026-09-02] — Durée d'utilisation des témoignages : c'était l'âge de l'avis
+
+### Fix — « 1 mois d'utilisation » affiché sous des médecins installés depuis 5 ans (remonté par un utilisateur, fiche MadeForMed)
+- **Symptôme** : sous le nom de chaque confrère, la ligne bleue affichait « 1 mois d'utilisation » sur la quasi-totalité des témoignages MadeForMed — alors que le questionnaire ne se saisit **qu'en années entières** et ne peut donc pas produire une valeur en mois.
+- **Cause** : `getAvisUtilisateursPaginated` ([evaluations.ts](src/lib/db/evaluations.ts)) calculait la durée entre `solutions_utilisees.date_debut` et `now()`. Or ce champ n'est **pas** une réponse de questionnaire : c'est un champ de **cycle de vie**, initialisé à `new Date()` à la création de la ligne. La vraie réponse du médecin (« Depuis combien d'années utilisez-vous ce logiciel ? ») vit dans `evaluations.scores.date_debut` (format `AAAA-01-01`), que la page publique ne lisait pas. Résultat : l'**ancienneté de l'avis** affichée à la place de la durée d'usage — une redite dégradée de la date déjà présente à côté des étoiles — et qui **grossissait toute seule** à chaque re-rendu ISR.
+- **Origine précise** : le parcours **anonyme → confirmation PSC**. `submitEvaluationAnonyme` range la réponse dans `scores` (aucun utilisateur n'existe encore, donc aucune ligne `solutions_utilisees` à remplir), puis [psc-callback](src/app/api/auth/psc-callback/route.ts) créait la ligne avec `date_debut: new Date()` **sans jamais relire `ev.scores`**. Même trou dans `ensureSolutionUtilisee` (qui sert aussi à la fusion de comptes, via [merge.ts](src/lib/actions/merge.ts)) et dans l'insert de brouillon de `saveDraftEvaluation`. Le parcours connecté classique, lui, était correct : `submitEvaluation` écrase bien `date_debut` avec la réponse.
+- **Fix affichage** — nouveau module [src/lib/duree-utilisation.ts](src/lib/duree-utilisation.ts) : la durée est lue **uniquement dans ce que le médecin a déclaré**, et **figée à la date de l'avis**. Une durée est une déclaration datée, pas un compteur : sans ce figement, un « 5 ans » de 2026 devient « 6 ans » en 2027 alors que le médecin n'a rien redit et a peut-être changé de logiciel. `solutions_utilisees.date_debut` n'est plus une source d'affichage.
+- ⚠️ **Module à part, et pas dans `lib/actions/evaluation.ts`** : ce fichier est `'use server'`, donc **tous ses exports doivent être async** — un helper synchrone y fait échouer le build Turbopack (`Server Actions must be async functions`). Piège rencontré et documenté en tête du nouveau module.
+- **Découverte au passage — `evaluations.temps_precedente_solution` porte bien la durée d'usage de la solution notée**, malgré son nom. C'est la réponse du questionnaire Firebase historique (`'1'`, `'2'`, `'3'`, `'3+'` années ; `'-1'` = non répondue), et elle reste une source légitime. Vérifié avant de s'y fier : `solutions_utilisees.solution_precedente_id` n'a **jamais** été rempli (0 ligne sur 795), et les évaluations portant les deux signaux concordent (`'3+'` ↔ début déclaré en 2016/2017). Le nom de colonne est un vestige, pas une sémantique.
+- **Décision (David) — rien de déclaré, rien d'affiché.** Les avis sans aucune durée déclarée perdent la mention plutôt que d'afficher un chiffre fabriqué. Ils la retrouveront si le médecin réévalue.
+- **Granularité alignée sur la saisie** : l'affichage passe en **années** (le questionnaire ne propose que ça), et `'3+'` se lit désormais « Plus de 3 ans » au lieu de « 3 ans ».
+- **Fix écriture** : les trois points qui écrasaient la réponse par la date du jour reprennent maintenant `scores.date_debut` / `scores.date_fin` via le helper partagé `datesUtilisationDeclarees`.
+- **Backfill exécuté** — [scripts/fix-duree-utilisation.ts](scripts/fix-duree-utilisation.ts) (dry-run par défaut, `--execute` requis, backup JSON avant écriture dans `backups/`, gitignoré) : **93 lignes corrigées, 0 erreur**, dont 43 sur MadeForMed et 10 sur Weda. Vérifié après coup : **plus aucune incohérence** entre la réponse au questionnaire et `solutions_utilisees`. Les évaluations sans durée déclarée n'ont **pas** été touchées (décision ci-dessus).
+- **Chiffres vérifiés en base** sur les 795 avis publiés : **369** ont une durée déclarée via le questionnaire Firebase (affichage déjà correct), **141** via le questionnaire actuel (**dont 90 qui affichaient l'âge de l'avis**), **86** n'avaient rien de déclaré mais affichaient quand même une durée (mention supprimée), **199** n'affichaient déjà rien.
+- **Résultat sur MadeForMed**, contrôlé sur la page réellement rendue : plus aucun « mois d'utilisation » — 15 × « 5 ans », 7 × « 2 ans », 6 × « 3 ans », 6 × « 4 ans », 5 × « 1 an », puis jusqu'à 13 ans, et 1 « Moins d'1 an ».
+
+### UX / Design system — `ConfrereTestimonials` migré, et deux primitives étendues pour que ce soit possible
+- Le select de tri devient `<Select size="sm" fullWidth={false}>` (avec l'`aria-label` qui manquait) et les 3 boutons de pagination deviennent `<Button size="icon">` — `variant="secondary"` pour la page courante (exactement le `bg-accent-blue text-white` d'avant), `variant="ghost"` sinon, plus `aria-label` et `aria-current="page"`.
+- ⚠️ **Les deux migrations butaient sur le même piège Tailwind** : une classe passée en `className` **ne gagne pas** contre une classe de base du composant — l'arbitrage se fait par l'ordre dans la feuille CSS générée, pas par l'ordre dans l'attribut. D'où deux extensions **purement additives** des primitives, sans lesquelles la migration était impossible :
+  - **`<Select>` gagne `fullWidth`** (défaut `true`), calqué sur celui qui existe déjà sur `<Button>` : `className="w-auto"` était sans effet, Tailwind émettant `.w-full` **après** `.w-auto`. `buildInputClasses()` prend un 4ᵉ paramètre optionnel ; `<Input>` et `<Textarea>` gardent leur comportement.
+  - **`<Button>` gagne la taille `icon`** (carré 32px, `p-0`) : `className="rounded-full"` était sans effet (`rounded-button` vient d'`extend`, donc émis après `rounded-full`) et `p-0` ne pouvait pas neutraliser le `px-3` de `size="sm"`. C'est la **seule** taille qui bascule le radius en `rounded-full`.
+- **Bénéfice au-delà de ce fichier** : `CitationCarousel` et `SolutionGallery` ont les mêmes boutons ronds en Tailwind brut, désormais migrables au fil de l'eau.
+- **Écart visuel assumé** : le select de tri passe de `text-xs / px-2 py-1.5` à la taille `sm` du design system (`text-sm / px-3 py-2`), donc légèrement plus grand. C'est le prix de l'alignement ; une taille `xs` sur `Input`/`Select` serait nécessaire pour retrouver l'ancienne.
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert, fiche `/solutions/[idCategorie]/[idSolution]` toujours en `●`.
+- **Contrôle sur le HTML réellement rendu** (serveur de dev, `/solutions/agendas-medicaux/madeformed`), et pas seulement sur le raisonnement : le select sort bien sans `w-full` avec le chevron SVG du design system, les boutons sortent en `rounded-full w-8 h-8 p-0` sans `rounded-button` concurrent, la page active en `bg-accent-blue`.
+- ESLint sur les fichiers touchés : **0 erreur**, 3 warnings tous préexistants et sur du code non modifié (`useEffect` et `totalEvaluations` inutilisés, `<img>`).
+
+### TODO — Mises à jour
+- Ajout (UX / UI, design system) : `<Button size="icon">` et `<Select fullWidth>` disponibles → migrer les boutons ronds de `CitationCarousel` et `SolutionGallery` au fil de l'eau.
+- Ajout (Contenu des questionnaires) : 665 évaluations n'ont aucune durée d'utilisation déclarée → n'affichent plus rien. Voir si le flux de reconfirmation d'évaluation peut reposer la question.
+
+---
+
 ## [2026-08-19] — Espace éditeur : renommage de solution + lien de fiche réparé
 
 ### Fix — Le lien « Voir la page solution » renvoyait un 404 (remonté par un éditeur)

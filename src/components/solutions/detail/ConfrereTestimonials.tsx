@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import StarRating from '@/components/ui/StarRating'
+import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import { resolveSpecialite } from '@/lib/constants/profil'
 import { getCritereLabels } from '@/lib/constants/criteres'
 import { getDisplayName } from '@/lib/displayName'
@@ -18,7 +20,7 @@ interface Avis {
   moyenne: number | null
   date: string | null
   commentaire: string | null
-  dureeMois: number | null
+  duree: { annees: number; auMoins: boolean } | null
   ancienUtilisateur?: boolean
   scores: Record<string, number | null>
 }
@@ -32,14 +34,15 @@ interface ConfrereTestimonialsProps {
   labelFonctionnalites?: string | null
 }
 
-function formatDuree(mois: number | null): string | null {
-  if (mois == null) return null
-  if (mois < 1) return "Moins d'1 mois d'utilisation"
-  if (mois < 12) return `${mois} mois d'utilisation`
-  const annees = Math.floor(mois / 12)
-  const resteM = mois % 12
-  if (resteM === 0) return `${annees} an${annees > 1 ? 's' : ''} d'utilisation`
-  return `${annees} an${annees > 1 ? 's' : ''} et ${resteM} mois d'utilisation`
+// Durée telle que déclarée par le médecin. Le questionnaire ne propose que des années
+// entières ('Moins d'1 an', '1 an', … '20 ans', 'Plus de 20 ans') : on n'affiche donc
+// jamais de mois, qui laisserait croire à une précision jamais saisie.
+function formatDuree(duree: { annees: number; auMoins: boolean } | null): string | null {
+  if (!duree) return null
+  const { annees, auMoins } = duree
+  if (annees < 1) return "Moins d'1 an d'utilisation"
+  if (auMoins) return `Plus de ${annees} ans d'utilisation`
+  return `${annees} an${annees > 1 ? 's' : ''} d'utilisation`
 }
 
 function formatDate(dateStr: string | null): string {
@@ -107,16 +110,18 @@ export default function ConfrereTestimonials({
         </h2>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400">Trier par</span>
-          <select
+          <Select
+            size="sm"
+            fullWidth={false}
+            aria-label="Trier les témoignages"
             value={tri}
             onChange={(e) => handleTriChange(e.target.value as TriAvis)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white"
           >
             <option value="date">Avis les plus récents</option>
             <option value="date_asc">Avis les plus anciens</option>
             <option value="note">Meilleures notes</option>
             <option value="note_asc">Pires notes</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -159,9 +164,9 @@ export default function ConfrereTestimonials({
                         return [modes, specialites].filter(Boolean).join(' · ')
                       })()}
                     </p>
-                    {item.dureeMois != null && (
+                    {item.duree != null && (
                       <p className="text-xs text-accent-blue mt-0.5">
-                        {formatDuree(item.dureeMois)}
+                        {formatDuree(item.duree)}
                         {item.ancienUtilisateur && (
                           <span className="ml-1.5 inline-block bg-gray-100 text-gray-500 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
                             ancien utilisateur
@@ -217,41 +222,47 @@ export default function ConfrereTestimonials({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-center gap-2">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => handlePageChange(page - 1)}
             disabled={page <= 1}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            aria-label="Page précédente"
           >
             <ChevronLeft className="w-4 h-4" />
-          </button>
+          </Button>
 
           {/* Boutons numérotés sur desktop, compteur condensé sur mobile */}
           <div className="hidden sm:flex items-center gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
+              <Button
                 key={p}
+                type="button"
+                variant={p === page ? 'secondary' : 'ghost'}
+                size="icon"
                 onClick={() => handlePageChange(p)}
-                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                  p === page
-                    ? 'bg-accent-blue text-white'
-                    : 'text-gray-500 hover:bg-gray-100'
-                }`}
+                aria-label={`Page ${p}`}
+                aria-current={p === page ? 'page' : undefined}
               >
                 {p}
-              </button>
+              </Button>
             ))}
           </div>
           <span className="sm:hidden text-sm font-medium text-gray-600 px-2">
             {page} / {totalPages}
           </span>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            aria-label="Page suivante"
           >
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Button>
 
           <span className="hidden sm:inline text-xs text-gray-400 ml-2">
             {page} sur {totalPages}

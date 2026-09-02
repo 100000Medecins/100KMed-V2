@@ -11,9 +11,13 @@
  *   - cta       : bg-accent-yellow / text-navy — bouton mis en avant (landing)
  *
  * Tailles :
- *   - sm : px-3 py-1.5  text-xs
- *   - md : px-5 py-2.5  text-sm
- *   - lg : px-7 py-3.5  text-sm  (défaut — taille historique du composant)
+ *   - sm   : px-3 py-1.5  text-xs
+ *   - md   : px-5 py-2.5  text-sm
+ *   - lg   : px-7 py-3.5  text-sm  (défaut — taille historique du composant)
+ *   - icon : carré 32px, rond, sans padding — bouton d'icône seule (pagination,
+ *            carrousels). C'est la seule taille qui change le radius : `rounded-full`
+ *            au lieu de `rounded-button`, car `className="rounded-full"` ne peut pas
+ *            l'emporter (Tailwind émet `.rounded-button` après `.rounded-full`).
  *
  * Comportement :
  *   - `loading` affiche un spinner et désactive le bouton
@@ -38,7 +42,7 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { forwardRef } from 'react'
 import type { ButtonVariant } from '@/types'
 
-type Size = 'sm' | 'md' | 'lg'
+type Size = 'sm' | 'md' | 'lg' | 'icon'
 
 type CommonProps = {
   variant?: ButtonVariant
@@ -78,17 +82,19 @@ const SIZE_CLASSES: Record<Size, string> = {
   sm: 'px-3 py-1.5 text-xs',
   md: 'px-5 py-2.5 text-sm',
   lg: 'px-7 py-3.5 text-sm',
+  icon: 'w-8 h-8 p-0 text-sm shrink-0',
 }
 
 const SPINNER_SIZE: Record<Size, string> = {
   sm: 'w-3 h-3',
   md: 'w-4 h-4',
   lg: 'w-4 h-4',
+  icon: 'w-4 h-4',
 }
 
 function buildClasses(variant: ButtonVariant, size: Size, fullWidth: boolean, extra: string): string {
   return [
-    'inline-flex items-center justify-center gap-2 rounded-button font-semibold transition-all duration-300',
+    `inline-flex items-center justify-center gap-2 ${size === 'icon' ? 'rounded-full' : 'rounded-button'} font-semibold transition-all duration-300`,
     'disabled:opacity-50 disabled:cursor-not-allowed',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:ring-offset-1',
     VARIANT_CLASSES[variant],

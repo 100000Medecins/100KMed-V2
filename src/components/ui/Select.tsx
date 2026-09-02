@@ -6,6 +6,9 @@
  *
  * Tailles : identiques à <Input> (sm/md, défaut md).
  *
+ * `fullWidth={false}` : largeur naturelle au lieu de `w-full`, pour les selects de
+ * barre d'outils (tri, filtre) qui vivent dans une ligne en flex.
+ *
  * Note : on garde un <select> natif (pas de combobox custom). Avantage :
  * accessibilité, mobile, recherche au clavier, zéro JS. Inconvénient : style
  * de la liste déroulante non personnalisable. Pour un combobox riche, voir
@@ -26,10 +29,11 @@ type Size = 'sm' | 'md'
 export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   size?: Size
   error?: boolean
+  fullWidth?: boolean
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { size = 'md', error = false, className = '', children, ...rest },
+  { size = 'md', error = false, fullWidth = true, className = '', children, ...rest },
   ref,
 ) {
   // appearance-none = enlève le style natif du select pour homogénéiser
@@ -39,6 +43,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
     size,
     error,
     `appearance-none bg-no-repeat bg-[right_0.75rem_center] bg-[length:0.65em] pr-9 ${className}`.trim(),
+    fullWidth,
   )
   return (
     <select

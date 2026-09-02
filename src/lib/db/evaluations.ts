@@ -1,5 +1,6 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import type { Evaluation, AvisUtilisateursResult, ResultatWithCritere } from '@/types/models'
+import { dureeDeclaree } from '@/lib/duree-utilisation'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -181,27 +182,24 @@ export async function getAvisUtilisateursPaginated(
   const total = count ?? 0
   const totalPages = Math.ceil(total / limit)
 
-  // Fetch durations for all users in parallel
+  // Dates de fin d'utilisation (« je n'utilise plus ce logiciel ») : badge « ancien
+  // utilisateur » et borne haute de la durée déclarée. `solutions_utilisees.date_debut`
+  // n'est volontairement PAS lu ici — cf. `dureeDeclaree`.
   const userIds = (data || [])
     .map((r: Record<string, unknown>) => r.user_id as string)
     .filter(Boolean)
 
-  const durations: Record<string, number | null> = {}
-  const ancienUtilisateurs: Record<string, boolean> = {}
+  const datesFin: Record<string, string | null> = {}
   if (userIds.length > 0) {
     const { data: usageData } = await supabase
       .from('solutions_utilisees')
-      .select('user_id, date_debut, date_fin')
+      .select('user_id, date_fin')
       .eq('solution_id', solutionId)
       .in('user_id', userIds)
 
     for (const usage of usageData || []) {
-      if (!usage.date_debut || !usage.user_id) continue
-      const debut = new Date(usage.date_debut)
-      const fin = usage.date_fin ? new Date(usage.date_fin) : new Date()
-      const months = (fin.getFullYear() - debut.getFullYear()) * 12 + (fin.getMonth() - debut.getMonth())
-      durations[usage.user_id] = months
-      ancienUtilisateurs[usage.user_id] = !!usage.date_fin
+      if (!usage.user_id) continue
+      datesFin[usage.user_id] = usage.date_fin
     }
   }
 
@@ -230,18 +228,13 @@ export async function getAvisUtilisateursPaginated(
       })(),
       date: row.last_date_note as string | null,
       commentaire,
-      dureeMois: (() => {
-        // Priorité : temps_precedente_solution (années → mois)
-        const tps = row.temps_precedente_solution as string | null
-        if (tps && tps !== '-1') {
-          if (tps === '3+') return 36
-          const n = parseInt(tps, 10)
-          if (!isNaN(n) && n > 0) return n * 12
-        }
-        // Fallback : calcul depuis solutions_utilisees
-        return durations[userId] ?? null
-      })(),
-      ancienUtilisateur: ancienUtilisateurs[userId] ?? false,
+      duree: dureeDeclaree(
+        typeof scores.date_debut === 'string' ? scores.date_debut : null,
+        (typeof scores.date_fin === 'string' ? scores.date_fin : null) ?? datesFin[userId] ?? null,
+        row.temps_precedente_solution as string | null,
+        row.last_date_note as string | null
+      ),
+      ancienUtilisateur: !!(scores.date_fin || datesFin[userId]),
       scores: (() => {
         const entries = Object.entries(scores).filter(([k]) => k !== 'commentaire')
         // Toutes les notes sont sur 0-5 depuis la conversion 2026-04-12 (vérifié :

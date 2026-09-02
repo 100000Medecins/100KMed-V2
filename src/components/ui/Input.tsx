@@ -33,9 +33,15 @@ const SIZE_CLASSES: Record<Size, string> = {
   md: 'px-5 py-3',
 }
 
-export function buildInputClasses(size: Size, error: boolean, extra: string): string {
+/**
+ * `fullWidth` : `w-full` fait partie de la base (cas normal : un champ de formulaire
+ * occupe sa colonne). Le passer à `false` est nécessaire pour les usages en barre
+ * d'outils, où le champ doit garder sa largeur naturelle — `className="w-auto"` ne
+ * suffirait pas, Tailwind émettant `.w-full` après `.w-auto` dans la feuille générée.
+ */
+export function buildInputClasses(size: Size, error: boolean, extra: string, fullWidth = true): string {
   return [
-    'w-full rounded-button bg-white border text-sm text-gray-700',
+    `${fullWidth ? 'w-full ' : ''}rounded-button bg-white border text-sm text-gray-700`,
     'focus:ring-2 focus:outline-none',
     error
       ? 'border-red-300 focus:ring-red-300/40 focus:border-red-400'
