@@ -5,6 +5,7 @@ import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { retryTransientAuth } from '@/lib/supabase/retry'
 import { resolveSpecialite } from '@/lib/constants/profil'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
+import { datesUtilisationDeclarees } from '@/lib/duree-utilisation'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
@@ -387,13 +388,13 @@ export async function GET(request: Request) {
     //    verifyOtp via le client SSR pose les cookies sur le NextResponse.redirect.
 
     // 7. Lier les évaluations anonymes en attente
-    let evalsALier: Array<{ id: string; solution_id: string | null }> = []
+    let evalsALier: Array<{ id: string; solution_id: string | null; scores?: unknown }> = []
 
     // Par token de vérification (chemin direct depuis le lien email)
     if (verificationToken) {
       const { data } = await supabaseAdmin
         .from('evaluations')
-        .select('id, solution_id, email_temp')
+        .select('id, solution_id, email_temp, scores')
         .eq('token_verification', verificationToken)
         .eq('statut', 'en_attente_psc')
       if (data && data.length > 0) evalsALier = data
@@ -403,7 +404,7 @@ export async function GET(request: Request) {
     if (evalsALier.length === 0 && email) {
       const { data } = await supabaseAdmin
         .from('evaluations')
-        .select('id, solution_id, email_temp')
+        .select('id, solution_id, email_temp, scores')
         .eq('email_temp', email.toLowerCase())
         .eq('statut', 'en_attente_psc')
       if (data && data.length > 0) evalsALier = data
@@ -419,7 +420,7 @@ export async function GET(request: Request) {
         if (!lookupEmail || evalsALier.length > 0) continue
         const { data } = await supabaseAdmin
           .from('evaluations')
-          .select('id, solution_id, email_temp')
+          .select('id, solution_id, email_temp, scores')
           .eq('email_temp', lookupEmail.toLowerCase())
           .eq('statut', 'en_attente_psc')
         if (data && data.length > 0) evalsALier = data
@@ -456,11 +457,15 @@ export async function GET(request: Request) {
           .limit(1)
 
         if (!existingSU || existingSU.length === 0) {
+          // Reprendre les dates déclarées dans le questionnaire — les poser à « aujourd'hui »
+          // faisait afficher l'âge de l'avis à la place de la durée d'usage (fix 2026-09-02).
+          const { dateDebut, dateFin } = datesUtilisationDeclarees(ev.scores)
           const { error: suError } = await supabaseAdmin.from('solutions_utilisees').insert({
             user_id: userId,
             solution_id: ev.solution_id,
             statut_evaluation: 'finalisee',
-            date_debut: new Date().toISOString().split('T')[0],
+            date_debut: dateDebut || new Date().toISOString().split('T')[0],
+            date_fin: dateFin,
           })
           if (suError) console.error('[PSC] solutions_utilisees insert error:', suError)
         } else if ((existingSU[0] as { statut_evaluation?: string }).statut_evaluation === 'ancienne') {

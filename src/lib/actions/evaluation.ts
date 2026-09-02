@@ -10,6 +10,7 @@ import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
+import { datesUtilisationDeclarees } from '@/lib/duree-utilisation'
 
 type ScoresRecord = Record<string, unknown>
 
@@ -49,6 +50,10 @@ function notesInchangees(avant: ScoresRecord | null | undefined, apres: ScoresRe
  * Crée une ligne solutions_utilisees pour (userId, solutionId) si elle n'existe pas.
  * Utilisé après rattachement d'évals anonymes pour qu'elles apparaissent dans
  * /mon-compte/mes-evaluations (qui itère sur solutions_utilisees).
+ *
+ * ⚠️ `date_debut` doit reprendre la réponse au questionnaire quand elle existe : la
+ * remplir avec la date du jour revient à enregistrer « commence à utiliser le logiciel
+ * aujourd'hui » pour un médecin qui vient de déclarer 5 ans d'usage (bug 2026-09-02).
  */
 export async function ensureSolutionUtilisee(userId: string, solutionId: string) {
   const supabase = createServiceRoleClient()
@@ -59,11 +64,21 @@ export async function ensureSolutionUtilisee(userId: string, solutionId: string)
     .eq('user_id', userId)
     .limit(1)
   if (existing && existing.length > 0) return
+
+  const { data: evalRow } = await supabase
+    .from('evaluations')
+    .select('scores')
+    .eq('solution_id', solutionId)
+    .eq('user_id', userId)
+    .limit(1)
+  const { dateDebut, dateFin } = datesUtilisationDeclarees(evalRow?.[0]?.scores)
+
   await supabase.from('solutions_utilisees').insert({
     user_id: userId,
     solution_id: solutionId,
     statut_evaluation: 'finalisee',
-    date_debut: new Date().toISOString().split('T')[0],
+    date_debut: dateDebut || new Date().toISOString().split('T')[0],
+    date_fin: dateFin,
   })
 }
 
@@ -449,12 +464,14 @@ export async function saveDraftEvaluation(
   // soit nouvelle, soit promue depuis 'instanciee' (jamais re-loggée si déjà aCompleter/finalisee).
   const devientACompleter = estValide && (!su || (su.statut_evaluation !== 'finalisee' && su.statut_evaluation !== 'aCompleter'))
   if (!su) {
+    const declarees = datesUtilisationDeclarees(scores)
     await supabase.from('solutions_utilisees').insert({
       user_id: user.id,
       solution_id: solutionId,
       // 'aCompleter' = comptée mais sous-critères non finalisés ; sinon 'instanciee'.
       statut_evaluation: estValide ? 'aCompleter' : 'instanciee',
-      date_debut: new Date().toISOString().split('T')[0],
+      date_debut: declarees.dateDebut || new Date().toISOString().split('T')[0],
+      date_fin: declarees.dateFin,
     })
   } else if (estValide && su.statut_evaluation !== 'finalisee') {
     // Promotion vers 'aCompleter' (ne jamais rétrograder une éval finalisée).

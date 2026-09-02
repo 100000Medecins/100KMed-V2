@@ -44,7 +44,9 @@ Le déclencheur est conservé. Vérifier aussi que `BACKUP_PING_SECRET` est bien
 
 ### Contenu des questionnaires
 
-_(rien en cours)_
+#### Durée d'utilisation non déclarée sur les évaluations anciennes (2026-09-02)
+- Depuis le fix du 2026-09-02, la fiche solution n'affiche la durée d'utilisation que si le médecin l'a **réellement déclarée**. **665 évaluations** (Firebase d'avant l'ajout de la question) n'ont rien de déclaré → plus aucune mention sous leur nom, ce qui est honnête mais appauvrit ces témoignages.
+- **À étudier** : faire reposer la question par le flux de **reconfirmation d'évaluation** (relance « votre avis est-il toujours d'actualité ? »), qui est déjà le seul moment où ces médecins repassent sur leur éval. Rien à migrer en base : la donnée n'existe nulle part, elle ne peut que venir d'eux.
 
 ### Sécurité
 
@@ -129,6 +131,7 @@ _(rien en cours)_
 - **Phase 4 livrée (2026-05-25)** : `<Modal>` composé créé (`<Modal>`, `<Modal.Header>`, `<Modal.Body>`, `<Modal.Footer>`). Gère pour toi : ESC pour fermer, clic backdrop (opt-out via `closeOnBackdropClick={false}`), scroll body bloqué, `aria-modal`. 4 tailles (sm/md/lg/xl). 3 modales migrées : `DeleteAccountModal` (pattern composé complet avec Footer), `ProposeCommunauteModal` (mode libre avec header custom), `PublishEmailModal` (juste l'overlay externe — contenu interne préservé). **Reste à migrer** : ~9 autres modales (`SolutionGallery` carousel/zoom, `ArticleForm`, `BlogForm`, `EmailTemplateEditor`, `LancementSyndicatsManager`, `AdminEmailsClient`, `NewslettersClient`, `etudes-cliniques/_public`, `questionnaires-these/page`).
 - **Phase 5 livrée (2026-05-25)** : `<Card>` créé ([src/components/ui/Card.tsx](src/components/ui/Card.tsx)). Props : `padding` (none/sm/md/lg/xl), `hoverable` (cards cliquables), `overflow` (hidden/visible), forward de tous les attrs HTML standards. 4 fichiers migrés en démo. **Reste à migrer** : ~87 autres usages de `bg-white rounded-card shadow-card`.
 - **Toutes les phases sont livrées** ✅ — règle « migration au fil de l'eau » active dans [CLAUDE.md](CLAUDE.md) (section « Design system — composants UI à utiliser »). Les ~87 cards, ~10 modales et ~11 inputs inline restants seront migrés automatiquement quand je touche les fichiers pour d'autres raisons. Pas de chantier dédié.
+- **Primitives étendues (2026-09-02)** : `<Button size="icon">` (carré 32px rond, seule taille qui bascule le radius en `rounded-full`) et `<Select fullWidth={false}>` (largeur naturelle au lieu de `w-full`). Les deux existent parce qu'une classe passée en `className` **ne peut pas** l'emporter sur une classe de base — Tailwind arbitre par l'ordre dans la feuille générée. **À migrer au fil de l'eau** : les boutons ronds encore en Tailwind brut de `CitationCarousel` et `SolutionGallery`.
 - **Méthode** : composant **extrait d'abord**, **remplacé ensuite** au fil de l'eau dans les fichiers qu'on touche pour d'autres raisons. Pas de big-bang.
 - **Pas dans le scope** : Storybook, doc formelle — pas de valeur tant qu'on est seul à coder.
 
