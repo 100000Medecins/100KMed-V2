@@ -11,6 +11,7 @@ import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
+import { lierPropositionAArticle } from '@/lib/actions/propositions-articles'
 import type { ContactLigne } from '@/types/models'
 
 // ────────────────────────────────────────────
@@ -1311,11 +1312,17 @@ export async function createArticle(formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const articleId = randomUUID()
+  const { error } = await supabase
     .from('articles')
-    .insert({ id: randomUUID(), ...data })
+    .insert({ id: articleId, ...data })
   if (error) return { error: error.message }
+
+  // Article créé depuis une proposition de sujet (chemin « Ouvrir le formulaire ») :
+  // on la marque développée pour qu'elle sorte de la liste d'arbitrage.
+  const propositionId = (formData.get('proposition_id') as string) || null
+  if (propositionId) await lierPropositionAArticle(propositionId, articleId)
+
   revalidatePath('/admin/blog')
   revalidatePath('/blog')
   redirect('/admin/blog')

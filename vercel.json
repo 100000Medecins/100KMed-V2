@@ -38,6 +38,10 @@
       "schedule": "30 9 * * *"
     },
     {
+      "path": "/api/cron/proposer-sujets-articles",
+      "schedule": "15 7 * * 1"
+    },
+    {
       "path": "/api/cron/digest-activite",
       "schedule": "30 7 * * 1"
     },
