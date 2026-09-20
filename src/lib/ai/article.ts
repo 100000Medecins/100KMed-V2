@@ -89,6 +89,21 @@ export type ResultatArticle =
   | { ok: true; article: ArticleGenere }
   | { ok: false; error: string; raw?: string }
 
+/**
+ * Concatène les blocs de texte d'une réponse du modèle.
+ *
+ * ⚠️ Ne JAMAIS lire `content[0]` directement : les modèles récents renvoient un
+ * bloc `thinking` en première position. `content[0].text` est alors vide, et le
+ * `JSON.parse` échoue sur « réponse invalide » alors que le modèle a bien
+ * répondu — le texte se trouve simplement dans un bloc suivant.
+ */
+export function extraireTexte(content: Array<{ type: string }>): string {
+  return content
+    .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+    .map((b) => b.text)
+    .join('')
+}
+
 /** Retire les backticks que le modèle ajoute parfois malgré la consigne. */
 export function nettoyerJson(raw: string): string {
   return raw
@@ -131,8 +146,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans backticks, sa
 - "meta_description" : description SEO de 150 à 160 caractères`,
       }],
     })
-    const bloc = message.content[0]
-    raw = bloc.type === 'text' ? bloc.text : ''
+    raw = extraireTexte(message.content)
   } catch (e) {
     return { ok: false, error: `Erreur API Anthropic : ${e instanceof Error ? e.message : String(e)}` }
   }

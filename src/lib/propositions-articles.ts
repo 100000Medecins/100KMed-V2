@@ -109,7 +109,15 @@ export async function creerLotPropositions(
     titresDejaProposes: contexte.titresDejaProposes,
   })
 
-  if (!resultat.ok) return { ok: false, error: resultat.error }
+  if (!resultat.ok) {
+    // La réponse brute ne remonte pas jusqu'à l'admin (message court en UI) :
+    // sans cette trace, un échec de parsing n'est diagnosticable qu'en rejouant
+    // l'appel à la main. C'est exactement ce qui est arrivé au premier essai.
+    if (resultat.raw) {
+      console.error('[propositions-articles] réponse non parsable:', resultat.raw.slice(0, 1000))
+    }
+    return { ok: false, error: resultat.error }
+  }
 
   // Écarter l'ancien lot AVANT d'insérer le nouveau : on conserve l'historique
   // (rien n'est supprimé), mais l'admin n'affiche que ce qui est encore en attente.

@@ -13,7 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import { nettoyerJson, type LongueurArticle } from '@/lib/ai/article'
+import { extraireTexte, nettoyerJson, type LongueurArticle } from '@/lib/ai/article'
 
 /** Jugement éditorial : un appel par semaine, l'écart de coût est négligeable. */
 const MODELE = 'claude-sonnet-5'
@@ -204,8 +204,7 @@ Pour chaque sujet :
 Réponds UNIQUEMENT avec un tableau JSON valide de ${NB_PROPOSITIONS} objets (sans markdown, sans backticks, sans commentaires).`,
       }],
     })
-    const bloc = message.content[0]
-    raw = bloc.type === 'text' ? bloc.text : ''
+    raw = extraireTexte(message.content)
   } catch (e) {
     return { ok: false, error: `Erreur API Anthropic : ${e instanceof Error ? e.message : String(e)}` }
   }
