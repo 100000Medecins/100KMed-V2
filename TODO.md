@@ -12,6 +12,18 @@ _(rien en cours)_
 
 ## En cours
 
+### ⏰ Le 2026-10-07 — Lire l'entonnoir `/completer-profil` (posé le 2026-09-23)
+
+**Contexte** : ~2/3 des inscrits PSC ne laissent jamais leur email (PSC ne le fournit pas → compte en `psc-{rpps}@psc.sante.fr`, et sans email on ne peut pas les relancer). Taux de complétion : ~12 % avant la refonte du 17/06, ~55 % juste après, redescendu à ~20-35 % depuis août. Pour 97 % d'entre eux l'écran n'a **déjà qu'un seul champ** (l'email, obligatoire) → ce n'est pas un problème de formulaire trop long.
+
+**Livré le 2026-09-23** : mesure étape par étape dans `psc_session_events` (`completer_view` → `completer_email_input` → `completer_submit` → `completer_success`/`fusion`/`error`, reliées par `correlation_id` = une visite) + les 4 choix de notifications affichés sur l'écran pour donner une raison de laisser l'email.
+
+**À faire** : demander à Claude la requête d'entonnoir, puis décider :
+- beaucoup de `view` sans `email_input` → ils partent sans rien toucher : travailler l'accroche (bénéfice), pas la contrainte ;
+- des `email_input` sans `submit` → friction à la saisie ;
+- des `completer_error` → bug à corriger ;
+- comparer le taux de complétion avant/après l'ajout des choix de notifications, et lire les choix faits (détail de `completer_success`).
+
 ### ~~Terminer le branchement de la supervision des sauvegardes (2026-08-06)~~ ✅ Fait — vérifié 2026-08-19
 
 > _Ci-dessous : l'état au 2026-08-06, conservé pour la trace. Le bilan à jour est en bas de section._

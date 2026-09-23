@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-09-23] — Inscriptions PSC sans email : mesure de l'entonnoir + choix des notifications dès l'inscription
+
+### Diagnostic — Pourquoi autant de comptes en `psc-…@psc.sante.fr`
+- **Pas un bug d'affichage** : l'admin utilisateurs affiche bien `contact_email ?? email` ; ces comptes n'ont réellement aucun email.
+- **Chiffres (comptes PSC par semaine)** : complétion ~10-15 % avant la refonte du 17/06, **~50-57 %** les deux semaines suivantes, ~35-47 % en juillet, **~20-35 % depuis août**.
+- **Ce ne sont pas des évaluateurs frustrés** : depuis le 17/06, **7 incomplets sur 291** ont une évaluation (contre 79 sur 189 chez les complets).
+- **Ni un formulaire trop long** : 284/292 incomplets ont spécialité + mode d'exercice fournis par PSC → l'écran n'a déjà **qu'un seul champ modifiable, l'email, obligatoire**. Durcir l'obligation (bloquer la navigation) écarté : les pages publiques sont ISR (le gate les rendrait dynamiques), et un départ du site échappe à tout blocage.
+
+### Mesure — Entonnoir `/completer-profil` dans `psc_session_events`
+- Server action `logCompleterProfilEvent` ([user.ts](src/lib/actions/user.ts)) : étapes en liste blanche (`completer_view`, `completer_email_input`, `completer_submit`, `completer_success`, `completer_fusion`, `completer_error`), utilisateur authentifié requis, jamais bloquante. `correlation_id` = un id par affichage de page ; `user_id` permet de rapprocher du handoff PSC qui précède.
+- `completer_view` porte en détail l'origine (`psc`/`email`), l'email pré-rempli ou non, et `evaluation_publiee` ; `completer_success` porte les choix de notifications ; `completer_error` le message.
+- **Aucune migration** : réutilisation de la table existante (colonnes `step`/`detail` libres).
+
+### UX — Les 4 choix de notifications sur l'écran de fin d'inscription (piste « donner une raison »)
+- Nouveau composant partagé [NotificationPreferencesList](src/components/notifications/NotificationPreferencesList.tsx) (sur `<Card>`), qui remplace les **deux copies** qui existaient (`/mon-compte/mes-notifications` et `/gerer-notifications`) et sert la 3ᵉ page : `/completer-profil`, bloc « Ce que vous recevrez » sous l'email.
+- Sur `/completer-profil`, les choix sont enregistrés **à la validation** (`updateNotificationPreferences`, non bloquant) ; défauts inchangés (revalidation + annonces activés, études + questionnaires à activer).
+- Au passage : coquille « Digital Medica Hub » corrigée dans Mes notifications, `aria-label` ajouté sur les interrupteurs.
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert, `/completer-profil` et `/mon-compte/mes-notifications` toujours en `○`. Lint : seule l'erreur préexistante `set-state-in-effect` (pré-sélection éditeur) sur `/completer-profil`.
+
+### TODO — Mises à jour
+- Ajout (En cours) : le 2026-10-07, lire l'entonnoir et décider de la suite.
+
+---
+
 ## [2026-09-02] — Durée d'utilisation des témoignages : c'était l'âge de l'avis
 
 ### Fix — « 1 mois d'utilisation » affiché sous des médecins installés depuis 5 ans (remonté par un utilisateur, fiche MadeForMed)

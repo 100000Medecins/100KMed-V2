@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, signalerErreurIdentite } from '@/lib/actions/user'
-import type { EditeurClaimOption } from '@/lib/actions/user'
+import { completeProfile, getCurrentUserProfile, getEditeurClaimOptions, createEditeurClaim, signalerErreurIdentite, logCompleterProfilEvent } from '@/lib/actions/user'
+import type { EditeurClaimOption, CompleterProfilStep } from '@/lib/actions/user'
+import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/actions/notifications'
+import type { NotificationPreferences } from '@/lib/actions/notifications'
+import NotificationPreferencesList from '@/components/notifications/NotificationPreferencesList'
 import { SPECIALITES, MODES_EXERCICE } from '@/lib/constants/profil'
 import { createClient } from '@/lib/supabase/client'
 import Modal from '@/components/ui/Modal'
@@ -23,6 +26,14 @@ export default function CompleterProfilPage() {
   const [modeExercice, setModeExercice] = useState('')
 
   const [contactEmail, setContactEmail] = useState('')
+
+  // Choisis ici, enregistrés à la validation (défauts = ceux de getNotificationPreferences).
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
+    relance_emails: true,
+    marketing_emails: true,
+    etudes_cliniques: false,
+    questionnaires_these: false,
+  })
 
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -73,6 +84,14 @@ export default function CompleterProfilPage() {
   const isEditeur = modeExercice === 'Éditeur'
   const showLibreTexte = claimValue === LIBRE_TEXTE_VALUE
 
+  // Mesure de l'entonnoir (cf. logCompleterProfilEvent) : un id par affichage de page.
+  const [visitId] = useState(() => crypto.randomUUID())
+  const viewLogged = useRef(false)
+  const emailInputLogged = useRef(false)
+  const track = (step: CompleterProfilStep, detail?: string) => {
+    void logCompleterProfilEvent(visitId, step, detail)
+  }
+
   const [evaluationPubRef] = useState(() => {
     if (typeof window !== 'undefined') {
       return new URLSearchParams(window.location.search).get('evaluation') === 'publiee'
@@ -98,7 +117,11 @@ export default function CompleterProfilPage() {
     if (!user) return
 
     async function loadProfile() {
-      const profile = await getCurrentUserProfile()
+      const [profile, prefs] = await Promise.all([
+        getCurrentUserProfile(),
+        getNotificationPreferences().catch(() => null),
+      ])
+      if (prefs) setNotifPrefs(prefs)
 
       const hasPsc = !!(profile?.rpps || user?.user_metadata?.provider === 'psc')
       setIsFromPsc(hasPsc)
@@ -133,6 +156,18 @@ export default function CompleterProfilPage() {
     loadProfile()
   }, [user])
 
+  useEffect(() => {
+    if (!profileLoaded || viewLogged.current) return
+    viewLogged.current = true
+    const detail = [
+      isFromPsc ? 'psc' : 'email',
+      contactEmail ? 'email_prerempli' : 'email_vide',
+      ...(evaluationPubRef ? ['evaluation_publiee'] : []),
+    ].join(',')
+    track('completer_view', detail)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- une seule fois, au 1er rendu du formulaire
+  }, [profileLoaded])
+
   const claimFilled = showLibreTexte ? libreTexte.trim().length > 0 : claimValue.length > 0
 
   const isValid =
@@ -156,6 +191,7 @@ export default function CompleterProfilPage() {
     if (!isValid) return
     setSubmitting(true)
     setError(null)
+    track('completer_submit')
 
     try {
       const result = await completeProfile({
@@ -171,6 +207,7 @@ export default function CompleterProfilPage() {
       // par email à cette adresse. On affiche un écran de confirmation, sans redirection :
       // seul le propriétaire de la boîte peut poursuivre la fusion.
       if (result.status === 'FUSION_EMAIL_SENT') {
+        track('completer_fusion')
         setFusionEmailSent(result.email)
         return
       }
@@ -195,6 +232,13 @@ export default function CompleterProfilPage() {
         })
       }
 
+      // Préférences de notification : jamais bloquant, le profil est déjà complété.
+      try {
+        await updateNotificationPreferences(notifPrefs)
+      } catch (e) {
+        console.error('Erreur enregistrement préférences:', e)
+      }
+
       // Si un mot de passe a été défini, on rafraîchit la session sous le nouvel email.
       // Sinon, la session PSC en cours reste valide (même user_id) → pas de re-signin.
       if (isFromPsc && password) {
@@ -204,11 +248,13 @@ export default function CompleterProfilPage() {
           password,
         })
       }
+      track('completer_success', Object.entries(notifPrefs).map(([k, v]) => `${k}=${v ? 1 : 0}`).join(','))
       window.location.href = evaluationPubRef
         ? '/mon-compte/mes-evaluations?evaluation=publiee'
         : '/mon-compte/profil'
     } catch (err) {
       console.error('Erreur complétion profil:', err)
+      track('completer_error', err instanceof Error ? err.message : String(err))
       setError('Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setSubmitting(false)
@@ -455,7 +501,13 @@ export default function CompleterProfilPage() {
                 <input
                   type="email"
                   value={contactEmail}
-                  onChange={isFromPsc ? (e) => setContactEmail(e.target.value) : undefined}
+                  onChange={isFromPsc ? (e) => {
+                    if (!emailInputLogged.current) {
+                      emailInputLogged.current = true
+                      track('completer_email_input')
+                    }
+                    setContactEmail(e.target.value)
+                  } : undefined}
                   readOnly={!isFromPsc}
                   required
                   placeholder="votre@email.fr"
@@ -467,7 +519,7 @@ export default function CompleterProfilPage() {
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   {isFromPsc
-                    ? 'Pour vous prévenir si un éditeur répond à votre avis ou si une solution que vous avez notée évolue — et pour récupérer votre compte. Jamais de spam, jamais transmis à un éditeur.'
+                    ? 'Pour recevoir ce que vous choisissez ci-dessous et pour récupérer votre compte. Jamais de spam, jamais transmis à un éditeur.'
                     : 'Adresse confirmée — utilisée pour les notifications et la récupération de compte.'}
                 </p>
               </div>
@@ -501,6 +553,19 @@ export default function CompleterProfilPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Ce que l'email apporte — rend concret l'intérêt de le laisser */}
+            <div>
+              <h2 className="text-sm font-semibold text-navy">Ce que vous recevrez</h2>
+              <p className="text-xs text-gray-500 mt-0.5 mb-3">
+                Choisissez dès maintenant. Modifiable à tout moment dans Mon compte → Mes notifications.
+              </p>
+              <NotificationPreferencesList
+                prefs={notifPrefs}
+                onToggle={(key, value) => setNotifPrefs((p) => ({ ...p, [key]: value }))}
+                isEditeur={isEditeur}
+              />
             </div>
 
             {error && (
