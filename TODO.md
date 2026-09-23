@@ -178,7 +178,10 @@ _(rien en cours)_
   - ~~Vérifier les quotas Brevo (gratuit 300 mails/j ; les crons campagnes/newsletter peuvent dépasser → plan payant ~9-18 €/mois).~~
 - **Ne PAS faire** (tranché en session 2026-07-25, toujours valable) : quitter Supabase (auto-hébergement = trop risqué en solo ; Postgres nu ailleurs = réécriture de l'Auth/PSC). Supabase = Postgres **+ Auth (GoTrue/PSC) + PostgREST/RLS + Storage** → ce n'est pas « juste une base » remplaçable à la volée.
 
-#### Brancher les rapports DMARC (`rua`) sur un agrégateur lisible (2026-08-01) — ✅ DNS fait le 2026-08-09, reste la vérif du 1er digest
+#### ~~Brancher les rapports DMARC (`rua`) sur un agrégateur lisible (2026-08-01)~~ ✅ Clos le 2026-09-24
+- ✅ **Vérifié (David, 2026-09-24)** : le digest Postmark arrive **chaque lundi** dans `contact@`. Conformité **100 %** chaque semaine, sauf **une fois à 88 %** (3-4 mails mal passés). Rien à faire tant que ça reste ponctuel ; si un digest retombe sous 100 %, regarder quelle source échoue (légitime ou usurpation).
+
+_Historique :_
 - **Constat d'origine** : le domaine était **déjà au maximum DMARC** (`p=reject; sp=reject; np=reject`, DKIM Gandi RSA 2048 — rien à durcir), mais `rua=mailto:david.azerad@100000medecins.org` → rapports d'agrégation en **XML brut dans une boîte perso**, illisibles et jamais lus = **rejet à l'aveugle**, aucune visibilité sur ce qui est bloqué en notre nom ni sur un service légitime rejeté au passage.
 - ✅ **Fait (2026-08-09)** : compte **Postmark DMARC Digests** (plan **gratuit**) créé sur `contact@100000medecins.org`, adresse **confirmée**. TXT `_dmarc` repointé chez **Gandi**. Valeur en ligne, vérifiée caractère par caractère sur les **3 NS autoritatifs Gandi + Google/Cloudflare/Quad9**, **un seul** enregistrement TXT :
   `v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:re+fbhc07ckyap@dmarc.postmarkapp.com`
@@ -218,7 +221,7 @@ _(rien en cours)_
   4. *(Optionnel, priorité basse)* logos syndicats du « mot du président » (`pages_statiques.metadata`, page `qui-sommes-nous`) → `/images/syndicats/*.png` (déjà dans `public/`). Le footer/home utilisent déjà les chemins locaux ([src/lib/data.ts](src/lib/data.ts)).
 - **Arbitrage plan Pro** : passer Pro **juste pour l'egress = traiter le symptôme** (sans optimisation, ça remonte avec le trafic + surplus 0,09 $/GB sur images non optimisées). Free (5 GB) → Pro (~25 $/mois, **250 GB egress**, backups quotidiens auto, fin de la pause après inactivité, +DB/compute). **Reco : faire l'optimisation d'abord** (gratuit, utile même en Pro — perf/SEO/coûts), **puis** décider Pro sur ses bénéfices propres (surtout backups quotidiens vs notre backup **hebდo manuel** via `/backup`) et la trajectoire de trafic — pas sous la pression du mail. **Ce mail n'est donc PAS en soi « la raison qu'on attendait » pour Pro** ; il l'est seulement si les autres bénéfices Pro nous intéressaient déjà.
 - **Optionnel plus tard** : brancher `next/image` (`remotePatterns` Supabase) → Vercel sert du WebP redimensionné depuis son CDN (egress Supabase ÷ nb visiteurs, mais consomme les quotas d'optimisation Vercel) ; vérifier les logs Storage (écarter bot/scraper/hotlinking).
-- **Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour.
+- ~~**Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour.~~ ✅ Corrigé le 2026-09-24.
 
 #### Vulnérabilités npm restantes
 - **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
