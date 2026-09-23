@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
 import { getSiteConfig } from '@/lib/actions/siteConfig'
 import { specialiteConcerneeAvecSecondaire } from '@/lib/constants/profil'
 import sgMail from '@sendgrid/mail'
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
     const userIds = (prefs ?? []).map((p: any) => p.user_id)
     const { data: allUsers } = await supabase
       .from('users')
-      .select('id, email, nom, specialite, specialite_secondaire')
+      .select('id, email, contact_email, nom, specialite, specialite_secondaire')
       .in('id', userIds.length > 0 ? userIds : ['00000000-0000-0000-0000-000000000000'])
 
     // Filtrage par spécialité via specialiteConcerneeAvecSecondaire() : les libellés
@@ -68,7 +69,8 @@ export async function GET(req: NextRequest) {
     let sent = 0
 
     for (const user of users ?? []) {
-      if (!user.email) continue
+      const to = adresseEnvoi(user)
+      if (!to) continue
       try {
         const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
         const result = await buildEmail(templateId, {
@@ -79,7 +81,7 @@ export async function GET(req: NextRequest) {
         }, siteUrl)
         if (!result) continue
         await sgMail.send({
-          to: user.email,
+          to,
           from: EMAIL_SENDER,
           subject: result.sujet,
           html: result.html,

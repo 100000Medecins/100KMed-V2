@@ -71,9 +71,10 @@ _(rien en cours)_
 - **Livré (code)** : `scripts/backup-supabase.ps1` versionné dans le repo (source de vérité unique), archive mensuelle hors rotation, route `/api/backup-ping`, cron quotidien `/api/cron/verif-backup` (alerte email si le dernier dump dépasse 8 jours).
 - ✅ **Fait (2026-08-06)** : migration SQL `backup_pings` jouée (table + index, RLS active **sans policy** = inaccessible hors `service_role`, comme `activity_log`), `src/types/database.ts` régénéré, `BACKUP_PING_SECRET` posé dans Vercel.
 - ⏳ **Reste** : les deux gestes de branchement sont remontés en **URGENT** en haut de ce fichier (repointage de la tâche du desktop + merge `dev` → `main`).
-- ⏳ **Fusionner le journal de backup** : `backup_MSF-MG1_août-05-213056-2026_Conflict.log` (123 lignes, historique complet du 26/04 au 05/08) est plus complet que le `backup.log` courant (87 lignes, trou du 28/06 au 05/08). La copie de conflit est la bonne référence — il n'y manque que les 4 lignes du backup manuel du 05/08 17h28. Faisable depuis le portable, le dossier est synchronisé.
-- 🔒 **Durcissement optionnel (non urgent)** : l'ACL de `backup_pings` porte `anon=arwdDxtm` et `authenticated=arwdDxtm` — Supabase applique encore l'auto-grant d'avant le 30 octobre 2026. **Sans danger aujourd'hui** (la RLS sans policy bloque toute ligne), mais ces droits de table ne servent à rien et deviendraient effectifs si une policy permissive était ajoutée un jour. Moindre privilège : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;`
-- 🧹 **Nettoyage possible** : les types étant régénérés, les descriptions de surface temporaires (`ClientAvecBackupPings`) dans les deux routes peuvent laisser place aux types générés.
+- ~~⏳ **Fusionner le journal de backup**~~ ✅ Fait 2026-09-24 : `backup.log` = 210 lignes (170 courantes + 40 récupérées de la copie de conflit, trou 28/06→05/08 comblé), copie `_Conflict.log` supprimée.
+- 🔒 **Durcissement optionnel (non urgent)** — SQL à lancer par David dans le SQL Editor : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;` (droits de table inutiles, la RLS sans policy bloque déjà toute ligne).
+- ~~🧹 **Nettoyage possible** : `ClientAvecBackupPings`~~ ✅ Fait 2026-09-24 : les deux routes utilisent les types générés.
+- ✅ Copie périmée du script hors repo : **absente du laptop (AzertyPC)** au 2026-09-24. Reste à vérifier sur le desktop (MSF-MG1).
 
 ### Communication
 
@@ -242,8 +243,17 @@ _(rien en cours)_
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
-- Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
+- Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
+- **Avant d'activer (2026-09-24)** :
+  1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
+  2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;
+  3. Supprimer le brouillon de newsletter d'**avril** dans `/admin/newsletters` (sinon rappel quotidien à `contact@`).
+- **Volume attendu** (compté le 2026-09-24) : ~522 rappels de revalidation en retard → **100/jour** grâce au plafond, donc ~6 jours ; le lundi suivant +106 relances PSC et +19 relances d'évals incomplètes. Ensuite quelques mails/jour.
+
+#### ⚠️ Newsletter : l'envoi ne toucherait que 1 000 inscrits sur 6 545 (constaté le 2026-09-24)
+- `send-newsletter`, `send-infos-mensuels` et le cron `envoyer-newsletter-programmee` lisent les opt-in sans pagination → Supabase plafonne à **1 000 lignes**. Puis `.in('id', …)` avec 1 000 uuid dans l'URL risque d'échouer, et 6 500 envois séquentiels dépasseraient la durée max d'une fonction Vercel.
+- **Aucune newsletter n'est jamais partie** → aucun dégât. À corriger **avant la première** (pagination + envoi par lots, via l'API batch SendGrid ou un cron qui avance par tranches).
 
 ### Nouvelles catégories de solutions (en cours)
 

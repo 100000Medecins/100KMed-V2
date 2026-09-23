@@ -5,6 +5,31 @@
 
 ---
 
+## [2026-09-24] — Envois de masse : fin des adresses `psc-…`, plafond de relances + ménage sauvegardes
+
+### Fix — 175 médecins avaient donné leur vrai email mais les envois partaient vers `psc-…@psc.sante.fr`
+- **Constat** (en préparant la réactivation du kill-switch) : `completeProfile` écrivait `users.contact_email` et l'email auth, **jamais `users.email`**. Or **tous** les envois de masse lisent `users.email`. Résultat : 175 comptes joignables uniquement sur une adresse fictive, et **548 des 6 545 opt-in newsletter** pointant vers `psc-…`. Aucune newsletter n'étant jamais partie, aucun rebond réel.
+- **Code** : `completeProfile` ([user.ts](src/lib/actions/user.ts)) aligne désormais `users.email` (minuscules) une fois l'email auth mis à jour avec succès.
+- **Garde-fou d'envoi** : nouveau helper [destinataire.ts](src/lib/email/destinataire.ts) — `adresseEnvoi()` prend `contact_email` puis `email`, **jamais** une adresse `@psc.sante.fr`. Branché sur les 9 points d'envoi : 3 crons de relance (évaluations, incomplètes, PSC via `estEmailFictif`), newsletter programmée, campagnes, et les 4 envois admin (newsletter, infos mensuelles, étude, questionnaire).
+- **Rattrapage** : [scripts/fix-users-email-psc.ts](scripts/fix-users-email-psc.ts) (dry-run par défaut, `--execute`, backup JSON). Dry-run : **175 à corriger, 0 conflit**, 7 dont l'email auth est encore fictif (non touché). ⚠️ **Exécution à lancer par David** : l'écriture en prod a été refusée par le garde-fou de Claude Code.
+
+### Relances de revalidation — plafond de 100 envois par exécution
+- À la réactivation, **~522 rappels** seraient partis le même matin (256 premiers rappels + 266 deuxièmes, en retard depuis la coupure d'avril). `MAX_ENVOIS_PAR_EXECUTION = 100`, plus anciens d'abord ; le surplus part les jours suivants (marquage après envoi réussi → ni perte ni doublon).
+- **Flood mesuré** sur les 614 destinataires des premiers jours : 582 reçoivent un seul mail ; 28 en reçoivent 2 de revalidation (2 logiciels notés), 3 reçoivent 2 sujets différents à quelques jours d'écart, 1 reçoit 3 relances PSC le même lundi.
+
+### Sauvegardes — ménage
+- `backup.log` fusionné avec la copie de conflit d'août (210 lignes, trou 28/06→05/08 comblé), copie supprimée.
+- `backup-ping` et `verif-backup` utilisent les types générés (suppression de `ClientAvecBackupPings`).
+- Reste : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;` (David).
+
+### Constaté, non corrigé
+- Les envois de newsletter liraient au plus **1 000 opt-in** (pas de pagination) → à corriger avant la première newsletter (cf. TODO).
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert, lint des nouveaux fichiers sans erreur.
+
+---
+
 ## [2026-09-23] — Inscriptions PSC sans email : mesure de l'entonnoir + choix des notifications dès l'inscription
 
 ### Diagnostic — Pourquoi autant de comptes en `psc-…@psc.sante.fr`

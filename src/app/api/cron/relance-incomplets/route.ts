@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
           slug
         )
       ),
-      user:users ( email, nom )
+      user:users ( email, contact_email, nom )
     `)
     .is('relance_incomplet_sent_at', null)
     .not('user_id', 'is', null)
@@ -85,7 +86,8 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const categorie = solution?.categorie as any
 
-    if (!user?.email || !solution?.nom || !solution?.slug || !categorie?.slug) continue
+    const to = user ? adresseEnvoi(user) : null
+    if (!to || !solution?.nom || !solution?.slug || !categorie?.slug) continue
 
     // Vérifier que solutions_utilisees est bien en statut 'instanciee'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,7 +125,7 @@ export async function GET(req: NextRequest) {
         continue
       }
       await sgMail.send({
-        to: user.email,
+        to,
         from: EMAIL_SENDER,
         subject: result.sujet,
         html: result.html,

@@ -21,33 +21,6 @@ export const dynamic = 'force-dynamic'
 const ALERTE_TO = 'david.azerad@100000medecins.org'
 const SEUIL_JOURS = 8 // ~2 exécutions manquées (cadence normale : 3-4 jours)
 
-/**
- * `backup_pings` est absente de `src/types/database.ts` jusqu'à la prochaine
- * régénération des types. On décrit précisément la surface utilisée plutôt que de
- * passer par un `as any`. À supprimer au profit des types générés.
- */
-type BackupPingRow = {
-  fichier: string
-  taille_octets: number
-  machine: string | null
-  effectue_le: string
-}
-type ClientAvecBackupPings = {
-  from(table: 'backup_pings'): {
-    select(colonnes: string): {
-      order(
-        colonne: string,
-        options: { ascending: boolean }
-      ): {
-        limit(n: number): Promise<{
-          data: BackupPingRow[] | null
-          error: { message: string } | null
-        }>
-      }
-    }
-  }
-}
-
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
@@ -97,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
 
-  const { data, error } = await (supabase as unknown as ClientAvecBackupPings)
+  const { data, error } = await supabase
     .from('backup_pings')
     .select('fichier, taille_octets, machine, effectue_le')
     .order('effectue_le', { ascending: false })
@@ -107,7 +80,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const dernier: BackupPingRow | undefined = (data ?? [])[0]
+  const dernier = (data ?? [])[0]
 
   // Aucun ping : soit le script n'est pas encore branché, soit il ne pingue plus.
   // Dans les deux cas ce n'est pas un état normal → on alerte.

@@ -472,7 +472,16 @@ export async function completeProfile(data: {
     authUpdates.password = data.password
   }
   if (Object.keys(authUpdates).length > 0) {
-    await supabase.auth.admin.updateUserById(user.id, authUpdates)
+    const { error: authError } = await supabase.auth.admin.updateUserById(user.id, authUpdates)
+    // users.email est l'adresse lue par TOUS les envois de masse (relances, newsletter,
+    // études, questionnaires) : sans cet alignement, un compte PSC qui a saisi son vrai
+    // email restait joignable uniquement sur psc-…@psc.sante.fr (cf. CHANGELOG 2026-09-24).
+    if (!authError && authUpdates.email) {
+      await supabase
+        .from('users')
+        .update({ email: data.contact_email.trim().toLowerCase() })
+        .eq('id', user.id)
+    }
   }
 
   return { status: 'SUCCESS' }

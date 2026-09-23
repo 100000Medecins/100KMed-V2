@@ -2,13 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateRevalidationLink } from '@/lib/email/revalidation'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
-// Pas de cap : relances tous les 3 mois indéfiniment jusqu'à revalidation
+// Pas de cap sur le nombre de relances d'une éval : tous les 3 mois jusqu'à revalidation.
+// En revanche, plafond d'envois PAR EXÉCUTION : à la réactivation du kill-switch
+// (2026-09), ~520 relances étaient en retard d'un coup. Un pic soudain dégrade la
+// réputation d'envoi ; le surplus part les jours suivants (une éval n'est marquée
+// qu'après envoi réussi → ni perte ni doublon).
+const MAX_ENVOIS_PAR_EXECUTION = 100
 
 function isAuthorized(req: NextRequest): boolean {
   const auth = req.headers.get('authorization')
@@ -82,18 +88,21 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: evals1an } = await (supabase as any)
     .from('evaluations')
-    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, nom)')
+    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, contact_email, nom)')
     .not('last_date_note', 'is', null)
     .lt('last_date_note', oneYearAgo.toISOString())
     .is('last_relance_sent_at', null)
     .not('user_id', 'is', null)
+    .order('last_date_note', { ascending: true })
 
   for (const ev of evals1an ?? []) {
+    if (sentCount >= MAX_ENVOIS_PAR_EXECUTION) break
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const user = ev.user as any
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const solution = ev.solution as any
-    if (!user?.email || !solution?.nom) continue
+    const to = user ? adresseEnvoi(user) : null
+    if (!to || !solution?.nom) continue
 
     // Vérifier les préférences de notification
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,7 +115,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
-      await sendRelanceEmail('relance_1an', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, ev.user_id as string)
+      await sendRelanceEmail('relance_1an', to, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, ev.user_id as string)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('evaluations')
@@ -118,22 +127,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── 2. Relances suivantes (tous les 3 mois, cap à MAX_RELANCES) ──
+  // ── 2. Relances suivantes (tous les 3 mois) ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: evalsRecurrence } = await (supabase as any)
     .from('evaluations')
-    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, nom)')
+    .select('id, user_id, solution_id, relance_count, solution:solutions(nom), user:users(email, contact_email, nom)')
     .not('last_relance_sent_at', 'is', null)
     .lt('last_relance_sent_at', threeMonthsAgo.toISOString())
     .gt('relance_count', 0)
     .not('user_id', 'is', null)
+    .order('last_relance_sent_at', { ascending: true })
 
   for (const ev of evalsRecurrence ?? []) {
+    if (sentCount >= MAX_ENVOIS_PAR_EXECUTION) break
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const user = ev.user as any
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const solution = ev.solution as any
-    if (!user?.email || !solution?.nom) continue
+    const to = user ? adresseEnvoi(user) : null
+    if (!to || !solution?.nom) continue
 
     // Vérifier les préférences de notification
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,7 +158,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const lien1Clic = generateRevalidationLink(ev.user_id as string, ev.solution_id as string, siteUrl)
-      await sendRelanceEmail('relance_3mois', user.email, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, ev.user_id as string)
+      await sendRelanceEmail('relance_3mois', to, user.nom, solution.nom, lienReevaluation, lien1Clic, siteUrl, ev.user_id as string)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('evaluations')

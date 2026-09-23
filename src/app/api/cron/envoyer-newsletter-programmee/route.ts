@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: users } = await (supabase as any)
       .from('users')
-      .select('id, email, nom')
+      .select('id, email, contact_email, nom')
       .in('id', userIds)
 
     if (!users || users.length === 0) {
@@ -85,7 +86,8 @@ export async function GET(req: NextRequest) {
     let sent = 0
 
     for (const user of users) {
-      if (!user.email) continue
+      const to = adresseEnvoi(user)
+      if (!to) continue
       try {
         const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
         const html = (newsletter.contenu_html as string)
@@ -94,14 +96,14 @@ export async function GET(req: NextRequest) {
           .replace(/\{\{lien_navigateur\}\}/g, `${siteUrl}/nl/${newsletter.id}`)
         const sujet = (newsletter.sujet as string).replace(/\{\{nom\}\}/g, nomDisplay)
         await sgMail.send({
-          to: user.email,
+          to,
           from: EMAIL_SENDER,
           subject: sujet,
           html,
         })
         sent++
       } catch (e) {
-        console.error(`[envoyer-newsletter-programmee] erreur envoi ${user.email}:`, e)
+        console.error(`[envoyer-newsletter-programmee] erreur envoi ${to}:`, e)
       }
     }
 

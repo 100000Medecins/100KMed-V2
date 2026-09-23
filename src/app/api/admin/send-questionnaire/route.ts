@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   const userIds = prefs.map((p: any) => p.user_id)
   const { data: allUsers } = await (supabase as any)
     .from('users')
-    .select('id, email, nom, specialite, specialite_secondaire')
+    .select('id, email, contact_email, nom, specialite, specialite_secondaire')
     .in('id', userIds)
 
   // Filtrage par spécialité si des spécialités sont ciblées.
@@ -62,7 +63,8 @@ export async function POST(req: NextRequest) {
   const errors: string[] = []
 
   for (const user of users) {
-    if (!user.email) continue
+    const to = adresseEnvoi(user)
+    if (!to) continue
     try {
       const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
       const result = await buildEmail('questionnaire_recherche', {
@@ -73,14 +75,14 @@ export async function POST(req: NextRequest) {
       }, siteUrl)
 
       if (!result) {
-        errors.push(`${user.email}: template "questionnaire_recherche" introuvable`)
+        errors.push(`${to}: template "questionnaire_recherche" introuvable`)
         continue
       }
 
-      await sgMail.send({ to: user.email, from: EMAIL_SENDER, subject: result.sujet, html: result.html })
+      await sgMail.send({ to, from: EMAIL_SENDER, subject: result.sujet, html: result.html })
       sent++
     } catch (e) {
-      errors.push(`${user.email}: ${e}`)
+      errors.push(`${to}: ${e}`)
     }
   }
 
