@@ -4,6 +4,15 @@ const withBundleAnalyzer = BundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// Page de présentation de l'application Messagerie (URL du service déclarée à l'ANS pour
+// Pro Santé Connect). HTML statique autonome, public/messagerie.html : hors du layout racine,
+// donc sans Vercel Analytics ni AuthProvider — exigence « aucun traceur ».
+// Non liée depuis le site, absente du sitemap (liste manuelle), noindex y compris en prod.
+// Le sous-domaine est rattaché au projet Vercel en Production : sans les règles ci-dessous,
+// il servirait le site entier en doublon.
+const HOTE_MESSAGERIE = [{ type: 'host', value: 'messagerie.100000medecins.org' }];
+const NOINDEX_MESSAGERIE = [{ key: 'X-Robots-Tag', value: 'noindex' }];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -20,20 +29,47 @@ const nextConfig = {
   // L'en-tête, lui, s'applique à TOUT. Vérifié en ligne le 2026-08-16 : VERCEL_ENV vaut
   // 'production' sur www uniquement (prod ne sert aucun noindex, dev en sert un) — donc
   // aucun risque de fuite de ce noindex vers la prod.
+  // Exception : la page Messagerie porte son propre noindex, en prod comme ailleurs.
+  // Placé AVANT la règle hors prod : à clé égale, la dernière règle l'emporte.
   async headers() {
-    if (process.env.VERCEL_ENV === 'production') return [];
+    const messagerie = [
+      { source: '/:path*', has: HOTE_MESSAGERIE, headers: NOINDEX_MESSAGERIE },
+      { source: '/messagerie', headers: NOINDEX_MESSAGERIE },
+      { source: '/messagerie.html', headers: NOINDEX_MESSAGERIE },
+    ];
+    if (process.env.VERCEL_ENV === 'production') return messagerie;
     return [
+      ...messagerie,
       {
         source: '/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];
   },
+  // Messagerie : la racine du sous-domaine et /messagerie servent la page statique.
+  // beforeFiles obligatoire : sinon la page d'accueil (src/app/page.tsx) passe avant.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: '/', has: HOTE_MESSAGERIE, destination: '/messagerie.html' },
+        { source: '/messagerie', destination: '/messagerie.html' },
+      ],
+    };
+  },
   // Redirections 301 des anciennes URLs Quasar renommées sur le nouveau site Next.js.
   // Cas certains uniquement (renommage camelCase -> kebab-case + pages équivalentes).
   // Les fiches solutions/catégories/éditeurs gardent le même schéma d'URL (pas de redirect).
   async redirects() {
     return [
+      // Messagerie : tout chemin autre que la racine du sous-domaine renvoie vers www
+      // (évite le site en doublon sur messagerie.*). Temporaire (307) : le sous-domaine
+      // pourra accueillir d'autres pages. /.well-known/ exclu par prudence (certificat HTTPS).
+      {
+        source: '/:path((?!\\.well-known/).+)',
+        has: HOTE_MESSAGERIE,
+        destination: 'https://www.100000medecins.org/:path',
+        permanent: false,
+      },
       { source: '/difficileDeChanger', destination: '/difficile-de-changer', permanent: true },
       { source: '/tousEnsemble', destination: '/tous-ensemble', permanent: true },
       { source: '/lancement100k', destination: '/lancement-100k', permanent: true },
