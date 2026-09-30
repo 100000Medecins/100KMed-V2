@@ -33,7 +33,7 @@ export default function StoriesSection({ videos }: { videos: VideoRow[] }) {
                   {youtubeId ? (
                     <div className="w-full aspect-[9/16]">
                       <iframe
-                        src={`https://www.youtube.com/embed/${youtubeId}`}
+                        src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
                         title={video.titre ?? 'Vidéo'}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
