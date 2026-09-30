@@ -5,6 +5,64 @@ Les items sont organisés par date (du plus récent au plus ancien).
 
 ---
 
+**2026-09-30 — archivage**
+- [OK] 2026-08-19 : Terminer le branchement de la supervision des sauvegardes (2026-08-06) (En cours)
+  - > _Ci-dessous : l'état au 2026-08-06, conservé pour la trace. Le bilan à jour est en bas de section._
+  - Le code est livré et poussé (`df03fec` sur `dev`), la migration SQL est jouée et les types régénérés. Il reste **deux gestes**, et tant qu'ils ne sont pas faits la supervision ne tourne pas : aucun ping n'est émis, aucune alerte ne peut partir. Les sauvegardes elles-mêmes continuent normalement (ancien script sur le desktop), donc **la base reste protégée** — c'est la détection du silence qui manque encore.
+  - **1. Repointer la tâche planifiée du desktop** — ⛔ bloqué : pas d'accès au poste au 2026-08-06.
+  - D'abord `git pull` sur `dev` sur le desktop (sinon le script n'existe pas à ce chemin et le backup échouera), puis :
+    ```powershell
+    $a = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" `
+      -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\Users\david\Documents\100000Medecins_websiteV2\scripts\backup-supabase.ps1"'
+    Set-ScheduledTask -TaskName "Backup Supabase 100KMed" -Action $a
+    ```
+  - Le déclencheur est conservé. Vérifier aussi que `BACKUP_PING_SECRET` est bien défini en variable utilisateur **sur ce poste-là** (c'est lui qui exécute la tâche). Ensuite, supprimer les copies hors repo `C:\Users\david\scripts\backup-supabase\` sur les deux postes — c'est leur divergence qui a masqué l'incident de juin-juillet.
+  - **2. Merger `dev` → `main`** pour que `/api/backup-ping` et le cron `/api/cron/verif-backup` existent en production. ✅ **Fait 2026-08-08** (merge `--no-ff`, `main` = `475696d`) → la prod expose désormais `/api/backup-ping` et le cron `verif-backup` est enregistré.
+  - ✅ **Geste 1 fait, chaîne vérifiée de bout en bout le 2026-08-19.** Les pings arrivent depuis **MSF-MG1** (desktop) à cadence régulière mardi/samedi 03:00 : 09/08, 12/08, 16/08, 19/08. **Preuve que c'est bien le script du repo qui tourne** : lui seul porte l'URL de ping, l'ancienne copie hors repo l'ignore. Côté fichiers, le dossier synchro `Documents\100 000 Médecins\Site\Dump BDD` contient **8 dumps** (~1,5 Mo) + l'archive mensuelle = exactement la rotation `KEEP_COUNT = 8`.
+  - ⏳ **Reste un seul geste, sans urgence** : supprimer la copie périmée hors repo `C:\Users\david\scripts\backup-supabase\backup-supabase.ps1` — **encore présente sur le laptop** (datée du 03/05/2026), absente de toute tâche planifiée donc inerte, mais c'est ce type de divergence qui avait masqué l'incident de juin-juillet. À vérifier aussi sur le desktop.
+  - ℹ️ Détail mineur : un `backup_MSF-MG1_..._Conflict.log` (05/08) traîne dans le dossier — conflit de synchro sur le fichier de log, sans conséquence.
+- [OK] 2026-08-19 : Brancher la supervision des sauvegardes — les deux gestes (repointage de la tâche du desktop + merge `dev` → `main`) (Sauvegardes de la base)
+  - Ligne d'origine, devenue périmée : ⏳ **Reste** : les deux gestes de branchement sont remontés en **URGENT** en haut de ce fichier (repointage de la tâche du desktop + merge `dev` → `main`).
+- [OK] 2026-09-24 : ⏳ **Fusionner le journal de backup** (Sauvegardes de la base)
+  - ✅ Fait 2026-09-24 : `backup.log` = 210 lignes (170 courantes + 40 récupérées de la copie de conflit, trou 28/06→05/08 comblé), copie `_Conflict.log` supprimée.
+- [OK] 2026-09-24 : 🧹 **Nettoyage possible** : `ClientAvecBackupPings` (Sauvegardes de la base)
+  - ✅ Fait 2026-09-24 : les deux routes utilisent les types générés.
+- [OK] 2026-05-30 : **À améliorer — modale détaillée** : le rendu actuel utilise `prose-custom` + sanitize HTML par défaut. Travailler la lisibilité (hiérarchie typographique, aération des paragraphes, encadrés visuels pour les exemples chiffrés type « 4,2 sur 50 avis »). (UX / UI — Tooltip note globale)
+  - [OK] Fait 2026-05-30 (styles Tailwind ciblés `[&_strong]`, `[&_a]`, `[&_ul]` + taille `lg` + `text-[15px] leading-relaxed`).
+- [OK] 2026-05-30 : **Remplacer le `mailto:contact@…` par un lien vers `/contact`** dans le corps de la modale (le formulaire de contact existe déjà, c'est mieux que d'ouvrir le client mail du visiteur). (UX / UI — Tooltip note globale)
+  - [OK] Fait 2026-05-30 (+ fix au passage de `sanitizeHtml` qui supprimait silencieusement les liens internes).
+- [OK] 2026-05-31 : **À tester sur mobile** : le popover en position `absolute` peut déborder à droite de l'écran sur petit viewport. (UX / UI — Tooltip note globale)
+  - [OK] Testé OK 2026-05-31 (pas de débordement constaté).
+- [OK] 2026-08-01 : Rapatrier l'email transactionnel en Europe : SendGrid → Brevo (2026-07-25) — ⏸️ MIS EN VEILLE, NON FAIT (Mises à jour techniques)
+  - **Décision (2026-08-01) : mis en veille, sans échéance.** Aucune urgence — c'est un **choix de principe** (souveraineté), pas une contrainte légale ni un problème constaté. SendGrid fonctionne, personne ne s'en plaint. **Déclencheur de réouverture** : une plainte/exigence explicite (adhérent, partenaire institutionnel, DPO), une évolution réglementaire, ou un problème réel de délivrabilité côté SendGrid.
+  - **État de la pile (à conserver, toujours vrai)** : Supabase en **UE** (`eu-west-1` Irlande, vérifié) ; région Vercel **fixée en `cdg1`** (Paris 🇫🇷) dans `vercel.json` — avant, compute par défaut `iad1`/US → aller-retour transatlantique vers la DB. Compute à Paris + DB en Irlande : ~20 ms intra-UE, négligeable. **SendGrid (Twilio, US) = dernier maillon US** de la chaîne, et il le reste.
+  - **Chantier Brevo** (société française, Sarcelles) — effort **faible/moyen (~1-2 j)** :
+    - Réécrire le **transport** d'envoi (SDK/API Brevo) là où on utilise `@sendgrid/mail` (`src/lib/email/`, `EMAIL_SENDER`, les routes cron d'envoi).
+    - Refaire l'authentification DNS de l'expéditeur côté Brevo : **SPF / DKIM / DMARC**.
+    - Re-tester : rendu des **templates** (`email_templates`), le **tracking**, et les **liens de désinscription** (`generateUnsubscribeLink`).
+    - Vérifier les quotas Brevo (gratuit 300 mails/j ; les crons campagnes/newsletter peuvent dépasser → plan payant ~9-18 €/mois).
+  - **Ne PAS faire** (tranché en session 2026-07-25, toujours valable) : quitter Supabase (auto-hébergement = trop risqué en solo ; Postgres nu ailleurs = réécriture de l'Auth/PSC). Supabase = Postgres **+ Auth (GoTrue/PSC) + PostgREST/RLS + Storage** → ce n'est pas « juste une base » remplaçable à la volée.
+- [OK] 2026-09-24 : Brancher les rapports DMARC (`rua`) sur un agrégateur lisible (2026-08-01) (Mises à jour techniques)
+  - ✅ **Vérifié (David, 2026-09-24)** : le digest Postmark arrive **chaque lundi** dans `contact@`. Conformité **100 %** chaque semaine, sauf **une fois à 88 %** (3-4 mails mal passés). Rien à faire tant que ça reste ponctuel ; si un digest retombe sous 100 %, regarder quelle source échoue (légitime ou usurpation).
+  - _Historique :_
+  - **Constat d'origine** : le domaine était **déjà au maximum DMARC** (`p=reject; sp=reject; np=reject`, DKIM Gandi RSA 2048 — rien à durcir), mais `rua=mailto:david.azerad@100000medecins.org` → rapports d'agrégation en **XML brut dans une boîte perso**, illisibles et jamais lus = **rejet à l'aveugle**, aucune visibilité sur ce qui est bloqué en notre nom ni sur un service légitime rejeté au passage.
+  - ✅ **Fait (2026-08-09)** : compte **Postmark DMARC Digests** (plan **gratuit**) créé sur `contact@100000medecins.org`, adresse **confirmée**. TXT `_dmarc` repointé chez **Gandi**. Valeur en ligne, vérifiée caractère par caractère sur les **3 NS autoritatifs Gandi + Google/Cloudflare/Quad9**, **un seul** enregistrement TXT :
+    `v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:re+fbhc07ckyap@dmarc.postmarkapp.com`
+  - ⏳ **À vérifier le 2026-08-16 (J+7)** : arrivée du **1er digest hebdo** dans `contact@`. Seule question à la lecture : *y a-t-il une source **légitime** en échec ?* (les sources illégitimes en échec = fonctionnement normal, pas une alerte).
+  - ⏳ **Si rien au 2026-08-18 (J+9)** : re-vérifier le DNS (`Resolve-DnsName -Name _dmarc.100000medecins.org -Type TXT -Server 8.8.8.8`) ; s'il est conforme, le problème est côté Postmark.
+  - **Plan gratuit retenu** : 1 domaine, top 10 sources, historique 7 j, digest hebdo — très au-dessus de nos 2 sources réelles (SendGrid via `em1895`/`s1`-`s2._domainkey`, Gandi). Le payant (14 $/mois/domaine) n'ajoute qu'un dashboard web + 60 j d'historique. **Changer de plan ne touche pas le DNS** → upgradable 1 mois pendant la campagne syndicats, puis retour au gratuit. Conserver les digests dans un dossier de `contact@` = l'historique que le gratuit ne garde pas.
+  - ⚠️ **Incident de manip à retenir** : la 1ʳᵉ sauvegarde Gandi a enregistré le TXT **vide** (`""`) → domaine **sans aucune politique DMARC** pendant ~1 h (envois non affectés : SPF/DKIM intacts ; seule la protection anti-usurpation était tombée). Cause : un **saut de ligne** collé dans la valeur (`newline in quoted string`), aggravé par le préfixe `_dmarc 3600 IN TXT` collé **à l'intérieur** des guillemets dans l'éditeur de zone. **Réflexe pour toute modif DNS** : contrôler sur les **NS autoritatifs** (`Resolve-DnsName ... -Server ns-68-b.gandi.net`) → réponse immédiate, sans attendre le TTL, et vérifier qu'il n'y a **qu'un seul** enregistrement.
+  - ⚠️ **Ne PAS toucher au reste** : garder `adkim=r` / `aspf=r` (alignement *relaxed*). Passer en strict ne bloquerait rien de plus et casserait le jour où on enverrait depuis un sous-domaine ou via un routeur tiers avec return-path personnalisé.
+  - **Lien avec la migration Brevo (en veille)** : les rapports sont branchés **avant** toute bascule d'expéditeur, ce qui était l'ordre souhaitable — si Brevo sort de veille, la ligne de base d'alignement sera déjà constituée. Idem avant la campagne syndicats.
+  - **Origine (2026-07-30)** : deux mails à des adresses `@urps-med-idf.org` rejetés (Orange `501 OFR_515` + Yahoo `554 5.7.9`, deux opérateurs indépendants, même motif). Cause = **redirection automatique sans SRS côté URPS**, pas notre configuration ; le message était authentifié `spf=pass / dkim=pass / dmarc=pass` à l'entrée chez eux. Aucun réglage DMARC de notre côté n'y changerait quoi que ce soit (durcir = aggraver, desserrer = se découvrir). Courrier de signalement rédigé pour l'URPS IdF.
+  - **Axes voisins non couverts, priorité basse** : `MTA-STS` + `TLS-RPT` absents (chiffrement du transport, complémentaire de DMARC) ; `BIMI` absent (logo affiché dans la boîte de réception — exige `p=reject`, déjà satisfait, mais certificat VMC ~1 000-1 500 €/an → hors budget asso).
+- [OK] 2026-09-24 : **Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour. (Mises à jour techniques — cached egress Supabase)
+  - ✅ Corrigé le 2026-09-24.
+- [OK] 2026-06-06 : **1 high — `xlsx`** (Prototype Pollution + ReDoS) (Mises à jour techniques — Vulnérabilités npm)
+  - **[OK] Fait 2026-06-06** : migration vers `exceljs` (4 scripts migrés via helper `scripts/lib/excel-helper.ts`). 5ᵉ script `export-catalogue-editeurs.ts` désactivé proprement (réutilisera `xlsx-js-style` au moment du besoin, à réinstaller ou à migrer alors).
+- [OK] 2026-06-20 : Fix BDD préalable : `prix_ttc=0→NULL` + `prix_devise='€'→'EUR'` (Nouvelles catégories — Affichage des prix)
+  - [OK] Fait — vérifié le 2026-06-20 (0 prix à 0, 0 devise `€`, 102 solutions en `EUR`).
+
 **2026-09-02 — archivage**
 - [OK] 2026-07-26 : Statuer sur le comparateur orphelin /solutions/comparer (Nettoyage)
   - **Décision : option (3) « nettoyer », poussée jusqu'à la suppression.** Page `/solutions/comparer` **supprimée**, état mort `comparaisonSolutionIds` + actions retirés de `useAppStore`. La redirection `slug-vs-slug` ne pointe plus vers le comparateur : elle envoie désormais vers la **fiche de la 1re solution ancrée sur `#comparaison`** ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx)) — le radar de la fiche assure la comparaison, avec deux nouveaux points d'entrée (bouton « Comparer » dans le hero + lien discret au survol sur les cartes).
