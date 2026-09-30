@@ -23,7 +23,7 @@ No test suite configured.
 
 ## Architecture
 
-**Next.js 14 App Router** + **Supabase** (PostgreSQL + Auth) + **Tailwind CSS** + **Zustand**
+**Next.js 16 App Router** + **Supabase** (PostgreSQL + Auth) + **Tailwind CSS** + **Zustand**
 
 French medical software review platform where healthcare professionals browse, compare, and evaluate software solutions organized by specialty categories.
 

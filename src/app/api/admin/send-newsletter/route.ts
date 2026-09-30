@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: users } = await (supabase as any)
     .from('users')
-    .select('id, email, nom')
+    .select('id, email, contact_email, nom')
     .in('id', userIds)
 
   if (!users || users.length === 0) {
@@ -69,7 +70,8 @@ export async function POST(req: NextRequest) {
   const errors: string[] = []
 
   for (const user of users) {
-    if (!user.email) continue
+    const to = adresseEnvoi(user)
+    if (!to) continue
     try {
       const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
       const lienDesabonnement = generateUnsubscribeLink(user.id, siteUrl)
@@ -84,14 +86,14 @@ export async function POST(req: NextRequest) {
         .replace(/\{\{nom\}\}/g, nomDisplay)
 
       await sgMail.send({
-        to: user.email,
+        to,
         from: EMAIL_SENDER,
         subject: sujet,
         html,
       })
       sent++
     } catch (e) {
-      errors.push(`${user.email}: ${e}`)
+      errors.push(`${to}: ${e}`)
     }
   }
 

@@ -5,6 +5,57 @@
 
 ---
 
+## [2026-09-24] — Envois de masse : fin des adresses `psc-…`, plafond de relances + ménage sauvegardes
+
+### Fix — 175 médecins avaient donné leur vrai email mais les envois partaient vers `psc-…@psc.sante.fr`
+- **Constat** (en préparant la réactivation du kill-switch) : `completeProfile` écrivait `users.contact_email` et l'email auth, **jamais `users.email`**. Or **tous** les envois de masse lisent `users.email`. Résultat : 175 comptes joignables uniquement sur une adresse fictive, et **548 des 6 545 opt-in newsletter** pointant vers `psc-…`. Aucune newsletter n'étant jamais partie, aucun rebond réel.
+- **Code** : `completeProfile` ([user.ts](src/lib/actions/user.ts)) aligne désormais `users.email` (minuscules) une fois l'email auth mis à jour avec succès.
+- **Garde-fou d'envoi** : nouveau helper [destinataire.ts](src/lib/email/destinataire.ts) — `adresseEnvoi()` prend `contact_email` puis `email`, **jamais** une adresse `@psc.sante.fr`. Branché sur les 9 points d'envoi : 3 crons de relance (évaluations, incomplètes, PSC via `estEmailFictif`), newsletter programmée, campagnes, et les 4 envois admin (newsletter, infos mensuelles, étude, questionnaire).
+- **Rattrapage** : [scripts/fix-users-email-psc.ts](scripts/fix-users-email-psc.ts) (dry-run par défaut, `--execute`, backup JSON). Dry-run : **175 à corriger, 0 conflit**, 7 dont l'email auth est encore fictif (non touché). ⚠️ **Exécution à lancer par David** : l'écriture en prod a été refusée par le garde-fou de Claude Code.
+
+### Relances de revalidation — plafond de 100 envois par exécution
+- À la réactivation, **~522 rappels** seraient partis le même matin (256 premiers rappels + 266 deuxièmes, en retard depuis la coupure d'avril). `MAX_ENVOIS_PAR_EXECUTION = 100`, plus anciens d'abord ; le surplus part les jours suivants (marquage après envoi réussi → ni perte ni doublon).
+- **Flood mesuré** sur les 614 destinataires des premiers jours : 582 reçoivent un seul mail ; 28 en reçoivent 2 de revalidation (2 logiciels notés), 3 reçoivent 2 sujets différents à quelques jours d'écart, 1 reçoit 3 relances PSC le même lundi.
+
+### Sauvegardes — ménage
+- `backup.log` fusionné avec la copie de conflit d'août (210 lignes, trou 28/06→05/08 comblé), copie supprimée.
+- `backup-ping` et `verif-backup` utilisent les types générés (suppression de `ClientAvecBackupPings`).
+- Reste : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;` (David).
+
+### Constaté, non corrigé
+- Les envois de newsletter liraient au plus **1 000 opt-in** (pas de pagination) → à corriger avant la première newsletter (cf. TODO).
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert, lint des nouveaux fichiers sans erreur.
+
+---
+
+## [2026-09-23] — Inscriptions PSC sans email : mesure de l'entonnoir + choix des notifications dès l'inscription
+
+### Diagnostic — Pourquoi autant de comptes en `psc-…@psc.sante.fr`
+- **Pas un bug d'affichage** : l'admin utilisateurs affiche bien `contact_email ?? email` ; ces comptes n'ont réellement aucun email.
+- **Chiffres (comptes PSC par semaine)** : complétion ~10-15 % avant la refonte du 17/06, **~50-57 %** les deux semaines suivantes, ~35-47 % en juillet, **~20-35 % depuis août**.
+- **Ce ne sont pas des évaluateurs frustrés** : depuis le 17/06, **7 incomplets sur 291** ont une évaluation (contre 79 sur 189 chez les complets).
+- **Ni un formulaire trop long** : 284/292 incomplets ont spécialité + mode d'exercice fournis par PSC → l'écran n'a déjà **qu'un seul champ modifiable, l'email, obligatoire**. Durcir l'obligation (bloquer la navigation) écarté : les pages publiques sont ISR (le gate les rendrait dynamiques), et un départ du site échappe à tout blocage.
+
+### Mesure — Entonnoir `/completer-profil` dans `psc_session_events`
+- Server action `logCompleterProfilEvent` ([user.ts](src/lib/actions/user.ts)) : étapes en liste blanche (`completer_view`, `completer_email_input`, `completer_submit`, `completer_success`, `completer_fusion`, `completer_error`), utilisateur authentifié requis, jamais bloquante. `correlation_id` = un id par affichage de page ; `user_id` permet de rapprocher du handoff PSC qui précède.
+- `completer_view` porte en détail l'origine (`psc`/`email`), l'email pré-rempli ou non, et `evaluation_publiee` ; `completer_success` porte les choix de notifications ; `completer_error` le message.
+- **Aucune migration** : réutilisation de la table existante (colonnes `step`/`detail` libres).
+
+### UX — Les 4 choix de notifications sur l'écran de fin d'inscription (piste « donner une raison »)
+- Nouveau composant partagé [NotificationPreferencesList](src/components/notifications/NotificationPreferencesList.tsx) (sur `<Card>`), qui remplace les **deux copies** qui existaient (`/mon-compte/mes-notifications` et `/gerer-notifications`) et sert la 3ᵉ page : `/completer-profil`, bloc « Ce que vous recevrez » sous l'email.
+- Sur `/completer-profil`, les choix sont enregistrés **à la validation** (`updateNotificationPreferences`, non bloquant) ; défauts inchangés (revalidation + annonces activés, études + questionnaires à activer).
+- Au passage : coquille « Digital Medica Hub » corrigée dans Mes notifications, `aria-label` ajouté sur les interrupteurs.
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert, `/completer-profil` et `/mon-compte/mes-notifications` toujours en `○`. Lint : seule l'erreur préexistante `set-state-in-effect` (pré-sélection éditeur) sur `/completer-profil`.
+
+### TODO — Mises à jour
+- Ajout (En cours) : le 2026-10-07, lire l'entonnoir et décider de la suite.
+
+---
+
 ## [2026-09-02] — Durée d'utilisation des témoignages : c'était l'âge de l'avis
 
 ### Fix — « 1 mois d'utilisation » affiché sous des médecins installés depuis 5 ans (remonté par un utilisateur, fiche MadeForMed)

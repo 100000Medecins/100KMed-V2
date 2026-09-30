@@ -1,10 +1,12 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import DeleteArticleButton from '@/components/admin/DeleteArticleButton'
 import ArticleCategoriesManager from '@/components/admin/ArticleCategoriesManager'
+import PropositionsArticlesPanel from '@/components/admin/PropositionsArticlesPanel'
+import { getPropositionsEnAttente } from '@/lib/propositions-articles'
 
 async function getArticlesAdmin() {
   const supabase = createServiceRoleClient()
@@ -34,10 +36,15 @@ async function getArticlesCategories() {
   return data ?? []
 }
 
+async function getPropositions() {
+  return getPropositionsEnAttente(createServiceRoleClient())
+}
+
 export default async function AdminBlogPage() {
-  const [articles, categories] = await Promise.all([
+  const [articles, categories, propositions] = await Promise.all([
     getArticlesAdmin(),
     getArticlesCategories(),
+    getPropositions(),
   ])
 
   return (
@@ -58,6 +65,9 @@ export default async function AdminBlogPage() {
           Nouvel article
         </Link>
       </div>
+
+      {/* Propositions de sujets (lot hebdomadaire + regénération à la demande) */}
+      <PropositionsArticlesPanel propositions={propositions} />
 
       {/* Liste articles */}
       <div className="bg-white rounded-card shadow-card overflow-hidden">

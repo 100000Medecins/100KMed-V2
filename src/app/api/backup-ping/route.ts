@@ -18,24 +18,6 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * `backup_pings` est absente de `src/types/database.ts` jusqu'à la prochaine
- * régénération des types. On décrit précisément la surface utilisée plutôt que de
- * passer par un `as any` : le payload reste vérifié par le compilateur.
- * À supprimer au profit des types générés une fois la migration jouée.
- */
-type BackupPingInsert = {
-  fichier: string
-  taille_octets: number
-  machine: string | null
-  effectue_le: string
-}
-type ClientAvecBackupPings = {
-  from(table: 'backup_pings'): {
-    insert(valeurs: BackupPingInsert): Promise<{ error: { message: string } | null }>
-  }
-}
-
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.BACKUP_PING_SECRET
   if (!secret) return false
@@ -75,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
 
-  const { error } = await (supabase as unknown as ClientAvecBackupPings)
+  const { error } = await supabase
     .from('backup_pings')
     .insert({
       fichier,

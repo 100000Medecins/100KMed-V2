@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
+import { estEmailFictif } from '@/lib/email/destinataire'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,7 +77,7 @@ export async function GET(req: NextRequest) {
   for (const ev of toProcess) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const solution = ev.solution as any
-    if (!ev.email_temp || !ev.token_verification || !solution?.nom) continue
+    if (!ev.email_temp || estEmailFictif(ev.email_temp) || !ev.token_verification || !solution?.nom) continue
 
     const relanceNum = (ev.relance_psc_count ?? 0) + 1
     const pscLink = `${siteUrl}/api/auth/psc-initier?token=${ev.token_verification}`

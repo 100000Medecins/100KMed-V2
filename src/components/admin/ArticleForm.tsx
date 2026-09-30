@@ -66,6 +66,11 @@ interface ArticleFormProps {
   article?: Article | null
   categories: Cat[]
   action: (formData: FormData) => Promise<{ error?: string } | void>
+  /** Brief pré-rempli depuis une proposition de sujet (admin blog). */
+  initialBrief?: string
+  initialLongueur?: 'breve' | 'article' | 'dossier'
+  /** Proposition à marquer « développée » une fois l'article créé. */
+  propositionId?: string
 }
 
 function slugify(str: string) {
@@ -75,7 +80,14 @@ function slugify(str: string) {
 const inputClass = 'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
 const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 
-export default function ArticleForm({ article, categories, action }: ArticleFormProps) {
+export default function ArticleForm({
+  article,
+  categories,
+  action,
+  initialBrief,
+  initialLongueur,
+  propositionId,
+}: ArticleFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -100,8 +112,8 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
 
   // Génération article
   const [showGenerer, setShowGenerer] = useState(!article?.id)
-  const [brief, setBrief] = useState('')
-  const [longueur, setLongueur] = useState<'breve' | 'article' | 'dossier'>('article')
+  const [brief, setBrief] = useState(initialBrief ?? '')
+  const [longueur, setLongueur] = useState<'breve' | 'article' | 'dossier'>(initialLongueur ?? 'article')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
 
@@ -289,6 +301,9 @@ export default function ArticleForm({ article, categories, action }: ArticleForm
       pending={isPending}
     />
     <form action={handleSubmit} className="space-y-6">
+      {/* Proposition de sujet à l'origine de cet article — marquée développée à la création. */}
+      {propositionId && <input type="hidden" name="proposition_id" value={propositionId} />}
+
       {pendingDraft !== null && (
         <DraftBanner
           draftSavedAt={pendingDraft}

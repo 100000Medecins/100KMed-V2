@@ -472,10 +472,54 @@ export async function completeProfile(data: {
     authUpdates.password = data.password
   }
   if (Object.keys(authUpdates).length > 0) {
-    await supabase.auth.admin.updateUserById(user.id, authUpdates)
+    const { error: authError } = await supabase.auth.admin.updateUserById(user.id, authUpdates)
+    // users.email est l'adresse lue par TOUS les envois de masse (relances, newsletter,
+    // études, questionnaires) : sans cet alignement, un compte PSC qui a saisi son vrai
+    // email restait joignable uniquement sur psc-…@psc.sante.fr (cf. CHANGELOG 2026-09-24).
+    if (!authError && authUpdates.email) {
+      await supabase
+        .from('users')
+        .update({ email: data.contact_email.trim().toLowerCase() })
+        .eq('id', user.id)
+    }
   }
 
   return { status: 'SUCCESS' }
+}
+
+const COMPLETER_PROFIL_STEPS = [
+  'completer_view',
+  'completer_email_input',
+  'completer_submit',
+  'completer_success',
+  'completer_fusion',
+  'completer_error',
+] as const
+export type CompleterProfilStep = (typeof COMPLETER_PROFIL_STEPS)[number]
+
+/**
+ * Mesure de l'entonnoir /completer-profil (vue → saisie email → validation), dans
+ * `psc_session_events` à côté du handoff PSC qui la précède (même user_id).
+ * `correlationId` = un id par affichage de page, pour relier les étapes d'une même visite.
+ * Non bloquant : une erreur de log ne doit jamais gêner l'inscription.
+ */
+export async function logCompleterProfilEvent(
+  correlationId: string,
+  step: CompleterProfilStep,
+  detail?: string,
+): Promise<void> {
+  if (!COMPLETER_PROFIL_STEPS.includes(step) || !correlationId || correlationId.length > 64) return
+  try {
+    const authClient = await createServerClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user) return
+    await createServiceRoleClient().from('psc_session_events').insert({
+      correlation_id: correlationId,
+      step,
+      user_id: user.id,
+      detail: detail ? detail.slice(0, 500) : null,
+    })
+  } catch { /* jamais bloquant */ }
 }
 
 /**

@@ -12,6 +12,18 @@ _(rien en cours)_
 
 ## En cours
 
+### ⏰ Le 2026-10-07 — Lire l'entonnoir `/completer-profil` (posé le 2026-09-23)
+
+**Contexte** : ~2/3 des inscrits PSC ne laissent jamais leur email (PSC ne le fournit pas → compte en `psc-{rpps}@psc.sante.fr`, et sans email on ne peut pas les relancer). Taux de complétion : ~12 % avant la refonte du 17/06, ~55 % juste après, redescendu à ~20-35 % depuis août. Pour 97 % d'entre eux l'écran n'a **déjà qu'un seul champ** (l'email, obligatoire) → ce n'est pas un problème de formulaire trop long.
+
+**Livré le 2026-09-23** : mesure étape par étape dans `psc_session_events` (`completer_view` → `completer_email_input` → `completer_submit` → `completer_success`/`fusion`/`error`, reliées par `correlation_id` = une visite) + les 4 choix de notifications affichés sur l'écran pour donner une raison de laisser l'email.
+
+**À faire** : demander à Claude la requête d'entonnoir, puis décider :
+- beaucoup de `view` sans `email_input` → ils partent sans rien toucher : travailler l'accroche (bénéfice), pas la contrainte ;
+- des `email_input` sans `submit` → friction à la saisie ;
+- des `completer_error` → bug à corriger ;
+- comparer le taux de complétion avant/après l'ajout des choix de notifications, et lire les choix faits (détail de `completer_success`).
+
 ### ~~Terminer le branchement de la supervision des sauvegardes (2026-08-06)~~ ✅ Fait — vérifié 2026-08-19
 
 > _Ci-dessous : l'état au 2026-08-06, conservé pour la trace. Le bilan à jour est en bas de section._
@@ -59,9 +71,10 @@ _(rien en cours)_
 - **Livré (code)** : `scripts/backup-supabase.ps1` versionné dans le repo (source de vérité unique), archive mensuelle hors rotation, route `/api/backup-ping`, cron quotidien `/api/cron/verif-backup` (alerte email si le dernier dump dépasse 8 jours).
 - ✅ **Fait (2026-08-06)** : migration SQL `backup_pings` jouée (table + index, RLS active **sans policy** = inaccessible hors `service_role`, comme `activity_log`), `src/types/database.ts` régénéré, `BACKUP_PING_SECRET` posé dans Vercel.
 - ⏳ **Reste** : les deux gestes de branchement sont remontés en **URGENT** en haut de ce fichier (repointage de la tâche du desktop + merge `dev` → `main`).
-- ⏳ **Fusionner le journal de backup** : `backup_MSF-MG1_août-05-213056-2026_Conflict.log` (123 lignes, historique complet du 26/04 au 05/08) est plus complet que le `backup.log` courant (87 lignes, trou du 28/06 au 05/08). La copie de conflit est la bonne référence — il n'y manque que les 4 lignes du backup manuel du 05/08 17h28. Faisable depuis le portable, le dossier est synchronisé.
-- 🔒 **Durcissement optionnel (non urgent)** : l'ACL de `backup_pings` porte `anon=arwdDxtm` et `authenticated=arwdDxtm` — Supabase applique encore l'auto-grant d'avant le 30 octobre 2026. **Sans danger aujourd'hui** (la RLS sans policy bloque toute ligne), mais ces droits de table ne servent à rien et deviendraient effectifs si une policy permissive était ajoutée un jour. Moindre privilège : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;`
-- 🧹 **Nettoyage possible** : les types étant régénérés, les descriptions de surface temporaires (`ClientAvecBackupPings`) dans les deux routes peuvent laisser place aux types générés.
+- ~~⏳ **Fusionner le journal de backup**~~ ✅ Fait 2026-09-24 : `backup.log` = 210 lignes (170 courantes + 40 récupérées de la copie de conflit, trou 28/06→05/08 comblé), copie `_Conflict.log` supprimée.
+- 🔒 **Durcissement optionnel (non urgent)** — SQL à lancer par David dans le SQL Editor : `REVOKE ALL ON public.backup_pings FROM anon, authenticated;` (droits de table inutiles, la RLS sans policy bloque déjà toute ligne).
+- ~~🧹 **Nettoyage possible** : `ClientAvecBackupPings`~~ ✅ Fait 2026-09-24 : les deux routes utilisent les types générés.
+- ✅ Copie périmée du script hors repo : **absente du laptop (AzertyPC)** au 2026-09-24. Reste à vérifier sur le desktop (MSF-MG1).
 
 ### Communication
 
@@ -94,11 +107,6 @@ _(rien en cours)_
 - **Cas du doublon** : une même URL YouTube partagée par plusieurs solutions (ex. comparatif). Le script saute aujourd'hui les URLs déjà en BDD (SELECT + `continue`), donc le rattachement à la 2e solution se fait manuellement via le panneau "Vidéos liées" de la fiche solution admin. Évolution possible : si l'URL existe déjà, ajouter juste un nouveau lien `video_solutions` au lieu de skip.
 
 ### Nettoyage
-
-#### ~~Statuer sur le comparateur orphelin `/solutions/comparer` (2026-07-08)~~ [OK] Fait 2026-07-26
-- **Décision : option (3) « nettoyer », poussée jusqu'à la suppression.** Page `/solutions/comparer` **supprimée**, état mort `comparaisonSolutionIds` + actions retirés de `useAppStore`. La redirection `slug-vs-slug` ne pointe plus vers le comparateur : elle envoie désormais vers la **fiche de la 1re solution ancrée sur `#comparaison`** ([idSolution]/page.tsx](src/app/solutions/[idCategorie]/[idSolution]/page.tsx)) — le radar de la fiche assure la comparaison, avec deux nouveaux points d'entrée (bouton « Comparer » dans le hero + lien discret au survol sur les cartes).
-- ~~**Constat** : la page + l'état `comparaisonSolutionIds` (max 3) de `useAppStore` sont un **vestige du portage Quasar** (créés 2026-02-26, commit `af0ad69`) **jamais recâblés** — aucun composant n'appelle `addToComparaison`, aucun bouton « Comparer » actif. La page n'est atteignable que via la **redirection 301** des vieilles URLs `slug-vs-slug`.~~
-- ~~**À trancher** : (1) **laisser** ; (2) **ré-activer** ; (3) **nettoyer**. ⚠️ Ne pas supprimer la page à l'aveugle → casserait les liens `slug-vs-slug`.~~
 
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
@@ -141,35 +149,11 @@ _(rien en cours)_
 
 ### Performance
 
-#### ~~Réduire la CPU Vercel Fluid — passe 2 (extension ISR aux autres pages publiques)~~ ✅ CLOS — vérifié 2026-08-19
-- **Contexte** : alerte Vercel Fluid Active CPU (~91 % des 4h Hobby → **risque de pause du site**). Cause : les pages publiques lisaient les cookies (via `createServerClient`) → rendues **dynamiquement à chaque requête**. Preuve + recette : [docs/2026-07-11-plan-isr-pages-publiques.md](docs/2026-07-11-plan-isr-pages-publiques.md).
-- ✅ **Passe 1 FAITE + déployée (2026-07-11)** : `createPublicClient()` (anon sans cookies, RLS conservée) + bascule des lectures publiques + `generateStaticParams` → **accueil `ƒ→○`** et **139 fiches solutions `ƒ→●`** (les 2 gros postes). Build + `tsc` OK. Cf CHANGELOG 2026-07-11.
-- **Passe 2 — plan détaillé (3 recettes, phasé ROI/risque)** : [docs/2026-07-11-plan-isr-passe-2.md](docs/2026-07-11-plan-isr-passe-2.md). Recette de base : bascule vers `createPublicClient` (+ `generateStaticParams() { return [] }` pour les segments dynamiques), **fichier par fichier avec build de vérif `ƒ→○/●`**.
-  - ✅ **Phase 1 FAITE (2026-07-11, build vert)** : 10 pages éditoriales fixes `ƒ→○` — `/cgu`, `/rgpd`, `/transparence`, `/qui-sommes-nous`, `/tous-ensemble`, `/difficile-de-changer`, `/irritants-esante`, `/lancement-100k`, `/comparatifs`, `/videos`.
-  - ✅ **Phase 1b FAITE (2026-07-11, build vert)** : `/glossaire` + `/stories-tutos` → `○` (email prérempli lu côté client via `useAuth`, `getUserEmail` serveur + `force-dynamic` retirés).
-  - ✅ **Phase 2 FAITE (2026-07-11, build vert)** : `/blog/[slug]` → `●` (switch + `generateStaticParams`).
-  - ✅ **Page catégorie `/solutions/[cat]` FAITE + EN PROD** (2026-07-11, vérifié dans `main` le 2026-07-25) : `ƒ→●` — filtrage/tri déportés côté client (`filterAndSortSolutions` + `SolutionsCategoryBrowser`/`useSearchParams`, fallback Suspense = vue serveur pour le SEO). C'était le plus gros poste CPU public restant. *(Parité tri/tags = simple QA passive en prod, sans échéance.)*
-  - ✅ **`/blog` liste FAITE (2026-07-21, `ƒ→○`)** : `createPublicClient` + filtre catégorie déporté client (`BlogBrowser`/`BlogView` + `useSearchParams`, fallback Suspense = vue « Tous » serveur pour le SEO).
-  - ✅ **Sous-page avis `/solutions/[cat]/[sol]/evaluations` SUPPRIMÉE (2026-07-22)** : c'était un **vestige Quasar orphelin** (seul `UserReviewsSidebar`, composant mort, y menait) **et cassé** (lecture anon → RLS → « 0 avis » alors que la base en a, ex. Premiocare 6). Redondant : la fiche solution affiche déjà les avis en ligne (`#avis-utilisateurs`). Route + composants `AvisUtilisateurs`/`UserReviewsSidebar` supprimés (`getAvisUtilisateurs` laissé en dead export).
-  - Hors scope : `/recherche` (dynamique par nature) ; `/actualites` (route morte, cf. Nettoyage).
-- ✅ **Chantier CLOS — revérifié le 2026-08-19** : toutes les phases sont ✅, il ne reste **aucun reliquat**. Contrôle du jour : `/blog` est bien prérendue en **ISR 1 h** dans le manifeste de build, et la sous-page avis n'existe plus (supprimée le 22/07). Seule `/recherche` reste `ƒ`, **par nature**. Le levier CPU restant n'est plus l'ISR mais le **plan Vercel** (item ci-dessous).
-- ✅ **Fix fraîcheur des notes utilisateur sur la fiche (2026-07-25)** : à l'occasion de l'alerte Vercel Fluid CPU (~93 %), diag = l'ISR tient (pas de régression) ; la remontée = **croissance + cap 4h**, pas de correctif miracle. Au passage, bug découvert : les **nouvelles notes utilisateur ne s'affichaient sur la fiche qu'après ~1h** (le chemin évaluation `recalcResultatsPourSolution` revalidait en `'layout'`, pas via `revalidateSolution` comme le fix admin du 22/07). Corrigé → revalidation ciblée de la fiche. **⚠️ Ce n'est PAS un fix CPU** (1er diagnostic erroné corrigé : le `'layout'` ne re-rendait pas les 139 fiches). Fenêtres blog 30m→1h ; crons audités (RAS). Sur `dev` (`11f5357`), à déployer. Cf CHANGELOG 2026-07-25.
-- **Vrai levier CPU** : le cap gratuit (4h) est minuscule et le trafic grandit → surveiller le compteur, envisager **Vercel Pro** (fin de la pause auto), et/ou **alléger `recalcResultatsPourSolution`**.
-  - ✅ **Point chiffré au 2026-08-08 (3ᵉ alerte, 3h05 / 4h)** : rythme retombé de ~8-10 min/jour (début juillet) à **~4,7 min/jour** → projection **~2h20 / 30 j = ~59 % du cap**, soit **×1,7 de marge** sur le trafic. Répartition function 2h48 (91 %) / middleware 16m45 (9 %, déjà borné à 5 routes d'auth). Pas de régression : c'est la croissance face à un cap minuscule. Cf CHANGELOG 2026-08-08.
-
 #### ⚠️ Passer Vercel Pro AVANT la campagne de rentrée (décidé le 2026-08-08)
 - **Décision** : ne pas basculer maintenant (59 % projeté, marge confortable en régime normal), **mais basculer avant l'envoi aux syndicats**.
 - **Pourquoi** : sur Hobby, dépassement = **mise en pause du site**, pas un throttle. Une campagne réussie multiplie les **conversions** (inscriptions + évaluations = le chemin CPU coûteux ; les lectures de pages sont absorbées par l'ISR) → ×1,7 de marge ne suffit plus sur un pic de quelques jours.
 - **Coût** : 20 $/mois/siège. L'Active CPU on-demand `iad1` = 0,128 $/CPU-heure → ~0,40 $/mois de compute à ce volume, absorbé par le crédit d'usage Pro. **C'est une prime d'assurance anti-downtime, pas une facture de calcul.**
 - Réversible : on peut redescendre en Hobby après la campagne si le trafic retombe.
-
-#### ~~Optimiser `recalcResultatsPourSolution` — batching~~ ❌ Écarté sciemment le 2026-08-19
-- **Constat initial** : lancé (via `after()`) à **chaque évaluation** = **des dizaines de requêtes BDD séquentielles** (boucle par critère : SELECT résultat existant + UPDATE/INSERT, puis la ligne `type='moyenne'`). Comme l'évaluation est l'action centrale, c'est un poste réel de **CPU Vercel Fluid** qui grandit avec le trafic.
-- ✅ **Fait le 2026-08-08 — le cas fréquent ne l'atteint plus** : quand une sauvegarde ne change **que** du texte (commentaire, dates), le recalcul est **sauté** au profit d'une simple revalidation (`notesInchangees()` + `revalidateSolutionById()`). Modifier un commentaire ne déclenche plus un recalcul complet des agrégats. Garde-fous : on ne saute que si l'éval était déjà `statut='publiee'` **et** que sa moyenne stockée est inchangée. Cf CHANGELOG 2026-08-08.
-- **Reste à faire** : le **batching de la boucle elle-même**, pour le cas où les notes changent vraiment. Pistes : (a) un `SELECT` groupé de tous les `resultats` de la solution + un `upsert` groupé au lieu d'une requête par critère ; (b) **recompute incrémental** — ne recalculer que le(s) critère(s) réellement touché(s).
-- ⚠️ **Garde-fous à préserver** : l'**ancrage Firebase figé** (`firebase_moyenne_base5`/`firebase_nb_notes` en Supabase, blend legacy pondéré) et la règle **« 0 = NC »**. C'est la logique délicate — indépendante du fait de « couper le cordon Firebase » (infra), qui reste un chantier séparé et sûr.
-- ❌ **Décision du 2026-08-19 : on ne fait pas le batching.** Chiffres du jour : la boucle parcourt **226 critères**, soit jusqu'à ~450 allers-retours BDD séquentiels par recalcul — le gain serait réel. Mais grouper ces requêtes veut dire **réécrire précisément le code qui porte l'ancrage Firebase figé** (**2 013** lignes de `resultats` en portent un, sur 24 solutions legacy) **et la règle « 0 = NC »**. Une erreur là ne planterait pas : elle **corromprait silencieusement les notes**. Face à ça, le gain restant est faible depuis le 08/08, puisque le cas fréquent (texte seul modifié) ne déclenche plus de recalcul du tout. **Mauvais rapport risque/bénéfice → item clos.**
-- 🔁 **Rouvrir seulement si** : le volume d'évaluations augmente au point que le recalcul redevienne un poste CPU visible, **ou** si on doit de toute façon toucher cette fonction pour une autre raison (le batching se greffe alors sur un travail déjà engagé, à coût marginal).
 
 ### SEO / Référencement
 
@@ -195,7 +179,10 @@ _(rien en cours)_
   - ~~Vérifier les quotas Brevo (gratuit 300 mails/j ; les crons campagnes/newsletter peuvent dépasser → plan payant ~9-18 €/mois).~~
 - **Ne PAS faire** (tranché en session 2026-07-25, toujours valable) : quitter Supabase (auto-hébergement = trop risqué en solo ; Postgres nu ailleurs = réécriture de l'Auth/PSC). Supabase = Postgres **+ Auth (GoTrue/PSC) + PostgREST/RLS + Storage** → ce n'est pas « juste une base » remplaçable à la volée.
 
-#### Brancher les rapports DMARC (`rua`) sur un agrégateur lisible (2026-08-01) — ✅ DNS fait le 2026-08-09, reste la vérif du 1er digest
+#### ~~Brancher les rapports DMARC (`rua`) sur un agrégateur lisible (2026-08-01)~~ ✅ Clos le 2026-09-24
+- ✅ **Vérifié (David, 2026-09-24)** : le digest Postmark arrive **chaque lundi** dans `contact@`. Conformité **100 %** chaque semaine, sauf **une fois à 88 %** (3-4 mails mal passés). Rien à faire tant que ça reste ponctuel ; si un digest retombe sous 100 %, regarder quelle source échoue (légitime ou usurpation).
+
+_Historique :_
 - **Constat d'origine** : le domaine était **déjà au maximum DMARC** (`p=reject; sp=reject; np=reject`, DKIM Gandi RSA 2048 — rien à durcir), mais `rua=mailto:david.azerad@100000medecins.org` → rapports d'agrégation en **XML brut dans une boîte perso**, illisibles et jamais lus = **rejet à l'aveugle**, aucune visibilité sur ce qui est bloqué en notre nom ni sur un service légitime rejeté au passage.
 - ✅ **Fait (2026-08-09)** : compte **Postmark DMARC Digests** (plan **gratuit**) créé sur `contact@100000medecins.org`, adresse **confirmée**. TXT `_dmarc` repointé chez **Gandi**. Valeur en ligne, vérifiée caractère par caractère sur les **3 NS autoritatifs Gandi + Google/Cloudflare/Quad9**, **un seul** enregistrement TXT :
   `v=DMARC1; p=reject; sp=reject; np=reject; adkim=r; aspf=r; fo=0; rua=mailto:re+fbhc07ckyap@dmarc.postmarkapp.com`
@@ -207,13 +194,6 @@ _(rien en cours)_
 - **Lien avec la migration Brevo (en veille)** : les rapports sont branchés **avant** toute bascule d'expéditeur, ce qui était l'ordre souhaitable — si Brevo sort de veille, la ligne de base d'alignement sera déjà constituée. Idem avant la campagne syndicats.
 - **Origine (2026-07-30)** : deux mails à des adresses `@urps-med-idf.org` rejetés (Orange `501 OFR_515` + Yahoo `554 5.7.9`, deux opérateurs indépendants, même motif). Cause = **redirection automatique sans SRS côté URPS**, pas notre configuration ; le message était authentifié `spf=pass / dkim=pass / dmarc=pass` à l'entrée chez eux. Aucun réglage DMARC de notre côté n'y changerait quoi que ce soit (durcir = aggraver, desserrer = se découvrir). Courrier de signalement rédigé pour l'URPS IdF.
 - **Axes voisins non couverts, priorité basse** : `MTA-STS` + `TLS-RPT` absents (chiffrement du transport, complémentaire de DMARC) ; `BIMI` absent (logo affiché dans la boîte de réception — exige `p=reject`, déjà satisfait, mais certificat VMC ~1 000-1 500 €/an → hors budget asso).
-
-#### ~~Surveiller l'intermittence `bad_jwt` de Supabase Auth (2026-07-24)~~ ✅ Clos 2026-08-09 — aucun impact utilisateur
-- Appels Auth rejetés **par intermittence** (`unrecognized JWT kid <nil> for algorithm ES256`, ~1 sur 12) — incohérence côté **infra Supabase** (projet en ECC P-256, clés `sb_secret_`, **aucune rotation récente** côté *JWT Signing Keys*). Filet en place : `retryTransientAuth` (cf. CHANGELOG 2026-07-24).
-- ✅ **Mesuré le 2026-08-09** sur `psc_session_events`, apparié par `correlation_id`, depuis le fix du 24/07 : **75 handoffs PSC → 73 aboutis, 2 en échec, 0 abandon silencieux**. Les 2 échecs ne sont **pas** des `bad_jwt` (`detail` = « Email link is invalid or has expired » = magic link expiré/rejoué). 55 comptes PSC créés sur la période → échantillon réel.
-- ⚠️ **Ce qui est prouvé et ce qui ne l'est pas** : c'est **« aucun impact utilisateur »**, pas **« l'erreur a disparu »**. `retryTransientAuth` retente **en silence** → une occurrence rattrapée au 1er essai apparaît ici comme un `verify_success`. Savoir si le hoquet persiste exigerait d'instrumenter (persister le signal en base) — **écarté sciemment** : sans conséquence actionnable, et même au taux d'origine (~1/12), épuiser les 4 tentatives suppose 4 échecs d'affilée (~1 sur 20 000 appels) sur un volume qui est celui des inscriptions/logins, pas du trafic de masse.
-- **Déclencheur de réouverture** : un `verify_error` dans `psc_session_events` dont le `detail` mentionne `JWT` / `kid`, ou une inscription qui échoue pour de bon. À ce moment-là → instrumenter puis **ticket Supabase support**.
-- **Ne jamais** revenir aux clés legacy (dépréciées). *(Note : la rétention des logs ne permet de toute façon aucun comptage rétrospectif — Vercel Hobby = 1 h de Runtime Logs, Supabase Free = fenêtre courte. Toute mesure future doit être persistée en base, pas cherchée dans des logs.)*
 
 #### Réduire le cached egress Supabase sous 5 GB avant le 6 août 2026 (Fair Use Policy) [✅ SOUS CONTRÔLE — vérifié 20/07 : 17 %]
 - **Contexte** : mail Supabase (org `100KMED` / `sdljuyadmxlyjtsrvvrq`) — le **cached egress** dépasse le quota Free (**5 GB/mois inclus**, tolérance ~5,5 GB). **Fair Use Policy applicable au 6 août 2026** ; au-delà, restrictions possibles. Ce n'est pas une fuite : **aucun pipeline d'images**. Détail complet + chiffres + arbitrage Pro : [docs/2026-07-08-optimisation-egress-supabase.md](docs/2026-07-08-optimisation-egress-supabase.md).
@@ -242,7 +222,7 @@ _(rien en cours)_
   4. *(Optionnel, priorité basse)* logos syndicats du « mot du président » (`pages_statiques.metadata`, page `qui-sommes-nous`) → `/images/syndicats/*.png` (déjà dans `public/`). Le footer/home utilisent déjà les chemins locaux ([src/lib/data.ts](src/lib/data.ts)).
 - **Arbitrage plan Pro** : passer Pro **juste pour l'egress = traiter le symptôme** (sans optimisation, ça remonte avec le trafic + surplus 0,09 $/GB sur images non optimisées). Free (5 GB) → Pro (~25 $/mois, **250 GB egress**, backups quotidiens auto, fin de la pause après inactivité, +DB/compute). **Reco : faire l'optimisation d'abord** (gratuit, utile même en Pro — perf/SEO/coûts), **puis** décider Pro sur ses bénéfices propres (surtout backups quotidiens vs notre backup **hebდo manuel** via `/backup`) et la trajectoire de trafic — pas sous la pression du mail. **Ce mail n'est donc PAS en soi « la raison qu'on attendait » pour Pro** ; il l'est seulement si les autres bénéfices Pro nous intéressaient déjà.
 - **Optionnel plus tard** : brancher `next/image` (`remotePatterns` Supabase) → Vercel sert du WebP redimensionné depuis son CDN (egress Supabase ÷ nb visiteurs, mais consomme les quotas d'optimisation Vercel) ; vérifier les logs Storage (écarter bot/scraper/hotlinking).
-- **Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour.
+- ~~**Note annexe** : le [CLAUDE.md](CLAUDE.md) dit « Next.js 14 » mais le projet est en **Next 16** — à corriger un jour.~~ ✅ Corrigé le 2026-09-24.
 
 #### Vulnérabilités npm restantes
 - **État 2026-05-23 (post-`npm audit fix`)** : 12 vulnérabilités — 11 moderate, 1 high. `ws` + `protobufjs` + 1 transitive ont été résolus le 2026-05-23.
@@ -263,8 +243,17 @@ _(rien en cours)_
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
-- Le switch est actuellement OFF (sécurité par défaut suite à l'incident cron dev)
+- Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
 - **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
+- **Avant d'activer (2026-09-24)** :
+  1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
+  2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;
+  3. Supprimer le brouillon de newsletter d'**avril** dans `/admin/newsletters` (sinon rappel quotidien à `contact@`).
+- **Volume attendu** (compté le 2026-09-24) : ~522 rappels de revalidation en retard → **100/jour** grâce au plafond, donc ~6 jours ; le lundi suivant +106 relances PSC et +19 relances d'évals incomplètes. Ensuite quelques mails/jour.
+
+#### ⚠️ Newsletter : l'envoi ne toucherait que 1 000 inscrits sur 6 545 (constaté le 2026-09-24)
+- `send-newsletter`, `send-infos-mensuels` et le cron `envoyer-newsletter-programmee` lisent les opt-in sans pagination → Supabase plafonne à **1 000 lignes**. Puis `.in('id', …)` avec 1 000 uuid dans l'URL risque d'échouer, et 6 500 envois séquentiels dépasseraient la durée max d'une fonction Vercel.
+- **Aucune newsletter n'est jamais partie** → aucun dégât. À corriger **avant la première** (pagination + envoi par lots, via l'API batch SendGrid ou un cron qui avance par tranches).
 
 ### Nouvelles catégories de solutions (en cours)
 
