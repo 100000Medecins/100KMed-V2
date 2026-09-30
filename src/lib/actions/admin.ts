@@ -1290,7 +1290,12 @@ function extractArticleFromFormData(formData: FormData) {
   const slug = (formData.get('slug') as string) || slugify(titre)
   const statut = (formData.get('statut') as string) || 'brouillon'
   const scheduledAtRaw = (formData.get('scheduled_at') as string) || null
-  const datePublication = statut === 'publié' ? new Date().toISOString() : null
+  // Date saisie dans le formulaire (article publié). Absente → c'est l'appelant qui
+  // décide : date du jour à la création, date existante conservée à la mise à jour.
+  const datePublicationRaw = (formData.get('date_publication') as string) || null
+  const datePublication = (statut === 'publié' && datePublicationRaw && !isNaN(Date.parse(datePublicationRaw)))
+    ? new Date(datePublicationRaw).toISOString()
+    : null
   const scheduledAt = (statut === 'brouillon' && scheduledAtRaw)
     ? new Date(scheduledAtRaw).toISOString()
     : null
@@ -1312,6 +1317,7 @@ export async function createArticle(formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
+  if (data.statut === 'publié' && !data.date_publication) data.date_publication = new Date().toISOString()
   const articleId = randomUUID()
   const { error } = await supabase
     .from('articles')
@@ -1332,14 +1338,25 @@ export async function updateArticle(id: string, formData: FormData) {
   await assertAdmin()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  // Un article déjà publié garde sa date : seule une date saisie la change.
+  // (Avant : chaque enregistrement la remettait au jour même.)
+  if (data.statut === 'publié' && !data.date_publication) {
+    const { data: actuel } = await supabase
+      .from('articles')
+      .select('date_publication')
+      .eq('id', id)
+      .single()
+    data.date_publication = actuel?.date_publication ?? new Date().toISOString()
+  }
+  const { error } = await supabase
     .from('articles')
     .update(data)
     .eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/blog')
   revalidatePath('/blog')
+  revalidatePath(`/blog/${data.slug}`)
+  revalidatePath('/') // aperçu blog de l'accueil (dates, ordre)
   redirect('/admin/blog')
 }
 

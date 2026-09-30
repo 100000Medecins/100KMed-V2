@@ -26,6 +26,7 @@ type Article = {
   id_categorie?: string | null
   statut?: string
   scheduled_at?: string | null
+  date_publication?: string | null
 }
 
 // Extrait la date locale Paris (YYYY-MM-DD) depuis un ISO UTC
@@ -77,7 +78,6 @@ function slugify(str: string) {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-')
 }
 
-const inputClass = 'w-full rounded-button bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-5 py-3'
 const labelClass = 'block text-sm font-medium text-navy mb-1.5'
 
 export default function ArticleForm({
@@ -94,6 +94,16 @@ export default function ArticleForm({
   const [statut, setStatut] = useState(article?.statut ?? 'brouillon')
   const [scheduledDate, setScheduledDate] = useState(() => toParisDate(article?.scheduled_at))
   const [scheduledHour, setScheduledHour] = useState<number | null>(() => toParisHour(article?.scheduled_at))
+  const aujourdhuiParis = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date())
+
+  // Date de publication affichée sur le site (article publié uniquement).
+  // Jour inchangé → on renvoie l'horodatage d'origine tel quel ; jour modifié → midi, heure de Paris.
+  // Vide → le serveur conserve la date existante, ou prend la date du jour à la première publication.
+  const [datePublicationJour, setDatePublicationJour] = useState(() => toParisDate(article?.date_publication))
+  const datePublicationEnvoyee =
+    statut !== 'publié' || !datePublicationJour ? ''
+    : datePublicationJour === toParisDate(article?.date_publication) ? (article?.date_publication ?? '')
+    : parisToUTC(datePublicationJour, 12)
 
   // Champs contrôlés (pour pouvoir les peupler depuis la génération)
   const [titre, setTitre] = useState(article?.titre ?? '')
@@ -443,29 +453,52 @@ export default function ArticleForm({
               <option value="brouillon">Brouillon</option>
               <option value="publié">Publié</option>
             </Select>
+            {statut === 'publié' && (
+              <div>
+                <label htmlFor="date_publication_jour" className="block text-xs text-gray-500 mb-1.5">
+                  Date de publication affichée
+                </label>
+                <Input
+                  id="date_publication_jour"
+                  type="date"
+                  value={datePublicationJour}
+                  onChange={(e) => setDatePublicationJour(e.target.value)}
+                  max={aujourdhuiParis}
+                />
+                {!datePublicationJour && (
+                  <p className="mt-1 text-xs text-gray-400">
+                    {article?.date_publication
+                      ? 'Laissez vide pour conserver la date actuelle.'
+                      : 'Laissez vide pour publier à la date du jour.'}
+                  </p>
+                )}
+              </div>
+            )}
+            <input type="hidden" name="date_publication" value={datePublicationEnvoyee} />
             {statut === 'brouillon' && (
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">
                   Programmer la publication <span className="text-gray-400">(heure de Paris)</span>
                 </label>
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="date"
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
-                    min={new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date())}
-                    className={`flex-1 ${inputClass}`}
+                    min={aujourdhuiParis}
+                    className="flex-1"
                   />
-                  <select
+                  <Select
                     value={scheduledHour ?? ''}
                     onChange={(e) => setScheduledHour(e.target.value !== '' ? parseInt(e.target.value) : null)}
-                    className={`w-28 ${inputClass}`}
+                    fullWidth={false}
+                    className="w-28"
                   >
                     <option value="">--h--</option>
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i}>{String(i).padStart(2, '0')}h00</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 {(scheduledDate || scheduledHour !== null) && (
                   <button
@@ -488,12 +521,12 @@ export default function ArticleForm({
           {/* Catégorie */}
           <div className="bg-white border border-gray-200 rounded-card p-4 space-y-3">
             <label className={labelClass}>Catégorie</label>
-            <select name="id_categorie" defaultValue={article?.id_categorie ?? ''} className={inputClass}>
+            <Select name="id_categorie" defaultValue={article?.id_categorie ?? ''}>
               <option value="">— Aucune —</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.nom}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Image de couverture */}
