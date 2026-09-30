@@ -31,6 +31,7 @@ const STATIC_ROUTES: Array<{
   { path: '/transparence', changeFrequency: 'monthly', priority: 0.4 },
   { path: '/contact', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/cgu', changeFrequency: 'yearly', priority: 0.2 },
+  { path: '/mentions-legales', changeFrequency: 'yearly', priority: 0.2 },
   { path: '/rgpd', changeFrequency: 'yearly', priority: 0.2 },
 ]
 

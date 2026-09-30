@@ -12,6 +12,14 @@ _(rien en cours)_
 
 ## En cours
 
+### Relire les pages légales (posé le 2026-09-30)
+
+**Contexte** : mentions légales créées, charte de confidentialité réécrite, charte de transparence remise sur sa version à jour (Next.js, code sur GitHub), qui avait été enregistrée par erreur dans `/rgpd` le 31/03. Rédaction Claude à partir du code et de la base, **pas un avis juridique**.
+
+**À faire (David)** : relire en ligne `/mentions-legales`, `/rgpd` (Charte de confidentialité et cookies), `/cgu` et `/transparence`, et corriger via `/admin/pages` si besoin. Points repérés au passage :
+- `/transparence` : « La première version **de 2001 à 2025** » (2021 ?) ; la liste annonce 5 axes dont « Déclarations publiques d'intérêts des représentants », sans section correspondante ; « aucune société tierce n'y a eu accès » à nuancer (Supabase héberge la base) ;
+- `/cgu` art. 4 : « l'authentification s'effectue via Pro Santé Connect » alors que la connexion email / mot de passe existe aussi.
+
 ### ⏰ Le 2026-10-07 — Lire l'entonnoir `/completer-profil` (posé le 2026-09-23)
 
 **Contexte** : ~2/3 des inscrits PSC ne laissent jamais leur email (PSC ne le fournit pas → compte en `psc-{rpps}@psc.sante.fr`, et sans email on ne peut pas les relancer). Taux de complétion : ~12 % avant la refonte du 17/06, ~55 % juste après, redescendu à ~20-35 % depuis août. Pour 97 % d'entre eux l'écran n'a **déjà qu'un seul champ** (l'email, obligatoire) → ce n'est pas un problème de formulaire trop long.

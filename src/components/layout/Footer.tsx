@@ -10,6 +10,9 @@ export default function Footer() {
         <div className="flex flex-col items-center gap-6">
           {/* Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs">
+            <a href="/mentions-legales" className="hover:text-white transition-colors">
+              Mentions légales
+            </a>
             <a href="/rgpd" className="hover:text-white transition-colors">
               Charte de confidentialité et cookies
             </a>
