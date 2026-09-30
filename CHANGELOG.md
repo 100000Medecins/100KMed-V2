@@ -5,6 +5,37 @@
 
 ---
 
+## [2026-09-30] — Date de publication des articles modifiable + pages légales, vidéos sans cookies, page messagerie
+
+### Fix — La date de publication d'un article était remise au jour à chaque enregistrement
+- **Constat** (un brouillon de mai publié le 30/09, à antidater) : l'admin n'offrait aucun moyen de changer la date affichée, et `updateArticle` ([admin.ts](src/lib/actions/admin.ts)) réécrivait `date_publication = now()` à **chaque** sauvegarde d'un article publié. Toute retouche (coquille, image) faisait passer l'article pour neuf : en tête du blog et dans les 2 articles repris par le générateur de newsletter.
+- **Fix serveur** : `extractArticleFromFormData` ne lit plus que la date saisie ; `createArticle` pose `now()` si rien n'est saisi ; `updateArticle` **conserve la date existante** (relue en base) et ne prend `now()` qu'à la première publication. `as any` retiré au passage (la table `articles` est complète dans les types).
+- **Admin** : champ « Date de publication affichée » dans [ArticleForm](src/components/admin/ArticleForm.tsx), visible au statut « Publié », pré-rempli, dates futures bloquées (la programmation reste réservée aux brouillons). Jour inchangé → horodatage d'origine renvoyé tel quel ; jour modifié → midi heure de Paris.
+- **Revalidation** : `updateArticle` revalide aussi `/blog/[slug]` et `/` (aperçu blog de l'accueil). Avant, seul `/blog` l'était : la page de l'article attendait l'expiration ISR (1 h).
+- Au passage : programmation (date + heure) et catégorie migrées vers `<Input>`/`<Select>`, `inputClass` supprimé.
+- **Données** : « IA dans les logiciels médicaux : on se trompe de cible » antidaté au **2026-06-05** 12h00 Paris (script ponctuel dry-run/`--execute`, backup `backups/article-date-ia-*.json`, script supprimé après usage). Il reste en tête du blog (l'article suivant date du 26/05).
+
+### Légal — Mentions légales, charte de confidentialité, purge des journaux (`a4405a1`)
+- `/mentions-legales` : nouvelle page (contenu en BDD, modèle `/cgu`), liée depuis le pied de page du site et de la page Messagerie, ajoutée au sitemap.
+- `/rgpd` affichait la Charte de transparence : remplacée par une vraie charte de confidentialité et cookies. `/transparence` : reprise de la version à jour (enregistrée par erreur dans `/rgpd` le 2026-03-31), hébergeur corrigé. Écriture via [scripts/pages-legales.ts](scripts/pages-legales.ts), exécuté le 2026-09-30 (anciennes versions archivées par le trigger).
+- Cron hebdo `/api/cron/purge-donnees` : journaux (`psc_session_events`, `activity_log`) > 12 mois, `compte_suppressions` > 3 ans.
+
+### Sécurité — Vidéos sans cookies de suivi (`200b615`)
+- Mesure du 2026-09-30 : les iframes `youtube.com` déposaient 5 cookies YouTube (`YSC`, `VISITOR_INFO1_LIVE`…) dès l'arrivée sur l'accueil, `/videos` et `/stories-tutos`, sans consentement. Passage à `youtube-nocookie.com` (7 fichiers) : aucun cookie à l'affichage, lecteur identique. Vimeo : `dnt=1`.
+
+### Feature — Page de présentation sur messagerie.100000medecins.org (`ef13d4b`)
+- URL du service déclarée à l'ANS (Pro Santé Connect). Page HTML statique autonome `public/messagerie.html`, hors layout racine (ni Vercel Analytics ni AuthProvider : aucun script, aucun cookie), non liée, hors sitemap, `noindex` (meta + `X-Robots-Tag`).
+- `next.config.mjs` : rewrite de la racine du sous-domaine et de `/messagerie` vers la page, redirection 307 des autres chemins du sous-domaine vers `www`, `/.well-known` exclu.
+
+### Vérif
+- `tsc --noEmit` propre, `npm run build` vert, `/blog` reste `○` et `/blog/[slug]` `●`. Lint `ArticleForm.tsx` : seules les 2 erreurs préexistantes (`set-state-in-effect`, apostrophe non échappée).
+- Déployé : `dev` mergé dans `main` (`0cdf5b5`).
+
+### TODO — Mises à jour
+- Ajout : `publishArticle` revalide `/blog/{id}` au lieu de `/blog/{slug}` (vu au passage).
+
+---
+
 ## [2026-09-24] — Envois de masse : fin des adresses `psc-…`, plafond de relances + ménage sauvegardes
 
 ### Fix — 175 médecins avaient donné leur vrai email mais les envois partaient vers `psc-…@psc.sante.fr`

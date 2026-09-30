@@ -116,6 +116,9 @@ _(rien en cours)_
 
 ### Nettoyage
 
+#### `publishArticle` revalide la mauvaise URL (vu le 2026-09-30)
+- Le bouton « Publier » du panneau réseaux sociaux ([SocialPanel](src/components/admin/SocialPanel.tsx)) appelle `publishArticle`, qui revalide `/blog/${id}` (l'UUID) au lieu de `/blog/${slug}`, et pas l'accueil. Effet : la page de l'article et l'aperçu blog de l'accueil peuvent attendre jusqu'à 1 h (expiration ISR) avant de refléter la publication. Correctif de 2 lignes (relire le slug, revalider `/blog/${slug}` et `/`), comme `updateArticle` le fait depuis le 2026-09-30.
+
 #### Nettoyage progressif des ~270 erreurs ESLint préexistantes — règle CLAUDE.md active
 - **État 2026-05-25** : règle « migration au fil de l'eau » ajoutée dans [CLAUDE.md](CLAUDE.md) → les `as any` typables seront nettoyés automatiquement quand je touche les fichiers concernés pour d'autres raisons.
 - **Pas un sujet de fiabilité** : `tsc --noEmit` passe, `next build` passe, le site tourne.
