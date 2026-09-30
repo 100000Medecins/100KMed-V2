@@ -19,12 +19,12 @@ function isVideoUrl(url: string): boolean {
 function getVideoEmbed(url: string): { embedUrl: string; thumbUrl: string | null } | null {
   const ytId = getYoutubeId(url)
   if (ytId) return {
-    embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1`,
+    embedUrl: `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1`,
     thumbUrl: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
   }
   const vimeoId = getVimeoId(url)
   if (vimeoId) return {
-    embedUrl: `https://player.vimeo.com/video/${vimeoId}?autoplay=1`,
+    embedUrl: `https://player.vimeo.com/video/${vimeoId}?autoplay=1&dnt=1`,
     thumbUrl: null,
   }
   return null

@@ -11,7 +11,7 @@ export default function VideoCard({ item }: VideoCardProps) {
         {/* YouTube Shorts embed */}
         <div className="w-full aspect-[9/16]">
           <iframe
-            src={`https://www.youtube.com/embed/${item.youtubeId}`}
+            src={`https://www.youtube-nocookie.com/embed/${item.youtubeId}`}
             title={item.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen

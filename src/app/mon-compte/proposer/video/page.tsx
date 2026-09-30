@@ -111,7 +111,7 @@ export default function ProposerVideoPage() {
             {previewId && (
               <div className="mt-3 rounded-xl overflow-hidden aspect-video">
                 <iframe
-                  src={`https://www.youtube.com/embed/${previewId}`}
+                  src={`https://www.youtube-nocookie.com/embed/${previewId}`}
                   className="w-full h-full border-0"
                   allowFullScreen
                 />
