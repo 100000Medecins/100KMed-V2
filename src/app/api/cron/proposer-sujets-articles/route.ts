@@ -9,8 +9,9 @@ import {
 } from '@/lib/propositions-articles'
 
 export const dynamic = 'force-dynamic'
-// Tavily (3 requêtes en parallèle) + un appel modèle : même plafond que le cron newsletter.
-export const maxDuration = 60
+// Tavily (3 requêtes en parallèle) + un appel modèle qui réfléchit avant de
+// répondre : 60 s laissait trop peu de marge. 300 s = maximum du plan (Fluid).
+export const maxDuration = 300
 
 function isAuthorized(req: NextRequest): boolean {
   const auth = req.headers.get('authorization')

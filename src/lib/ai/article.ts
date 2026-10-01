@@ -12,6 +12,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { lireReponseJson } from '@/lib/ai/reponse'
 
 export type LongueurArticle = 'breve' | 'article' | 'dossier'
 
@@ -56,26 +57,42 @@ export const LONGUEUR_CONFIG: Record<LongueurArticle, {
   label: string
   mots: string
   sections: string
-  max_tokens: number
 }> = {
   breve: {
     label: 'Brève',
     mots: '300 à 500 mots',
     sections: '2 à 3 sections avec titres <h2>',
-    max_tokens: 1500,
   },
   article: {
     label: 'Article',
     mots: '700 à 1000 mots',
     sections: '3 à 5 sections avec titres <h2>',
-    max_tokens: 3000,
   },
   dossier: {
     label: 'Dossier',
     mots: '1200 à 1800 mots',
     sections: '4 à 6 sections avec titres <h2>, avec sous-sections <h3> si nécessaire',
-    max_tokens: 5000,
   },
+}
+
+/**
+ * Plafond de sécurité, pas un réglage de longueur : la longueur se pilote par le
+ * prompt (`LONGUEUR_CONFIG.mots`). Un plafond serré ne raccourcit pas l'article,
+ * il coupe le JSON en plein milieu. Seuls les tokens produits sont facturés.
+ */
+const MAX_TOKENS = 16000
+
+/** Schéma imposé à la réponse (sorties structurées) : JSON valide garanti. */
+const SCHEMA_ARTICLE = {
+  type: 'object',
+  properties: {
+    titre: { type: 'string' },
+    chapeau: { type: 'string' },
+    contenu_html: { type: 'string' },
+    meta_description: { type: 'string' },
+  },
+  required: ['titre', 'chapeau', 'contenu_html', 'meta_description'],
+  additionalProperties: false,
 }
 
 export interface ArticleGenere {
@@ -88,30 +105,6 @@ export interface ArticleGenere {
 export type ResultatArticle =
   | { ok: true; article: ArticleGenere }
   | { ok: false; error: string; raw?: string }
-
-/**
- * Concatène les blocs de texte d'une réponse du modèle.
- *
- * ⚠️ Ne JAMAIS lire `content[0]` directement : les modèles récents renvoient un
- * bloc `thinking` en première position. `content[0].text` est alors vide, et le
- * `JSON.parse` échoue sur « réponse invalide » alors que le modèle a bien
- * répondu — le texte se trouve simplement dans un bloc suivant.
- */
-export function extraireTexte(content: Array<{ type: string }>): string {
-  return content
-    .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-}
-
-/** Retire les backticks que le modèle ajoute parfois malgré la consigne. */
-export function nettoyerJson(raw: string): string {
-  return raw
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim()
-}
 
 export async function genererArticle(
   sujet: string,
@@ -127,33 +120,32 @@ export async function genererArticle(
   const config = LONGUEUR_CONFIG[longueur] ?? LONGUEUR_CONFIG.article
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  let raw: string
+  let message: Anthropic.Message
   try {
-    const message = await anthropic.messages.create({
+    message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: config.max_tokens,
+      max_tokens: MAX_TOKENS,
       system: ARTICLE_SYSTEM_PROMPT,
+      output_config: { format: { type: 'json_schema', schema: SCHEMA_ARTICLE } },
       messages: [{
         role: 'user',
         content: `Écris un article sur le sujet suivant : ${sujet}
 
 Format souhaité : ${config.label} (${config.mots}, ${config.sections}).
 
-Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans backticks, sans commentaires), avec exactement ces quatre champs :
+Ta réponse comporte quatre champs :
 - "titre" : titre accrocheur de l'article
 - "chapeau" : extrait accrocheur de 1-2 phrases maximum, 150 caractères max, affiché en intro sur la carte et en chapeau de l'article
 - "contenu_html" : corps complet de l'article en HTML, en utilisant uniquement les balises <h2>, <h3>, <p>, <strong>, <em>. Pas de <h1>, pas de listes <ul>/<li>.
 - "meta_description" : description SEO de 150 à 160 caractères`,
       }],
     })
-    raw = extraireTexte(message.content)
   } catch (e) {
     return { ok: false, error: `Erreur API Anthropic : ${e instanceof Error ? e.message : String(e)}` }
   }
 
-  try {
-    return { ok: true, article: JSON.parse(nettoyerJson(raw)) as ArticleGenere }
-  } catch {
-    return { ok: false, error: "La réponse de Claude n'est pas un JSON valide.", raw }
-  }
+  const lecture = lireReponseJson(message, 'article')
+  if (!lecture.ok) return lecture
+  // Forme garantie par SCHEMA_ARTICLE dès que la lecture a réussi.
+  return { ok: true, article: lecture.data as ArticleGenere }
 }
