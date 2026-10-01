@@ -20,6 +20,12 @@ _(rien en cours)_
 - `/transparence` : « La première version **de 2001 à 2025** » (2021 ?) ; la liste annonce 5 axes dont « Déclarations publiques d'intérêts des représentants », sans section correspondante ; « aucune société tierce n'y a eu accès » à nuancer (Supabase héberge la base) ;
 - `/cgu` art. 4 : « l'authentification s'effectue via Pro Santé Connect » alors que la connexion email / mot de passe existe aussi.
 
+### ⏰ Le 2026-10-05 — Vérifier le premier lot automatique de sujets d'articles (posé le 2026-10-01)
+
+**Contexte** : la génération de sujets passe en sorties structurées depuis le 2026-10-01 (fin du « JSON invalide »). Le cron hebdo `proposer-sujets-articles` n'a encore jamais tourné en prod ; premier passage lundi 5/10 à 9h15. La branche « actu » (avec recherche Tavily) n'a pas été testée en réel.
+
+**À vérifier** : un lot de 3 sujets apparaît dans `/admin/blog`, l'email de notification est arrivé à `contact@`, et les sujets « actu » ont **des sources** (elles étaient toutes vides avant le fix). En cas d'échec, les logs Vercel `[ai:propositions-sujets]` donnent `stop_reason`, tokens, début et fin de la réponse. On peut aussi tester avant lundi via « Regénérer ».
+
 ### ⏰ Le 2026-10-07 — Lire l'entonnoir `/completer-profil` (posé le 2026-09-23)
 
 **Contexte** : ~2/3 des inscrits PSC ne laissent jamais leur email (PSC ne le fournit pas → compte en `psc-{rpps}@psc.sante.fr`, et sans email on ne peut pas les relancer). Taux de complétion : ~12 % avant la refonte du 17/06, ~55 % juste après, redescendu à ~20-35 % depuis août. Pour 97 % d'entre eux l'écran n'a **déjà qu'un seul champ** (l'email, obligatoire) → ce n'est pas un problème de formulaire trop long.

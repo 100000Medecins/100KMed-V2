@@ -5,6 +5,33 @@
 
 ---
 
+## [2026-10-01] — Génération IA du blog en sorties structurées (fin du « JSON invalide »)
+
+### Fix — « La réponse de Claude n'est pas un JSON valide » sur les propositions de sujets
+- **Constat** : erreur intermittente sur « Regénérer » (admin blog), alors que le fix du 2026-09-20 (`5ff462a`, lecture du bloc `thinking` placé en tête de réponse) était bien en place. Même message, autre cause.
+- **Cause (probable)** : `max_tokens: 2000` sur `claude-sonnet-5`, qui réfléchit avant de répondre ; la réflexion est décomptée du **même** plafond que la réponse. Une réflexion un peu longue (actualités Tavily + listes d'exclusion qui grossissent chaque semaine) coupait le JSON en plein milieu. Pas prouvé par un log : la trace existante ne gardait que les 1 000 premiers caractères, sans `stop_reason`.
+- **Fix** (`91007c2`), sur les **deux** appels — propositions de sujets ([propositions-sujets.ts](src/lib/ai/propositions-sujets.ts)) et rédaction d'article « Rédiger maintenant » / « Générer » ([article.ts](src/lib/ai/article.ts)) :
+  - **Sorties structurées** (`output_config.format`, schéma JSON) : l'API garantit un JSON conforme. `nettoyerJson()` supprimé, prompts allégés des consignes « sans markdown, sans backticks ».
+  - `max_tokens` → **16000** (plafond de sécurité, seuls les tokens produits sont facturés). Le `max_tokens` par longueur de `LONGUEUR_CONFIG` est supprimé : la longueur reste pilotée par le prompt, un plafond serré ne raccourcit pas l'article, il coupe le JSON.
+  - Nouveau helper [reponse.ts](src/lib/ai/reponse.ts) : `lireReponseJson()` distingue **réponse tronquée** (`stop_reason: max_tokens`), **refus** et **JSON invalide**, et trace dans les logs Vercel `stop_reason`, `output_tokens`, le début **et la fin** de la réponse. `extraireTexte()` y est déplacé.
+
+### Fix — Les sujets « actu » n'avaient jamais de sources
+- Le prompt demandait « les URLs », mais `filtrerSourcesConnues` n'acceptait que des objets `{url}` → toutes les sources étaient jetées (`sources = []` sur les propositions du lot du 20/09). Le schéma impose désormais une liste d'URLs, toujours filtrée contre celles réellement rapportées par Tavily.
+
+### Cron `proposer-sujets-articles`
+- `maxDuration` 60 → **300 s** (maximum Fluid) : Tavily + un modèle qui réfléchit laissaient trop peu de marge.
+- **N'a encore jamais tourné en prod** : la fonctionnalité y est arrivée le 30/09 (`6292963`), seul le lot manuel du 20/09 existe en base. Premier passage : **lundi 2026-10-05**, 9h15 heure de Paris.
+
+### Vérif
+- `tsc --noEmit` propre, lint des fichiers touchés sans erreur, `npm run build` vert.
+- Appels réels (sans Tavily) : 3 sujets « dossier » en 14 s, brève complète en 28 s, schémas acceptés par l'API. **Branche « actu » avec Tavily non testée en réel.**
+- Déployé : `dev` mergé dans `main` (`4ad698f`).
+
+### TODO — Mises à jour
+- Ajout : vérifier le premier lot automatique du lundi 2026-10-05 (sources des sujets « actu », email reçu).
+
+---
+
 ## [2026-09-30] — Date de publication des articles modifiable + pages légales, vidéos sans cookies, page messagerie
 
 ### Fix — La date de publication d'un article était remise au jour à chaque enregistrement
