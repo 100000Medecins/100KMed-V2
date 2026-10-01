@@ -13,10 +13,19 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import { extraireTexte, nettoyerJson, type LongueurArticle } from '@/lib/ai/article'
+import type { LongueurArticle } from '@/lib/ai/article'
+import { lireReponseJson } from '@/lib/ai/reponse'
 
 /** Jugement éditorial : un appel par semaine, l'écart de coût est négligeable. */
 const MODELE = 'claude-sonnet-5'
+
+/**
+ * Sonnet 5 réfléchit avant de répondre, et cette réflexion est décomptée du même
+ * plafond que la réponse. À 2000, une réflexion un peu longue (beaucoup
+ * d'actualités, longues listes d'exclusion) coupait le JSON en plein milieu.
+ * Seuls les tokens produits sont facturés : la marge ne coûte rien.
+ */
+const MAX_TOKENS = 16000
 
 export const NB_PROPOSITIONS = 3
 
@@ -117,20 +126,57 @@ async function rassemblerActualites(apiKey: string): Promise<{ contexte: string;
  * Sans ce filtre, une URL inventée par le modèle passerait pour une référence
  * vérifiée — exactement le contraire de ce que la colonne `sources` doit garantir.
  */
-function filtrerSourcesConnues(proposees: unknown, connues: SourceActu[]): SourceActu[] {
-  if (!Array.isArray(proposees)) return []
+function filtrerSourcesConnues(urls: string[], connues: SourceActu[]): SourceActu[] {
   const parUrl = new Map(connues.map((s) => [s.url, s]))
   const retenues: SourceActu[] = []
-  for (const p of proposees) {
-    const url = typeof p === 'object' && p !== null ? (p as { url?: unknown }).url : null
-    if (typeof url !== 'string') continue
+  for (const url of urls) {
     const connue = parUrl.get(url)
-    if (connue && !retenues.some((r) => r.url === connue.url)) retenues.push(connue)
+    if (connue && !retenues.includes(connue)) retenues.push(connue)
   }
   return retenues
 }
 
 const LONGUEURS_VALIDES: LongueurArticle[] = ['breve', 'article', 'dossier']
+
+/**
+ * Schéma imposé à la réponse (sorties structurées) : JSON valide garanti.
+ * Les sorties structurées exigent un objet à la racine, d'où l'enveloppe
+ * `propositions`. Le nombre de sujets reste demandé dans le prompt : le schéma
+ * ne sait pas borner la taille d'un tableau.
+ */
+const SCHEMA_PROPOSITIONS = {
+  type: 'object',
+  properties: {
+    propositions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          titre: { type: 'string' },
+          angle: { type: 'string' },
+          type: { type: 'string', enum: ['actu', 'dossier'] },
+          longueur: { type: 'string', enum: LONGUEURS_VALIDES },
+          sources: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['titre', 'angle', 'type', 'longueur', 'sources'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['propositions'],
+  additionalProperties: false,
+}
+
+/** Forme de la réponse, telle que garantie par `SCHEMA_PROPOSITIONS`. */
+interface ReponsePropositions {
+  propositions: Array<{
+    titre: string
+    angle: string
+    type: 'actu' | 'dossier'
+    longueur: LongueurArticle
+    sources: string[]
+  }>
+}
 
 export interface OptionsPropositions {
   /** Cadrage libre saisi dans l'admin (« plutôt côté téléconsultation », etc.). */
@@ -174,11 +220,12 @@ export async function genererPropositions(
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  let raw: string
+  let message: Anthropic.Message
   try {
-    const message = await anthropic.messages.create({
+    message = await anthropic.messages.create({
       model: MODELE,
-      max_tokens: 2000,
+      max_tokens: MAX_TOKENS,
+      output_config: { format: { type: 'json_schema', schema: SCHEMA_PROPOSITIONS } },
       system: `Tu es le rédacteur en chef du blog de "100 000 Médecins", une association qui aide les médecins libéraux français à mieux utiliser leurs outils numériques.
 
 Ton lectorat : des médecins généralistes et spécialistes de ville, pas des experts du numérique. Ils sont pressés, lucides, allergiques au jargon marketing.
@@ -199,49 +246,37 @@ Pour chaque sujet :
 - "angle" : 2 à 4 phrases décrivant l'angle, ce que l'article doit démontrer et pourquoi ça intéresse un médecin libéral. Ce texte servira directement de brief de rédaction.
 - "type" : "actu" ou "dossier"
 - "longueur" : "breve", "article" ou "dossier" selon l'ampleur du sujet
-- "sources" : pour un sujet de type "actu", les URLs pertinentes. Elles doivent provenir EXCLUSIVEMENT de la liste ci-dessus, copiées à l'identique. N'invente jamais d'URL. Pour un "dossier", laisse un tableau vide.
+- "sources" : pour un sujet de type "actu", la liste des URLs pertinentes. Elles doivent provenir EXCLUSIVEMENT de la liste ci-dessus, copiées à l'identique. N'invente jamais d'URL. Pour un "dossier", laisse la liste vide.
 
-Réponds UNIQUEMENT avec un tableau JSON valide de ${NB_PROPOSITIONS} objets (sans markdown, sans backticks, sans commentaires).`,
+Renvoie exactement ${NB_PROPOSITIONS} sujets dans "propositions".`,
       }],
     })
-    raw = extraireTexte(message.content)
   } catch (e) {
     return { ok: false, error: `Erreur API Anthropic : ${e instanceof Error ? e.message : String(e)}` }
   }
 
-  let brut: unknown
-  try {
-    brut = JSON.parse(nettoyerJson(raw))
-  } catch {
-    return { ok: false, error: "La réponse de Claude n'est pas un JSON valide.", raw }
-  }
+  const lecture = lireReponseJson(message, 'propositions-sujets')
+  if (!lecture.ok) return lecture
+  const { propositions: brutes } = lecture.data as ReponsePropositions
 
-  if (!Array.isArray(brut) || brut.length === 0) {
-    return { ok: false, error: 'Réponse inattendue : tableau de propositions vide.', raw }
-  }
-
-  const propositions: PropositionGeneree[] = brut
+  const propositions = brutes
     .slice(0, NB_PROPOSITIONS)
-    // Annotation nécessaire : sans contexte de type, TypeScript élargit `type`
-    // en `string` au lieu de conserver l'union 'actu' | 'dossier'.
     .map((p): PropositionGeneree => {
-      const o = (p ?? {}) as Record<string, unknown>
-      const type = o.type === 'dossier' || !actuDisponible ? 'dossier' : 'actu'
-      const longueur = LONGUEURS_VALIDES.includes(o.longueur as LongueurArticle)
-        ? (o.longueur as LongueurArticle)
-        : 'article'
+      // Sans actualité récupérée, aucun sujet ne peut être « actu », quoi qu'en dise le modèle.
+      const type = actuDisponible ? p.type : 'dossier'
       return {
-        titre: String(o.titre ?? '').trim(),
-        angle: String(o.angle ?? '').trim(),
+        titre: p.titre.trim(),
+        angle: p.angle.trim(),
         type,
-        longueur,
-        sources: type === 'actu' ? filtrerSourcesConnues(o.sources, sources) : [],
+        longueur: p.longueur,
+        sources: type === 'actu' ? filtrerSourcesConnues(p.sources, sources) : [],
       }
     })
     .filter((p) => p.titre && p.angle)
 
   if (propositions.length === 0) {
-    return { ok: false, error: 'Aucune proposition exploitable dans la réponse.', raw }
+    console.error('[ai:propositions-sujets] aucune proposition exploitable', lecture.data)
+    return { ok: false, error: 'Aucune proposition exploitable dans la réponse.' }
   }
 
   return { ok: true, propositions, nbSources: sources.length }
