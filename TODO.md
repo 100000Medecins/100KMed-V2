@@ -42,6 +42,12 @@ _(rien en cours)_
 
 ## En attente / Idées
 
+### Annuaire mutualisé — coller les CGU et la charte le jour du passage en prod (posé le 2026-10-05)
+
+**Contexte** : l'annuaire mutualisé (fiche annuaire de chaque médecin dans Mon compte, lecture par les confrères connectés par Pro Santé Connect, puis l'application mobile) reste hors production jusqu'à la sortie de l'application (décision de David du 05/10). Les CGU et la charte (`/rgpd`) **complètes, propositions intégrées**, sont prêtes dans le dépôt messagerie : `C:\Users\david\Documents\100000Medecins_messagerie\docs\site-textes\` (`cgu-annuaire.html`, `rgpd-annuaire.html`, mode d'emploi `LISEZMOI.md`), établies à partir des textes en base le 05/10 (`cgu` du 28/03, `rgpd` du 30/09).
+
+**À faire le jour du passage en prod** : vérifier que le code remplit les six conditions du `LISEZMOI.md` (sauvegardes limitées à 12 mois — `scripts/backup-supabase.ps1` garde aujourd'hui une archive par mois sans fin ; suppression de compte étendue aux tables de l'annuaire ; journal des affichages de portables purgé à 12 mois ; pas de Vercel Analytics sur l'annuaire ; mention « Informations déclarées par le médecin, non vérifiées » ; source ANS affichée), puis coller les deux textes via `/admin/pages` → « </> HTML ». Si `/cgu` ou `/rgpd` ont changé depuis le 05/10 : redemander une version à Claude (dépôt messagerie). Décidé le 05/10 : un médecin ne peut pas savoir qui a affiché son portable (rien à ajouter au texte).
+
 ### Contenu des questionnaires
 
 #### Durée d'utilisation non déclarée sur les évaluations anciennes (2026-09-02)
