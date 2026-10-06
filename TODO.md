@@ -12,6 +12,19 @@ _(rien en cours)_
 
 ## En cours
 
+### Annuaire mutualisé — tranche 1 « Ma fiche annuaire » (posé le 2026-10-06)
+
+**Contexte** : chantier préparé dans le dépôt messagerie (`docs/annuaire-mutualise.md`, `annuaire-surspecialites.md`, `annuaire-cgu-confidentialite.md`). Plan de la tranche 1 validé par David le 06/10 : fiche dans Mon compte, invisible des autres ; administration des intitulés proposés ; suppression de compte étendue.
+
+**Décisions** :
+- Tables : `identites_psc` (preuve PSC écrite seulement par le callback, avec `code_profession`), `fiches_annuaire`, `fiches_annuaire_portables` (portable à part, jamais lisible directement par les autres), `intitules`, `fiches_intitules` ; GRANT explicites + RLS sur chacune.
+- `psc-callback` et `merge.ts` modifiés, en plus de `account.ts` et `admin-users.ts`.
+- Annuaire derrière un **interrupteur** plutôt qu'une branche longue (accord du 06/10).
+- Sur le site : **médecins seulement**. Les autres professions pourront plus tard remplir leur fiche par l'application, stockée chez nous, sans accès par le site → adapter le jour J les CGU et la charte, qui disent « tous les professionnels connectés par PSC ».
+- Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
+
+**Reste** : questions 2 à 5 du catalogue, puis migration SQL (montrée avant application).
+
 ### Relire les pages légales (posé le 2026-09-30)
 
 **Contexte** : mentions légales créées, charte de confidentialité réécrite, charte de transparence remise sur sa version à jour (Next.js, code sur GitHub), qui avait été enregistrée par erreur dans `/rgpd` le 31/03. Rédaction Claude à partir du code et de la base, **pas un avis juridique**.
@@ -56,7 +69,10 @@ _(rien en cours)_
 
 ### Sécurité
 
-_(rien en cours)_
+#### Droits d'écriture des tables exposées à l'API — 2ᵉ passage (posé le 2026-10-06)
+- **Contexte** : correctif `users` / `evaluations` du 06/10 (CHANGELOG) — les droits Supabase par défaut donnent tout à `anon`/`authenticated`, et une règle « sa propre ligne » sans restriction de colonne laisse modifier des colonnes sensibles.
+- **À revoir** : `questionnaires_these` (une insertion directe peut-elle poser un statut publié et contourner la modération ?), `editeur_claims` et `propositions_utilisateurs` (statut libre), `solutions_utilisees`. Méthode : relever ce que le site écrit avec les droits de l'utilisateur, retirer le reste.
+- **Fusionner dans `main`** le commit `fix(securite)` du 06/10 (non urgent : les chemins modifiés ne sont plus empruntés, le SQL est déjà en production).
 
 ### Sauvegardes de la base
 

@@ -5,6 +5,39 @@
 
 ---
 
+## [2026-10-06] — Sécurité : un utilisateur connecté pouvait modifier son RPPS, son rôle et ses évaluations
+
+### Fix — Droits d'écriture sur `users` et `evaluations`
+- **Constat** (en préparant l'annuaire mutualisé, qui doit s'appuyer sur une identité PSC fiable) : `anon` et `authenticated` avaient **tous les droits de table** sur `users` et `evaluations` (droits Supabase par défaut). La RLS empêchait de toucher aux lignes des autres, pas aux colonnes de sa propre ligne : règle `User modifie son profil` sans `WITH CHECK` ni restriction de colonne, aucun déclencheur. Un utilisateur connecté pouvait donc, par l'API avec la clé publique et sa session :
+  - s'écrire un `rpps` → ses évaluations passaient directement en `publiee` sans PSC (`submitEvaluation` : `statut = profile.rpps ? 'publiee' : 'en_attente_psc'`) ;
+  - s'attribuer `role = 'digital_medical_hub'` (études cliniques et liste des inscrits) ou `role = 'editeur'` + l'`editeur_id` de n'importe quel éditeur ;
+  - créer ou modifier ses évaluations (`statut`, notes) par les règles `User crée ses évaluations` / `User modifie ses évaluations`.
+- **Ce que le site écrit avec les droits de l'utilisateur** (relevé complet de `src/`) : seulement `users.portrait` (avatar : page profil, `updateAvatar`, `removeAvatar`). Tout le reste passe par des actions serveur en `service_role`. Aucune fonction ni aucun déclencheur de la base n'écrit dans ces tables avec les droits de l'appelant.
+- **SQL lancé par David le 2026-10-06** :
+  ```sql
+  revoke insert, update, delete, truncate, references, trigger on public.users from anon, authenticated;
+  grant update (portrait) on public.users to authenticated;
+  revoke insert, update, delete, truncate, references, trigger on public.evaluations from anon, authenticated;
+  ```
+  Lectures inchangées, structure inchangée (pas de régénération des types). Retour arrière : `grant insert, update, delete, truncate, references, trigger on public.users, public.evaluations to anon, authenticated;`
+- **Code** : le retour `type=email_change` de [callback/route.ts](src/app/api/auth/callback/route.ts) écrit `email`/`contact_email` en service role (chemin plus emprunté depuis le parcours maison `confirmer-changement-email`, gardé fonctionnel) ; `setupEvaluation` supprimée ([evaluation.ts](src/lib/actions/evaluation.ts)) : aucun appelant, dernier code qui écrivait `evaluations` avec les droits de l'utilisateur.
+- **Exploitation passée** : rien de visible. Un seul compte `digital_medical_hub` (bonne adresse) ; les 28 comptes éditeurs ont tous une demande dans `editeur_claims`. Pour le RPPS et les évaluations, aucun historique ne permet de conclure.
+- Les règles `User modifie son profil`, `User crée ses évaluations` et `User modifie ses évaluations` restent en place mais ne servent plus (droits de table retirés).
+
+### Constaté, non corrigé
+- Les insertions de profil `users` faites avec le client utilisateur dans [auth/confirm](src/app/auth/confirm/route.ts) et [api/auth/callback](src/app/api/auth/callback/route.ts) échouaient déjà (aucune règle d'insertion sur `users`) : inchangé. Elles reprennent un `rpps` depuis `user_metadata`, modifiable par l'utilisateur → ne pas les « réparer » en service role sans revoir ce point.
+- Même schéma à revoir, risque moindre : `questionnaires_these` (statut libre à l'insertion), `editeur_claims` et `propositions_utilisateurs` (statut libre, sans effet automatique), `solutions_utilisees`.
+
+### Vérif
+- Droits contrôlés par requête après le SQL : `authenticated` ne peut plus modifier que `users.portrait` et n'écrit plus dans `evaluations` ; `service_role` inchangé.
+- `tsc --noEmit` propre, lint des 2 fichiers propre, `npm run build` vert.
+
+### TODO — Mises à jour
+- Ajout (Sécurité) : 2ᵉ passage sur les autres tables + fusion du code dans `main` (non urgent).
+- Ajout (En cours) : annuaire mutualisé, tranche 1 — décisions du 06/10.
+
+---
+
 ## [2026-10-01] — Génération IA du blog en sorties structurées (fin du « JSON invalide »)
 
 ### Fix — « La réponse de Claude n'est pas un JSON valide » sur les propositions de sujets
