@@ -19,7 +19,7 @@ _(rien en cours)_
 **Décisions** :
 - Tables : `identites_psc` (preuve PSC écrite seulement par le callback, avec `code_profession`), `fiches_annuaire`, `fiches_annuaire_portables` (portable à part, jamais lisible directement par les autres), `intitules`, `fiches_intitules` ; GRANT explicites + RLS sur chacune.
 - `psc-callback` et `merge.ts` modifiés, en plus de `account.ts` et `admin-users.ts`.
-- Annuaire derrière un **interrupteur** plutôt qu'une branche longue (accord du 06/10).
+- Annuaire derrière un **interrupteur** plutôt qu'une branche longue (accord du 06/10) : travail directement sur `dev`. Interrupteur `annuaire_actif` dans `app_settings`, piloté depuis l'admin (ligne absente = éteint) ; pour les essais, `ANNUAIRE_FORCER_ACTIF=true` dans `.env.local` de chaque poste (jamais chez Vercel en Production).
 - Sur le site : **médecins seulement**. Les autres professions pourront plus tard remplir leur fiche par l'application, stockée chez nous, sans accès par le site → adapter le jour J les CGU et la charte, qui disent « tous les professionnels connectés par PSC ».
 - Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
 
