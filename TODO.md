@@ -22,8 +22,9 @@ _(rien en cours)_
 - Annuaire derrière un **interrupteur** plutôt qu'une branche longue (accord du 06/10) : travail directement sur `dev`. Interrupteur `annuaire_actif` dans `app_settings`, piloté depuis l'admin (ligne absente = éteint) ; pour les essais, `ANNUAIRE_FORCER_ACTIF=true` dans `.env.local` de chaque poste (jamais chez Vercel en Production).
 - Sur le site : **médecins seulement**. Les autres professions pourront plus tard remplir leur fiche par l'application, stockée chez nous, sans accès par le site → adapter le jour J les CGU et la charte, qui disent « tous les professionnels connectés par PSC ».
 - Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
+- Catalogue, question 2 : la rubrique s'appelle **« Compétences »** (pas « Surspécialités »), sans case « diplôme obtenu » ; mention « déclarées par le médecin, non vérifiées ». En base : `intitules.type = 'competence'`. Le jour J, remplacer « surspécialités » par « compétences » dans les CGU et la charte préparées.
 
-**Reste** : questions 2 à 5 du catalogue, puis migration SQL (montrée avant application).
+**Reste** : questions 3 à 5 du catalogue, puis migration SQL (montrée avant application).
 
 ### Relire les pages légales (posé le 2026-09-30)
 
