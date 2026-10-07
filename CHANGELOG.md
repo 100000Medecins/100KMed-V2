@@ -5,6 +5,24 @@
 
 ---
 
+## [2026-10-07] — Annuaire mutualisé, tranche 1 : tables en base (rien de visible)
+
+### Base — 5 nouvelles tables, aucune table existante touchée
+- Migration lancée par David dans le SQL Editor (une transaction) : `identites_psc` (preuve PSC, écrite seulement par le serveur, clé = RPPS), `fiches_annuaire`, `fiches_annuaire_portables` (portable à part), `intitules` (catalogue commun), `fiches_intitules` (compétences cochées). SQL complet, retour arrière et points de conception : [docs/2026-10-07-annuaire-tranche-1.md](docs/2026-10-07-annuaire-tranche-1.md).
+- Règles automatiques : dates d'accord (publication, portable) posées par la base, jamais par le navigateur ; 20 compétences au plus par fiche.
+- ⚠️ **Droits par défaut** : Supabase donne encore **tous les droits** à `anon` et `authenticated` sur toute nouvelle table de `public` (`pg_default_acl`, jusqu'au 2026-10-30). La migration commence par `revoke all … from anon, authenticated`, puis n'accorde que le nécessaire. Le modèle de `CLAUDE.md` (GRANT seuls) est complété dans ce sens.
+- `claude_readonly` (MCP) lit les nouvelles tables **sauf** celle des portables.
+- Aucun code ne lit encore ces tables : rien ne change pour les utilisateurs.
+
+### Vérif
+- RLS active sur les 5 tables, 13 règles, `anon` sans aucun droit, `authenticated` limité aux droits accordés, 3 déclencheurs en place.
+- `src/types/database.ts` régénéré par David : +185 lignes (les 5 tables), rien de retiré ; `tsc --noEmit` propre.
+
+### Décisions (catalogue et périmètre)
+- Rubrique « Compétences » (compétences et pathologies fusionnées), recherche par champ de saisie, masquage de l'intitulé qui reprend la spécialité RPPS du médecin, validation des propositions par David seul. Détail : TODO (En cours) et le document ci-dessus.
+
+---
+
 ## [2026-10-06] — Sécurité : un utilisateur connecté pouvait modifier son RPPS, son rôle et ses évaluations
 
 ### Fix — Droits d'écriture sur `users` et `evaluations`

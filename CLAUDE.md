@@ -168,6 +168,11 @@ CREATE TABLE public.ma_table (
   ...
 );
 
+-- Repartir de zéro : jusqu'au 2026-10-30, Supabase donne d'office TOUS les droits
+-- à anon et authenticated sur toute nouvelle table (pg_default_acl). Sans ce REVOKE,
+-- les GRANT ci-dessous n'enlèvent rien.
+REVOKE ALL ON public.ma_table FROM anon, authenticated;
+
 -- GRANTs (anticipation du changement 2026-10-30)
 GRANT SELECT ON public.ma_table TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ma_table TO authenticated;
@@ -179,6 +184,8 @@ ALTER TABLE public.ma_table ENABLE ROW LEVEL SECURITY;
 ```
 
 Ajuster les `GRANT` par rôle selon le cas : par exemple, ne pas accorder `INSERT/UPDATE/DELETE` à `anon` si la table ne doit pas être modifiable sans auth. Si un GRANT manque, PostgREST renvoie `42501` avec le `GRANT` exact à exécuter.
+
+**Règle « sa propre ligne » ≠ « toutes les colonnes de sa ligne »** : une policy `UPDATE … USING (auth.uid() = id)` laisse l'utilisateur modifier **toutes** les colonnes de sa ligne par l'API (clé publique + sa session). C'est ce qui permettait de s'écrire un RPPS ou un rôle dans `users` (corrigé le 2026-10-06 : seul `users.portrait` reste modifiable). Pour une table qui porte des colonnes sensibles : n'accorder l'`UPDATE` que sur les colonnes voulues (`GRANT UPDATE (col1, col2)`), ou faire écrire le serveur en `service_role`. Le rôle MCP `claude_readonly` doit aussi recevoir son `GRANT SELECT` sur toute nouvelle table qu'il doit pouvoir lire.
 
 ### Supabase types
 
