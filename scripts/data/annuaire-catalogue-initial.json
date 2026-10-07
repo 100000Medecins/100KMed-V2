@@ -87,12 +87,33 @@
     "specialites_sm": []
   },
   {
-    "libelle": "ECG et holter",
+    "libelle": "ECG",
     "synonymes": [
       "ecg",
       "electrocardiogramme",
+      "electrocardiographie"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Holter ECG",
+    "synonymes": [
       "holter",
-      "mapa"
+      "holter ecg",
+      "holter rythmique",
+      "enregistrement ecg 24h"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "MAPA (holter tensionnel)",
+    "synonymes": [
+      "mapa",
+      "holter tensionnel",
+      "mesure ambulatoire de la pression arterielle",
+      "hta"
     ],
     "groupe": "Médecine générale",
     "specialites_sm": []
@@ -258,6 +279,19 @@
       "prefecture"
     ],
     "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecin agréé",
+    "synonymes": [
+      "medecin agree",
+      "agrement",
+      "fonction publique",
+      "comite medical",
+      "aptitude",
+      "conge longue maladie"
+    ],
+    "groupe": "Pratiques transversales",
     "specialites_sm": []
   },
   {

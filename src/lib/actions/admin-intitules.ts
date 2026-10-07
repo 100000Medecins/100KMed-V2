@@ -2,7 +2,8 @@
 
 /**
  * Administration du catalogue de l'annuaire : décisions sur les intitulés proposés
- * par les médecins (Accepter / Reformuler, Fusionner comme synonyme, Refuser).
+ * par les médecins (Accepter / Reformuler, Fusionner comme synonyme, Refuser), et
+ * gestion des compétences validées (ajouter, modifier, supprimer).
  * Chaque décision efface le lien avec l'auteur (promesse de la charte) : acceptée,
  * la proposition perd `propose_par` ; fusionnée ou refusée, elle est supprimée.
  */
@@ -103,6 +104,75 @@ export async function fusionnerIntitule(id: string, cibleId: string): Promise<Re
   }
 
   await marquerEvenementLu(admin, id)
+  revalider()
+  return { ok: true }
+}
+
+// ────────────────────────────────────────────
+// Catalogue (onglet « Catalogue ») : compétences validées
+// ────────────────────────────────────────────
+
+function nettoyerCodesSm(codes: string[]): string[] | null {
+  const propres = Array.from(new Set(codes.map((c) => c.trim().toUpperCase().replace(/\s+/g, '')).filter(Boolean)))
+  return propres.every((c) => /^SM\d{2}$/.test(c)) ? propres : null
+}
+
+export async function ajouterIntitule(input: { libelle: string; synonymes: string[]; groupe: string | null }): Promise<Resultat> {
+  await assertAdmin()
+  const libelle = normaliserLibelle(input.libelle)
+  if (libelle.length < 2 || libelle.length > 120) return { error: 'Un intitulé compte de 2 à 120 caractères.' }
+
+  const { error } = await createServiceRoleClient().from('intitules').insert({
+    type: 'competence',
+    libelle,
+    synonymes: nettoyerSynonymes(input.synonymes),
+    groupe: input.groupe?.trim() || null,
+    statut: 'valide',
+    decide_le: new Date().toISOString(),
+  })
+  if (error) return { error: error.code === '23505' ? 'Une compétence porte déjà ce nom.' : error.message }
+  revalider()
+  return { ok: true }
+}
+
+export async function modifierIntitule(
+  id: string,
+  input: { libelle: string; synonymes: string[]; groupe: string | null; specialitesSm: string[] },
+): Promise<Resultat> {
+  await assertAdmin()
+  const libelle = normaliserLibelle(input.libelle)
+  if (libelle.length < 2 || libelle.length > 120) return { error: 'Un intitulé compte de 2 à 120 caractères.' }
+  const specialitesSm = nettoyerCodesSm(input.specialitesSm)
+  if (!specialitesSm) return { error: 'Codes de spécialité attendus sous la forme SM57, séparés par des virgules.' }
+
+  const { data, error } = await createServiceRoleClient()
+    .from('intitules')
+    .update({
+      libelle,
+      synonymes: nettoyerSynonymes(input.synonymes),
+      groupe: input.groupe?.trim() || null,
+      specialites_sm: specialitesSm,
+    })
+    .eq('id', id)
+    .eq('statut', 'valide')
+    .select('id')
+  if (error) return { error: error.code === '23505' ? 'Une compétence porte déjà ce nom.' : error.message }
+  if (!data || data.length === 0) return { error: 'Compétence introuvable.' }
+  revalider()
+  return { ok: true }
+}
+
+/** Supprime une compétence du catalogue : elle disparaît aussi des fiches qui l'avaient cochée. */
+export async function supprimerIntitule(id: string): Promise<Resultat> {
+  await assertAdmin()
+  const { data, error } = await createServiceRoleClient()
+    .from('intitules')
+    .delete()
+    .eq('id', id)
+    .eq('statut', 'valide')
+    .select('id')
+  if (error) return { error: error.message }
+  if (!data || data.length === 0) return { error: 'Compétence introuvable.' }
   revalider()
   return { ok: true }
 }

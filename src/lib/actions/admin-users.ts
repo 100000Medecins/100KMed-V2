@@ -1,6 +1,9 @@
 'use server'
 
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
+import { assertAdmin } from '@/lib/auth/admin-guard'
+import { retryTransientAuth } from '@/lib/supabase/retry'
+import { effacerDonneesAnnuaire } from '@/lib/annuaire/compte'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
 import { logActivity, ACTIVITY_TYPES, type ActivityDiff } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
@@ -46,6 +49,17 @@ async function revalidatePagesEditeur(
   }
 }
 
+/**
+ * Les fonctions appelées depuis Mon compte (espace éditeur, DMH) reçoivent `userId` du
+ * navigateur et travaillent en service role : on exige que ce soit l'utilisateur de la
+ * session. Avant le 2026-10-07, n'importe quel UUID était accepté.
+ */
+async function assertUtilisateurSession(userId: string): Promise<void> {
+  const supabase = await createServerClient()
+  const { data } = await retryTransientAuth(() => supabase.auth.getUser())
+  if (!data.user || data.user.id !== userId) throw new Error('Non autorisé')
+}
+
 /** Construit un diff `{ champ: { avant, apres } }` à partir des lignes d'audit éditeur. */
 function diffFromLogRows(
   logRows: Array<{ champ: string; ancienne_valeur: string | null; nouvelle_valeur: string | null }>
@@ -63,6 +77,7 @@ export async function updateUserField(
   field: 'nom' | 'prenom' | 'email' | 'pseudo' | 'contact_email',
   value: string
 ) {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   await supabase.from('users').update({ [field]: value || null }).eq('id', userId)
 }
@@ -72,6 +87,7 @@ export async function updateUserField(
  * Trace la suppression dans compte_suppressions pour les métriques admin.
  */
 export async function deleteUser(userId: string) {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
 
   const { data: profile } = await supabase
@@ -108,6 +124,7 @@ export async function deleteUser(userId: string) {
   await s.from('users_preferences').delete().eq('user_id', userId)
   await s.from('editeur_claims').delete().eq('user_id', userId)
   await s.from('questionnaires_these').update({ created_by: null }).eq('created_by', userId)
+  await effacerDonneesAnnuaire(supabase, userId)
 
   await supabase.from('users').delete().eq('id', userId)
 
@@ -141,6 +158,7 @@ export async function assignEditeurToUser(
   role: string,
   editeurId: string | null
 ) {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
 
   // users.editeur_id est la source de vérité (N users peuvent partager le même éditeur)
@@ -155,6 +173,7 @@ export async function assignEditeurToUser(
  * Accessible uniquement aux utilisateurs avec le rôle 'digital_medical_hub'.
  */
 export async function getHdhOptins(requestingUserId: string) {
+  await assertUtilisateurSession(requestingUserId)
   const supabase = createServiceRoleClient()
 
   const { data: requester } = await supabase
@@ -188,6 +207,7 @@ export async function getHdhOptins(requestingUserId: string) {
  * Retourne null si l'utilisateur n'est pas éditeur ou n'a pas d'éditeur associé.
  */
 export async function getEditeurDataForUser(userId: string) {
+  await assertUtilisateurSession(userId)
   const supabase = createServiceRoleClient()
 
   // Vérifier le rôle ET récupérer l'editeur_id en une requête
@@ -297,6 +317,7 @@ export async function updateEditeurByUser(
     nb_employes?: number | null
   }
 ) {
+  await assertUtilisateurSession(userId)
   const supabase = createServiceRoleClient()
 
   const { data: userRow } = await supabase
@@ -405,6 +426,7 @@ export async function updateSolutionByEditeur(
     contacts_support?: ContactLigne[]
   }
 ) {
+  await assertUtilisateurSession(userId)
   const supabase = createServiceRoleClient()
   await assertEditeurAccessToSolution(supabase, userId, solutionId)
 
@@ -546,6 +568,7 @@ export async function syncGalerieByEditeur(
   solutionId: string,
   galerieItems: Array<{ url: string; titre: string | null; ordre: number | null; type?: string | null }>
 ) {
+  await assertUtilisateurSession(userId)
   const supabase = createServiceRoleClient()
   await assertEditeurAccessToSolution(supabase, userId, solutionId)
 

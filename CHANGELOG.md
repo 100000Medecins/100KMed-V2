@@ -37,6 +37,13 @@
 - Textes et version des accords, moyens de contact, plafonds, rubriques par spécialité : [constants/annuaire.ts](src/lib/constants/annuaire.ts) (`ANNUAIRE_VERSION_ACCORD = '2026-10-07'`, à changer avec les textes et le jour des CGU).
 - Vérif : `tsc` et lint propres, build vert (`/mon-compte/annuaire` en `ƒ`, page privée) ; normalisations testées (11 formats de portable, codes SM) ; en local, `/mon-compte/annuaire` sans session → redirection vers la connexion, `/admin/parametres` sans cookie admin → formulaire de connexion. **Reste : essai réel par David** (connexion PSC BAS en local, puis remplissage de la fiche).
 
+### Essai réel (David, en local, connexion PSC BAS) — conforme
+- Nouveau compte BAS : preuve PSC écrite par le callback (RPPS `72609261540` — le « 8 » initial de l'identifiant PSC est retiré, comme dans `users.rpps` —, code profession `10`) ; fiche enregistrée (contact « messagerie », publiée, date d'accord posée par la base avec la version `2026-10-07`), 2 compétences.
+- Pas encore essayés : la proposition d'un intitulé et sa décision dans `/admin/intitules`.
+
+### Déploiement — `dev` fusionné dans `main` (`e6a3243`, accord de David)
+- Vérifié en production : `/connexionPsc` renvoie `devsite_…` vers le callback de dev et garde `dev_…` sur www ; `/admin/parametres` (lecture seule) montre l'annuaire **éteint en base et non forcé** (`ANNUAIRE_FORCER_ACTIF` absente de l'environnement Production) ; `/mon-compte/annuaire` sans session → connexion.
+
 ### Feature — Administration des compétences proposées (`/admin/intitules`)
 - Entrée « Annuaire » dans la navigation admin, avec le nombre de propositions en attente (badge `intitules`, [admin-badges.ts](src/lib/db/admin-badges.ts)). Le flux Activité renvoie vers cette page pour les événements `intitule`.
 - Une carte par proposition : date, auteur (prénom, nom, spécialité), nombre de fiches qui l'ont cochée ; libellé, rubrique et synonymes modifiables. Actions ([admin-intitules.ts](src/lib/actions/admin-intitules.ts)) :
@@ -47,6 +54,30 @@
 - Nouveau [admin-guard.ts](src/lib/auth/admin-guard.ts) : contrôle admin partagé (les anciens fichiers d'actions gardent leur copie).
 - Au passage : les 8 `as any` de `admin-badges.ts` retirés (toutes ces tables sont dans les types).
 - Vérif : `tsc`, lint, build verts ; rendu réel en local avec session admin : page vide « Aucune proposition en attente · 209 compétences », entrée de menu présente ; `/admin/parametres` montre la carte annuaire éteinte avec la mention « forcé dans cet environnement ».
+
+### Feature — Onglet « Catalogue » dans `/admin/intitules`
+- Deux onglets (`?onglet=catalogue`) : « Propositions (n) » et « Catalogue (n) ». Le catalogue : recherche (libellé + synonymes, sans accents), filtre par rubrique, ajout d'une compétence, et pour chaque compétence le nombre de fiches qui la cochent, la modification en place (libellé, rubrique — existante ou nouvelle —, synonymes, codes SM pour lesquels elle est masquée) et la suppression (avec confirmation, elle disparaît des fiches). Actions `ajouterIntitule` / `modifierIntitule` / `supprimerIntitule` ([admin-intitules.ts](src/lib/actions/admin-intitules.ts)).
+- Nombre de fiches par compétence lu en une requête (`fiches_intitules(count)`, comptage PostgREST) — remplace le comptage côté page des propositions.
+- Vérifié en local (session admin) : « Catalogue (212) », « PrEP et suivi du VIH » cochée sur 1 fiche, « Allergologie » masquée SM57.
+
+### Données — Retouches du catalogue (retours de David, 212 compétences)
+- « ECG et holter » → **« ECG »** ; ajout de **« Holter ECG »**, **« MAPA (holter tensionnel) »** (ancien synonyme « mapa ») et **« Médecin agréé »** (Pratiques transversales ; « Médecin agréé pour le permis de conduire » reste, agrément distinct). Script réutilisable [annuaire-catalogue-modifs.ts](scripts/annuaire-catalogue-modifs.ts) (dry-run, backup `backups/annuaire-intitules-2026-10-07T16-21-32-420Z.json`) ; catalogue de départ mis à jour. Les retouches suivantes se feront dans l'onglet Catalogue.
+- Essai de proposition par David : « Dépigmentation anale » — journalisée sans auteur (`a_moderer`), refusée (supprimée), événement marqué lu.
+
+### Feature — Suppression et fusion de compte étendues à l'annuaire (étape 8)
+- [compte.ts](src/lib/annuaire/compte.ts) : `effacerDonneesAnnuaire` (propositions en attente, fiche — portable et compétences en cascade —, preuve PSC), appelé par la suppression de compte du médecin ([account.ts](src/lib/actions/account.ts)) et par l'admin ([admin-users.ts](src/lib/actions/admin-users.ts)) ; `transfererDonneesAnnuaire` appelé par la fusion ([merge.ts](src/lib/actions/merge.ts)) avant la suppression du compte source : la preuve PSC passe au compte conservé s'il n'en a pas (fiche, portable, compétences suivent par `on update cascade`), ainsi que les propositions en attente.
+
+### Vérif — Étanchéité de l'annuaire (étape 9) : conforme
+- **Visiteur anonyme** (API, clé publique) : refusé sur les 5 tables (`42501`).
+- **Médecin connecté, autre que le titulaire** (SQL Editor, `set_config('role','authenticated')` + `request.jwt.claims` — le menu « Role » de l'éditeur n'existe pas dans la version de David) : 0 preuve PSC, 0 fiche, 0 portable, 0 compétence cochée, 212 intitulés validés visibles. Tentative de dépublier la fiche du titulaire : aucune ligne modifiée (fiche intacte, `mise_a_jour` inchangée).
+- **Titulaire** : 1 preuve, 1 fiche, 1 portable, 2 compétences, 212 intitulés.
+
+### Fix sécurité — Actions serveur de `admin-users.ts` sans contrôle d'accès
+- **Constat** (en y ajoutant l'étape 8) : fichier `'use server'` dont les fonctions travaillent en service role sans vérifier qui appelle. Une action serveur s'appelle directement avec son identifiant : seul le secret des identifiants protégeait.
+  - Appelées depuis l'admin, **sans contrôle admin** : `updateUserField` (nom, email…), `deleteUser` (**suppression de compte**), `assignEditeurToUser` (**rôle éditeur**, l'escalade fermée côté base le 06/10).
+  - Appelées depuis Mon compte, **avec un `userId` fourni par le navigateur** : `getEditeurDataForUser`, `updateEditeurByUser`, `updateSolutionByEditeur`, `syncGalerieByEditeur` (espace éditeur), `getHdhOptins` (inscrits aux études, DMH).
+- **Fix** : `assertAdmin()` (nouveau module partagé) sur les trois premières ; `assertUtilisateurSession(userId)` sur les cinq autres (l'identifiant reçu doit être celui de la session). Signatures inchangées : les pages passent déjà `user.id` de la session.
+- Reste en TODO : passer en revue les autres fichiers d'actions serveur avec la même grille.
 
 ### Fix sécurité — Association PSC : le compte cible n'était pas vérifié
 - **Constat** (en préparant le relais dev) : en mode « association » ([psc-callback](src/app/api/auth/psc-callback/route.ts)), le compte auquel rattacher l'identité PSC vient du `state`, donc de l'URL, et n'était **jamais comparé à la session** du navigateur. Avec sa propre identité PSC et l'UUID d'un compte, n'importe qui pouvait faire rattacher son RPPS à ce compte **et se faire ouvrir une session dessus** (magic link généré pour l'email du compte cible). Même chose pour le parcours de fusion, qui partait du même `state`.
