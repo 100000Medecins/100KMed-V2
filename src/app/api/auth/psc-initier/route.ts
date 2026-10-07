@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { PSC_ENDPOINTS } from '@/lib/auth/psc'
+import { PSC_ENDPOINTS, prefixeEtatRelais } from '@/lib/auth/psc'
 
 /**
  * GET /api/auth/psc-initier?token=XXX
@@ -22,11 +22,11 @@ export async function GET(request: Request) {
   const stateUuid = crypto.randomUUID()
   const nonce = crypto.randomUUID()
 
-  // Mode relay : préfixe "dev_" pour que le .htaccess Gandi identifie ce callback
-  // et le redirige vers dev.100000medecins.org plutôt que de le traiter en local.
-  // Format state : "[dev_]stateUuid[|tokenVerification]"
+  // Mode relais : préfixe du state selon le site d'origine, pour que /connexionPsc (sur www)
+  // renvoie vers le bon callback (cf. prefixeEtatRelais).
+  // Format state : "[dev_|devsite_]stateUuid[|tokenVerification]"
   const relayRedirectUri = process.env.NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI
-  const statePrefix = relayRedirectUri ? 'dev_' : ''
+  const statePrefix = relayRedirectUri ? prefixeEtatRelais(new URL(request.url).hostname) : ''
   const state = token ? `${statePrefix}${stateUuid}|${token}` : `${statePrefix}${stateUuid}`
   const redirectUri = relayRedirectUri ?? `${origin}/api/auth/psc-callback`
 

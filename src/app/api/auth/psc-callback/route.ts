@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
-import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession } from '@/lib/auth/psc'
+import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession, retirerPrefixeEtat } from '@/lib/auth/psc'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { retryTransientAuth } from '@/lib/supabase/retry'
 import { resolveSpecialite } from '@/lib/constants/profil'
@@ -75,18 +75,18 @@ export async function GET(request: Request) {
   const state = searchParams.get('state')
 
   // Parser le state.
-  // Nouveau format (3 parties) : "[dev_]stateUuid|userId|verificationToken"  — '_' si absent
-  // Ancien format (2 parties) : "[dev_]stateUuid|verificationToken"
+  // Nouveau format (3 parties) : "[dev_|devsite_]stateUuid|userId|verificationToken"  — '_' si absent
+  // Ancien format (2 parties) : "[dev_|devsite_]stateUuid|verificationToken"
   let verificationToken: string | null = null
-  let currentUserId: string | null = null
+  let stateUserId: string | null = null
   if (state) {
-    const stateClean = state.startsWith('dev_') ? state.substring(4) : state
+    const stateClean = retirerPrefixeEtat(state)
     const parts = stateClean.split('|')
     if (parts.length >= 3) {
       // Nouveau format 3-part
       const userIdPart = parts[1]
       const tokenPart = parts[2]
-      if (userIdPart && userIdPart !== '_') currentUserId = userIdPart
+      if (userIdPart && userIdPart !== '_') stateUserId = userIdPart
       if (tokenPart && tokenPart !== '_') verificationToken = tokenPart
     } else if (parts.length === 2) {
       // Ancien format 2-part : stateUuid|verificationToken
@@ -136,6 +136,21 @@ export async function GET(request: Request) {
 
     const supabaseAdmin = createServiceRoleClient()
     const userEmail = email || `psc-${rpps || sub}@psc.sante.fr`
+
+    // Le compte à associer vient du `state`, donc de l'URL : n'importe qui peut l'écrire.
+    // On ne l'accepte que s'il est celui de la session du navigateur ; sinon, connexion PSC
+    // standard (par RPPS). Sans ce contrôle (avant le 2026-10-07), une identité PSC valide
+    // et l'UUID d'un compte suffisaient pour se faire ouvrir une session sur ce compte.
+    let sessionUserId: string | null = null
+    if (stateUserId) {
+      const sessionClient = await createServerClient()
+      const { data: sessionData } = await retryTransientAuth(() => sessionClient.auth.getUser())
+      sessionUserId = sessionData.user?.id ?? null
+      if (sessionUserId !== stateUserId) {
+        console.warn('[PSC] association ignorée : le compte du state n’est pas celui de la session')
+      }
+    }
+    const currentUserId = stateUserId && sessionUserId === stateUserId ? stateUserId : null
 
     // 3a. MODE ASSOCIATION : l'utilisateur était déjà connecté en email/mdp et a cliqué
     //     sur le bouton PSC depuis son compte. currentUserId est son UUID session actuel.

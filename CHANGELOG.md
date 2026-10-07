@@ -37,6 +37,18 @@
 - Textes et version des accords, moyens de contact, plafonds, rubriques par spécialité : [constants/annuaire.ts](src/lib/constants/annuaire.ts) (`ANNUAIRE_VERSION_ACCORD = '2026-10-07'`, à changer avec les textes et le jour des CGU).
 - Vérif : `tsc` et lint propres, build vert (`/mon-compte/annuaire` en `ƒ`, page privée) ; normalisations testées (11 formats de portable, codes SM) ; en local, `/mon-compte/annuaire` sans session → redirection vers la connexion, `/admin/parametres` sans cookie admin → formulaire de connexion. **Reste : essai réel par David** (connexion PSC BAS en local, puis remplissage de la fiche).
 
+### Fix sécurité — Association PSC : le compte cible n'était pas vérifié
+- **Constat** (en préparant le relais dev) : en mode « association » ([psc-callback](src/app/api/auth/psc-callback/route.ts)), le compte auquel rattacher l'identité PSC vient du `state`, donc de l'URL, et n'était **jamais comparé à la session** du navigateur. Avec sa propre identité PSC et l'UUID d'un compte, n'importe qui pouvait faire rattacher son RPPS à ce compte **et se faire ouvrir une session dessus** (magic link généré pour l'email du compte cible). Même chose pour le parcours de fusion, qui partait du même `state`.
+- **Exposition constatée** : les UUID ne sont pas lisibles par l'API (RLS) ; la seule fuite publique repérée est l'adresse des avatars personnels (`avatars/personal/<uuid>/…`), affichés sous les avis — **0 compte** n'en utilise aujourd'hui (sur 98 portraits). Pas de trace d'exploitation recherchable.
+- **Fix** : le compte du `state` n'est retenu que s'il est celui de la session (`getUser()` côté serveur, avec `retryTransientAuth`) ; sinon connexion PSC standard (par RPPS). Une association légitime part toujours d'un navigateur connecté (boutons de Mon compte).
+- Reste, noté en TODO : le cookie `psc_state` est posé mais jamais comparé au `state` au retour (protection CSRF de connexion absente).
+
+### PSC — Relais dev réparé (marque `devsite_`)
+- **Constat** : dev.100000medecins.org utilise PSC production via le relais `www.100000medecins.org/connexionPsc` ; depuis que www est le nouveau site, `/connexionPsc` renvoyait tout vers le callback de **www** : une connexion PSC lancée depuis dev se terminait connectée sur la production. ⚠️ La production préfixe **elle aussi** son `state` par `dev_` (relais, héritage de l'ancien site, vérifié dans le JS publié) : ce préfixe ne pouvait pas servir à reconnaître dev.
+- **Fix** : depuis dev, le `state` est préfixé `devsite_` ([psc.ts](src/lib/auth/psc.ts) `prefixeEtatRelais`, client et [psc-initier](src/app/api/auth/psc-initier/route.ts)) ; [/connexionPsc](src/app/connexionPsc/route.ts) renvoie ces retours vers `https://dev.100000medecins.org/api/auth/psc-callback` (hôte écrit en dur, jamais lu dans la requête), le reste inchangé ; le callback retire l'un ou l'autre préfixe.
+- Vérifié en local : `state=devsite_…` → 302 vers le callback de dev ; `state=dev_…` et sans state → callback local, comme avant.
+- **Prend effet après fusion dans `main`** (la route tourne sur www). Avant, une connexion depuis dev reste renvoyée sur www, comme aujourd'hui.
+
 ### Décisions (catalogue et périmètre)
 - Rubrique « Compétences » (compétences et pathologies fusionnées), recherche par champ de saisie, masquage de l'intitulé qui reprend la spécialité RPPS du médecin, validation des propositions par David seul. Détail : TODO (En cours) et le document ci-dessus.
 
