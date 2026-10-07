@@ -249,8 +249,13 @@ RLS active sur les 5 tables ; 13 règles (4 + 4 + 3 + 1 + 1) ; `anon` sans aucun
 3. ~~Migration + types (07/10).~~
 4. ~~Catalogue de départ : 209 intitulés insérés le 07/10 (`scripts/annuaire-catalogue-initial.ts`).~~
 5. ~~Interrupteur (`/admin/parametres`) + preuve PSC écrite par `psc-callback` (07/10).~~
-6. Page « Ma fiche annuaire » (`/mon-compte/annuaire`) : code fait le 07/10, essai réel par David
-   en local (connexion PSC BAS, `ANNUAIRE_FORCER_ACTIF=true`).
+6. ~~Page « Ma fiche annuaire » (`/mon-compte/annuaire`) : essai réel par David le 07/10 en local
+   (connexion PSC BAS), proposition puis refus dans l'admin.~~
 7. ~~Page `/admin/intitules` (07/10) : accepter / reformuler, fusionner comme synonyme, refuser.~~
-8. Suppression (`account.ts`, `admin-users.ts`) et fusion (`merge.ts`) de compte.
-9. Étanchéité : un second compte ne lit ni la fiche ni le portable du premier ; build ; CHANGELOG.
+8. Suppression (`account.ts`, `admin-users.ts`) et fusion (`merge.ts`) de compte : code fait le
+   07/10 ; essai de suppression du compte de test BAS par l'admin à faire (la fusion n'est pas
+   essayée en réel : il faudrait deux comptes du même médecin).
+9. ~~Étanchéité (07/10) : anonyme refusé sur les 5 tables ; un autre médecin connecté ne lit ni ne
+   modifie rien ; le titulaire voit sa fiche.~~ Test rejouable dans le SQL Editor :
+   `select set_config('role','authenticated',true); select set_config('request.jwt.claims','{"sub":"<uuid>","role":"authenticated"}',true);`
+   puis la requête de comptage, en une seule exécution.

@@ -67,6 +67,11 @@
 ### Feature — Suppression et fusion de compte étendues à l'annuaire (étape 8)
 - [compte.ts](src/lib/annuaire/compte.ts) : `effacerDonneesAnnuaire` (propositions en attente, fiche — portable et compétences en cascade —, preuve PSC), appelé par la suppression de compte du médecin ([account.ts](src/lib/actions/account.ts)) et par l'admin ([admin-users.ts](src/lib/actions/admin-users.ts)) ; `transfererDonneesAnnuaire` appelé par la fusion ([merge.ts](src/lib/actions/merge.ts)) avant la suppression du compte source : la preuve PSC passe au compte conservé s'il n'en a pas (fiche, portable, compétences suivent par `on update cascade`), ainsi que les propositions en attente.
 
+### Vérif — Étanchéité de l'annuaire (étape 9) : conforme
+- **Visiteur anonyme** (API, clé publique) : refusé sur les 5 tables (`42501`).
+- **Médecin connecté, autre que le titulaire** (SQL Editor, `set_config('role','authenticated')` + `request.jwt.claims` — le menu « Role » de l'éditeur n'existe pas dans la version de David) : 0 preuve PSC, 0 fiche, 0 portable, 0 compétence cochée, 212 intitulés validés visibles. Tentative de dépublier la fiche du titulaire : aucune ligne modifiée (fiche intacte, `mise_a_jour` inchangée).
+- **Titulaire** : 1 preuve, 1 fiche, 1 portable, 2 compétences, 212 intitulés.
+
 ### Fix sécurité — Actions serveur de `admin-users.ts` sans contrôle d'accès
 - **Constat** (en y ajoutant l'étape 8) : fichier `'use server'` dont les fonctions travaillent en service role sans vérifier qui appelle. Une action serveur s'appelle directement avec son identifiant : seul le secret des identifiants protégeait.
   - Appelées depuis l'admin, **sans contrôle admin** : `updateUserField` (nom, email…), `deleteUser` (**suppression de compte**), `assignEditeurToUser` (**rôle éditeur**, l'escalade fermée côté base le 06/10).
