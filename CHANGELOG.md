@@ -29,6 +29,14 @@
 - Au passage ([ParametresClient](src/components/admin/ParametresClient.tsx)) : les trois réglages partagent un composant `ReglageInterrupteur` sur `<Card>` / `<Badge>` (deux copies de ~60 lignes en Tailwind brut auparavant).
 - `tsc --noEmit` propre, lint des fichiers touchés propre, `npm run build` vert.
 
+### Feature — Page « Ma fiche annuaire » (`/mon-compte/annuaire`)
+- Entrée « Ma fiche annuaire » dans le menu de Mon compte (médecins, pas les éditeurs), seulement si l'annuaire est allumé ; sinon la page répond 404.
+- **Sans preuve PSC** : invitation à se connecter avec Pro Santé Connect (mode association existant). **Avec** : quatre blocs — moyen de contact préféré ; portable + case de visibilité (désactivée sans numéro) ; compétences ; case « publier ma fiche » (date de l'accord affichée). Bandeau : « l'annuaire n'est pas encore ouvert, votre fiche n'est visible de personne ».
+- **Compétences** : champ de recherche (libellé + synonymes, sans accents, tous les mots requis), 12 résultats au plus ; champ vide → suggestions de la rubrique de la spécialité ; intitulés qui reprennent la spécialité RPPS masqués ; pastilles par ordre alphabétique, 20 au plus ; « Proposer « … » » quand rien ne correspond exactement.
+- **Actions serveur** ([annuaire.ts](src/lib/actions/annuaire.ts)) : lecture et écriture avec le client de l'utilisateur (RLS) ; dates d'accord posées par la base ; portable normalisé au format international ([normaliser.ts](src/lib/annuaire/normaliser.ts) : 06/07, outre-mer, +…, 00…) ; une proposition retirée de sa fiche par son auteur est abandonnée. `proposerCompetence` (service role, après contrôle) : renvoie l'intitulé existant s'il y en a un (libellé ou synonyme), refuse un libellé déjà proposé par un confrère, 5 propositions en attente au plus, puis crée la proposition et la coche. Elle apparaît dans le flux Activité (`a_moderer`) **sans l'auteur** : la charte promet d'effacer le lien proposition ↔ auteur à la décision, le journal (12 mois) ne doit pas le garder.
+- Textes et version des accords, moyens de contact, plafonds, rubriques par spécialité : [constants/annuaire.ts](src/lib/constants/annuaire.ts) (`ANNUAIRE_VERSION_ACCORD = '2026-10-07'`, à changer avec les textes et le jour des CGU).
+- Vérif : `tsc` et lint propres, build vert (`/mon-compte/annuaire` en `ƒ`, page privée) ; normalisations testées (11 formats de portable, codes SM) ; en local, `/mon-compte/annuaire` sans session → redirection vers la connexion, `/admin/parametres` sans cookie admin → formulaire de connexion. **Reste : essai réel par David** (connexion PSC BAS en local, puis remplissage de la fiche).
+
 ### Décisions (catalogue et périmètre)
 - Rubrique « Compétences » (compétences et pathologies fusionnées), recherche par champ de saisie, masquage de l'intitulé qui reprend la spécialité RPPS du médecin, validation des propositions par David seul. Détail : TODO (En cours) et le document ci-dessus.
 

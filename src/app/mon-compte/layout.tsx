@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles, BookUser } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -12,11 +12,15 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { user, isEditeur, signOut, loading } = useAuth()
   const [hasQuestionnaires, setHasQuestionnaires] = useState(false)
+  const [annuaireActif, setAnnuaireActif] = useState(false)
 
   useEffect(() => {
     if (!user || isEditeur) return
     import('@/lib/actions/questionnaires-these').then(({ hasMesQuestionnaires }) => {
       hasMesQuestionnaires().then(setHasQuestionnaires)
+    })
+    import('@/lib/actions/annuaire').then(({ annuaireEstActif }) => {
+      annuaireEstActif().then(setAnnuaireActif)
     })
   }, [user, isEditeur])
 
@@ -26,6 +30,10 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
     ...(isEditeur
       ? []
       : [{ href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck }]),
+    // Annuaire mutualisé : derrière l'interrupteur (admin › Paramètres), médecins seulement
+    ...(!isEditeur && annuaireActif
+      ? [{ href: '/mon-compte/annuaire', label: 'Ma fiche annuaire', icon: BookUser }]
+      : []),
     { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
     ...(isEditeur
       ? [{ href: '/mon-compte/mon-espace-editeur', label: 'Espace éditeur', icon: Building2 }]

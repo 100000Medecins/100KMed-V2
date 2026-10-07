@@ -247,9 +247,10 @@ RLS active sur les 5 tables ; 13 règles (4 + 4 + 3 + 1 + 1) ; `anon` sans aucun
 1. ~~Correctif des droits `users` / `evaluations` (06/10).~~
 2. ~~Questions du catalogue (06-07/10).~~
 3. ~~Migration + types (07/10).~~
-4. Catalogue de départ : fichier de données versionné + script (simulation par défaut, `--execute`).
-5. Interrupteur + preuve PSC écrite par `psc-callback` (et fixture pour un compte de test).
-6. Page « Ma fiche annuaire » (`/mon-compte/annuaire`).
+4. ~~Catalogue de départ : 209 intitulés insérés le 07/10 (`scripts/annuaire-catalogue-initial.ts`).~~
+5. ~~Interrupteur (`/admin/parametres`) + preuve PSC écrite par `psc-callback` (07/10).~~
+6. Page « Ma fiche annuaire » (`/mon-compte/annuaire`) : code fait le 07/10, essai réel par David
+   en local (connexion PSC BAS, `ANNUAIRE_FORCER_ACTIF=true`).
 7. Page `/admin/intitules`.
 8. Suppression (`account.ts`, `admin-users.ts`) et fusion (`merge.ts`) de compte.
 9. Étanchéité : un second compte ne lit ni la fiche ni le portable du premier ; build ; CHANGELOG.
