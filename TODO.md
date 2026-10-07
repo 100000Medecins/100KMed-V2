@@ -24,9 +24,11 @@ _(rien en cours)_
 - Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
 - Catalogue, question 2 : la rubrique s'appelle **« Compétences »** (pas « Surspécialités »), sans case « diplôme obtenu » ; mention « déclarées par le médecin, non vérifiées ». En base : `intitules.type = 'competence'`. Le jour J, remplacer « surspécialités » par « compétences » dans les CGU et la charte préparées.
 - Catalogue, question 3 : niveau de détail **tel quel** (titres officiels + pratiques courantes déjà listées) ; les spécialistes compléteront par des propositions. **Combler** les 4 spécialités chirurgicales presque vides (neurochirurgie, chirurgie plastique, vasculaire, cardiaque et thoracique) : une dizaine d'intitulés.
-- Catalogue, question 4 : ordre **alphabétique**, plafond de sécurité **20** compétences par médecin, nature (FST, capacité…) **ni affichée ni stockée**. Pas de redite avec la spécialité RPPS (ex. « Allergologie » pour un allergologue).
+- Catalogue, question 4 : ordre **alphabétique**, plafond de sécurité **20** compétences par médecin, nature (FST, capacité…) **ni affichée ni stockée**. Pas de redite avec la spécialité RPPS : un intitulé équivalent à la spécialité RPPS du médecin (DES ou option de DES) lui est **masqué** (colonne `intitules.specialites_sm`) ; la recherche du confrère porte sur la spécialité **et** les compétences.
+- **Compétences et pathologies fusionnées** (06/10) : une seule liste « Compétences » (techniques, domaines, pathologies), `type = 'competence'` ; les « conditions d'exercice » (domicile, téléconsultation, secteur, langues…) viendront plus tard, `type = 'condition'`. Saisie et recherche par **champ de recherche** (libellé + synonymes, sans accents), pas de liste déroulante ; champ vide → compétences de la rubrique du médecin. Catalogue de départ : les 10 pathologies d'exemple, en synonymes quand une compétence les couvre déjà.
+- Catalogue, question 5 : **David valide seul** dans `/admin/intitules` — Accepter, Reformuler, Fusionner comme synonyme, Refuser (refus = proposition supprimée). Chaque proposition apparaît dans le flux Activité et le résumé hebdomadaire. Côté médecin : badge « en attente » ; refusée → la pastille disparaît ; fusionnée → devient la compétence existante.
 
-**Reste** : décision sur la fusion compétences / pathologies, question 5 du catalogue, puis migration SQL (montrée avant application).
+**Reste** : migration SQL (montrée avant application), puis catalogue de départ (montré avant écriture).
 
 ### Relire les pages légales (posé le 2026-09-30)
 
