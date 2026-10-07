@@ -23,9 +23,10 @@ _(rien en cours)_
 - Sur le site : **médecins seulement**. Les autres professions pourront plus tard remplir leur fiche par l'application, stockée chez nous, sans accès par le site → adapter le jour J les CGU et la charte, qui disent « tous les professionnels connectés par PSC ».
 - Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
 - Catalogue, question 2 : la rubrique s'appelle **« Compétences »** (pas « Surspécialités »), sans case « diplôme obtenu » ; mention « déclarées par le médecin, non vérifiées ». En base : `intitules.type = 'competence'`. Le jour J, remplacer « surspécialités » par « compétences » dans les CGU et la charte préparées.
-- Catalogue, question 3 : niveau de détail **tel quel** (titres officiels + pratiques courantes déjà listées) ; les spécialistes compléteront par des propositions.
+- Catalogue, question 3 : niveau de détail **tel quel** (titres officiels + pratiques courantes déjà listées) ; les spécialistes compléteront par des propositions. **Combler** les 4 spécialités chirurgicales presque vides (neurochirurgie, chirurgie plastique, vasculaire, cardiaque et thoracique) : une dizaine d'intitulés.
+- Catalogue, question 4 : ordre **alphabétique**, plafond de sécurité **20** compétences par médecin, nature (FST, capacité…) **ni affichée ni stockée**. Pas de redite avec la spécialité RPPS (ex. « Allergologie » pour un allergologue).
 
-**Reste** : questions 4 et 5 du catalogue, puis migration SQL (montrée avant application).
+**Reste** : décision sur la fusion compétences / pathologies, question 5 du catalogue, puis migration SQL (montrée avant application).
 
 ### Relire les pages légales (posé le 2026-09-30)
 
