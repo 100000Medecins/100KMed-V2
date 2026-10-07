@@ -80,7 +80,7 @@ _(rien en cours)_
 - **Contexte** : correctif `users` / `evaluations` du 06/10 (CHANGELOG) — les droits Supabase par défaut donnent tout à `anon`/`authenticated`, et une règle « sa propre ligne » sans restriction de colonne laisse modifier des colonnes sensibles.
 - **À revoir** : `questionnaires_these` (une insertion directe peut-elle poser un statut publié et contourner la modération ?), `editeur_claims` et `propositions_utilisateurs` (statut libre), `solutions_utilisees`. Méthode : relever ce que le site écrit avec les droits de l'utilisateur, retirer le reste.
 - **Vérifier (Claude)** qu'une évaluation a bien été enregistrée après le SQL (après le 2026-10-06 20:25 UTC) : 0 au 07/10 à 9 h, nuit comprise (~2 évaluations/jour en moyenne). Les écritures passent par `service_role`, intact.
-- **Fusionner dans `main`** (accord de David requis) : `fix(securite)` du 06/10 et surtout `fix(psc)` du 07/10 (association PSC vérifiée contre la session — faille de prise de compte en production ; relais dev). Le code de l'annuaire part avec, éteint en production (interrupteur).
+- ~~Fusionner dans `main` les correctifs du 06/10 et du 07/10~~ ✅ fait le 2026-10-07 (`e6a3243`), vérifié en production.
 - **Connexion PSC — protection CSRF absente** (vu le 07/10) : le cookie `psc_state` est posé par `connectWithPsc` / `psc-initier` mais jamais comparé au `state` au retour. Un tiers peut faire aboutir dans le navigateur d'un médecin une connexion PSC qu'il a lui-même lancée (connexion sur le compte du tiers). Ajouter la comparaison, en vérifiant que le cookie survit bien au passage par l'application e-CPS (cf. CLAUDE.md : cookies plutôt que sessionStorage pour cette raison).
 
 ### Sauvegardes de la base

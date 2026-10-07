@@ -37,6 +37,13 @@
 - Textes et version des accords, moyens de contact, plafonds, rubriques par spécialité : [constants/annuaire.ts](src/lib/constants/annuaire.ts) (`ANNUAIRE_VERSION_ACCORD = '2026-10-07'`, à changer avec les textes et le jour des CGU).
 - Vérif : `tsc` et lint propres, build vert (`/mon-compte/annuaire` en `ƒ`, page privée) ; normalisations testées (11 formats de portable, codes SM) ; en local, `/mon-compte/annuaire` sans session → redirection vers la connexion, `/admin/parametres` sans cookie admin → formulaire de connexion. **Reste : essai réel par David** (connexion PSC BAS en local, puis remplissage de la fiche).
 
+### Essai réel (David, en local, connexion PSC BAS) — conforme
+- Nouveau compte BAS : preuve PSC écrite par le callback (RPPS `72609261540` — le « 8 » initial de l'identifiant PSC est retiré, comme dans `users.rpps` —, code profession `10`) ; fiche enregistrée (contact « messagerie », publiée, date d'accord posée par la base avec la version `2026-10-07`), 2 compétences.
+- Pas encore essayés : la proposition d'un intitulé et sa décision dans `/admin/intitules`.
+
+### Déploiement — `dev` fusionné dans `main` (`e6a3243`, accord de David)
+- Vérifié en production : `/connexionPsc` renvoie `devsite_…` vers le callback de dev et garde `dev_…` sur www ; `/admin/parametres` (lecture seule) montre l'annuaire **éteint en base et non forcé** (`ANNUAIRE_FORCER_ACTIF` absente de l'environnement Production) ; `/mon-compte/annuaire` sans session → connexion.
+
 ### Feature — Administration des compétences proposées (`/admin/intitules`)
 - Entrée « Annuaire » dans la navigation admin, avec le nombre de propositions en attente (badge `intitules`, [admin-badges.ts](src/lib/db/admin-badges.ts)). Le flux Activité renvoie vers cette page pour les événements `intitule`.
 - Une carte par proposition : date, auteur (prénom, nom, spécialité), nombre de fiches qui l'ont cochée ; libellé, rubrique et synonymes modifiables. Actions ([admin-intitules.ts](src/lib/actions/admin-intitules.ts)) :
