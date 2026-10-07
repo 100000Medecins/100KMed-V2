@@ -29,9 +29,10 @@ type Modif =
 
 // 2026-10-07 — retours de David après son premier essai
 const MODIFS: Modif[] = [
-  // « ECG et holter » séparé en deux ; le synonyme « mapa » (holter tensionnel) n'est repris nulle part
+  // « ECG et holter » séparé en trois : ECG, Holter ECG, MAPA (son ancien synonyme « mapa »)
   { type: 'renommer', de: 'ECG et holter', vers: 'ECG', synonymes: ['ecg', 'electrocardiogramme', 'electrocardiographie'] },
   { type: 'ajouter', libelle: 'Holter ECG', synonymes: ['holter', 'holter ecg', 'holter rythmique', 'enregistrement ecg 24h'], groupe: 'Médecine générale' },
+  { type: 'ajouter', libelle: 'MAPA (holter tensionnel)', synonymes: ['mapa', 'holter tensionnel', 'mesure ambulatoire de la pression arterielle', 'hta'], groupe: 'Médecine générale' },
   // Médecin agréé de l'administration (fonction publique), distinct de l'agrément « permis de conduire » qui reste
   { type: 'ajouter', libelle: 'Médecin agréé', synonymes: ['medecin agree', 'agrement', 'fonction publique', 'comite medical', 'aptitude', 'conge longue maladie'], groupe: 'Pratiques transversales' },
 ]

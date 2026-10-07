@@ -108,6 +108,17 @@
     "specialites_sm": []
   },
   {
+    "libelle": "MAPA (holter tensionnel)",
+    "synonymes": [
+      "mapa",
+      "holter tensionnel",
+      "mesure ambulatoire de la pression arterielle",
+      "hta"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
     "libelle": "Spirométrie",
     "synonymes": [
       "spiro",
