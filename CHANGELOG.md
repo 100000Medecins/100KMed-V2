@@ -37,6 +37,17 @@
 - Textes et version des accords, moyens de contact, plafonds, rubriques par spécialité : [constants/annuaire.ts](src/lib/constants/annuaire.ts) (`ANNUAIRE_VERSION_ACCORD = '2026-10-07'`, à changer avec les textes et le jour des CGU).
 - Vérif : `tsc` et lint propres, build vert (`/mon-compte/annuaire` en `ƒ`, page privée) ; normalisations testées (11 formats de portable, codes SM) ; en local, `/mon-compte/annuaire` sans session → redirection vers la connexion, `/admin/parametres` sans cookie admin → formulaire de connexion. **Reste : essai réel par David** (connexion PSC BAS en local, puis remplissage de la fiche).
 
+### Feature — Administration des compétences proposées (`/admin/intitules`)
+- Entrée « Annuaire » dans la navigation admin, avec le nombre de propositions en attente (badge `intitules`, [admin-badges.ts](src/lib/db/admin-badges.ts)). Le flux Activité renvoie vers cette page pour les événements `intitule`.
+- Une carte par proposition : date, auteur (prénom, nom, spécialité), nombre de fiches qui l'ont cochée ; libellé, rubrique et synonymes modifiables. Actions ([admin-intitules.ts](src/lib/actions/admin-intitules.ts)) :
+  - **Accepter** / **Accepter la reformulation** : statut `valide`, `propose_par` effacé, `decide_le` posé ; synonymes enregistrés en minuscules sans accents ; un libellé déjà pris renvoie vers « Fusionner » ;
+  - **Fusionner** avec une compétence existante (liste groupée par rubrique) : le libellé proposé rejoint ses synonymes, les fiches qui l'avaient cochée reçoivent la cible, la proposition est supprimée (avant le report, pour ne jamais dépasser le plafond de 20) ;
+  - **Refuser** (avec confirmation) : proposition supprimée, elle disparaît des fiches.
+  Chaque décision marque lu l'événement correspondant du flux Activité.
+- Nouveau [admin-guard.ts](src/lib/auth/admin-guard.ts) : contrôle admin partagé (les anciens fichiers d'actions gardent leur copie).
+- Au passage : les 8 `as any` de `admin-badges.ts` retirés (toutes ces tables sont dans les types).
+- Vérif : `tsc`, lint, build verts ; rendu réel en local avec session admin : page vide « Aucune proposition en attente · 209 compétences », entrée de menu présente ; `/admin/parametres` montre la carte annuaire éteinte avec la mention « forcé dans cet environnement ».
+
 ### Fix sécurité — Association PSC : le compte cible n'était pas vérifié
 - **Constat** (en préparant le relais dev) : en mode « association » ([psc-callback](src/app/api/auth/psc-callback/route.ts)), le compte auquel rattacher l'identité PSC vient du `state`, donc de l'URL, et n'était **jamais comparé à la session** du navigateur. Avec sa propre identité PSC et l'UUID d'un compte, n'importe qui pouvait faire rattacher son RPPS à ce compte **et se faire ouvrir une session dessus** (magic link généré pour l'email du compte cible). Même chose pour le parcours de fusion, qui partait du même `state`.
 - **Exposition constatée** : les UUID ne sont pas lisibles par l'API (RLS) ; la seule fuite publique repérée est l'adresse des avatars personnels (`avatars/personal/<uuid>/…`), affichés sous les avis — **0 compte** n'en utilise aujourd'hui (sur 98 portraits). Pas de trace d'exploitation recherchable.

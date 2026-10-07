@@ -9,6 +9,7 @@ export type AdminBadges = {
   citations: number
   communautes: number
   activite: number
+  intitules: number
 }
 
 /**
@@ -20,61 +21,28 @@ export type AdminBadges = {
  * - videos (statut = en_attente) — propositions vidéos utilisateurs à modérer
  * - propositions_utilisateurs (statut = en_attente) — idées + corrections utilisateurs
  * - solution_communautes (statut = en_attente) — groupes WhatsApp/Discord/forum proposés
+ * - intitules (statut = propose) — compétences proposées pour l'annuaire
  */
 export async function getAdminBadges(): Promise<AdminBadges> {
   const supabase = createServiceRoleClient()
   const now = new Date().toISOString()
 
-  const [editeurClaims, editeurDemandes, etudes, questionnaires, emails, videos, propositions, citations, communautes, activite] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('editeur_claims')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('editeur_demandes_referencement')
-      .select('id', { count: 'exact', head: true }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('etudes_cliniques')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('questionnaires_these')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+  const [editeurClaims, editeurDemandes, etudes, questionnaires, emails, videos, propositions, citations, communautes, activite, intitules] = await Promise.all([
+    supabase.from('editeur_claims').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('editeur_demandes_referencement').select('id', { count: 'exact', head: true }),
+    supabase.from('etudes_cliniques').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('questionnaires_these').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase
       .from('emails_campagnes')
       .select('id', { count: 'exact', head: true })
       .eq('statut', 'pending')
       .lte('scheduled_at', now),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('videos')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('propositions_utilisateurs')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('citations')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('solution_communautes')
-      .select('id', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
-    supabase
-      .from('activity_log')
-      .select('id', { count: 'exact', head: true })
-      .eq('lu', false),
+    supabase.from('videos').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('propositions_utilisateurs').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('citations').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('solution_communautes').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('activity_log').select('id', { count: 'exact', head: true }).eq('lu', false),
+    supabase.from('intitules').select('id', { count: 'exact', head: true }).eq('statut', 'propose'),
   ])
 
   return {
@@ -86,5 +54,6 @@ export async function getAdminBadges(): Promise<AdminBadges> {
     citations: citations.count ?? 0,
     communautes: communautes.count ?? 0,
     activite: activite.count ?? 0,
+    intitules: intitules.count ?? 0,
   }
 }

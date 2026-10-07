@@ -60,6 +60,7 @@ function cibleHref(row: ActivityRow): string | null {
   if (row.cible_type === 'editeur' && row.cible_id) return `/admin/editeurs/${row.cible_id}/modifier`
   if (row.cible_type === 'solution' && row.cible_id) return `/admin/solutions/${row.cible_id}/modifier`
   if (row.cible_type === 'proposition') return '/admin/propositions'
+  if (row.cible_type === 'intitule') return '/admin/intitules'
   if (row.cible_type === 'user') return '/admin/utilisateurs'
   return null
 }

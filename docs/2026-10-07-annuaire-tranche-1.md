@@ -251,6 +251,6 @@ RLS active sur les 5 tables ; 13 règles (4 + 4 + 3 + 1 + 1) ; `anon` sans aucun
 5. ~~Interrupteur (`/admin/parametres`) + preuve PSC écrite par `psc-callback` (07/10).~~
 6. Page « Ma fiche annuaire » (`/mon-compte/annuaire`) : code fait le 07/10, essai réel par David
    en local (connexion PSC BAS, `ANNUAIRE_FORCER_ACTIF=true`).
-7. Page `/admin/intitules`.
+7. ~~Page `/admin/intitules` (07/10) : accepter / reformuler, fusionner comme synonyme, refuser.~~
 8. Suppression (`account.ts`, `admin-users.ts`) et fusion (`merge.ts`) de compte.
 9. Étanchéité : un second compte ne lit ni la fiche ni le portable du premier ; build ; CHANGELOG.
