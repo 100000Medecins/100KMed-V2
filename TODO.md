@@ -23,8 +23,9 @@ _(rien en cours)_
 - Sur le site : **médecins seulement**. Les autres professions pourront plus tard remplir leur fiche par l'application, stockée chez nous, sans accès par le site → adapter le jour J les CGU et la charte, qui disent « tous les professionnels connectés par PSC ».
 - Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
 - Catalogue, question 2 : la rubrique s'appelle **« Compétences »** (pas « Surspécialités »), sans case « diplôme obtenu » ; mention « déclarées par le médecin, non vérifiées ». En base : `intitules.type = 'competence'`. Le jour J, remplacer « surspécialités » par « compétences » dans les CGU et la charte préparées.
+- Catalogue, question 3 : niveau de détail **tel quel** (titres officiels + pratiques courantes déjà listées) ; les spécialistes compléteront par des propositions.
 
-**Reste** : questions 3 à 5 du catalogue, puis migration SQL (montrée avant application).
+**Reste** : questions 4 et 5 du catalogue, puis migration SQL (montrée avant application).
 
 ### Relire les pages légales (posé le 2026-09-30)
 
@@ -73,6 +74,7 @@ _(rien en cours)_
 #### Droits d'écriture des tables exposées à l'API — 2ᵉ passage (posé le 2026-10-06)
 - **Contexte** : correctif `users` / `evaluations` du 06/10 (CHANGELOG) — les droits Supabase par défaut donnent tout à `anon`/`authenticated`, et une règle « sa propre ligne » sans restriction de colonne laisse modifier des colonnes sensibles.
 - **À revoir** : `questionnaires_these` (une insertion directe peut-elle poser un statut publié et contourner la modération ?), `editeur_claims` et `propositions_utilisateurs` (statut libre), `solutions_utilisees`. Méthode : relever ce que le site écrit avec les droits de l'utilisateur, retirer le reste.
+- **Vérifier (Claude)** qu'une évaluation a bien été enregistrée après le SQL (après le 2026-10-06 20:25 UTC) : 0 au 07/10 à 9 h, nuit comprise (~2 évaluations/jour en moyenne). Les écritures passent par `service_role`, intact.
 - **Fusionner dans `main`** le commit `fix(securite)` du 06/10 (non urgent : les chemins modifiés ne sont plus empruntés, le SQL est déjà en production).
 
 ### Sauvegardes de la base
