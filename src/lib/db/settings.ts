@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
-export type AppSettingKey = 'display_prix_front' | 'display_contacts_commerciaux'
+export type AppSettingKey = 'display_prix_front' | 'display_contacts_commerciaux' | 'annuaire_actif'
 
 /**
  * Lit une cle de reglage globale.
@@ -50,4 +50,27 @@ export async function getDisplayPrixFront(): Promise<boolean> {
 export async function getDisplayContactsCommerciaux(): Promise<boolean> {
   const v = await getAppSetting<boolean>('display_contacts_commerciaux', false)
   return v === true
+}
+
+/**
+ * Annuaire mutualisé allumé d'office pour cet environnement (`ANNUAIRE_FORCER_ACTIF=true` :
+ * postes locaux, Vercel Preview). Le réglage en base est commun à tous les environnements
+ * (une seule base) : l'allumer pour un essai l'allumerait aussi en production.
+ */
+export function annuaireForceIci(): boolean {
+  return process.env.ANNUAIRE_FORCER_ACTIF === 'true'
+}
+
+/** Réglage `annuaire_actif` en base seul (défaut OFF) — c'est lui qui pilote la production. */
+export async function getAnnuaireActifEnBase(): Promise<boolean> {
+  const v = await getAppSetting<boolean>('annuaire_actif', false)
+  return v === true
+}
+
+/**
+ * Interrupteur effectif de l'annuaire mutualisé. Éteint : ni menu, ni page, ni écriture
+ * de la preuve de connexion PSC (`identites_psc`).
+ */
+export async function getAnnuaireActif(): Promise<boolean> {
+  return annuaireForceIci() || (await getAnnuaireActifEnBase())
 }

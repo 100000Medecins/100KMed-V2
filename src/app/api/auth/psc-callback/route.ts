@@ -7,6 +7,7 @@ import { resolveSpecialite } from '@/lib/constants/profil'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
 import { datesUtilisationDeclarees } from '@/lib/duree-utilisation'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
+import { enregistrerIdentitePsc } from '@/lib/annuaire/identite-psc'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
   const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeSavoirFaire?: string; codeTypeSavoirFaire?: string }> } | undefined
@@ -171,6 +172,7 @@ export async function GET(request: Request) {
           user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
         })
       )
+      await enregistrerIdentitePsc(supabaseAdmin, currentUserId, rpps, codeProfession)
 
       // Publier les évaluations en attente de PSC pour cet utilisateur
       const { data: pendingAssoc } = await supabaseAdmin
@@ -344,6 +346,8 @@ export async function GET(request: Request) {
         }
       }
     }
+
+    if (userId) await enregistrerIdentitePsc(supabaseAdmin, userId, rpps, codeProfession)
 
     // Flux de supervision admin : nouvelle inscription via Pro Santé Connect
     if (isNewUser && userId) {

@@ -1948,6 +1948,20 @@ export async function setDisplayContactsCommerciaux(value: boolean) {
   revalidatePath('/solutions/[idCategorie]/[idSolution]', 'page')
 }
 
+export async function setAnnuaireActif(value: boolean) {
+  await assertAdmin()
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert(
+      { key: 'annuaire_actif', value: value as never },
+      { onConflict: 'key' }
+    )
+  if (error) return { error: error.message }
+  revalidatePath('/admin/parametres')
+  revalidatePath('/mon-compte', 'layout')
+}
+
 // ────────────────────────────────────────────
 // Articles — Historique / Restauration
 // (cf. restorePageStatique — même mécanique : UPDATE déclenche le trigger

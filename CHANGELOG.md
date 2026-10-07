@@ -18,6 +18,17 @@
 - RLS active sur les 5 tables, 13 règles, `anon` sans aucun droit, `authenticated` limité aux droits accordés, 3 déclencheurs en place.
 - `src/types/database.ts` régénéré par David : +185 lignes (les 5 tables), rien de retiré ; `tsc --noEmit` propre.
 
+### Données — Catalogue de départ des compétences (209 intitulés)
+- [scripts/data/annuaire-catalogue-initial.json](scripts/data/annuaire-catalogue-initial.json), construit depuis `annuaire-surspecialites.md` (dépôt messagerie, 195 intitulés) : −4 pratiques non conventionnelles (seule l'hypnose reste), +5 pathologies (endométriose, insuffisance cardiaque, mucoviscidose, drépanocytose, Covid long ; SEP, Parkinson, obésité, BPCO et diabète de type 1 en synonymes), +13 intitulés pour les spécialités chirurgicales vides (neurochirurgie, plastique, vasculaire, cardiaque et thoracique). 29 rubriques ; 35 intitulés masqués pour la spécialité RPPS équivalente (15 DES, 20 options de DES).
+- Inséré par [scripts/annuaire-catalogue-initial.ts](scripts/annuaire-catalogue-initial.ts) `--execute` (accord de David), backup `backups/annuaire-intitules-2026-10-07T09-25-38-019Z.json` (table vide). Relançable sans doublon.
+- Vérifié : 209 lignes `valide` / `competence`, aucune avec auteur, aucune sans synonyme ; l'API refuse la lecture à un visiteur anonyme (`42501`).
+
+### Code — Interrupteur de l'annuaire + preuve de connexion PSC
+- **Interrupteur** `app_settings.annuaire_actif` (ligne absente = éteint), dans `/admin/parametres` : « Ouvrir l'annuaire mutualisé ». `getAnnuaireActif()` ([settings.ts](src/lib/db/settings.ts)) = réglage en base **ou** `ANNUAIRE_FORCER_ACTIF=true`, posée par David dans `.env.local` et dans Vercel (Preview, Development) — jamais en Production, la base étant commune à tous les environnements. L'admin signale quand l'annuaire est forcé dans l'environnement affiché.
+- **Preuve PSC** : [identite-psc.ts](src/lib/annuaire/identite-psc.ts), appelé par [psc-callback](src/app/api/auth/psc-callback/route.ts) en mode association et en mode standard. Upsert `identites_psc` (RPPS, code profession, dernière connexion PSC) ; si le RPPS est encore rattaché à un autre compte (fusion passée), la preuve est déplacée et la fiche suit. N'écrit rien tant que l'annuaire est éteint, ne bloque jamais la connexion.
+- Au passage ([ParametresClient](src/components/admin/ParametresClient.tsx)) : les trois réglages partagent un composant `ReglageInterrupteur` sur `<Card>` / `<Badge>` (deux copies de ~60 lignes en Tailwind brut auparavant).
+- `tsc --noEmit` propre, lint des fichiers touchés propre, `npm run build` vert.
+
 ### Décisions (catalogue et périmètre)
 - Rubrique « Compétences » (compétences et pathologies fusionnées), recherche par champ de saisie, masquage de l'intitulé qui reprend la spécialité RPPS du médecin, validation des propositions par David seul. Détail : TODO (En cours) et le document ci-dessus.
 

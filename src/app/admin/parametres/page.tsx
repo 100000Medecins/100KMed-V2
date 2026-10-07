@@ -1,12 +1,18 @@
 export const dynamic = 'force-dynamic'
 
-import { getDisplayPrixFront, getDisplayContactsCommerciaux } from '@/lib/db/settings'
+import {
+  getDisplayPrixFront,
+  getDisplayContactsCommerciaux,
+  getAnnuaireActifEnBase,
+  annuaireForceIci,
+} from '@/lib/db/settings'
 import ParametresClient from '@/components/admin/ParametresClient'
 
 export default async function AdminParametresPage() {
-  const [displayPrixFront, displayContactsCommerciaux] = await Promise.all([
+  const [displayPrixFront, displayContactsCommerciaux, annuaireActif] = await Promise.all([
     getDisplayPrixFront(),
     getDisplayContactsCommerciaux(),
+    getAnnuaireActifEnBase(),
   ])
 
   return (
@@ -18,6 +24,8 @@ export default async function AdminParametresPage() {
       <ParametresClient
         initialDisplayPrixFront={displayPrixFront}
         initialDisplayContactsCommerciaux={displayContactsCommerciaux}
+        initialAnnuaireActif={annuaireActif}
+        annuaireForceIci={annuaireForceIci()}
       />
     </div>
   )

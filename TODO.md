@@ -28,7 +28,9 @@ _(rien en cours)_
 - **Compétences et pathologies fusionnées** (06/10) : une seule liste « Compétences » (techniques, domaines, pathologies), `type = 'competence'` ; les « conditions d'exercice » (domicile, téléconsultation, secteur, langues…) viendront plus tard, `type = 'condition'`. Saisie et recherche par **champ de recherche** (libellé + synonymes, sans accents), pas de liste déroulante ; champ vide → compétences de la rubrique du médecin. Catalogue de départ : les 10 pathologies d'exemple, en synonymes quand une compétence les couvre déjà.
 - Catalogue, question 5 : **David valide seul** dans `/admin/intitules` — Accepter, Reformuler, Fusionner comme synonyme, Refuser (refus = proposition supprimée). Chaque proposition apparaît dans le flux Activité et le résumé hebdomadaire. Côté médecin : badge « en attente » ; refusée → la pastille disparaît ; fusionnée → devient la compétence existante.
 
-**Reste** : migration SQL (montrée avant application), puis catalogue de départ (montré avant écriture).
+**Fait** : migration (07/10, 5 tables), catalogue de départ (209 compétences). Référence : `docs/2026-10-07-annuaire-tranche-1.md`.
+
+**Reste** (étapes 5 à 9 du document) : interrupteur + preuve PSC écrite par le callback, page « Ma fiche annuaire », page `/admin/intitules`, suppression et fusion de compte, test d'étanchéité.
 
 ### Relire les pages légales (posé le 2026-09-30)
 
