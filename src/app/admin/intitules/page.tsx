@@ -1,44 +1,37 @@
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import IntitulesAdminClient from '@/components/admin/IntitulesAdminClient'
 import type { PropositionIntitule, IntituleValide } from '@/components/admin/IntitulesAdminClient'
+import CatalogueAdminClient from '@/components/admin/CatalogueAdminClient'
+import type { CompetenceCatalogue } from '@/components/admin/CatalogueAdminClient'
 
 async function getData() {
   const admin = createServiceRoleClient()
   const [{ data: propositions }, { data: valides }] = await Promise.all([
     admin
       .from('intitules')
-      .select('id, libelle, synonymes, groupe, propose_par, created_at')
+      .select('id, libelle, synonymes, groupe, propose_par, created_at, fiches_intitules(count)')
       .eq('type', 'competence')
       .eq('statut', 'propose')
       .order('created_at', { ascending: true }),
     admin
       .from('intitules')
-      .select('id, libelle, groupe')
+      .select('id, libelle, synonymes, groupe, specialites_sm, fiches_intitules(count)')
       .eq('type', 'competence')
       .eq('statut', 'valide')
       .order('libelle'),
   ])
 
   const liste = propositions ?? []
-  const nbFiches = new Map<string, number>()
   const auteurs = new Map<string, string>()
-
-  if (liste.length > 0) {
-    const { data: liens } = await admin
-      .from('fiches_intitules')
-      .select('intitule_id')
-      .in('intitule_id', liste.map((p) => p.id))
-    for (const l of liens ?? []) nbFiches.set(l.intitule_id, (nbFiches.get(l.intitule_id) ?? 0) + 1)
-
-    const auteurIds = Array.from(new Set(liste.map((p) => p.propose_par).filter((x): x is string => !!x)))
-    if (auteurIds.length > 0) {
-      const { data: users } = await admin.from('users').select('id, prenom, nom, specialite').in('id', auteurIds)
-      for (const u of users ?? []) {
-        const nom = [u.prenom, u.nom].filter(Boolean).join(' ') || 'Médecin sans nom'
-        auteurs.set(u.id, u.specialite ? `${nom} (${u.specialite})` : nom)
-      }
+  const auteurIds = Array.from(new Set(liste.map((p) => p.propose_par).filter((x): x is string => !!x)))
+  if (auteurIds.length > 0) {
+    const { data: users } = await admin.from('users').select('id, prenom, nom, specialite').in('id', auteurIds)
+    for (const u of users ?? []) {
+      const nom = [u.prenom, u.nom].filter(Boolean).join(' ') || 'Médecin sans nom'
+      auteurs.set(u.id, u.specialite ? `${nom} (${u.specialite})` : nom)
     }
   }
 
@@ -49,25 +42,59 @@ async function getData() {
     groupe: p.groupe,
     auteur: p.propose_par ? auteurs.get(p.propose_par) ?? null : null,
     creeLe: p.created_at,
-    nbFiches: nbFiches.get(p.id) ?? 0,
+    nbFiches: p.fiches_intitules[0]?.count ?? 0,
   }))
-  const intitulesValides: IntituleValide[] = valides ?? []
-  return { propositions: resultat, valides: intitulesValides }
+  const catalogue: CompetenceCatalogue[] = (valides ?? []).map((v) => ({
+    id: v.id,
+    libelle: v.libelle,
+    synonymes: v.synonymes,
+    groupe: v.groupe,
+    specialites_sm: v.specialites_sm,
+    nbFiches: v.fiches_intitules[0]?.count ?? 0,
+  }))
+  const intitulesValides: IntituleValide[] = catalogue.map(({ id, libelle, groupe }) => ({ id, libelle, groupe }))
+  return { propositions: resultat, catalogue, valides: intitulesValides }
 }
 
-export default async function AdminIntitulesPage() {
-  const { propositions, valides } = await getData()
+function classeOnglet(actif: boolean) {
+  return `px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+    actif ? 'bg-accent-blue/10 text-accent-blue' : 'text-gray-500 hover:text-navy hover:bg-white'
+  }`
+}
+
+export default async function AdminIntitulesPage({ searchParams }: { searchParams: Promise<{ onglet?: string }> }) {
+  const { onglet } = await searchParams
+  const ongletCatalogue = onglet === 'catalogue'
+  const { propositions, catalogue, valides } = await getData()
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-navy">Annuaire — compétences proposées</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-navy">Annuaire — compétences</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {`${propositions.length} proposition${propositions.length !== 1 ? 's' : ''} en attente · ${valides.length} compétences dans le catalogue. `}
-          Chaque décision efface le lien avec l&apos;auteur de la proposition.
+          Catalogue commun des compétences que les médecins cochent sur leur fiche, et propositions à valider.
+          Chaque décision sur une proposition efface le lien avec son auteur.
         </p>
       </div>
-      <IntitulesAdminClient propositions={propositions} valides={valides} />
+
+      <nav className="mb-6 flex gap-2" aria-label="Onglets">
+        <Link href="/admin/intitules" className={classeOnglet(!ongletCatalogue)} aria-current={!ongletCatalogue ? 'page' : undefined}>
+          {`Propositions (${propositions.length})`}
+        </Link>
+        <Link
+          href="/admin/intitules?onglet=catalogue"
+          className={classeOnglet(ongletCatalogue)}
+          aria-current={ongletCatalogue ? 'page' : undefined}
+        >
+          {`Catalogue (${catalogue.length})`}
+        </Link>
+      </nav>
+
+      {ongletCatalogue ? (
+        <CatalogueAdminClient competences={catalogue} />
+      ) : (
+        <IntitulesAdminClient propositions={propositions} valides={valides} />
+      )}
     </div>
   )
 }

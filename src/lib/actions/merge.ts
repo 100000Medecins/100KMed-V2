@@ -4,6 +4,7 @@ import { createServiceRoleClient, createServerClient } from '@/lib/supabase/serv
 import { retryTransientAuth } from '@/lib/supabase/retry'
 import { verifyFusionToken } from '@/lib/auth/fusionToken'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
+import { transfererDonneesAnnuaire } from '@/lib/annuaire/compte'
 
 export interface FusionAccount {
   id: string
@@ -139,6 +140,10 @@ export async function mergeAccounts(
 
   // Migrer les questionnaires de thèse créés par le compte supprimé
   await s.from('questionnaires_these').update({ created_by: keepId }).eq('created_by', deleteId)
+
+  // Annuaire : preuve PSC + fiche (portable, compétences) et propositions en attente du
+  // compte supprimé passent au compte conservé — avant la suppression, qui les emporterait.
+  await transfererDonneesAnnuaire(supabase, deleteId, keepId)
 
   // Supprimer les dépendances du compte supprimé (FK sans CASCADE)
   await s.from('users_notification_preferences').delete().eq('user_id', deleteId)

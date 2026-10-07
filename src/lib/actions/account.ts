@@ -6,6 +6,7 @@ import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { recalcResultatsPourSolution } from '@/lib/actions/evaluation'
+import { effacerDonneesAnnuaire } from '@/lib/annuaire/compte'
 import { revalidatePath } from 'next/cache'
 
 interface DeleteAccountOptions {
@@ -111,6 +112,7 @@ const nomDisplay = profile?.nom ? `Dr. ${profile.nom}` : 'Docteur'
   await s.from('users_preferences').delete().eq('user_id', user.id)
   await s.from('editeur_claims').delete().eq('user_id', user.id)
   await s.from('questionnaires_these').update({ created_by: null }).eq('created_by', user.id)
+  await effacerDonneesAnnuaire(supabase, user.id)
 
   // 6. Supprimer le profil public
   await supabase.from('users').delete().eq('id', user.id)

@@ -55,6 +55,25 @@
 - Au passage : les 8 `as any` de `admin-badges.ts` retirés (toutes ces tables sont dans les types).
 - Vérif : `tsc`, lint, build verts ; rendu réel en local avec session admin : page vide « Aucune proposition en attente · 209 compétences », entrée de menu présente ; `/admin/parametres` montre la carte annuaire éteinte avec la mention « forcé dans cet environnement ».
 
+### Feature — Onglet « Catalogue » dans `/admin/intitules`
+- Deux onglets (`?onglet=catalogue`) : « Propositions (n) » et « Catalogue (n) ». Le catalogue : recherche (libellé + synonymes, sans accents), filtre par rubrique, ajout d'une compétence, et pour chaque compétence le nombre de fiches qui la cochent, la modification en place (libellé, rubrique — existante ou nouvelle —, synonymes, codes SM pour lesquels elle est masquée) et la suppression (avec confirmation, elle disparaît des fiches). Actions `ajouterIntitule` / `modifierIntitule` / `supprimerIntitule` ([admin-intitules.ts](src/lib/actions/admin-intitules.ts)).
+- Nombre de fiches par compétence lu en une requête (`fiches_intitules(count)`, comptage PostgREST) — remplace le comptage côté page des propositions.
+- Vérifié en local (session admin) : « Catalogue (212) », « PrEP et suivi du VIH » cochée sur 1 fiche, « Allergologie » masquée SM57.
+
+### Données — Retouches du catalogue (retours de David, 212 compétences)
+- « ECG et holter » → **« ECG »** ; ajout de **« Holter ECG »**, **« MAPA (holter tensionnel) »** (ancien synonyme « mapa ») et **« Médecin agréé »** (Pratiques transversales ; « Médecin agréé pour le permis de conduire » reste, agrément distinct). Script réutilisable [annuaire-catalogue-modifs.ts](scripts/annuaire-catalogue-modifs.ts) (dry-run, backup `backups/annuaire-intitules-2026-10-07T16-21-32-420Z.json`) ; catalogue de départ mis à jour. Les retouches suivantes se feront dans l'onglet Catalogue.
+- Essai de proposition par David : « Dépigmentation anale » — journalisée sans auteur (`a_moderer`), refusée (supprimée), événement marqué lu.
+
+### Feature — Suppression et fusion de compte étendues à l'annuaire (étape 8)
+- [compte.ts](src/lib/annuaire/compte.ts) : `effacerDonneesAnnuaire` (propositions en attente, fiche — portable et compétences en cascade —, preuve PSC), appelé par la suppression de compte du médecin ([account.ts](src/lib/actions/account.ts)) et par l'admin ([admin-users.ts](src/lib/actions/admin-users.ts)) ; `transfererDonneesAnnuaire` appelé par la fusion ([merge.ts](src/lib/actions/merge.ts)) avant la suppression du compte source : la preuve PSC passe au compte conservé s'il n'en a pas (fiche, portable, compétences suivent par `on update cascade`), ainsi que les propositions en attente.
+
+### Fix sécurité — Actions serveur de `admin-users.ts` sans contrôle d'accès
+- **Constat** (en y ajoutant l'étape 8) : fichier `'use server'` dont les fonctions travaillent en service role sans vérifier qui appelle. Une action serveur s'appelle directement avec son identifiant : seul le secret des identifiants protégeait.
+  - Appelées depuis l'admin, **sans contrôle admin** : `updateUserField` (nom, email…), `deleteUser` (**suppression de compte**), `assignEditeurToUser` (**rôle éditeur**, l'escalade fermée côté base le 06/10).
+  - Appelées depuis Mon compte, **avec un `userId` fourni par le navigateur** : `getEditeurDataForUser`, `updateEditeurByUser`, `updateSolutionByEditeur`, `syncGalerieByEditeur` (espace éditeur), `getHdhOptins` (inscrits aux études, DMH).
+- **Fix** : `assertAdmin()` (nouveau module partagé) sur les trois premières ; `assertUtilisateurSession(userId)` sur les cinq autres (l'identifiant reçu doit être celui de la session). Signatures inchangées : les pages passent déjà `user.id` de la session.
+- Reste en TODO : passer en revue les autres fichiers d'actions serveur avec la même grille.
+
 ### Fix sécurité — Association PSC : le compte cible n'était pas vérifié
 - **Constat** (en préparant le relais dev) : en mode « association » ([psc-callback](src/app/api/auth/psc-callback/route.ts)), le compte auquel rattacher l'identité PSC vient du `state`, donc de l'URL, et n'était **jamais comparé à la session** du navigateur. Avec sa propre identité PSC et l'UUID d'un compte, n'importe qui pouvait faire rattacher son RPPS à ce compte **et se faire ouvrir une session dessus** (magic link généré pour l'email du compte cible). Même chose pour le parcours de fusion, qui partait du même `state`.
 - **Exposition constatée** : les UUID ne sont pas lisibles par l'API (RLS) ; la seule fuite publique repérée est l'adresse des avatars personnels (`avatars/personal/<uuid>/…`), affichés sous les avis — **0 compte** n'en utilise aujourd'hui (sur 98 portraits). Pas de trace d'exploitation recherchable.
