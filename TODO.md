@@ -12,7 +12,7 @@ _(rien en cours)_
 
 ## En cours
 
-### Annuaire mutualisé — tranche 1 « Ma fiche annuaire » (posé le 2026-10-06)
+### Annuaire mutualisé — tranche 1 « Ma fiche annuaire » terminée le 2026-10-08 ; suite à décider (posé le 2026-10-06)
 
 **Contexte** : chantier préparé dans le dépôt messagerie (`docs/annuaire-mutualise.md`, `annuaire-surspecialites.md`, `annuaire-cgu-confidentialite.md`). Plan de la tranche 1 validé par David le 06/10 : fiche dans Mon compte, invisible des autres ; administration des intitulés proposés ; suppression de compte étendue.
 
@@ -28,9 +28,11 @@ _(rien en cours)_
 - **Compétences et pathologies fusionnées** (06/10) : une seule liste « Compétences » (techniques, domaines, pathologies), `type = 'competence'` ; les « conditions d'exercice » (domicile, téléconsultation, secteur, langues…) viendront plus tard, `type = 'condition'`. Saisie et recherche par **champ de recherche** (libellé + synonymes, sans accents), pas de liste déroulante ; champ vide → compétences de la rubrique du médecin. Catalogue de départ : les 10 pathologies d'exemple, en synonymes quand une compétence les couvre déjà.
 - Catalogue, question 5 : **David valide seul** dans `/admin/intitules` — Accepter, Reformuler, Fusionner comme synonyme, Refuser (refus = proposition supprimée). Chaque proposition apparaît dans le flux Activité et le résumé hebdomadaire. Côté médecin : badge « en attente » ; refusée → la pastille disparaît ; fusionnée → devient la compétence existante.
 
-**Fait** : migration (07/10, 5 tables), catalogue de départ (209 compétences). Référence : `docs/2026-10-07-annuaire-tranche-1.md`.
+**Fait (tranche 1, en production mais éteinte)** : 5 tables + RLS ; catalogue (212 compétences, retouches dans `/admin/intitules?onglet=catalogue`) ; interrupteur (admin › Paramètres) ; preuve PSC écrite par le callback ; page « Ma fiche annuaire » ; administration des propositions ; suppression et fusion de compte ; étanchéité vérifiée ; essai réel de David (PSC BAS). Référence : `docs/2026-10-07-annuaire-tranche-1.md`.
 
-**Reste** (étapes 5 à 9 du document) : interrupteur + preuve PSC écrite par le callback, page « Ma fiche annuaire », page `/admin/intitules`, suppression et fusion de compte, test d'étanchéité.
+**Suite (à décider avec David)** :
+- **Tranche 2 — lecture par les confrères** : recherche par compétence et spécialité (`pg_trgm` installé), fiche d'un confrère avec la mention « Informations déclarées par le médecin, non vérifiées » et la date de mise à jour ; portable fiche par fiche par une fonction (plafond quotidien + journal des affichages + purge à 12 mois dans `purge-donnees`) ; pas de Vercel Analytics sur ces pages ; source ANS affichée si les données de l'Annuaire Santé sont reprises.
+- **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
 
 ### Relire les pages légales (posé le 2026-09-30)
 
@@ -82,7 +84,7 @@ _(rien en cours)_
 - **Vérifier (Claude)** qu'une évaluation a bien été enregistrée après le SQL (après le 2026-10-06 20:25 UTC) : 0 au 07/10 à 9 h, nuit comprise (~2 évaluations/jour en moyenne). Les écritures passent par `service_role`, intact.
 - ~~Fusionner dans `main` les correctifs du 06/10 et du 07/10~~ ✅ fait le 2026-10-07 (`e6a3243`), vérifié en production.
 - **Actions serveur — revue d'accès** (vu le 07/10 sur `admin-users.ts`, corrigé là) : passer en revue tous les fichiers `'use server'` de `src/lib/actions/` avec deux questions : (1) une action réservée à l'admin vérifie-t-elle le cookie admin ? (2) une action qui reçoit un `userId` le compare-t-elle à la session ? Une action serveur s'appelle directement : le contrôle doit être dans la fonction.
-- **Fusionner dans `main`** le commit `fix(securite)` du 07/10 sur `admin-users.ts` (suppression de compte et rôle éditeur sans contrôle admin).
+- ~~Fusionner dans `main` le correctif `admin-users.ts`~~ ✅ fait le 2026-10-08 (`bb41b77`), vérifié.
 - **Connexion PSC — protection CSRF absente** (vu le 07/10) : le cookie `psc_state` est posé par `connectWithPsc` / `psc-initier` mais jamais comparé au `state` au retour. Un tiers peut faire aboutir dans le navigateur d'un médecin une connexion PSC qu'il a lui-même lancée (connexion sur le compte du tiers). Ajouter la comparaison, en vérifiant que le cookie survit bien au passage par l'application e-CPS (cf. CLAUDE.md : cookies plutôt que sessionStorage pour cette raison).
 
 ### Sauvegardes de la base
