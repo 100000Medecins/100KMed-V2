@@ -1,26 +1,24 @@
 import { NextResponse } from 'next/server'
+import { HOTE_DEV, PREFIXE_ETAT_RELAIS_DEV } from '@/lib/auth/psc'
 
 /**
  * GET /connexionPsc
  *
- * Route de compatibilité PSC — deux rôles selon la phase de déploiement :
+ * URI de retour enregistrée chez Pro Santé Connect (https://www.100000medecins.org/connexionPsc),
+ * commune à la production et à dev (mode relais, `NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI`).
  *
- * Phase 1 (test, DNS = Gandi) :
- *   Cette route n'est jamais appelée sur dev.100000medecins.org car le .htaccess
- *   de Gandi intercepte /connexionPsc et redirige vers /api/auth/psc-callback.
- *   Elle est présente pour la complétude.
+ * - `state` préfixé `devsite_` : la connexion a été lancée depuis dev.100000medecins.org →
+ *   renvoi vers le callback de dev (cookies, session et code de dev). Hôte écrit en dur :
+ *   jamais de redirection vers un hôte lu dans la requête.
+ * - Sinon (production : `state` préfixé `dev_`, héritage de l'ancien site) → callback local.
  *
- * Phase 2 (après basculement DNS, www → ce serveur Next.js) :
- *   PSC redirige vers https://www.100000medecins.org/connexionPsc (URI enregistrée).
- *   Ce serveur reçoit la requête et la relaie vers /api/auth/psc-callback
- *   en préservant tous les query params (code, state, session_state…).
- *   Aucune modification de la configuration PSC nécessaire.
- *
- * Pour rollback : cette route peut rester indéfiniment sans effet secondaire.
+ * Tous les paramètres (code, state, session_state…) sont conservés.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url)
-  const target = new URL(url.origin + '/api/auth/psc-callback')
+  const versDev = url.searchParams.get('state')?.startsWith(PREFIXE_ETAT_RELAIS_DEV) ?? false
+  const base = versDev ? `https://${HOTE_DEV}` : url.origin
+  const target = new URL(base + '/api/auth/psc-callback')
   url.searchParams.forEach((value, key) => target.searchParams.set(key, value))
   return NextResponse.redirect(target, { status: 302 })
 }

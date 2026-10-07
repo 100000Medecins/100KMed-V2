@@ -12,6 +12,26 @@ _(rien en cours)_
 
 ## En cours
 
+### Annuaire mutualisé — tranche 1 « Ma fiche annuaire » (posé le 2026-10-06)
+
+**Contexte** : chantier préparé dans le dépôt messagerie (`docs/annuaire-mutualise.md`, `annuaire-surspecialites.md`, `annuaire-cgu-confidentialite.md`). Plan de la tranche 1 validé par David le 06/10 : fiche dans Mon compte, invisible des autres ; administration des intitulés proposés ; suppression de compte étendue.
+
+**Décisions** :
+- Tables : `identites_psc` (preuve PSC écrite seulement par le callback, avec `code_profession`), `fiches_annuaire`, `fiches_annuaire_portables` (portable à part, jamais lisible directement par les autres), `intitules`, `fiches_intitules` ; GRANT explicites + RLS sur chacune.
+- `psc-callback` et `merge.ts` modifiés, en plus de `account.ts` et `admin-users.ts`.
+- Annuaire derrière un **interrupteur** plutôt qu'une branche longue (accord du 06/10) : travail directement sur `dev`. Interrupteur `annuaire_actif` dans `app_settings`, piloté depuis l'admin (ligne absente = éteint) ; pour les essais, `ANNUAIRE_FORCER_ACTIF=true` dans `.env.local` de chaque poste (jamais chez Vercel en Production).
+- Sur le site : **médecins seulement**. Les autres professions pourront plus tard remplir leur fiche par l'application, stockée chez nous, sans accès par le site → adapter le jour J les CGU et la charte, qui disent « tous les professionnels connectés par PSC ».
+- Catalogue, question 1 : pas de pratiques non conventionnelles **sauf « Hypnose médicale »**. Retirés : acupuncture, homéopathie, mésothérapie, médecine manuelle-ostéopathie (à rajouter si des médecins le demandent).
+- Catalogue, question 2 : la rubrique s'appelle **« Compétences »** (pas « Surspécialités »), sans case « diplôme obtenu » ; mention « déclarées par le médecin, non vérifiées ». En base : `intitules.type = 'competence'`. Le jour J, remplacer « surspécialités » par « compétences » dans les CGU et la charte préparées.
+- Catalogue, question 3 : niveau de détail **tel quel** (titres officiels + pratiques courantes déjà listées) ; les spécialistes compléteront par des propositions. **Combler** les 4 spécialités chirurgicales presque vides (neurochirurgie, chirurgie plastique, vasculaire, cardiaque et thoracique) : une dizaine d'intitulés.
+- Catalogue, question 4 : ordre **alphabétique**, plafond de sécurité **20** compétences par médecin, nature (FST, capacité…) **ni affichée ni stockée**. Pas de redite avec la spécialité RPPS : un intitulé équivalent à la spécialité RPPS du médecin (DES ou option de DES) lui est **masqué** (colonne `intitules.specialites_sm`) ; la recherche du confrère porte sur la spécialité **et** les compétences.
+- **Compétences et pathologies fusionnées** (06/10) : une seule liste « Compétences » (techniques, domaines, pathologies), `type = 'competence'` ; les « conditions d'exercice » (domicile, téléconsultation, secteur, langues…) viendront plus tard, `type = 'condition'`. Saisie et recherche par **champ de recherche** (libellé + synonymes, sans accents), pas de liste déroulante ; champ vide → compétences de la rubrique du médecin. Catalogue de départ : les 10 pathologies d'exemple, en synonymes quand une compétence les couvre déjà.
+- Catalogue, question 5 : **David valide seul** dans `/admin/intitules` — Accepter, Reformuler, Fusionner comme synonyme, Refuser (refus = proposition supprimée). Chaque proposition apparaît dans le flux Activité et le résumé hebdomadaire. Côté médecin : badge « en attente » ; refusée → la pastille disparaît ; fusionnée → devient la compétence existante.
+
+**Fait** : migration (07/10, 5 tables), catalogue de départ (209 compétences). Référence : `docs/2026-10-07-annuaire-tranche-1.md`.
+
+**Reste** (étapes 5 à 9 du document) : interrupteur + preuve PSC écrite par le callback, page « Ma fiche annuaire », page `/admin/intitules`, suppression et fusion de compte, test d'étanchéité.
+
 ### Relire les pages légales (posé le 2026-09-30)
 
 **Contexte** : mentions légales créées, charte de confidentialité réécrite, charte de transparence remise sur sa version à jour (Next.js, code sur GitHub), qui avait été enregistrée par erreur dans `/rgpd` le 31/03. Rédaction Claude à partir du code et de la base, **pas un avis juridique**.
@@ -19,6 +39,12 @@ _(rien en cours)_
 **À faire (David)** : relire en ligne `/mentions-legales`, `/rgpd` (Charte de confidentialité et cookies), `/cgu` et `/transparence`, et corriger via `/admin/pages` si besoin. Points repérés au passage :
 - `/transparence` : « La première version **de 2001 à 2025** » (2021 ?) ; la liste annonce 5 axes dont « Déclarations publiques d'intérêts des représentants », sans section correspondante ; « aucune société tierce n'y a eu accès » à nuancer (Supabase héberge la base) ;
 - `/cgu` art. 4 : « l'authentification s'effectue via Pro Santé Connect » alors que la connexion email / mot de passe existe aussi.
+
+### ⏰ Le 2026-10-05 — Vérifier le premier lot automatique de sujets d'articles (posé le 2026-10-01)
+
+**Contexte** : la génération de sujets passe en sorties structurées depuis le 2026-10-01 (fin du « JSON invalide »). Le cron hebdo `proposer-sujets-articles` n'a encore jamais tourné en prod ; premier passage lundi 5/10 à 9h15. La branche « actu » (avec recherche Tavily) n'a pas été testée en réel.
+
+**À vérifier** : un lot de 3 sujets apparaît dans `/admin/blog`, l'email de notification est arrivé à `contact@`, et les sujets « actu » ont **des sources** (elles étaient toutes vides avant le fix). En cas d'échec, les logs Vercel `[ai:propositions-sujets]` donnent `stop_reason`, tokens, début et fin de la réponse. On peut aussi tester avant lundi via « Regénérer ».
 
 ### ⏰ Le 2026-10-07 — Lire l'entonnoir `/completer-profil` (posé le 2026-09-23)
 
@@ -36,6 +62,12 @@ _(rien en cours)_
 
 ## En attente / Idées
 
+### Annuaire mutualisé — coller les CGU et la charte le jour du passage en prod (posé le 2026-10-05)
+
+**Contexte** : l'annuaire mutualisé (fiche annuaire de chaque médecin dans Mon compte, lecture par les confrères connectés par Pro Santé Connect, puis l'application mobile) reste hors production jusqu'à la sortie de l'application (décision de David du 05/10). Les CGU et la charte (`/rgpd`) **complètes, propositions intégrées**, sont prêtes dans le dépôt messagerie : `C:\Users\david\Documents\100000Medecins_messagerie\docs\site-textes\` (`cgu-annuaire.html`, `rgpd-annuaire.html`, mode d'emploi `LISEZMOI.md`), établies à partir des textes en base le 05/10 (`cgu` du 28/03, `rgpd` du 30/09).
+
+**À faire le jour du passage en prod** : vérifier que le code remplit les six conditions du `LISEZMOI.md` (sauvegardes limitées à 12 mois — `scripts/backup-supabase.ps1` garde aujourd'hui une archive par mois sans fin ; suppression de compte étendue aux tables de l'annuaire ; journal des affichages de portables purgé à 12 mois ; pas de Vercel Analytics sur l'annuaire ; mention « Informations déclarées par le médecin, non vérifiées » ; source ANS affichée), puis coller les deux textes via `/admin/pages` → « </> HTML ». Si `/cgu` ou `/rgpd` ont changé depuis le 05/10 : redemander une version à Claude (dépôt messagerie). Décidé le 05/10 : un médecin ne peut pas savoir qui a affiché son portable (rien à ajouter au texte).
+
 ### Contenu des questionnaires
 
 #### Durée d'utilisation non déclarée sur les évaluations anciennes (2026-09-02)
@@ -44,7 +76,12 @@ _(rien en cours)_
 
 ### Sécurité
 
-_(rien en cours)_
+#### Droits d'écriture des tables exposées à l'API — 2ᵉ passage (posé le 2026-10-06)
+- **Contexte** : correctif `users` / `evaluations` du 06/10 (CHANGELOG) — les droits Supabase par défaut donnent tout à `anon`/`authenticated`, et une règle « sa propre ligne » sans restriction de colonne laisse modifier des colonnes sensibles.
+- **À revoir** : `questionnaires_these` (une insertion directe peut-elle poser un statut publié et contourner la modération ?), `editeur_claims` et `propositions_utilisateurs` (statut libre), `solutions_utilisees`. Méthode : relever ce que le site écrit avec les droits de l'utilisateur, retirer le reste.
+- **Vérifier (Claude)** qu'une évaluation a bien été enregistrée après le SQL (après le 2026-10-06 20:25 UTC) : 0 au 07/10 à 9 h, nuit comprise (~2 évaluations/jour en moyenne). Les écritures passent par `service_role`, intact.
+- **Fusionner dans `main`** (accord de David requis) : `fix(securite)` du 06/10 et surtout `fix(psc)` du 07/10 (association PSC vérifiée contre la session — faille de prise de compte en production ; relais dev). Le code de l'annuaire part avec, éteint en production (interrupteur).
+- **Connexion PSC — protection CSRF absente** (vu le 07/10) : le cookie `psc_state` est posé par `connectWithPsc` / `psc-initier` mais jamais comparé au `state` au retour. Un tiers peut faire aboutir dans le navigateur d'un médecin une connexion PSC qu'il a lui-même lancée (connexion sur le compte du tiers). Ajouter la comparaison, en vérifiant que le cookie survit bien au passage par l'application e-CPS (cf. CLAUDE.md : cookies plutôt que sessionStorage pour cette raison).
 
 ### Sauvegardes de la base
 

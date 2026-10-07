@@ -5,6 +5,126 @@
 
 ---
 
+## [2026-10-07] — Annuaire mutualisé, tranche 1 : tables en base (rien de visible)
+
+### Base — 5 nouvelles tables, aucune table existante touchée
+- Migration lancée par David dans le SQL Editor (une transaction) : `identites_psc` (preuve PSC, écrite seulement par le serveur, clé = RPPS), `fiches_annuaire`, `fiches_annuaire_portables` (portable à part), `intitules` (catalogue commun), `fiches_intitules` (compétences cochées). SQL complet, retour arrière et points de conception : [docs/2026-10-07-annuaire-tranche-1.md](docs/2026-10-07-annuaire-tranche-1.md).
+- Règles automatiques : dates d'accord (publication, portable) posées par la base, jamais par le navigateur ; 20 compétences au plus par fiche.
+- ⚠️ **Droits par défaut** : Supabase donne encore **tous les droits** à `anon` et `authenticated` sur toute nouvelle table de `public` (`pg_default_acl`, jusqu'au 2026-10-30). La migration commence par `revoke all … from anon, authenticated`, puis n'accorde que le nécessaire. Le modèle de `CLAUDE.md` (GRANT seuls) est complété dans ce sens.
+- `claude_readonly` (MCP) lit les nouvelles tables **sauf** celle des portables.
+- Aucun code ne lit encore ces tables : rien ne change pour les utilisateurs.
+
+### Vérif
+- RLS active sur les 5 tables, 13 règles, `anon` sans aucun droit, `authenticated` limité aux droits accordés, 3 déclencheurs en place.
+- `src/types/database.ts` régénéré par David : +185 lignes (les 5 tables), rien de retiré ; `tsc --noEmit` propre.
+
+### Données — Catalogue de départ des compétences (209 intitulés)
+- [scripts/data/annuaire-catalogue-initial.json](scripts/data/annuaire-catalogue-initial.json), construit depuis `annuaire-surspecialites.md` (dépôt messagerie, 195 intitulés) : −4 pratiques non conventionnelles (seule l'hypnose reste), +5 pathologies (endométriose, insuffisance cardiaque, mucoviscidose, drépanocytose, Covid long ; SEP, Parkinson, obésité, BPCO et diabète de type 1 en synonymes), +13 intitulés pour les spécialités chirurgicales vides (neurochirurgie, plastique, vasculaire, cardiaque et thoracique). 29 rubriques ; 35 intitulés masqués pour la spécialité RPPS équivalente (15 DES, 20 options de DES).
+- Inséré par [scripts/annuaire-catalogue-initial.ts](scripts/annuaire-catalogue-initial.ts) `--execute` (accord de David), backup `backups/annuaire-intitules-2026-10-07T09-25-38-019Z.json` (table vide). Relançable sans doublon.
+- Vérifié : 209 lignes `valide` / `competence`, aucune avec auteur, aucune sans synonyme ; l'API refuse la lecture à un visiteur anonyme (`42501`).
+
+### Code — Interrupteur de l'annuaire + preuve de connexion PSC
+- **Interrupteur** `app_settings.annuaire_actif` (ligne absente = éteint), dans `/admin/parametres` : « Ouvrir l'annuaire mutualisé ». `getAnnuaireActif()` ([settings.ts](src/lib/db/settings.ts)) = réglage en base **ou** `ANNUAIRE_FORCER_ACTIF=true`, posée par David dans `.env.local` et dans Vercel (Preview, Development) — jamais en Production, la base étant commune à tous les environnements. L'admin signale quand l'annuaire est forcé dans l'environnement affiché.
+- **Preuve PSC** : [identite-psc.ts](src/lib/annuaire/identite-psc.ts), appelé par [psc-callback](src/app/api/auth/psc-callback/route.ts) en mode association et en mode standard. Upsert `identites_psc` (RPPS, code profession, dernière connexion PSC) ; si le RPPS est encore rattaché à un autre compte (fusion passée), la preuve est déplacée et la fiche suit. N'écrit rien tant que l'annuaire est éteint, ne bloque jamais la connexion.
+- Au passage ([ParametresClient](src/components/admin/ParametresClient.tsx)) : les trois réglages partagent un composant `ReglageInterrupteur` sur `<Card>` / `<Badge>` (deux copies de ~60 lignes en Tailwind brut auparavant).
+- `tsc --noEmit` propre, lint des fichiers touchés propre, `npm run build` vert.
+
+### Feature — Page « Ma fiche annuaire » (`/mon-compte/annuaire`)
+- Entrée « Ma fiche annuaire » dans le menu de Mon compte (médecins, pas les éditeurs), seulement si l'annuaire est allumé ; sinon la page répond 404.
+- **Sans preuve PSC** : invitation à se connecter avec Pro Santé Connect (mode association existant). **Avec** : quatre blocs — moyen de contact préféré ; portable + case de visibilité (désactivée sans numéro) ; compétences ; case « publier ma fiche » (date de l'accord affichée). Bandeau : « l'annuaire n'est pas encore ouvert, votre fiche n'est visible de personne ».
+- **Compétences** : champ de recherche (libellé + synonymes, sans accents, tous les mots requis), 12 résultats au plus ; champ vide → suggestions de la rubrique de la spécialité ; intitulés qui reprennent la spécialité RPPS masqués ; pastilles par ordre alphabétique, 20 au plus ; « Proposer « … » » quand rien ne correspond exactement.
+- **Actions serveur** ([annuaire.ts](src/lib/actions/annuaire.ts)) : lecture et écriture avec le client de l'utilisateur (RLS) ; dates d'accord posées par la base ; portable normalisé au format international ([normaliser.ts](src/lib/annuaire/normaliser.ts) : 06/07, outre-mer, +…, 00…) ; une proposition retirée de sa fiche par son auteur est abandonnée. `proposerCompetence` (service role, après contrôle) : renvoie l'intitulé existant s'il y en a un (libellé ou synonyme), refuse un libellé déjà proposé par un confrère, 5 propositions en attente au plus, puis crée la proposition et la coche. Elle apparaît dans le flux Activité (`a_moderer`) **sans l'auteur** : la charte promet d'effacer le lien proposition ↔ auteur à la décision, le journal (12 mois) ne doit pas le garder.
+- Textes et version des accords, moyens de contact, plafonds, rubriques par spécialité : [constants/annuaire.ts](src/lib/constants/annuaire.ts) (`ANNUAIRE_VERSION_ACCORD = '2026-10-07'`, à changer avec les textes et le jour des CGU).
+- Vérif : `tsc` et lint propres, build vert (`/mon-compte/annuaire` en `ƒ`, page privée) ; normalisations testées (11 formats de portable, codes SM) ; en local, `/mon-compte/annuaire` sans session → redirection vers la connexion, `/admin/parametres` sans cookie admin → formulaire de connexion. **Reste : essai réel par David** (connexion PSC BAS en local, puis remplissage de la fiche).
+
+### Feature — Administration des compétences proposées (`/admin/intitules`)
+- Entrée « Annuaire » dans la navigation admin, avec le nombre de propositions en attente (badge `intitules`, [admin-badges.ts](src/lib/db/admin-badges.ts)). Le flux Activité renvoie vers cette page pour les événements `intitule`.
+- Une carte par proposition : date, auteur (prénom, nom, spécialité), nombre de fiches qui l'ont cochée ; libellé, rubrique et synonymes modifiables. Actions ([admin-intitules.ts](src/lib/actions/admin-intitules.ts)) :
+  - **Accepter** / **Accepter la reformulation** : statut `valide`, `propose_par` effacé, `decide_le` posé ; synonymes enregistrés en minuscules sans accents ; un libellé déjà pris renvoie vers « Fusionner » ;
+  - **Fusionner** avec une compétence existante (liste groupée par rubrique) : le libellé proposé rejoint ses synonymes, les fiches qui l'avaient cochée reçoivent la cible, la proposition est supprimée (avant le report, pour ne jamais dépasser le plafond de 20) ;
+  - **Refuser** (avec confirmation) : proposition supprimée, elle disparaît des fiches.
+  Chaque décision marque lu l'événement correspondant du flux Activité.
+- Nouveau [admin-guard.ts](src/lib/auth/admin-guard.ts) : contrôle admin partagé (les anciens fichiers d'actions gardent leur copie).
+- Au passage : les 8 `as any` de `admin-badges.ts` retirés (toutes ces tables sont dans les types).
+- Vérif : `tsc`, lint, build verts ; rendu réel en local avec session admin : page vide « Aucune proposition en attente · 209 compétences », entrée de menu présente ; `/admin/parametres` montre la carte annuaire éteinte avec la mention « forcé dans cet environnement ».
+
+### Fix sécurité — Association PSC : le compte cible n'était pas vérifié
+- **Constat** (en préparant le relais dev) : en mode « association » ([psc-callback](src/app/api/auth/psc-callback/route.ts)), le compte auquel rattacher l'identité PSC vient du `state`, donc de l'URL, et n'était **jamais comparé à la session** du navigateur. Avec sa propre identité PSC et l'UUID d'un compte, n'importe qui pouvait faire rattacher son RPPS à ce compte **et se faire ouvrir une session dessus** (magic link généré pour l'email du compte cible). Même chose pour le parcours de fusion, qui partait du même `state`.
+- **Exposition constatée** : les UUID ne sont pas lisibles par l'API (RLS) ; la seule fuite publique repérée est l'adresse des avatars personnels (`avatars/personal/<uuid>/…`), affichés sous les avis — **0 compte** n'en utilise aujourd'hui (sur 98 portraits). Pas de trace d'exploitation recherchable.
+- **Fix** : le compte du `state` n'est retenu que s'il est celui de la session (`getUser()` côté serveur, avec `retryTransientAuth`) ; sinon connexion PSC standard (par RPPS). Une association légitime part toujours d'un navigateur connecté (boutons de Mon compte).
+- Reste, noté en TODO : le cookie `psc_state` est posé mais jamais comparé au `state` au retour (protection CSRF de connexion absente).
+
+### PSC — Relais dev réparé (marque `devsite_`)
+- **Constat** : dev.100000medecins.org utilise PSC production via le relais `www.100000medecins.org/connexionPsc` ; depuis que www est le nouveau site, `/connexionPsc` renvoyait tout vers le callback de **www** : une connexion PSC lancée depuis dev se terminait connectée sur la production. ⚠️ La production préfixe **elle aussi** son `state` par `dev_` (relais, héritage de l'ancien site, vérifié dans le JS publié) : ce préfixe ne pouvait pas servir à reconnaître dev.
+- **Fix** : depuis dev, le `state` est préfixé `devsite_` ([psc.ts](src/lib/auth/psc.ts) `prefixeEtatRelais`, client et [psc-initier](src/app/api/auth/psc-initier/route.ts)) ; [/connexionPsc](src/app/connexionPsc/route.ts) renvoie ces retours vers `https://dev.100000medecins.org/api/auth/psc-callback` (hôte écrit en dur, jamais lu dans la requête), le reste inchangé ; le callback retire l'un ou l'autre préfixe.
+- Vérifié en local : `state=devsite_…` → 302 vers le callback de dev ; `state=dev_…` et sans state → callback local, comme avant.
+- **Prend effet après fusion dans `main`** (la route tourne sur www). Avant, une connexion depuis dev reste renvoyée sur www, comme aujourd'hui.
+
+### Décisions (catalogue et périmètre)
+- Rubrique « Compétences » (compétences et pathologies fusionnées), recherche par champ de saisie, masquage de l'intitulé qui reprend la spécialité RPPS du médecin, validation des propositions par David seul. Détail : TODO (En cours) et le document ci-dessus.
+
+---
+
+## [2026-10-06] — Sécurité : un utilisateur connecté pouvait modifier son RPPS, son rôle et ses évaluations
+
+### Fix — Droits d'écriture sur `users` et `evaluations`
+- **Constat** (en préparant l'annuaire mutualisé, qui doit s'appuyer sur une identité PSC fiable) : `anon` et `authenticated` avaient **tous les droits de table** sur `users` et `evaluations` (droits Supabase par défaut). La RLS empêchait de toucher aux lignes des autres, pas aux colonnes de sa propre ligne : règle `User modifie son profil` sans `WITH CHECK` ni restriction de colonne, aucun déclencheur. Un utilisateur connecté pouvait donc, par l'API avec la clé publique et sa session :
+  - s'écrire un `rpps` → ses évaluations passaient directement en `publiee` sans PSC (`submitEvaluation` : `statut = profile.rpps ? 'publiee' : 'en_attente_psc'`) ;
+  - s'attribuer `role = 'digital_medical_hub'` (études cliniques et liste des inscrits) ou `role = 'editeur'` + l'`editeur_id` de n'importe quel éditeur ;
+  - créer ou modifier ses évaluations (`statut`, notes) par les règles `User crée ses évaluations` / `User modifie ses évaluations`.
+- **Ce que le site écrit avec les droits de l'utilisateur** (relevé complet de `src/`) : seulement `users.portrait` (avatar : page profil, `updateAvatar`, `removeAvatar`). Tout le reste passe par des actions serveur en `service_role`. Aucune fonction ni aucun déclencheur de la base n'écrit dans ces tables avec les droits de l'appelant.
+- **SQL lancé par David le 2026-10-06** :
+  ```sql
+  revoke insert, update, delete, truncate, references, trigger on public.users from anon, authenticated;
+  grant update (portrait) on public.users to authenticated;
+  revoke insert, update, delete, truncate, references, trigger on public.evaluations from anon, authenticated;
+  ```
+  Lectures inchangées, structure inchangée (pas de régénération des types). Retour arrière : `grant insert, update, delete, truncate, references, trigger on public.users, public.evaluations to anon, authenticated;`
+- **Code** : le retour `type=email_change` de [callback/route.ts](src/app/api/auth/callback/route.ts) écrit `email`/`contact_email` en service role (chemin plus emprunté depuis le parcours maison `confirmer-changement-email`, gardé fonctionnel) ; `setupEvaluation` supprimée ([evaluation.ts](src/lib/actions/evaluation.ts)) : aucun appelant, dernier code qui écrivait `evaluations` avec les droits de l'utilisateur.
+- **Exploitation passée** : rien de visible. Un seul compte `digital_medical_hub` (bonne adresse) ; les 28 comptes éditeurs ont tous une demande dans `editeur_claims`. Pour le RPPS et les évaluations, aucun historique ne permet de conclure.
+- Les règles `User modifie son profil`, `User crée ses évaluations` et `User modifie ses évaluations` restent en place mais ne servent plus (droits de table retirés).
+
+### Constaté, non corrigé
+- Les insertions de profil `users` faites avec le client utilisateur dans [auth/confirm](src/app/auth/confirm/route.ts) et [api/auth/callback](src/app/api/auth/callback/route.ts) échouaient déjà (aucune règle d'insertion sur `users`) : inchangé. Elles reprennent un `rpps` depuis `user_metadata`, modifiable par l'utilisateur → ne pas les « réparer » en service role sans revoir ce point.
+- Même schéma à revoir, risque moindre : `questionnaires_these` (statut libre à l'insertion), `editeur_claims` et `propositions_utilisateurs` (statut libre, sans effet automatique), `solutions_utilisees`.
+
+### Vérif
+- Droits contrôlés par requête après le SQL : `authenticated` ne peut plus modifier que `users.portrait` et n'écrit plus dans `evaluations` ; `service_role` inchangé.
+- `tsc --noEmit` propre, lint des 2 fichiers propre, `npm run build` vert.
+
+### TODO — Mises à jour
+- Ajout (Sécurité) : 2ᵉ passage sur les autres tables + fusion du code dans `main` (non urgent).
+- Ajout (En cours) : annuaire mutualisé, tranche 1 — décisions du 06/10.
+
+---
+
+## [2026-10-01] — Génération IA du blog en sorties structurées (fin du « JSON invalide »)
+
+### Fix — « La réponse de Claude n'est pas un JSON valide » sur les propositions de sujets
+- **Constat** : erreur intermittente sur « Regénérer » (admin blog), alors que le fix du 2026-09-20 (`5ff462a`, lecture du bloc `thinking` placé en tête de réponse) était bien en place. Même message, autre cause.
+- **Cause (probable)** : `max_tokens: 2000` sur `claude-sonnet-5`, qui réfléchit avant de répondre ; la réflexion est décomptée du **même** plafond que la réponse. Une réflexion un peu longue (actualités Tavily + listes d'exclusion qui grossissent chaque semaine) coupait le JSON en plein milieu. Pas prouvé par un log : la trace existante ne gardait que les 1 000 premiers caractères, sans `stop_reason`.
+- **Fix** (`91007c2`), sur les **deux** appels — propositions de sujets ([propositions-sujets.ts](src/lib/ai/propositions-sujets.ts)) et rédaction d'article « Rédiger maintenant » / « Générer » ([article.ts](src/lib/ai/article.ts)) :
+  - **Sorties structurées** (`output_config.format`, schéma JSON) : l'API garantit un JSON conforme. `nettoyerJson()` supprimé, prompts allégés des consignes « sans markdown, sans backticks ».
+  - `max_tokens` → **16000** (plafond de sécurité, seuls les tokens produits sont facturés). Le `max_tokens` par longueur de `LONGUEUR_CONFIG` est supprimé : la longueur reste pilotée par le prompt, un plafond serré ne raccourcit pas l'article, il coupe le JSON.
+  - Nouveau helper [reponse.ts](src/lib/ai/reponse.ts) : `lireReponseJson()` distingue **réponse tronquée** (`stop_reason: max_tokens`), **refus** et **JSON invalide**, et trace dans les logs Vercel `stop_reason`, `output_tokens`, le début **et la fin** de la réponse. `extraireTexte()` y est déplacé.
+
+### Fix — Les sujets « actu » n'avaient jamais de sources
+- Le prompt demandait « les URLs », mais `filtrerSourcesConnues` n'acceptait que des objets `{url}` → toutes les sources étaient jetées (`sources = []` sur les propositions du lot du 20/09). Le schéma impose désormais une liste d'URLs, toujours filtrée contre celles réellement rapportées par Tavily.
+
+### Cron `proposer-sujets-articles`
+- `maxDuration` 60 → **300 s** (maximum Fluid) : Tavily + un modèle qui réfléchit laissaient trop peu de marge.
+- **N'a encore jamais tourné en prod** : la fonctionnalité y est arrivée le 30/09 (`6292963`), seul le lot manuel du 20/09 existe en base. Premier passage : **lundi 2026-10-05**, 9h15 heure de Paris.
+
+### Vérif
+- `tsc --noEmit` propre, lint des fichiers touchés sans erreur, `npm run build` vert.
+- Appels réels (sans Tavily) : 3 sujets « dossier » en 14 s, brève complète en 28 s, schémas acceptés par l'API. **Branche « actu » avec Tavily non testée en réel.**
+- Déployé : `dev` mergé dans `main` (`4ad698f`).
+
+### TODO — Mises à jour
+- Ajout : vérifier le premier lot automatique du lundi 2026-10-05 (sources des sujets « actu », email reçu).
+
+---
+
 ## [2026-09-30] — Date de publication des articles modifiable + pages légales, vidéos sans cookies, page messagerie
 
 ### Fix — La date de publication d'un article était remise au jour à chaque enregistrement

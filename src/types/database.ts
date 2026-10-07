@@ -961,6 +961,112 @@ export type Database = {
           },
         ]
       }
+      fiches_annuaire: {
+        Row: {
+          created_at: string
+          mise_a_jour: string
+          moyen_contact: string | null
+          publiee: boolean
+          publiee_accord_le: string | null
+          publiee_accord_version: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          mise_a_jour?: string
+          moyen_contact?: string | null
+          publiee?: boolean
+          publiee_accord_le?: string | null
+          publiee_accord_version?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          mise_a_jour?: string
+          moyen_contact?: string | null
+          publiee?: boolean
+          publiee_accord_le?: string | null
+          publiee_accord_version?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiches_annuaire_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "identites_psc"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      fiches_annuaire_portables: {
+        Row: {
+          mise_a_jour: string
+          portable: string
+          user_id: string
+          visible: boolean
+          visible_accord_le: string | null
+          visible_accord_version: string | null
+        }
+        Insert: {
+          mise_a_jour?: string
+          portable: string
+          user_id: string
+          visible?: boolean
+          visible_accord_le?: string | null
+          visible_accord_version?: string | null
+        }
+        Update: {
+          mise_a_jour?: string
+          portable?: string
+          user_id?: string
+          visible?: boolean
+          visible_accord_le?: string | null
+          visible_accord_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiches_annuaire_portables_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "fiches_annuaire"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      fiches_intitules: {
+        Row: {
+          created_at: string
+          intitule_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          intitule_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          intitule_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiches_intitules_intitule_id_fkey"
+            columns: ["intitule_id"]
+            isOneToOne: false
+            referencedRelation: "intitules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiches_intitules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "fiches_annuaire"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       groupes_categories: {
         Row: {
           id: string
@@ -978,6 +1084,85 @@ export type Database = {
           ordre?: number
         }
         Relationships: []
+      }
+      identites_psc: {
+        Row: {
+          code_profession: string | null
+          derniere_connexion_psc: string
+          rpps: string
+          user_id: string
+          verifie_le: string
+        }
+        Insert: {
+          code_profession?: string | null
+          derniere_connexion_psc?: string
+          rpps: string
+          user_id: string
+          verifie_le?: string
+        }
+        Update: {
+          code_profession?: string | null
+          derniere_connexion_psc?: string
+          rpps?: string
+          user_id?: string
+          verifie_le?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identites_psc_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intitules: {
+        Row: {
+          created_at: string
+          decide_le: string | null
+          groupe: string | null
+          id: string
+          libelle: string
+          propose_par: string | null
+          specialites_sm: string[]
+          statut: string
+          synonymes: string[]
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          decide_le?: string | null
+          groupe?: string | null
+          id?: string
+          libelle: string
+          propose_par?: string | null
+          specialites_sm?: string[]
+          statut?: string
+          synonymes?: string[]
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          decide_le?: string | null
+          groupe?: string | null
+          id?: string
+          libelle?: string
+          propose_par?: string | null
+          specialites_sm?: string[]
+          statut?: string
+          synonymes?: string[]
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intitules_propose_par_fkey"
+            columns: ["propose_par"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       newsletters: {
         Row: {

@@ -324,62 +324,6 @@ export async function recalcResultatsPourSolution(solutionId: string) {
 }
 
 /**
- * Initialise une session d'évaluation.
- * Remplace : mutation setupEvaluation
- */
-export async function setupEvaluation(
-  solutionId: string,
-  categorieId: string,
-  timeUsed: string,
-  solutionPrecedenteId?: string
-) {
-  const supabase = await createServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non authentifié')
-
-  // Créer ou mettre à jour la solution utilisée
-  const { data: existing } = await supabase
-    .from('solutions_utilisees')
-    .select('id')
-    .eq('solution_id', solutionId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!existing) {
-    await supabase.from('solutions_utilisees').insert({
-      user_id: user.id,
-      solution_id: solutionId,
-      statut_evaluation: 'instanciee',
-      date_debut: new Date().toISOString().split('T')[0],
-      solution_precedente_id: solutionPrecedenteId || null,
-    })
-  }
-
-  // Créer l'évaluation si elle n'existe pas
-  const { data: existingEval } = await supabase
-    .from('evaluations')
-    .select('id')
-    .eq('solution_id', solutionId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!existingEval) {
-    await supabase.from('evaluations').insert({
-      user_id: user.id,
-      solution_id: solutionId,
-      scores: {},
-      temps_precedente_solution: timeUsed,
-    })
-  }
-
-  return { status: 'SUCCESS' }
-}
-
-
-/**
  * Reconfirme une évaluation en un clic (remet last_date_note à maintenant,
  * réinitialise les compteurs de relance).
  */

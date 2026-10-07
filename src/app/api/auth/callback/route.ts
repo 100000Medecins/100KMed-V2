@@ -50,7 +50,8 @@ export async function GET(request: Request) {
 
     if (user) {
       if (type === 'email_change' && user.email) {
-        await supabase.from('users').update({ email: user.email, contact_email: user.email }).eq('id', user.id)
+        // Service role : depuis le 2026-10-06, `authenticated` ne peut plus modifier que `users.portrait`.
+        await createServiceRoleClient().from('users').update({ email: user.email, contact_email: user.email }).eq('id', user.id)
       }
 
       if (type === 'signup' && user.email) {

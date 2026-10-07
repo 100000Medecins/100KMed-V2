@@ -27,13 +27,33 @@ const pscEnv = (process.env.NEXT_PUBLIC_PSC_ENV === 'production' ? 'production' 
 export const PSC_ENDPOINTS = PSC_ENVS[pscEnv]
 
 /**
+ * Mode relais : l'URI enregistrée chez PSC est `www.100000medecins.org/connexionPsc`, pour la
+ * production comme pour dev. La production préfixe son `state` par `dev_` (héritage de l'ancien
+ * site) ; dev le préfixe par `devsite_`, que `/connexionPsc` (sur www) renvoie vers le callback
+ * de dev. Sans cette marque distincte, une connexion lancée depuis dev revenait sur www.
+ */
+export const HOTE_DEV = 'dev.100000medecins.org'
+export const PREFIXE_ETAT_RELAIS = 'dev_'
+export const PREFIXE_ETAT_RELAIS_DEV = 'devsite_'
+
+export function prefixeEtatRelais(hote: string): string {
+  return hote === HOTE_DEV ? PREFIXE_ETAT_RELAIS_DEV : PREFIXE_ETAT_RELAIS
+}
+
+export function retirerPrefixeEtat(state: string): string {
+  if (state.startsWith(PREFIXE_ETAT_RELAIS_DEV)) return state.slice(PREFIXE_ETAT_RELAIS_DEV.length)
+  if (state.startsWith(PREFIXE_ETAT_RELAIS)) return state.slice(PREFIXE_ETAT_RELAIS.length)
+  return state
+}
+
+/**
  * Construit l'URL de redirection PSC + génère state/nonce.
  * Appelé côté client — stocke state/nonce dans des cookies.
  *
  * options.userId          : UUID de l'utilisateur connecté (mode association PSC)
  * options.verificationToken : token de vérification pour lier une évaluation anonyme
  *
- * Format state : "[dev_]stateUuid|userId_or_underscore|verificationToken_or_underscore"
+ * Format state : "[dev_|devsite_]stateUuid|userId_or_underscore|verificationToken_or_underscore"
  */
 export function connectWithPsc(options?: { userId?: string; verificationToken?: string }): void {
   const clientId = process.env.NEXT_PUBLIC_PSC_CLIENT_ID
@@ -42,10 +62,9 @@ export function connectWithPsc(options?: { userId?: string; verificationToken?: 
     return
   }
 
-  // Mode relay : si NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI est défini, on utilise
-  // l'URI enregistrée chez PSC (www.100000medecins.org/connexionPsc) comme
-  // redirect_uri, et on préfixe le state avec "dev_" pour que le .htaccess
-  // de l'ancien site puisse identifier et relayer ce callback vers dev.
+  // Mode relais : si NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI est défini, on utilise l'URI
+  // enregistrée chez PSC (www.100000medecins.org/connexionPsc) comme redirect_uri, et on
+  // préfixe le state (cf. prefixeEtatRelais) pour que /connexionPsc sache où renvoyer.
   const relayRedirectUri = process.env.NEXT_PUBLIC_PSC_RELAY_REDIRECT_URI
   const redirectUri = relayRedirectUri ?? `${window.location.origin}/api/auth/psc-callback`
 
@@ -53,7 +72,7 @@ export function connectWithPsc(options?: { userId?: string; verificationToken?: 
   const userIdPart = options?.userId || '_'
   const tokenPart = options?.verificationToken || '_'
   const stateData = `${stateUuid}|${userIdPart}|${tokenPart}`
-  const state = relayRedirectUri ? `dev_${stateData}` : stateData
+  const state = relayRedirectUri ? `${prefixeEtatRelais(window.location.hostname)}${stateData}` : stateData
   const nonce = crypto.randomUUID()
 
   // Stocker dans des cookies (survivent aux redirects cross-contexte)

@@ -1,0 +1,2281 @@
+[
+  {
+    "libelle": "Suivi gynécologique et contraception",
+    "synonymes": [
+      "gyneco",
+      "contraception",
+      "frottis",
+      "pilule"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Suivi de grossesse",
+    "synonymes": [
+      "grossesse",
+      "suivi prenatal",
+      "enceinte"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Pose de DIU et d'implant contraceptif",
+    "synonymes": [
+      "diu",
+      "sterilet",
+      "implant",
+      "contraception longue duree"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "IVG médicamenteuse",
+    "synonymes": [
+      "ivg",
+      "avortement",
+      "orthogenie",
+      "interruption de grossesse"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Suivi de l'enfant en médecine générale",
+    "synonymes": [
+      "pediatrie",
+      "enfant",
+      "nourrisson",
+      "vaccination enfant"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Échographie générale",
+    "synonymes": [
+      "echo",
+      "echographie",
+      "ultrasons",
+      "echographie clinique"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Dermatoscopie",
+    "synonymes": [
+      "dermoscopie",
+      "naevus",
+      "grain de beaute",
+      "depistage melanome"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Petite chirurgie et gestes techniques",
+    "synonymes": [
+      "petite chirurgie",
+      "suture",
+      "exerese",
+      "ongle incarne"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "ECG et holter",
+    "synonymes": [
+      "ecg",
+      "electrocardiogramme",
+      "holter",
+      "mapa"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Spirométrie",
+    "synonymes": [
+      "spiro",
+      "souffle",
+      "efr",
+      "depistage bpco"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine des voyages",
+    "synonymes": [
+      "voyage",
+      "vaccin voyageur",
+      "fievre jaune",
+      "conseil aux voyageurs"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Santé mentale en soins primaires",
+    "synonymes": [
+      "psy",
+      "depression",
+      "anxiete",
+      "souffrance psychique"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Psychotraumatisme",
+    "synonymes": [
+      "trauma",
+      "stress post traumatique",
+      "tspt",
+      "emdr"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Violence intrafamiliale et conjugale",
+    "synonymes": [
+      "violences conjugales",
+      "vif",
+      "femmes victimes",
+      "emprise"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Trouble du neurodéveloppement",
+    "synonymes": [
+      "tnd",
+      "dys",
+      "retard de developpement",
+      "plateforme tnd"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Trouble du spectre de l'autisme",
+    "synonymes": [
+      "tsa",
+      "autisme",
+      "asperger"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Trouble déficit de l'attention avec hyperactivité",
+    "synonymes": [
+      "tdah",
+      "hyperactivite",
+      "deficit attention",
+      "methylphenidate"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Trouble des conduites alimentaires",
+    "synonymes": [
+      "tca",
+      "anorexie",
+      "boulimie",
+      "hyperphagie"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "PrEP et suivi du VIH",
+    "synonymes": [
+      "prep",
+      "vih",
+      "sida",
+      "prophylaxie pre exposition"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Soins aux personnes en situation de handicap",
+    "synonymes": [
+      "handicap",
+      "polyhandicap",
+      "deficience intellectuelle",
+      "mdph"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Santé des personnes en précarité",
+    "synonymes": [
+      "precarite",
+      "sans abri",
+      "pass",
+      "acces aux soins"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Santé des personnes migrantes",
+    "synonymes": [
+      "migrants",
+      "exiles",
+      "refugies",
+      "interpretariat"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Éducation thérapeutique du patient",
+    "synonymes": [
+      "etp",
+      "education therapeutique",
+      "maladie chronique"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecin agréé pour le permis de conduire",
+    "synonymes": [
+      "permis",
+      "aptitude conduite",
+      "medecin agree",
+      "prefecture"
+    ],
+    "groupe": "Médecine générale",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Addictologie",
+    "synonymes": [
+      "addicto",
+      "alcool",
+      "alcoologie",
+      "toxicomanie"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Tabacologie et aide au sevrage tabagique",
+    "synonymes": [
+      "tabac",
+      "tabaco",
+      "sevrage tabagique",
+      "cigarette electronique"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine de la douleur",
+    "synonymes": [
+      "douleur chronique",
+      "algologie",
+      "centre antidouleur"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine palliative",
+    "synonymes": [
+      "soins palliatifs",
+      "fin de vie",
+      "emsp",
+      "accompagnement"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine du sommeil",
+    "synonymes": [
+      "sommeil",
+      "apnee du sommeil",
+      "insomnie",
+      "polysomnographie"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Nutrition appliquée",
+    "synonymes": [
+      "nutrition",
+      "obesite",
+      "denutrition",
+      "dietetique"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM62"
+    ]
+  },
+  {
+    "libelle": "Allergologie",
+    "synonymes": [
+      "allergie",
+      "allergo",
+      "tests cutanes",
+      "desensibilisation"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM57"
+    ]
+  },
+  {
+    "libelle": "Sexologie et médecine sexuelle",
+    "synonymes": [
+      "sexologie",
+      "sexualite",
+      "dysfonction erectile",
+      "sante sexuelle"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Expertise médicale et préjudice corporel",
+    "synonymes": [
+      "expertise",
+      "dommage corporel",
+      "expert judiciaire",
+      "accident medical"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM60"
+    ]
+  },
+  {
+    "libelle": "Pratiques médico-judiciaires",
+    "synonymes": [
+      "medecine legale",
+      "umj",
+      "certificat de coups",
+      "requisition"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM60"
+    ]
+  },
+  {
+    "libelle": "Médecine pénitentiaire",
+    "synonymes": [
+      "prison",
+      "milieu carceral",
+      "detenu",
+      "usmp"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine de catastrophe",
+    "synonymes": [
+      "catastrophe",
+      "plan blanc",
+      "orsec",
+      "nrbc"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine en situation de guerre",
+    "synonymes": [
+      "guerre",
+      "medecine militaire",
+      "situation sanitaire exceptionnelle",
+      "sse"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine aérospatiale",
+    "synonymes": [
+      "aeronautique",
+      "pilote",
+      "personnel navigant",
+      "dgac"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine hyperbare et de plongée",
+    "synonymes": [
+      "plongee",
+      "caisson hyperbare",
+      "subaquatique",
+      "oxygenotherapie hyperbare"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine thermale",
+    "synonymes": [
+      "thermalisme",
+      "cure thermale",
+      "hydrologie",
+      "station thermale"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine tropicale",
+    "synonymes": [
+      "tropical",
+      "paludisme",
+      "maladies tropicales",
+      "outre mer"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM58"
+    ]
+  },
+  {
+    "libelle": "Santé au travail et risques professionnels",
+    "synonymes": [
+      "medecine du travail",
+      "risques professionnels",
+      "maintien en emploi",
+      "aptitude"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM25"
+    ]
+  },
+  {
+    "libelle": "Médecine scolaire",
+    "synonymes": [
+      "scolaire",
+      "education nationale",
+      "pai",
+      "sante scolaire"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Hygiène et prévention des infections",
+    "synonymes": [
+      "hygiene",
+      "infection nosocomiale",
+      "antibioresistance",
+      "eoh"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Pharmacologie médicale et thérapeutique",
+    "synonymes": [
+      "pharmacologie",
+      "iatrogenie",
+      "interaction medicamenteuse",
+      "pharmacovigilance"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Génétique et médecine moléculaire",
+    "synonymes": [
+      "genetique",
+      "conseil genetique",
+      "maladie genetique",
+      "medecine moleculaire"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [
+      "SM17"
+    ]
+  },
+  {
+    "libelle": "Transfusion et thérapie cellulaire",
+    "synonymes": [
+      "transfusion",
+      "therapie cellulaire",
+      "hemovigilance",
+      "efs"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Bio-informatique médicale",
+    "synonymes": [
+      "bioinformatique",
+      "informatique medicale",
+      "donnees de sante",
+      "dim"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Soigner les soignants",
+    "synonymes": [
+      "sante des soignants",
+      "soignant en difficulte",
+      "epuisement professionnel",
+      "burn out"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Hypnose médicale",
+    "synonymes": [
+      "hypnose",
+      "hypnotherapie",
+      "hypnoanalgesie"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine du sport",
+    "synonymes": [
+      "sport",
+      "medecin du sport",
+      "certificat sport",
+      "traumatologie du sport"
+    ],
+    "groupe": "Médecine du sport",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cardiologie du sport",
+    "synonymes": [
+      "cardio sport",
+      "ecg sportif",
+      "epreuve effort",
+      "mort subite du sportif"
+    ],
+    "groupe": "Médecine du sport",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Échographie ostéo-articulaire",
+    "synonymes": [
+      "echo articulaire",
+      "echo musculo squelettique",
+      "echo tendons"
+    ],
+    "groupe": "Médecine du sport",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cardiologie interventionnelle",
+    "synonymes": [
+      "coronarographie",
+      "angioplastie",
+      "stent",
+      "tavi"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": [
+      "SM79"
+    ]
+  },
+  {
+    "libelle": "Rythmologie et stimulation cardiaque",
+    "synonymes": [
+      "rythmo",
+      "pacemaker",
+      "ablation",
+      "defibrillateur"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": [
+      "SM81"
+    ]
+  },
+  {
+    "libelle": "Imagerie cardiovasculaire d'expertise",
+    "synonymes": [
+      "irm cardiaque",
+      "coroscanner",
+      "scanner coronaire",
+      "imagerie cardiaque"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": [
+      "SM80"
+    ]
+  },
+  {
+    "libelle": "Échocardiographie",
+    "synonymes": [
+      "echo coeur",
+      "ett",
+      "eto",
+      "echocardio"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cardio-oncologie",
+    "synonymes": [
+      "cardiotoxicite",
+      "onco cardio",
+      "chimiotherapie coeur"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cardiologie pédiatrique et congénitale",
+    "synonymes": [
+      "cardiopathie congenitale",
+      "cardio pediatrique",
+      "cardiopediatrie"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Réadaptation cardiaque",
+    "synonymes": [
+      "readaptation cardiaque",
+      "rehabilitation cardiovasculaire",
+      "ssr cardio"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Angiologie",
+    "synonymes": [
+      "angio",
+      "medecine vasculaire",
+      "doppler",
+      "arteriopathie"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": [
+      "SM61"
+    ]
+  },
+  {
+    "libelle": "Phlébologie",
+    "synonymes": [
+      "varices",
+      "veines",
+      "sclerotherapie",
+      "laser endoveineux"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Imagerie vasculaire non invasive",
+    "synonymes": [
+      "doppler",
+      "echodoppler",
+      "echo vasculaire",
+      "carotides"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Lymphologie",
+    "synonymes": [
+      "lymphoedeme",
+      "drainage lymphatique",
+      "contention"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Dermatologie esthétique et lasers",
+    "synonymes": [
+      "laser",
+      "esthetique",
+      "injection",
+      "cosmetologie"
+    ],
+    "groupe": "Dermatologie et vénéréologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Infections sexuellement transmissibles",
+    "synonymes": [
+      "ist",
+      "mst",
+      "venerologie",
+      "cegidd"
+    ],
+    "groupe": "Dermatologie et vénéréologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Dermatologie pédiatrique",
+    "synonymes": [
+      "dermato enfant",
+      "eczema enfant",
+      "angiome"
+    ],
+    "groupe": "Dermatologie et vénéréologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Dermato-oncologie",
+    "synonymes": [
+      "melanome",
+      "cancer de la peau",
+      "carcinome",
+      "onco dermato"
+    ],
+    "groupe": "Dermatologie et vénéréologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Dermatologie chirurgicale",
+    "synonymes": [
+      "chirurgie dermatologique",
+      "exerese",
+      "chirurgie de mohs"
+    ],
+    "groupe": "Dermatologie et vénéréologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Plaies et cicatrisation",
+    "synonymes": [
+      "plaie chronique",
+      "ulcere",
+      "escarre",
+      "cicatrisation"
+    ],
+    "groupe": "Dermatologie et vénéréologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Endoscopie digestive interventionnelle",
+    "synonymes": [
+      "endoscopie interventionnelle",
+      "cpre",
+      "echoendoscopie",
+      "mucosectomie"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Soins intensifs hépato-gastro-entérologiques",
+    "synonymes": [
+      "usi digestive",
+      "hemorragie digestive",
+      "soins intensifs digestifs"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Proctologie",
+    "synonymes": [
+      "procto",
+      "hemorroide",
+      "fissure anale",
+      "fistule anale"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Maladie inflammatoire chronique de l'intestin",
+    "synonymes": [
+      "mici",
+      "crohn",
+      "rectocolite",
+      "rch"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Explorations fonctionnelles digestives",
+    "synonymes": [
+      "manometrie",
+      "phmetrie",
+      "impedancemetrie"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Pancréatologie",
+    "synonymes": [
+      "pancreas",
+      "pancreatite",
+      "tumeur du pancreas"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Hépatologie",
+    "synonymes": [
+      "foie",
+      "cirrhose",
+      "hepatite",
+      "elastometrie"
+    ],
+    "groupe": "Gastro-entérologie et hépatologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Échographie gynécologique et obstétricale",
+    "synonymes": [
+      "echo gyneco",
+      "echo obstetricale",
+      "echographie de grossesse",
+      "echo pelvienne"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine fœtale",
+    "synonymes": [
+      "diagnostic prenatal",
+      "dpn",
+      "echo foetale",
+      "cpdpn"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine et biologie de la reproduction",
+    "synonymes": [
+      "amp",
+      "fiv",
+      "infertilite",
+      "andrologie"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Gynécologie chirurgicale",
+    "synonymes": [
+      "chirurgie gynecologique",
+      "hysterectomie",
+      "coelioscopie gyneco"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Grossesse à risque",
+    "synonymes": [
+      "grossesse pathologique",
+      "ghr",
+      "grossesse a haut risque"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Sénologie",
+    "synonymes": [
+      "sein",
+      "cancer du sein",
+      "mammographie",
+      "nodule mammaire"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Colposcopie",
+    "synonymes": [
+      "col de l uterus",
+      "frottis anormal",
+      "hpv",
+      "conisation"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Pelvi-périnéologie",
+    "synonymes": [
+      "perinee",
+      "incontinence urinaire",
+      "prolapsus",
+      "uro gyneco"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Ménopause",
+    "synonymes": [
+      "menopause",
+      "ths",
+      "traitement hormonal",
+      "bouffees de chaleur"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "IVG instrumentale",
+    "synonymes": [
+      "ivg chirurgicale",
+      "aspiration",
+      "orthogenie"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Néonatologie",
+    "synonymes": [
+      "neonat",
+      "nouveau ne",
+      "prematurite",
+      "reanimation neonatale"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": [
+      "SM87"
+    ]
+  },
+  {
+    "libelle": "Réanimation pédiatrique",
+    "synonymes": [
+      "rea ped",
+      "reanimation enfant",
+      "soins critiques pediatriques"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": [
+      "SM82",
+      "SM90"
+    ]
+  },
+  {
+    "libelle": "Neuropédiatrie",
+    "synonymes": [
+      "neuro enfant",
+      "neurologie pediatrique",
+      "epilepsie enfant"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": [
+      "SM88"
+    ]
+  },
+  {
+    "libelle": "Pneumopédiatrie",
+    "synonymes": [
+      "pneumo enfant",
+      "asthme enfant",
+      "allergie respiratoire enfant"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": [
+      "SM89"
+    ]
+  },
+  {
+    "libelle": "Urgences pédiatriques",
+    "synonymes": [
+      "urgence enfant",
+      "urgences pediatriques",
+      "sau pediatrique"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Infectiologie pédiatrique",
+    "synonymes": [
+      "infection enfant",
+      "infectio ped",
+      "vaccination enfant"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Hémato-cancérologie pédiatrique",
+    "synonymes": [
+      "cancer enfant",
+      "leucemie enfant",
+      "onco pediatrie"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Endocrinologie diabétologie pédiatrique",
+    "synonymes": [
+      "diabete enfant",
+      "croissance",
+      "puberte",
+      "endoc ped"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Gastro-entérologie pédiatrique",
+    "synonymes": [
+      "gastro ped",
+      "hepatologie pediatrique",
+      "rgo nourrisson"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine de l'adolescent",
+    "synonymes": [
+      "ado",
+      "adolescence",
+      "maison des adolescents"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Protection de l'enfance",
+    "synonymes": [
+      "enfance en danger",
+      "maltraitance enfant",
+      "information preoccupante"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Allaitement maternel",
+    "synonymes": [
+      "allaitement",
+      "lactation",
+      "consultante en lactation"
+    ],
+    "groupe": "Pédiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Psychiatrie de l'adulte",
+    "synonymes": [
+      "psychiatrie adulte",
+      "psy adulte"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Psychiatrie de l'enfant et de l'adolescent",
+    "synonymes": [
+      "pedopsy",
+      "pedopsychiatrie",
+      "psy enfant",
+      "psy ado"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": [
+      "SM43",
+      "SM92"
+    ]
+  },
+  {
+    "libelle": "Psychiatrie de la personne âgée",
+    "synonymes": [
+      "psychogeriatrie",
+      "psy sujet age",
+      "gerontopsychiatrie"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": [
+      "SM93"
+    ]
+  },
+  {
+    "libelle": "Psychiatrie légale",
+    "synonymes": [
+      "expertise psychiatrique",
+      "psychiatrie medico legale",
+      "detenu"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Psychiatrie périnatale",
+    "synonymes": [
+      "perinatalite",
+      "depression post partum",
+      "psy perinatale"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Psychothérapie",
+    "synonymes": [
+      "psychotherapie",
+      "tcc",
+      "therapie"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Psychanalyse",
+    "synonymes": [
+      "psychanalyse",
+      "analyste"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Urgences psychiatriques et prévention du suicide",
+    "synonymes": [
+      "urgence psy",
+      "crise suicidaire",
+      "prevention du suicide"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Réhabilitation psychosociale",
+    "synonymes": [
+      "rehabilitation",
+      "remediation cognitive",
+      "schizophrenie"
+    ],
+    "groupe": "Psychiatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Traitement interventionnel de l'AVC ischémique",
+    "synonymes": [
+      "thrombectomie",
+      "avc",
+      "neuroradiologie interventionnelle"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": [
+      "SM84"
+    ]
+  },
+  {
+    "libelle": "Pathologie neurovasculaire",
+    "synonymes": [
+      "avc",
+      "unv",
+      "neurovasculaire",
+      "accident vasculaire cerebral"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Épileptologie",
+    "synonymes": [
+      "epilepsie",
+      "crise epileptique",
+      "eeg"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Migraine et céphalées",
+    "synonymes": [
+      "migraine",
+      "cephalee",
+      "maux de tete",
+      "algie vasculaire"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Neurophysiologie clinique",
+    "synonymes": [
+      "eeg",
+      "emg",
+      "enmg",
+      "potentiels evoques"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Mouvements anormaux",
+    "synonymes": [
+      "parkinson",
+      "tremblement",
+      "dystonie",
+      "toxine botulique"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Neuro-immunologie",
+    "synonymes": [
+      "sclerose en plaques",
+      "sep",
+      "neuro inflammation"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Maladies neuromusculaires",
+    "synonymes": [
+      "sla",
+      "myopathie",
+      "myasthenie",
+      "neuropathie"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Consultation mémoire",
+    "synonymes": [
+      "memoire",
+      "alzheimer",
+      "troubles cognitifs",
+      "cmrr"
+    ],
+    "groupe": "Neurologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Soins intensifs respiratoires",
+    "synonymes": [
+      "usir",
+      "ventilation",
+      "insuffisance respiratoire aigue"
+    ],
+    "groupe": "Pneumologie",
+    "specialites_sm": [
+      "SM91"
+    ]
+  },
+  {
+    "libelle": "Pneumologie interventionnelle",
+    "synonymes": [
+      "fibroscopie bronchique",
+      "endoscopie bronchique",
+      "ebus"
+    ],
+    "groupe": "Pneumologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Oncologie thoracique",
+    "synonymes": [
+      "cancer bronchique",
+      "cancer du poumon",
+      "onco thoracique"
+    ],
+    "groupe": "Pneumologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Réhabilitation respiratoire",
+    "synonymes": [
+      "rehabilitation respiratoire",
+      "readaptation respiratoire",
+      "bpco"
+    ],
+    "groupe": "Pneumologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Pathologie osseuse médicale",
+    "synonymes": [
+      "osteoporose",
+      "fragilite osseuse",
+      "maladie osseuse"
+    ],
+    "groupe": "Rhumatologie et appareil locomoteur",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Infiltration et ponction articulaire",
+    "synonymes": [
+      "infiltration",
+      "ponction articulaire",
+      "viscosupplementation",
+      "geste echoguide"
+    ],
+    "groupe": "Rhumatologie et appareil locomoteur",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Podologie médicale",
+    "synonymes": [
+      "pied",
+      "semelles",
+      "orthese plantaire",
+      "podologie"
+    ],
+    "groupe": "Rhumatologie et appareil locomoteur",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Diabétologie",
+    "synonymes": [
+      "diabete",
+      "insuline",
+      "pompe a insuline",
+      "capteur de glycemie",
+      "diabete de type 1",
+      "dt1"
+    ],
+    "groupe": "Endocrinologie, diabétologie, nutrition",
+    "specialites_sm": [
+      "SM16",
+      "SM62"
+    ]
+  },
+  {
+    "libelle": "Pathologie thyroïdienne",
+    "synonymes": [
+      "thyroide",
+      "nodule thyroidien",
+      "cytoponction",
+      "goitre"
+    ],
+    "groupe": "Endocrinologie, diabétologie, nutrition",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Pied diabétique",
+    "synonymes": [
+      "pied diabetique",
+      "plaie du pied",
+      "mal perforant"
+    ],
+    "groupe": "Endocrinologie, diabétologie, nutrition",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Phoniatrie",
+    "synonymes": [
+      "voix",
+      "deglutition",
+      "phoniatre",
+      "laryngologie"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Audiologie",
+    "synonymes": [
+      "audition",
+      "surdite",
+      "audiometrie",
+      "implant cochleaire"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": [
+      "SM86"
+    ]
+  },
+  {
+    "libelle": "ORL pédiatrique",
+    "synonymes": [
+      "orl enfant",
+      "aerateurs transtympaniques",
+      "amygdales enfant"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Rhinologie",
+    "synonymes": [
+      "sinus",
+      "nez",
+      "polypes",
+      "chirurgie des sinus"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Otologie et otoneurologie",
+    "synonymes": [
+      "oreille",
+      "vertige",
+      "acouphenes",
+      "otologie"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cancérologie cervico-faciale",
+    "synonymes": [
+      "cancer orl",
+      "cancer de la gorge",
+      "larynx",
+      "cancer de la bouche"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Orthodontie des dysmorphies maxillo-faciales",
+    "synonymes": [
+      "orthodontie",
+      "dysmorphie",
+      "chirurgie orthognathique"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": [
+      "SM77"
+    ]
+  },
+  {
+    "libelle": "Implantologie",
+    "synonymes": [
+      "implant dentaire",
+      "implantologie"
+    ],
+    "groupe": "ORL, face et cou",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Ophtalmopédiatrie et strabologie",
+    "synonymes": [
+      "strabisme",
+      "ophtalmo enfant",
+      "amblyopie"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": [
+      "SM85"
+    ]
+  },
+  {
+    "libelle": "Chirurgie orbito-palpébro-lacrymale",
+    "synonymes": [
+      "paupiere",
+      "voies lacrymales",
+      "orbite",
+      "oculoplastie"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie réfractive et de la cataracte",
+    "synonymes": [
+      "cataracte",
+      "lasik",
+      "myopie",
+      "chirurgie refractive"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie rétinovitréenne",
+    "synonymes": [
+      "decollement de retine",
+      "vitrectomie",
+      "chirurgie de la retine"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Imagerie et pathologie rétinienne",
+    "synonymes": [
+      "retine medicale",
+      "dmla",
+      "oct",
+      "angiographie"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Adaptation de lentilles de contact",
+    "synonymes": [
+      "lentilles",
+      "contactologie",
+      "orthokeratologie"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Glaucome",
+    "synonymes": [
+      "glaucome",
+      "tension oculaire",
+      "hypertonie oculaire"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cornée et surface oculaire",
+    "synonymes": [
+      "cornee",
+      "keratocone",
+      "greffe de cornee",
+      "oeil sec"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Neuro-ophtalmologie",
+    "synonymes": [
+      "champ visuel",
+      "nerf optique",
+      "neuro ophtalmo"
+    ],
+    "groupe": "Ophtalmologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Onco-urologie",
+    "synonymes": [
+      "cancer de la prostate",
+      "cancer de la vessie",
+      "cancer du rein",
+      "onco uro"
+    ],
+    "groupe": "Urologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Urologie fonctionnelle et neuro-urologie",
+    "synonymes": [
+      "incontinence",
+      "vessie neurologique",
+      "bilan urodynamique"
+    ],
+    "groupe": "Urologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Endo-urologie et lithiase",
+    "synonymes": [
+      "calcul",
+      "lithiase urinaire",
+      "lithotritie",
+      "ureteroscopie"
+    ],
+    "groupe": "Urologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Soins intensifs néphrologiques",
+    "synonymes": [
+      "usi nephro",
+      "insuffisance renale aigue"
+    ],
+    "groupe": "Néphrologie",
+    "specialites_sm": [
+      "SM83"
+    ]
+  },
+  {
+    "libelle": "Dialyse",
+    "synonymes": [
+      "hemodialyse",
+      "dialyse peritoneale"
+    ],
+    "groupe": "Néphrologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Transplantation rénale",
+    "synonymes": [
+      "greffe de rein",
+      "transplantation",
+      "greffe renale"
+    ],
+    "groupe": "Néphrologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Orthopédie pédiatrique",
+    "synonymes": [
+      "ortho enfant",
+      "scoliose enfant",
+      "pied bot"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": [
+      "SM70"
+    ]
+  },
+  {
+    "libelle": "Chirurgie de la main",
+    "synonymes": [
+      "main",
+      "poignet",
+      "canal carpien",
+      "sos mains"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie du pied et de la cheville",
+    "synonymes": [
+      "pied",
+      "cheville",
+      "hallux valgus"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie du rachis",
+    "synonymes": [
+      "rachis",
+      "dos",
+      "hernie discale",
+      "scoliose"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Arthroscopie",
+    "synonymes": [
+      "arthroscopie",
+      "menisque",
+      "ligament croise"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie de l'épaule et du coude",
+    "synonymes": [
+      "epaule",
+      "coiffe des rotateurs",
+      "coude"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie de la hanche et du genou",
+    "synonymes": [
+      "prothese de hanche",
+      "prothese de genou",
+      "pth",
+      "ptg"
+    ],
+    "groupe": "Chirurgie orthopédique et traumatologique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie viscérale pédiatrique",
+    "synonymes": [
+      "chirurgie enfant",
+      "hernie enfant",
+      "chir ped"
+    ],
+    "groupe": "Chirurgie viscérale et autres chirurgies",
+    "specialites_sm": [
+      "SM69"
+    ]
+  },
+  {
+    "libelle": "Endoscopie chirurgicale",
+    "synonymes": [
+      "endoscopie chirurgicale",
+      "endoscopie interventionnelle"
+    ],
+    "groupe": "Chirurgie viscérale et autres chirurgies",
+    "specialites_sm": [
+      "SM78"
+    ]
+  },
+  {
+    "libelle": "Chirurgie cancérologique digestive",
+    "synonymes": [
+      "cancer digestif",
+      "chirurgie du colon",
+      "oesophage",
+      "carcinose"
+    ],
+    "groupe": "Chirurgie viscérale et autres chirurgies",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie endocrinienne et métabolique",
+    "synonymes": [
+      "thyroidectomie",
+      "surrenale",
+      "chirurgie bariatrique",
+      "obesite"
+    ],
+    "groupe": "Chirurgie viscérale et autres chirurgies",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Cœlioscopie",
+    "synonymes": [
+      "coelio",
+      "laparoscopie",
+      "chirurgie mini invasive",
+      "robot"
+    ],
+    "groupe": "Chirurgie viscérale et autres chirurgies",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie en situation de guerre ou de catastrophe",
+    "synonymes": [
+      "chirurgie de guerre",
+      "damage control",
+      "catastrophe"
+    ],
+    "groupe": "Chirurgie viscérale et autres chirurgies",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Radiologie interventionnelle avancée",
+    "synonymes": [
+      "radiologie interventionnelle",
+      "embolisation",
+      "ri"
+    ],
+    "groupe": "Radiologie et imagerie",
+    "specialites_sm": [
+      "SM94"
+    ]
+  },
+  {
+    "libelle": "Neuroradiologie",
+    "synonymes": [
+      "neuroradio",
+      "irm cerebrale",
+      "imagerie du cerveau"
+    ],
+    "groupe": "Radiologie et imagerie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Radiopédiatrie",
+    "synonymes": [
+      "imagerie pediatrique",
+      "radio enfant"
+    ],
+    "groupe": "Radiologie et imagerie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Ostéodensitométrie",
+    "synonymes": [
+      "densitometrie",
+      "dmo",
+      "osteoporose"
+    ],
+    "groupe": "Radiologie et imagerie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Gérontologie",
+    "synonymes": [
+      "geriatrie",
+      "personne agee",
+      "vieillissement",
+      "ehpad"
+    ],
+    "groupe": "Gériatrie",
+    "specialites_sm": [
+      "SM18"
+    ]
+  },
+  {
+    "libelle": "Médecin coordonnateur d'EHPAD",
+    "synonymes": [
+      "ehpad",
+      "medecin coordonnateur",
+      "maison de retraite"
+    ],
+    "groupe": "Gériatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Fragilité et prévention des chutes",
+    "synonymes": [
+      "chute",
+      "fragilite",
+      "sarcopenie"
+    ],
+    "groupe": "Gériatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Oncogériatrie",
+    "synonymes": [
+      "oncogeriatrie",
+      "cancer personne agee",
+      "ucog"
+    ],
+    "groupe": "Gériatrie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Appareillage",
+    "synonymes": [
+      "orthese",
+      "prothese",
+      "amputation",
+      "fauteuil roulant"
+    ],
+    "groupe": "Médecine physique et de réadaptation",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Rééducation neurologique",
+    "synonymes": [
+      "reeducation avc",
+      "paraplegie",
+      "traumatisme cranien",
+      "rehabilitation"
+    ],
+    "groupe": "Médecine physique et de réadaptation",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Spasticité et toxine botulique",
+    "synonymes": [
+      "spasticite",
+      "toxine botulique",
+      "injection de toxine"
+    ],
+    "groupe": "Médecine physique et de réadaptation",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Polyarthrites et maladies systémiques",
+    "synonymes": [
+      "polyarthrite",
+      "lupus",
+      "vascularite",
+      "spondyloarthrite"
+    ],
+    "groupe": "Médecine interne et maladies systémiques",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine hospitalière polyvalente",
+    "synonymes": [
+      "medecine polyvalente",
+      "hospitaliste",
+      "medecine interne polyvalente"
+    ],
+    "groupe": "Médecine interne et maladies systémiques",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Maladie rare",
+    "synonymes": [
+      "maladie rare",
+      "centre de reference",
+      "filiere maladie rare"
+    ],
+    "groupe": "Médecine interne et maladies systémiques",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Oncologie médicale",
+    "synonymes": [
+      "oncologue",
+      "chimiotherapie",
+      "cancer"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": [
+      "SM36"
+    ]
+  },
+  {
+    "libelle": "Oncologie radiothérapie",
+    "synonymes": [
+      "radiotherapie",
+      "rayons",
+      "curietherapie"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": [
+      "SM37",
+      "SM45"
+    ]
+  },
+  {
+    "libelle": "Traitements médicaux des cancers de l'adulte",
+    "synonymes": [
+      "cancerologie",
+      "chimiotherapie",
+      "traitement du cancer"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Hématologie bioclinique",
+    "synonymes": [
+      "hematologie biologique",
+      "myelogramme",
+      "hemogramme"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": [
+      "SM21",
+      "SM22",
+      "SM71"
+    ]
+  },
+  {
+    "libelle": "Oncogénétique",
+    "synonymes": [
+      "predisposition au cancer",
+      "brca",
+      "conseil genetique cancer"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Soins oncologiques de support",
+    "synonymes": [
+      "soins de support",
+      "onco support",
+      "effets secondaires chimiotherapie"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Hémostase et thrombose",
+    "synonymes": [
+      "anticoagulant",
+      "thrombose",
+      "hemophilie",
+      "hemostase"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecine d'urgence",
+    "synonymes": [
+      "urgences",
+      "samu",
+      "smur",
+      "camu"
+    ],
+    "groupe": "Anesthésie, réanimation et urgences",
+    "specialites_sm": [
+      "SM59"
+    ]
+  },
+  {
+    "libelle": "Régulation médicale",
+    "synonymes": [
+      "regulation",
+      "centre 15",
+      "sas",
+      "samu"
+    ],
+    "groupe": "Anesthésie, réanimation et urgences",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Médecin correspondant du SAMU",
+    "synonymes": [
+      "mcs",
+      "urgence en zone isolee",
+      "samu"
+    ],
+    "groupe": "Anesthésie, réanimation et urgences",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Anesthésie pédiatrique",
+    "synonymes": [
+      "anesthesie enfant",
+      "anesthesie pediatrique"
+    ],
+    "groupe": "Anesthésie, réanimation et urgences",
+    "specialites_sm": [
+      "SM76"
+    ]
+  },
+  {
+    "libelle": "Anesthésie locorégionale",
+    "synonymes": [
+      "alr",
+      "bloc nerveux",
+      "rachianesthesie"
+    ],
+    "groupe": "Anesthésie, réanimation et urgences",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Fœtopathologie",
+    "synonymes": [
+      "foetopathologie",
+      "autopsie foetale",
+      "placenta",
+      "pathologie foetale"
+    ],
+    "groupe": "Anatomie pathologique et biologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Agents infectieux (microbiologie)",
+    "synonymes": [
+      "microbiologie",
+      "bacteriologie",
+      "virologie",
+      "parasitologie"
+    ],
+    "groupe": "Anatomie pathologique et biologie",
+    "specialites_sm": [
+      "SM66"
+    ]
+  },
+  {
+    "libelle": "Endométriose",
+    "synonymes": [
+      "endometriose",
+      "adenomyose",
+      "douleurs pelviennes",
+      "dysmenorrhee"
+    ],
+    "groupe": "Gynécologie, obstétrique et santé des femmes",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Insuffisance cardiaque",
+    "synonymes": [
+      "insuffisance cardiaque",
+      "ic",
+      "decompensation cardiaque",
+      "cardiomyopathie"
+    ],
+    "groupe": "Cardiologie et médecine vasculaire",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Mucoviscidose",
+    "synonymes": [
+      "mucoviscidose",
+      "crcm",
+      "fibrose kystique"
+    ],
+    "groupe": "Pneumologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Drépanocytose",
+    "synonymes": [
+      "drepanocytose",
+      "anemie falciforme",
+      "hemoglobinopathie",
+      "thalassemie"
+    ],
+    "groupe": "Oncologie et hématologie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Covid long",
+    "synonymes": [
+      "covid long",
+      "post covid",
+      "syndrome post covid",
+      "fatigue chronique"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Neurochirurgie fonctionnelle",
+    "synonymes": [
+      "stimulation cerebrale profonde",
+      "neurostimulation",
+      "chirurgie de la douleur",
+      "chirurgie de l epilepsie"
+    ],
+    "groupe": "Neurochirurgie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Neuro-oncologie chirurgicale",
+    "synonymes": [
+      "tumeur cerebrale",
+      "meningiome",
+      "gliome",
+      "neuro oncologie"
+    ],
+    "groupe": "Neurochirurgie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie de l'hypophyse et de la base du crâne",
+    "synonymes": [
+      "hypophyse",
+      "adenome hypophysaire",
+      "base du crane"
+    ],
+    "groupe": "Neurochirurgie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Neurochirurgie pédiatrique",
+    "synonymes": [
+      "neurochirurgie enfant",
+      "hydrocephalie",
+      "malformation cerebrale"
+    ],
+    "groupe": "Neurochirurgie",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Reconstruction mammaire",
+    "synonymes": [
+      "reconstruction du sein",
+      "prothese mammaire",
+      "lambeau",
+      "apres cancer du sein"
+    ],
+    "groupe": "Chirurgie plastique, reconstructrice et esthétique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie des brûlés",
+    "synonymes": [
+      "brulure",
+      "grands brules",
+      "greffe de peau"
+    ],
+    "groupe": "Chirurgie plastique, reconstructrice et esthétique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie esthétique",
+    "synonymes": [
+      "esthetique",
+      "lifting",
+      "blepharoplastie",
+      "liposuccion"
+    ],
+    "groupe": "Chirurgie plastique, reconstructrice et esthétique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie de l'aorte",
+    "synonymes": [
+      "anevrisme aortique",
+      "aorte",
+      "endoprothese aortique"
+    ],
+    "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie des artères des membres et des carotides",
+    "synonymes": [
+      "arteriopathie",
+      "pontage arteriel",
+      "endarteriectomie",
+      "carotide"
+    ],
+    "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Abords vasculaires pour hémodialyse",
+    "synonymes": [
+      "fistule arterio veineuse",
+      "fav",
+      "abord de dialyse"
+    ],
+    "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie valvulaire cardiaque",
+    "synonymes": [
+      "valve cardiaque",
+      "remplacement valvulaire",
+      "plastie mitrale",
+      "retrecissement aortique"
+    ],
+    "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie coronaire",
+    "synonymes": [
+      "pontage coronarien",
+      "pac",
+      "revascularisation"
+    ],
+    "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
+    "specialites_sm": []
+  },
+  {
+    "libelle": "Chirurgie thoracique et pulmonaire",
+    "synonymes": [
+      "chirurgie du poumon",
+      "lobectomie",
+      "pneumothorax",
+      "cancer du poumon"
+    ],
+    "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
+    "specialites_sm": []
+  }
+]
