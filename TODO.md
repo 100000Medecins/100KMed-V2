@@ -84,7 +84,7 @@ _(rien en cours)_
 - **Vérifier (Claude)** qu'une évaluation a bien été enregistrée après le SQL (après le 2026-10-06 20:25 UTC) : 0 au 07/10 à 9 h, nuit comprise (~2 évaluations/jour en moyenne). Les écritures passent par `service_role`, intact.
 - ~~Fusionner dans `main` les correctifs du 06/10 et du 07/10~~ ✅ fait le 2026-10-07 (`e6a3243`), vérifié en production.
 - ~~Actions serveur — revue d'accès~~ ✅ faite le 2026-10-08 (17 actions admin protégées, cf. CHANGELOG). **Fusionner dans `main`**.
-- **À trancher (David)** : le DMH peut modifier ou supprimer toutes les études cliniques, y compris celles créées par l'admin. Voulu, ou limiter à ses propres études (`created_by`) comme le prévoyaient les règles RLS ?
+- ~~DMH : limiter à ses propres études~~ ✅ fait le 2026-10-08 (décision de David).
 - **Formulaires publics — anti-abus** (vu le 08/10) : l'évaluation anonyme (`submitEvaluationAnonyme`) envoie un email à l'adresse saisie sans Turnstile ; `checkEmailExists` révèle si une adresse a un compte. Ajouter Turnstile (déjà utilisé à l'inscription) et voir si `checkEmailExists` est encore utile.
 - ~~Fusionner dans `main` le correctif `admin-users.ts`~~ ✅ fait le 2026-10-08 (`bb41b77`), vérifié.
 - **⏰ Vers le 2026-10-22 — Connexion PSC : décider le blocage CSRF** (contrôle posé le 08/10, en mesure). Demander à Claude la répartition des `state_check` (`ok` / `absent` / `different`) dans `psc_session_events` depuis la mise en production. Si `absent` et `different` sont nuls ou isolés → poser `PSC_ETAT_STRICT=true` dans Vercel (Production et Preview) et redéployer. Si `absent` est fréquent → les retours e-CPS changent de navigateur : chercher une autre preuve avant de bloquer.

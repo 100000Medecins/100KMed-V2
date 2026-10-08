@@ -23,7 +23,8 @@
 - **Pas encore bloquant**, volontairement : si l'application e-CPS rouvre parfois le retour dans un autre navigateur que celui de départ, le cookie y est absent et un blocage casserait ces connexions (le projet a déjà perdu des sessions à ce passage, d'où le choix des cookies). Le blocage s'active sans code en posant **`PSC_ETAT_STRICT=true`** dans Vercel ; la page de connexion a son message (`psc_state`).
 - Rythme mesuré : ~9 connexions PSC par jour → une à deux semaines de mesure suffisent (TODO).
 
-- **Signalé, non modifié** : le DMH peut modifier ou supprimer **toutes** les études, y compris celles créées par l'admin (sa liste les montre toutes ; les règles RLS de la table visaient « ses » études) — à trancher par David. `checkEmailExists` révèle si une adresse a un compte ; l'évaluation anonyme envoie un email à l'adresse saisie sans Turnstile (vecteur de spam) — en TODO.
+- **DMH limité à ses propres études** (décision de David) : `getEtudesAdmin`, `updateEtudeClinique`, `deleteEtudeClinique` filtrent sur `created_by` = le compte DMH, comme le prévoyaient les règles RLS de la table. Les 3 études existantes ont été créées depuis l'admin (`created_by` NULL) : le DMH ne les voit plus, l'admin continue de les gérer.
+- **Signalé, non modifié** : `checkEmailExists` révèle si une adresse a un compte ; l'évaluation anonyme envoie un email à l'adresse saisie sans Turnstile (vecteur de spam) — en TODO.
 
 ---
 

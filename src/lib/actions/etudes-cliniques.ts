@@ -53,12 +53,15 @@ function revalidateEtudes() {
  * Toutes les études (pour le gestionnaire DMH — sans filtre de date).
  */
 export async function getEtudesAdmin(): Promise<EtudeClinique[]> {
-  await assertDmhRole()
+  // Le DMH ne voit et ne gère que ses propres études (décision de David du 2026-10-08) ;
+  // celles créées depuis l'admin (created_by NULL) restent gérées par l'admin.
+  const user = await assertDmhRole()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { data } = await supabase
     .from('etudes_cliniques')
     .select('*')
+    .eq('created_by', user.id)
     .order('created_at', { ascending: false })
   return (data ?? []).map(normalise)
 }
@@ -115,7 +118,7 @@ export async function createEtudeClinique(formData: FormData) {
 }
 
 export async function updateEtudeClinique(id: string, formData: FormData) {
-  await assertDmhRole()
+  const user = await assertDmhRole()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
 
@@ -131,16 +134,16 @@ export async function updateEtudeClinique(id: string, formData: FormData) {
     date_debut:        (formData.get('date_debut') as string) || null,
     date_fin:          (formData.get('date_fin') as string) || null,
     updated_at:        new Date().toISOString(),
-  }).eq('id', id)
+  }).eq('id', id).eq('created_by', user.id)
 
   revalidateEtudes()
 }
 
 export async function deleteEtudeClinique(id: string) {
-  await assertDmhRole()
+  const user = await assertDmhRole()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
-  await supabase.from('etudes_cliniques').delete().eq('id', id)
+  await supabase.from('etudes_cliniques').delete().eq('id', id).eq('created_by', user.id)
   revalidateEtudes()
 }
 
