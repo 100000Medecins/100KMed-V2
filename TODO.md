@@ -64,9 +64,26 @@ _(rien en cours)_
 - des `completer_error` → bug à corriger ;
 - comparer le taux de complétion avant/après l'ajout des choix de notifications, et lire les choix faits (détail de `completer_success`).
 
+### Réseaux sociaux et accès de la community manager — restes (posé le 2026-10-08)
+
+**Contexte** : accès « contenus » à l'admin, posts réseaux en base avec programmation, panneau sur les vidéos (CHANGELOG du 2026-10-08).
+
+**À faire (David)** :
+- **Make, branche LinkedIn** : remplacer « Create a Company Text Post » par HTTP › Get a file + « Create a Company Image Post » (pas à pas donné le 08/10) ; vérifier le champ Link du module Facebook.
+- **Vercel** : variable `ADMIN_CONTENU_PASSWORD` (Production et Preview), puis redéployer ; tester la connexion avec ce mot de passe.
+- **Après la mise en production** : activer `pg_cron` et `pg_net` (Database › Extensions), puis lancer le SQL de l'étape 2 (secret `cron_secret` dans Vault + `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …)`, texte complet dans la session du 08/10). Sans lui, les posts programmés restent « programmés ».
+- **Tester la programmation** : programmer un post à +15 min et vérifier l'heure de parution (et l'historique Make).
+
 ---
 
 ## En attente / Idées
+
+### Vidéo : dépôt dans l'admin → YouTube + publication native sur les réseaux (posé le 2026-10-08)
+- **Prérequis** : Supabase **Pro** (25 $/mois : fichiers > 50 Mo, 100 Go de stockage, 250 Go de bande passante, et sauvegardes quotidiennes).
+- **Décidé** : vidéos publiées en **publique** sur YouTube ; la lecture sur le site reste YouTube (pas d'hébergement des vidéos sur le site : bande passante, pas de lecture adaptée au débit).
+- **Principe** : dans Vidéos, déposer le MP4 + titre + description → fichier envoyé directement du navigateur au stockage Supabase (bucket privé, adresse signée) → Make (module YouTube « Upload a Video ») le publie → Make rappelle le site, qui crée la fiche vidéo (lien, vignette) → le fichier reste disponible pour une publication **native** (LinkedIn « Create a Company Video Post », Facebook « Upload a Video », Instagram en Reel), puis suppression du fichier.
+- **Pourquoi Make et pas l'API YouTube depuis le site** : une vidéo envoyée par un projet Google non audité est forcée en privé. Make propose public / non répertorié / privé, mais certains signalent des vidéos « Private (locked) » : tester sur une première vidéo.
+- **Contraintes** : Instagram (Reel) veut du MP4 plutôt vertical, durée et poids limités (vérifier les chiffres à jour au moment de construire).
 
 ### Annuaire mutualisé — coller les CGU et la charte le jour du passage en prod (posé le 2026-10-05)
 
