@@ -5,20 +5,20 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import VideoForm from '@/components/admin/VideoForm'
+import SocialPanel from '@/components/admin/SocialPanel'
 import { updateVideo, getSolutionsLieesAVideo } from '@/lib/actions/admin'
+import { getYouTubeId, youTubeThumbnailUrl, youTubeWatchUrl } from '@/lib/youtube'
 import type { VideoRow, VideoRubrique } from '@/lib/db/misc'
 
 async function getVideoById(id: string): Promise<VideoRow | null> {
   const supabase = createServiceRoleClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any).from('videos').select('*').eq('id', id).single()
+  const { data } = await supabase.from('videos').select('*').eq('id', id).single()
   return data ?? null
 }
 
 async function getRubriques(): Promise<VideoRubrique[]> {
   const supabase = createServiceRoleClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any).from('video_rubriques').select('*').order('ordre', { ascending: true })
+  const { data } = await supabase.from('video_rubriques').select('*').order('ordre', { ascending: true })
   return data ?? []
 }
 
@@ -32,8 +32,7 @@ async function getSolutionsForSelector() {
   return (data ?? []).map((s) => ({
     id: s.id,
     nom: s.nom,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    categorie_nom: (s.categorie as any)?.nom ?? null,
+    categorie_nom: (s.categorie as { nom: string | null } | null)?.nom ?? null,
   }))
 }
 
@@ -48,6 +47,7 @@ export default async function ModifierVideoPage(props: { params: Promise<{ id: s
   if (!video) notFound()
 
   const action = updateVideo.bind(null, video.id)
+  const youTubeId = getYouTubeId(video.url)
 
   return (
     <div>
@@ -62,6 +62,18 @@ export default async function ModifierVideoPage(props: { params: Promise<{ id: s
         initialSolutionIds={initialSolutionIds}
         action={action}
       />
+      <div className="mt-6">
+        <SocialPanel
+          source={{
+            type: 'video',
+            id: video.id,
+            titre: video.titre ?? '',
+            resume: video.description,
+            lien: youTubeId ? youTubeWatchUrl(youTubeId) : video.url ?? undefined,
+            image: video.vignette ?? (youTubeId ? youTubeThumbnailUrl(youTubeId) : null),
+          }}
+        />
+      </div>
     </div>
   )
 }

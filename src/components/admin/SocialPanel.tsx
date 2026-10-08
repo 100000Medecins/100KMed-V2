@@ -68,42 +68,43 @@ function nextWeekdayAt(hour: number): string {
   return d.toISOString().slice(0, 16)
 }
 
+/** Contenu à promouvoir : un article du blog ou une vidéo YouTube de la rubrique Vidéos. */
+export type SourcePublication = {
+  type: 'article' | 'video'
+  id: string
+  titre: string
+  resume?: string | null // chapeau de l'article, description de la vidéo
+  lien?: string // page de l'article, ou vidéo YouTube
+  image?: string | null // couverture de l'article, vignette de la vidéo
+  statut?: string | null // article seulement : « publié » ou non
+}
+
 interface Props {
-  article: {
-    id: string
-    titre: string
-    extrait?: string | null
-    slug?: string | null
-    image_couverture?: string | null
-    statut?: string | null
-  }
+  source: SourcePublication
 }
 
 const STORAGE_KEY = (id: string) => `social_posts_${id}`
 
-export default function SocialPanel({ article }: Props) {
+export default function SocialPanel({ source }: Props) {
   const [open, setOpen] = useState(false)
   const [posts, setPosts] = useState<NetworkPost[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
-  const [isPublished, setIsPublished] = useState(article.statut === 'publié')
+  // Une vidéo pointe vers YouTube : sa publication sur le site n'a pas d'effet sur l'aperçu du lien.
+  const [isPublished, setIsPublished] = useState(source.type !== 'article' || source.statut === 'publié')
 
   // Charger les posts sauvegardés au montage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY(article.id))
+      const saved = localStorage.getItem(STORAGE_KEY(source.id))
       if (saved) setPosts(JSON.parse(saved))
     } catch {}
-  }, [article.id])
-
-  const articleUrl = article.slug
-    ? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'}/blog/${article.slug}`
-    : undefined
+  }, [source.id])
 
   async function handlePublish() {
     setIsPublishing(true)
-    const result = await publishArticle(article.id)
+    const result = await publishArticle(source.id)
     if (!result?.error) setIsPublished(true)
     setIsPublishing(false)
   }
@@ -116,9 +117,10 @@ export default function SocialPanel({ article }: Props) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        titre: article.titre,
-        extrait: article.extrait,
-        url: articleUrl,
+        type: source.type,
+        titre: source.titre,
+        extrait: source.resume,
+        url: source.lien,
       }),
     })
     const data = await res.json()
@@ -140,7 +142,7 @@ export default function SocialPanel({ article }: Props) {
   }
 
   function savePosts(updated: NetworkPost[]) {
-    try { localStorage.setItem(STORAGE_KEY(article.id), JSON.stringify(updated)) } catch {}
+    try { localStorage.setItem(STORAGE_KEY(source.id), JSON.stringify(updated)) } catch {}
     setPosts(updated)
   }
 
@@ -171,8 +173,8 @@ export default function SocialPanel({ article }: Props) {
           network: post.network,
           text: post.text,
           scheduled_at: post.immediate ? undefined : (post.scheduled_at ? new Date(post.scheduled_at).toISOString() : undefined),
-          image_url: article.image_couverture ?? undefined,
-          article_url: articleUrl,
+          image_url: source.image ?? undefined,
+          article_url: source.lien, // nom attendu par le scénario Make, vaut aussi pour la vidéo YouTube
         }),
       })
       data = await res.json()
@@ -217,7 +219,7 @@ export default function SocialPanel({ article }: Props) {
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-700">
-                  <strong>L'article n'est pas encore publié.</strong> Publie-le maintenant pour que la vignette de lien s'affiche correctement sur LinkedIn et Facebook.
+                  <strong>L&apos;article n&apos;est pas encore publié.</strong> Publie-le maintenant pour que la vignette de lien s&apos;affiche correctement sur LinkedIn et Facebook.
                 </p>
               </div>
               <button
@@ -233,11 +235,11 @@ export default function SocialPanel({ article }: Props) {
           )}
 
           {/* Instagram sans image */}
-          {!article.image_couverture && (
+          {!source.image && (
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700">
-                Cet article n'a pas d'image de couverture. Instagram requiert une image — le post Instagram sera envoyé sans image (Make.com gèrera selon ta configuration).
+                {source.type === 'article' ? "Cet article n'a pas d'image de couverture." : "Cette vidéo n'a pas de vignette."} Instagram requiert une image : le post Instagram ne pourra pas être envoyé.
               </p>
             </div>
           )}
@@ -337,16 +339,16 @@ export default function SocialPanel({ article }: Props) {
 
                         {hasError && <p className="text-xs text-red-600">{post.error}</p>}
 
-                        {post.network === 'instagram' && !article.image_couverture && (
+                        {post.network === 'instagram' && !source.image && (
                           <p className="text-xs text-red-600 font-medium">
-                            Image de couverture obligatoire pour Instagram. Ajoutez-en une avant d'envoyer.
+                            Image obligatoire pour Instagram. Ajoutez-en une avant d&apos;envoyer.
                           </p>
                         )}
 
                         <button
                           type="button"
                           onClick={() => sendPost(post.network)}
-                          disabled={sending || !ok || (post.network === 'instagram' && !article.image_couverture)}
+                          disabled={sending || !ok || (post.network === 'instagram' && !source.image)}
                           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-accent-blue text-accent-blue rounded-xl hover:bg-accent-blue/5 disabled:opacity-50 transition-colors"
                         >
                           <Send className="w-3.5 h-3.5" />
@@ -373,7 +375,7 @@ export default function SocialPanel({ article }: Props) {
               {!allSent && (
                 <button
                   type="button"
-                  onClick={() => { try { localStorage.removeItem(STORAGE_KEY(article.id)) } catch {} setPosts([]) }}
+                  onClick={() => { try { localStorage.removeItem(STORAGE_KEY(source.id)) } catch {} setPosts([]) }}
                   className="text-xs text-gray-400 hover:text-gray-600 underline"
                 >
                   Regénérer les messages

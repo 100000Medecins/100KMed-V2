@@ -59,7 +59,17 @@ export default async function ModifierArticlePage({ params }: PageProps) {
       <div className="bg-white rounded-card shadow-card p-6 md:p-8">
         <ArticleForm article={article} categories={categories} action={boundAction} />
       </div>
-      <SocialPanel article={{ id, titre: article.titre, extrait: article.extrait, slug: article.slug, image_couverture: article.image_couverture, statut: article.statut }} />
+      <SocialPanel
+        source={{
+          type: 'article',
+          id,
+          titre: article.titre,
+          resume: article.extrait,
+          lien: article.slug ? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'}/blog/${article.slug}` : undefined,
+          image: article.image_couverture,
+          statut: article.statut,
+        }}
+      />
     </div>
   )
 }

@@ -7,11 +7,11 @@ Tu écris toujours à la première personne du pluriel ("nous", "notre associati
 
 Tu adaptes ton style à chaque réseau :
 
-**Instagram** : visuel et accrocheur, commence par une phrase-choc. Ton direct et communautaire. 3-5 lignes max. Termine avec 5-8 hashtags pertinents (#eSanté #MédecineLibérale #Ségur #MédecinsFrançais etc). Si une URL d'article est fournie, ajoute-la sur une ligne séparée à la fin (avant les hashtags). Maximum 2000 caractères.
+**Instagram** : visuel et accrocheur, commence par une phrase-choc. Ton direct et communautaire. 3-5 lignes max. Termine avec 5-8 hashtags pertinents (#eSanté #MédecineLibérale #Ségur #MédecinsFrançais etc). Si une URL est fournie, ajoute-la sur une ligne séparée à la fin (avant les hashtags). Maximum 2000 caractères.
 
-**LinkedIn** : ton professionnel et engagé. 3-4 paragraphes courts. Commence par une accroche forte (pas "Nous sommes ravis de..."). Pose un contexte, donne le point de vue de l'association, invite à lire l'article. Si une URL d'article est fournie, ajoute-la sur une ligne séparée à la fin. 1-2 hashtags en fin de post. Maximum 1200 caractères.
+**LinkedIn** : ton professionnel et engagé. 3-4 paragraphes courts. Commence par une accroche forte (pas "Nous sommes ravis de..."). Pose un contexte, donne le point de vue de l'association, invite à lire l'article ou à regarder la vidéo. Si une URL est fournie, ajoute-la sur une ligne séparée à la fin. 1-2 hashtags en fin de post. Maximum 1200 caractères.
 
-**Facebook** : ton chaleureux et communautaire. Plus conversationnel, tu peux poser une question à la communauté. 2-3 paragraphes. Si une URL d'article est fournie, ajoute-la sur une ligne séparée à la fin. Maximum 800 caractères.
+**Facebook** : ton chaleureux et communautaire. Plus conversationnel, tu peux poser une question à la communauté. 2-3 paragraphes. Si une URL est fournie, ajoute-la sur une ligne séparée à la fin. Maximum 800 caractères.
 
 Règles communes :
 - Ne jamais commencer par "Nous partageons" ou "Nous sommes heureux"
@@ -23,7 +23,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
-  const { titre, extrait, url } = await req.json()
+  const { type = 'article', titre, extrait, url } = await req.json()
+  const video = type === 'video'
 
   if (!titre?.trim()) {
     return NextResponse.json({ error: 'Titre manquant' }, { status: 400 })
@@ -35,7 +36,8 @@ export async function POST(req: Request) {
 
   const articleContext = [
     `Titre : ${titre}`,
-    extrait ? `Chapeau : ${extrait}` : null,
+    // Description YouTube : souvent longue (chapitres, liens) — le début suffit.
+    extrait ? `${video ? 'Description' : 'Chapeau'} : ${String(extrait).slice(0, 1500)}` : null,
     url ? `URL : ${url}` : null,
   ].filter(Boolean).join('\n')
 
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'user',
-          content: `Rédige 3 posts sociaux pour promouvoir cet article :
+          content: `Rédige 3 posts sociaux pour promouvoir ${video ? "cette vidéo YouTube (elle n'est pas forcément réalisée par l'association : ne t'en attribue pas la réalisation si la description ne le dit pas)" : 'cet article'} :
 
 ${articleContext}
 
@@ -75,7 +77,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans backticks), a
   const raw = data.content?.[0]?.text ?? ''
   const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
 
-  let parsed: { twitter: string; linkedin: string; facebook: string }
+  let parsed: { instagram: string; linkedin: string; facebook: string }
   try {
     parsed = JSON.parse(cleaned)
   } catch {
