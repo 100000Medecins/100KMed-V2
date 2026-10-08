@@ -207,6 +207,8 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
       setPortable(res.portable)
       setTelephoneCabinet(res.telephoneCabinet)
       setEnregistre(true)
+      // Comme ailleurs dans Mon compte : on remonte pour voir la confirmation « Fiche enregistrée »
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     })
   }
 
