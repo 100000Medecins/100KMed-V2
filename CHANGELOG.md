@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-10-08] — Annuaire mutualisé, tranche 2a : lecture par les confrères (base)
+
+### Base — migration lancée par David (SQL Editor, une transaction)
+- `fiches_annuaire` : 7 colonnes facultatives (`ville`, `code_postal`, `commune_insee`, `lat`, `lon` — centre de la commune, pas l'adresse —, `mssante`, `telephone_cabinet`) + index de position sur les fiches publiées.
+- `annuaire_affichages_portables` : journal des affichages (lecteur, consulté, date), RLS active **sans aucune règle**, fermé à `anon`, `authenticated` et `claude_readonly` ; purge à 12 mois (tâche planifiée).
+- Fonctions `security definer` (règles dans la base, réutilisables par l'application) : `annuaire_lecteur_autorise` (médecin avec preuve PSC), `annuaire_rechercher` (nom, spécialités, compétence ou spécialité équivalente, distance haversine avec préfiltre rectangle ; fiches publiées seulement, compétences validées seulement, **jamais le portable**), `annuaire_fiche` (une fiche, « portable disponible » sans le numéro), `annuaire_afficher_portable` (numéro fiche par fiche : **10 confrères différents par 24 h**, réaffichage dans les 24 h non compté, chaque affichage tracé ; sa propre fiche ni plafond ni trace), `annuaire_normaliser` (minuscules sans accents).
+- ⚠️ Supabase donne d'office `EXECUTE` à `anon` sur toute nouvelle fonction (`pg_default_acl`) : `revoke … from public, anon` explicite.
+- Vérifié par requête : colonnes et journal présents ; `anon` n'exécute aucune fonction, `authenticated` toutes ; journal fermé. Types régénérés par Claude (CLI Supabase disponible sur ce poste) : +106 lignes, rien de retiré.
+- SQL complet et retour arrière : [docs/2026-10-08-annuaire-tranche-2.md](docs/2026-10-08-annuaire-tranche-2.md).
+
+---
+
 ## [2026-10-08] — Sécurité : revue des actions serveur
 
 ### Fix — 17 actions d'administration appelables sans contrôle

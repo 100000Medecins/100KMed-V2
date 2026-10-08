@@ -105,3 +105,72 @@ A. **Localisation** : la ville ou le code postal saisi dans la recherche, à dé
    charte le jour J (« la ville que vous saisissez est envoyée au service de géocodage de l'IGN »).
 B. **Le script commun reste dans le dépôt messagerie** ; le site crée les tables et les fonctions.
 C. **Ordre 2a puis 2b.**
+
+## Migration 2a appliquée le 2026-10-08 (SQL Editor, une transaction)
+
+```sql
+begin;
+
+alter table public.fiches_annuaire
+  add column ville text check (ville is null or char_length(btrim(ville)) between 1 and 120),
+  add column code_postal text check (code_postal is null or code_postal ~ '^[0-9]{5}$'),
+  add column commune_insee text check (commune_insee is null or commune_insee ~ '^[0-9][0-9AB][0-9]{3}$'),
+  add column lat double precision check (lat is null or lat between -90 and 90),
+  add column lon double precision check (lon is null or lon between -180 and 180),
+  add column mssante text check (mssante is null or mssante ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  add column telephone_cabinet text check (telephone_cabinet is null or telephone_cabinet ~ '^\+[1-9][0-9]{7,14}$');
+create index fiches_annuaire_position_idx on public.fiches_annuaire (lat, lon) where publiee;
+
+create table public.annuaire_affichages_portables (
+  id uuid primary key default gen_random_uuid(),
+  lecteur_id uuid not null references public.users(id) on delete cascade,
+  consulte_id uuid not null references public.users(id) on delete cascade,
+  affiche_le timestamptz not null default now()
+);
+create index annuaire_affichages_lecteur_idx on public.annuaire_affichages_portables (lecteur_id, affiche_le);
+revoke all on public.annuaire_affichages_portables from anon, authenticated;
+grant select, insert, delete on public.annuaire_affichages_portables to service_role;
+alter table public.annuaire_affichages_portables enable row level security;
+
+create function public.annuaire_lecteur_autorise() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.identites_psc i
+                 where i.user_id = (select auth.uid()) and coalesce(i.code_profession, '10') = '10')
+$$;
+
+create function public.annuaire_normaliser(t text) returns text
+language sql immutable set search_path = '' as $$
+  select lower(translate(coalesce(t, ''),
+    'ÀÂÄÁÃÉÈÊËÍÎÏÌÓÔÖÒÕÚÛÜÙÇÑàâäáãéèêëíîïìóôöòõúûüùçñ''’-',
+    'AAAAAEEEEIIIIOOOOOUUUUCNaaaaaeeeeiiiiooooouuuucn   '))
+$$;
+
+-- annuaire_rechercher, annuaire_fiche, annuaire_afficher_portable : texte complet dans le
+-- message de Claude du 08/10 (CHANGELOG du 08/10) ; définitions lisibles en base par
+-- `select pg_get_functiondef('public.annuaire_rechercher'::regproc)`.
+
+revoke all on function public.annuaire_lecteur_autorise() from public, anon;
+revoke all on function public.annuaire_normaliser(text) from public, anon;
+revoke all on function public.annuaire_rechercher(text, text[], uuid, text[], double precision, double precision, double precision, int, int) from public, anon;
+revoke all on function public.annuaire_fiche(text) from public, anon;
+revoke all on function public.annuaire_afficher_portable(text) from public, anon;
+grant execute on function public.annuaire_lecteur_autorise() to authenticated, service_role;
+grant execute on function public.annuaire_normaliser(text) to authenticated, service_role;
+grant execute on function public.annuaire_rechercher(text, text[], uuid, text[], double precision, double precision, double precision, int, int) to authenticated, service_role;
+grant execute on function public.annuaire_fiche(text) to authenticated, service_role;
+grant execute on function public.annuaire_afficher_portable(text) to authenticated, service_role;
+
+commit;
+```
+
+Retour arrière :
+
+```sql
+drop function if exists public.annuaire_afficher_portable(text), public.annuaire_fiche(text),
+  public.annuaire_rechercher(text, text[], uuid, text[], double precision, double precision, double precision, int, int),
+  public.annuaire_normaliser(text), public.annuaire_lecteur_autorise();
+drop table if exists public.annuaire_affichages_portables;
+alter table public.fiches_annuaire drop column if exists ville, drop column if exists code_postal,
+  drop column if exists commune_insee, drop column if exists lat, drop column if exists lon,
+  drop column if exists mssante, drop column if exists telephone_cabinet;
+```

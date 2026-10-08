@@ -137,6 +137,42 @@ export type Database = {
         }
         Relationships: []
       }
+      annuaire_affichages_portables: {
+        Row: {
+          affiche_le: string
+          consulte_id: string
+          id: string
+          lecteur_id: string
+        }
+        Insert: {
+          affiche_le?: string
+          consulte_id: string
+          id?: string
+          lecteur_id: string
+        }
+        Update: {
+          affiche_le?: string
+          consulte_id?: string
+          id?: string
+          lecteur_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annuaire_affichages_portables_consulte_id_fkey"
+            columns: ["consulte_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annuaire_affichages_portables_lecteur_id_fkey"
+            columns: ["lecteur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           description: string | null
@@ -963,31 +999,52 @@ export type Database = {
       }
       fiches_annuaire: {
         Row: {
+          code_postal: string | null
+          commune_insee: string | null
           created_at: string
+          lat: number | null
+          lon: number | null
           mise_a_jour: string
           moyen_contact: string | null
+          mssante: string | null
           publiee: boolean
           publiee_accord_le: string | null
           publiee_accord_version: string | null
+          telephone_cabinet: string | null
           user_id: string
+          ville: string | null
         }
         Insert: {
+          code_postal?: string | null
+          commune_insee?: string | null
           created_at?: string
+          lat?: number | null
+          lon?: number | null
           mise_a_jour?: string
           moyen_contact?: string | null
+          mssante?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
+          telephone_cabinet?: string | null
           user_id: string
+          ville?: string | null
         }
         Update: {
+          code_postal?: string | null
+          commune_insee?: string | null
           created_at?: string
+          lat?: number | null
+          lon?: number | null
           mise_a_jour?: string
           moyen_contact?: string | null
+          mssante?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
+          telephone_cabinet?: string | null
           user_id?: string
+          ville?: string | null
         }
         Relationships: [
           {
@@ -2419,6 +2476,55 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      annuaire_afficher_portable: { Args: { p_rpps: string }; Returns: string }
+      annuaire_fiche: {
+        Args: { p_rpps: string }
+        Returns: {
+          code_postal: string
+          competences: string[]
+          lat: number
+          lon: number
+          mise_a_jour: string
+          moyen_contact: string
+          mssante: string
+          nom: string
+          portable_disponible: boolean
+          prenom: string
+          rpps: string
+          specialite: string
+          telephone_cabinet: string
+          ville: string
+        }[]
+      }
+      annuaire_lecteur_autorise: { Args: never; Returns: boolean }
+      annuaire_normaliser: { Args: { t: string }; Returns: string }
+      annuaire_rechercher: {
+        Args: {
+          p_decalage?: number
+          p_intitule?: string
+          p_lat?: number
+          p_limite?: number
+          p_lon?: number
+          p_rayon_km?: number
+          p_specialites?: string[]
+          p_specialites_equivalentes?: string[]
+          p_texte?: string
+        }
+        Returns: {
+          code_postal: string
+          competences: string[]
+          distance_km: number
+          lat: number
+          lon: number
+          mise_a_jour: string
+          moyen_contact: string
+          nom: string
+          prenom: string
+          rpps: string
+          specialite: string
+          ville: string
+        }[]
+      }
       check_auth_email_exists: { Args: { p_email: string }; Returns: boolean }
       search_articles: {
         Args: { max_results?: number; query: string }
