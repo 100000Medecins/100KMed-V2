@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-08] — Sécurité : les pages de l'admin envoyaient leurs données sans connexion
+
+### Fix — Pages `/admin/*` calculées et envoyées à un visiteur non connecté
+- **Constat** (contrôle de la production après le déploiement `6002f31`) : sans cookie admin, `/admin/intitules` répondait `200` avec le formulaire de connexion… et, dans la même réponse, les données de la page (catalogue, propositions, oppositions). Sondes sur la production : **`/admin/utilisateurs` → 2,4 Mo, 6 839 adresses email** (et les autres colonnes de la liste) ; `/admin/activite` 7 adresses, `/admin/solutions` 27 ; `/admin`, `/admin/emails`, `/admin/parametres` sans adresse.
+- **Cause** : le contrôle était dans le [layout de l'admin](src/app/admin/layout.tsx) (formulaire au lieu de `children`). Next calcule la page **en parallèle** du layout et sérialise sa sortie dans la réponse, même quand le layout ne l'affiche pas. Faille présente depuis l'origine de ce layout, pas introduite par le déploiement du jour.
+- **Fix** : le [proxy](src/proxy.ts), qui tourne déjà sur `/admin/*`, sert la nouvelle page [`/connexion-admin`](src/app/connexion-admin/page.tsx) (formulaire seul, `noindex`, statique) **à la place** de toute page d'admin demandée sans jeton valide, même adresse : la page demandée n'est jamais calculée. Le contrôle du layout reste en seconde ligne.
+- **Vérifié sur le build de production en local** : sans cookie, avec un cookie inventé et en requête RSC, `/admin`, `/admin/utilisateurs`, `/admin/activite`, `/admin/solutions`, `/admin/intitules`, `/admin/emails` → même réponse de 17 Ko (formulaire), **0 adresse** ; avec le jeton admin, pages complètes (`/admin/utilisateurs` 2,5 Mo) ; connexion par le formulaire depuis une adresse réécrite (`/admin/utilisateurs`) : mauvais mot de passe → « Mot de passe incorrect », bon → `303` vers l'accueil admin + cookie `admin_token`.
+
+---
+
 ## [2026-10-08] — Annuaire mutualisé, tranche 2b : données de l'Annuaire Santé (ANS)
 
 ### Base — migration 2b lancée par David (SQL Editor, une transaction)
@@ -30,7 +40,11 @@
 
 ### Vérif
 - `tsc`, lint des fichiers touchés, `npm run build` verts (pages de l'annuaire en `ƒ`, privées). Commits `8ef50a1`, `ce9b0c3`, `406c981` poussés sur `dev` (annuaire toujours éteint en production).
-- **Reste** : 2b-bis à lancer par David, puis essai réel sur dev (recherche, filtres, carte, fiche ANS, propositions dans Ma fiche).
+- **2b-bis lancée par David** (vérifié : `work_mem=8MB` sur la fonction, plus aucun double espace). **Mesure réelle de la fonction** (SQL Editor, identité PSC de David, bloc terminé par une erreur volontaire pour afficher les temps, tout annulé) : Paris 10 km **4 822 ms au 1er appel** (démarrage à froid : la même recherche via « France » juste après, qui commence aussi par 10 km, **140 ms**) ; Paris 10 km médecine générale 1 308 ms ; Mende, France entière, chirurgie maxillo-faciale (65 médecins, élargissements successifs) 1 039 ms ; nom « martin » 230 ms ; sans filtre 185 ms. Tout sous la limite de 8 s ; le 1er appel d'une connexion reste lent (cache froid du serveur Nano).
+
+### Déploiement — `dev` fusionné dans `main` (`6002f31`, accord de David)
+- Fusion dans un worktree séparé (session parallèle dans le dossier partagé), sans conflit ; arbre fusionné **identique à `dev`** (`git diff origin/dev` vide), donc couvert par le build vérifié sur `dev`. Comprend la 2b et une entrée de CHANGELOG de l'autre session.
+- Annuaire **toujours éteint** en production (`app_settings.annuaire_actif` absent, vérifié).
 
 ---
 
