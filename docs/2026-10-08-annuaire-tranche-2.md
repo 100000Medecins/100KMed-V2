@@ -145,9 +145,8 @@ language sql immutable set search_path = '' as $$
     'AAAAAEEEEIIIIOOOOOUUUUCNaaaaaeeeeiiiiooooouuuucn   '))
 $$;
 
--- annuaire_rechercher, annuaire_fiche, annuaire_afficher_portable : texte complet dans le
--- message de Claude du 08/10 (CHANGELOG du 08/10) ; définitions lisibles en base par
--- `select pg_get_functiondef('public.annuaire_rechercher'::regproc)`.
+-- annuaire_rechercher, annuaire_fiche, annuaire_afficher_portable : voir « Fonctions de la 2a
+-- (archive) » ci-dessous (remplacées en 2b, sauf annuaire_afficher_portable).
 
 revoke all on function public.annuaire_lecteur_autorise() from public, anon;
 revoke all on function public.annuaire_normaliser(text) from public, anon;
@@ -173,4 +172,89 @@ drop table if exists public.annuaire_affichages_portables;
 alter table public.fiches_annuaire drop column if exists ville, drop column if exists code_postal,
   drop column if exists commune_insee, drop column if exists lat, drop column if exists lon,
   drop column if exists mssante, drop column if exists telephone_cabinet;
+```
+
+## Fonctions de la 2a (archive, avant leur remplacement en 2b)
+
+Pour revenir à la 2a (après avoir supprimé les versions 2b) :
+
+```sql
+create function public.annuaire_rechercher(
+  p_texte text default null, p_specialites text[] default null, p_intitule uuid default null,
+  p_specialites_equivalentes text[] default null, p_lat double precision default null,
+  p_lon double precision default null, p_rayon_km double precision default null,
+  p_limite int default 50, p_decalage int default 0
+) returns table (
+  rpps text, nom text, prenom text, specialite text, ville text, code_postal text,
+  lat double precision, lon double precision, distance_km double precision,
+  moyen_contact text, competences text[], mise_a_jour timestamptz
+)
+language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict use_column
+begin
+  if not public.annuaire_lecteur_autorise() then
+    raise exception 'Annuaire réservé aux médecins connectés par Pro Santé Connect' using errcode = '42501';
+  end if;
+  return query
+  with base as (
+    select i.rpps, u.nom, u.prenom, u.specialite, f.ville, f.code_postal, f.lat, f.lon,
+           f.moyen_contact, f.mise_a_jour, f.user_id,
+           case when p_lat is not null and p_lon is not null and f.lat is not null and f.lon is not null then
+             2 * 6371 * asin(sqrt(power(sin(radians(f.lat - p_lat) / 2), 2)
+               + cos(radians(p_lat)) * cos(radians(f.lat)) * power(sin(radians(f.lon - p_lon) / 2), 2)))
+           end as distance_km
+    from public.fiches_annuaire f
+    join public.identites_psc i on i.user_id = f.user_id
+    join public.users u on u.id = f.user_id
+    where f.publiee
+      and (p_texte is null or not exists (
+            select 1 from unnest(string_to_array(public.annuaire_normaliser(p_texte), ' ')) as m(mot)
+            where m.mot <> '' and public.annuaire_normaliser(coalesce(u.nom, '') || ' ' || coalesce(u.prenom, '')) not like '%' || m.mot || '%'))
+      and (p_specialites is null or u.specialite = any(p_specialites))
+      and (p_intitule is null
+           or exists (select 1 from public.fiches_intitules fi where fi.user_id = f.user_id and fi.intitule_id = p_intitule)
+           or (p_specialites_equivalentes is not null and u.specialite = any(p_specialites_equivalentes)))
+      and (p_rayon_km is null or p_lat is null or p_lon is null or (
+           f.lat between p_lat - p_rayon_km / 111.0 and p_lat + p_rayon_km / 111.0
+           and f.lon between p_lon - p_rayon_km / (111.0 * greatest(cos(radians(p_lat)), 0.01))
+                         and p_lon + p_rayon_km / (111.0 * greatest(cos(radians(p_lat)), 0.01))))
+  )
+  select b.rpps, b.nom, b.prenom, b.specialite, b.ville, b.code_postal, b.lat, b.lon, b.distance_km,
+         b.moyen_contact,
+         coalesce((select array_agg(it.libelle order by it.libelle) from public.fiches_intitules fi
+                   join public.intitules it on it.id = fi.intitule_id
+                   where fi.user_id = b.user_id and it.statut = 'valide'), '{}'),
+         b.mise_a_jour
+  from base b
+  where p_rayon_km is null or p_lat is null or p_lon is null or b.distance_km <= p_rayon_km
+  order by b.distance_km nulls last, b.nom, b.prenom
+  limit least(greatest(p_limite, 1), 100) offset greatest(p_decalage, 0);
+end $$;
+
+create function public.annuaire_fiche(p_rpps text) returns table (
+  rpps text, nom text, prenom text, specialite text, ville text, code_postal text,
+  lat double precision, lon double precision, moyen_contact text, mssante text, telephone_cabinet text,
+  portable_disponible boolean, competences text[], mise_a_jour timestamptz
+)
+language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict use_column
+begin
+  if not public.annuaire_lecteur_autorise() then
+    raise exception 'Annuaire réservé aux médecins connectés par Pro Santé Connect' using errcode = '42501';
+  end if;
+  return query
+  select i.rpps, u.nom, u.prenom, u.specialite, f.ville, f.code_postal, f.lat, f.lon,
+         f.moyen_contact, f.mssante, f.telephone_cabinet,
+         exists (select 1 from public.fiches_annuaire_portables p where p.user_id = f.user_id and p.visible),
+         coalesce((select array_agg(it.libelle order by it.libelle) from public.fiches_intitules fi
+                   join public.intitules it on it.id = fi.intitule_id
+                   where fi.user_id = f.user_id and it.statut = 'valide'), '{}'),
+         f.mise_a_jour
+  from public.identites_psc i
+  join public.fiches_annuaire f on f.user_id = i.user_id
+  join public.users u on u.id = i.user_id
+  where i.rpps = p_rpps and f.publiee;
+end $$;
+
+-- annuaire_afficher_portable : inchangée en 2b (texte dans la migration 2a ci-dessus).
 ```
