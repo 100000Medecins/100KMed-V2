@@ -258,3 +258,178 @@ end $$;
 
 -- annuaire_afficher_portable : inchangée en 2b (texte dans la migration 2a ci-dessus).
 ```
+
+## Migration 2b appliquée le 2026-10-08 — données ANS
+
+- Tables (RLS sans politique, écriture service_role, lecture `claude_readonly`) : `ans_version`, `ans_medecins`,
+  `ans_sites`, `ans_exerce`, `ans_mssante` (toutes avec une colonne `lot`), `annuaire_oppositions`.
+- Fonctions : `annuaire_rechercher` et `annuaire_fiche` réécrites sur l'ANS + les fiches ; `annuaire_source()` ;
+  `annuaire_activer_lot(lot, version)` (refuse un lot < 150 000 médecins) et `annuaire_purger_lots(limite)`,
+  réservées à service_role.
+- Import du 2026-10-08 : lot 1791473883, extraction ANS du 2026-10-04 — 199 293 médecins, 116 016 lieux,
+  272 074 adresses MSSanté. Base : 196 Mo.
+
+### Import mensuel
+
+1. Côté messagerie : reconstruire `annuaire.db` (lot8). **Exclure aussi `annuaire_oppositions`** de la base SQLite
+   de l'application (liste lisible par service_role), comme le fait déjà le site.
+2. Côté site : `npx tsx scripts/annuaire-import-ans.ts` (essai à blanc), puis `--execute`. Le script insère un
+   nouveau lot, l'active (`annuaire_activer_lot`), puis purge les anciens par paquets. `--base <chemin>` pour une
+   autre base SQLite.
+
+## Migration 2b-bis — recherche accélérée (2026-10-08)
+
+Constat : la recherche par distance prenait 2,2 s (10 km autour de Paris) et 2 à 5 s avec un filtre de
+spécialité. Cause : une lecture d'`ans_medecins` par médecin dans le rayon (27 000 lectures), avec des
+comparaisons de texte ICU lentes sur ce serveur.
+
+Nouvelle forme (même signature, même résultat) : chaque filtre n'est ajouté que s'il est demandé (requête
+dynamique, valeurs passées par `USING`) et calcule une fois la liste des RPPS retenus, comparée en bloc ; avec une
+position, recherche d'abord dans 10 km puis élargissement ×4 tant que la page n'est pas pleine. Mesuré : environ
+0,17 s dans les deux cas. Même migration : réduction des doubles espaces dans `ans_sites` (le script d'import le
+fait désormais).
+
+### Fonction annuaire_rechercher de la 2b (archive, pour revenir en arrière)
+
+```sql
+create or replace function public.annuaire_rechercher(p_texte text default null::text, p_specialites text[] default null::text[], p_intitule uuid default null::uuid, p_specialites_equivalentes text[] default null::text[], p_lat double precision default null::double precision, p_lon double precision default null::double precision, p_rayon_km double precision default null::double precision, p_limite integer default 50, p_decalage integer default 0)
+ returns table(rpps text, nom text, prenom text, specialite text, specialite_code text, ville text, code_postal text, lat double precision, lon double precision, distance_km double precision, a_une_fiche boolean, moyen_contact text, competences text[], mise_a_jour timestamp with time zone)
+ language plpgsql
+ stable security definer
+ set search_path to ''
+as $function$
+#variable_conflict use_column
+declare
+  v_lot integer := (select v.lot from public.ans_version v where v.cle = 'courante');
+  v_mots text[] := case when nullif(btrim(p_texte), '') is null then null
+                   else array_remove(string_to_array(public.annuaire_normaliser(p_texte), ' '), '') end;
+  v_rayon double precision := case when p_lat is null or p_lon is null then null else coalesce(p_rayon_km, 2000) end;
+  v_dlat double precision;
+  v_dlon double precision;
+  v_limite int := least(greatest(coalesce(p_limite, 50), 1), 100);
+  v_decalage int := greatest(coalesce(p_decalage, 0), 0);
+begin
+  if not public.annuaire_lecteur_autorise() then
+    raise exception 'Annuaire réservé aux médecins connectés par Pro Santé Connect' using errcode = '42501';
+  end if;
+
+  if v_rayon is not null then
+    v_dlat := v_rayon / 111.0;
+    v_dlon := v_rayon / (111.0 * greatest(cos(radians(p_lat)), 0.01));
+    return query
+    with fiches as (
+      select i.rpps, f.user_id, f.moyen_contact, f.mise_a_jour, f.ville, f.code_postal, f.lat, f.lon,
+             u.nom, u.prenom, u.specialite
+      from public.fiches_annuaire f
+      join public.identites_psc i on i.user_id = f.user_id
+      join public.users u on u.id = f.user_id
+      where f.publiee
+    ),
+    candidats as (
+      select m.rpps, m.nom, m.prenom, m.specialite_libelle as specialite, m.specialite_code, m.nom_recherche
+      from public.ans_medecins m
+      where m.lot = v_lot and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+      union all
+      select fi.rpps, fi.nom, fi.prenom, fi.specialite, null::text,
+             public.annuaire_normaliser(coalesce(fi.nom, '') || ' ' || coalesce(fi.prenom, ''))
+      from fiches fi
+      where not exists (select 1 from public.ans_medecins m where m.lot = v_lot and m.rpps = fi.rpps
+                          and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps))
+    ),
+    proches as (
+      select e.rpps, s.commune as ville, s.code_postal, s.lat, s.lon,
+             2 * 6371 * asin(sqrt(power(sin(radians(s.lat - p_lat) / 2), 2)
+               + cos(radians(p_lat)) * cos(radians(s.lat)) * power(sin(radians(s.lon - p_lon) / 2), 2))) as d
+      from public.ans_sites s
+      join public.ans_exerce e on e.lot = s.lot and e.site_id = s.id
+      where s.lot = v_lot
+        and s.lat between p_lat - v_dlat and p_lat + v_dlat
+        and s.lon between p_lon - v_dlon and p_lon + v_dlon
+        and not exists (select 1 from public.annuaire_oppositions o where o.rpps = e.rpps)
+      union all
+      select fi.rpps, fi.ville, fi.code_postal, fi.lat, fi.lon,
+             2 * 6371 * asin(sqrt(power(sin(radians(fi.lat - p_lat) / 2), 2)
+               + cos(radians(p_lat)) * cos(radians(fi.lat)) * power(sin(radians(fi.lon - p_lon) / 2), 2)))
+      from fiches fi
+      where fi.lat between p_lat - v_dlat and p_lat + v_dlat
+        and fi.lon between p_lon - v_dlon and p_lon + v_dlon
+    ),
+    plus_proche as (
+      select distinct on (pr.rpps) pr.rpps, pr.ville, pr.code_postal, pr.lat, pr.lon, pr.d
+      from proches pr where pr.d <= v_rayon
+      order by pr.rpps, pr.d
+    )
+    select c.rpps, c.nom, c.prenom, c.specialite, c.specialite_code,
+           pp.ville, pp.code_postal, pp.lat, pp.lon, pp.d,
+           fi.rpps is not null, fi.moyen_contact,
+           case when fi.user_id is null then '{}'::text[] else coalesce((
+             select array_agg(it.libelle order by it.libelle) from public.fiches_intitules x
+             join public.intitules it on it.id = x.intitule_id
+             where x.user_id = fi.user_id and it.statut = 'valide'), '{}'::text[]) end,
+           fi.mise_a_jour
+    from plus_proche pp
+    join candidats c on c.rpps = pp.rpps
+    left join fiches fi on fi.rpps = c.rpps
+    where (v_mots is null or not exists (select 1 from unnest(v_mots) as w(mot) where c.nom_recherche not like '%' || w.mot || '%'))
+      and (p_specialites is null or c.specialite_code = any(p_specialites))
+      and (p_intitule is null
+           or exists (select 1 from fiches f2 join public.fiches_intitules x on x.user_id = f2.user_id
+                      where f2.rpps = c.rpps and x.intitule_id = p_intitule)
+           or (p_specialites_equivalentes is not null and c.specialite_code = any(p_specialites_equivalentes)))
+    order by pp.d, c.nom, c.prenom
+    limit v_limite offset v_decalage;
+  else
+    return query
+    with fiches as (
+      select i.rpps, f.user_id, f.moyen_contact, f.mise_a_jour, f.ville, f.code_postal, f.lat, f.lon,
+             u.nom, u.prenom, u.specialite
+      from public.fiches_annuaire f
+      join public.identites_psc i on i.user_id = f.user_id
+      join public.users u on u.id = f.user_id
+      where f.publiee
+    ),
+    candidats as (
+      select m.rpps, m.nom, m.prenom, m.specialite_libelle as specialite, m.specialite_code, m.nom_recherche
+      from public.ans_medecins m
+      where m.lot = v_lot and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+      union all
+      select fi.rpps, fi.nom, fi.prenom, fi.specialite, null::text,
+             public.annuaire_normaliser(coalesce(fi.nom, '') || ' ' || coalesce(fi.prenom, ''))
+      from fiches fi
+      where not exists (select 1 from public.ans_medecins m where m.lot = v_lot and m.rpps = fi.rpps
+                          and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps))
+    ),
+    page as (
+      select c.rpps, c.nom, c.prenom, c.specialite, c.specialite_code
+      from candidats c
+      where (v_mots is null or not exists (select 1 from unnest(v_mots) as w(mot) where c.nom_recherche not like '%' || w.mot || '%'))
+        and (p_specialites is null or c.specialite_code = any(p_specialites))
+        and (p_intitule is null
+             or exists (select 1 from fiches f2 join public.fiches_intitules x on x.user_id = f2.user_id
+                        where f2.rpps = c.rpps and x.intitule_id = p_intitule)
+             or (p_specialites_equivalentes is not null and c.specialite_code = any(p_specialites_equivalentes)))
+      order by c.nom, c.prenom, c.rpps
+      limit v_limite offset v_decalage
+    )
+    select p.rpps, p.nom, p.prenom, p.specialite, p.specialite_code,
+           coalesce(pos.ville, fi.ville), coalesce(pos.code_postal, fi.code_postal),
+           coalesce(pos.lat, fi.lat), coalesce(pos.lon, fi.lon), null::double precision,
+           fi.rpps is not null, fi.moyen_contact,
+           case when fi.user_id is null then '{}'::text[] else coalesce((
+             select array_agg(it.libelle order by it.libelle) from public.fiches_intitules x
+             join public.intitules it on it.id = x.intitule_id
+             where x.user_id = fi.user_id and it.statut = 'valide'), '{}'::text[]) end,
+           fi.mise_a_jour
+    from page p
+    left join fiches fi on fi.rpps = p.rpps
+    left join lateral (
+      select s.commune as ville, s.code_postal, s.lat, s.lon
+      from public.ans_exerce e join public.ans_sites s on s.lot = e.lot and s.id = e.site_id
+      where e.lot = v_lot and e.rpps = p.rpps and s.lat is not null
+        and not exists (select 1 from public.annuaire_oppositions o where o.rpps = p.rpps)
+      order by s.id limit 1
+    ) pos on true
+    order by p.nom, p.prenom, p.rpps;
+  end if;
+end $function$;
+```

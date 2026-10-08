@@ -6,6 +6,7 @@
  * gestion des compétences validées (ajouter, modifier, supprimer).
  * Chaque décision efface le lien avec l'auteur (promesse de la charte) : acceptée,
  * la proposition perd `propose_par` ; fusionnée ou refusée, elle est supprimée.
+ * Aussi : oppositions (médecins retirés de l'annuaire issu de l'ANS).
  */
 
 import { revalidatePath } from 'next/cache'
@@ -174,6 +175,44 @@ export async function supprimerIntitule(id: string): Promise<Resultat> {
   if (error) return { error: error.message }
   if (!data || data.length === 0) return { error: 'Compétence introuvable.' }
   revalider()
+  return { ok: true }
+}
+
+// ────────────────────────────────────────────
+// Oppositions (onglet « Oppositions ») : médecins retirés de l'annuaire issu de l'ANS.
+// Effet immédiat (les fonctions de lecture les écartent), puis exclus des imports suivants.
+// ────────────────────────────────────────────
+
+/** RPPS à 11 chiffres ; l'identifiant national PSC (« 8 » + RPPS) est accepté. */
+function rppsValide(saisie: string): string | null {
+  const chiffres = saisie.replace(/\s+/g, '')
+  const rpps = chiffres.length === 12 && chiffres.startsWith('8') ? chiffres.slice(1) : chiffres
+  return /^[0-9]{11}$/.test(rpps) ? rpps : null
+}
+
+function revaliderOppositions() {
+  revalidatePath('/admin/intitules')
+  revalidatePath('/annuaire', 'layout')
+}
+
+export async function ajouterOpposition(input: { rpps: string; motif: string }): Promise<Resultat> {
+  await assertAdmin()
+  const rpps = rppsValide(input.rpps)
+  if (!rpps) return { error: 'RPPS attendu : 11 chiffres.' }
+  const motif = input.motif.trim().slice(0, 300) || null
+
+  const { error } = await createServiceRoleClient().from('annuaire_oppositions').insert({ rpps, motif })
+  if (error) return { error: error.code === '23505' ? 'Ce RPPS est déjà dans la liste.' : error.message }
+  revaliderOppositions()
+  return { ok: true }
+}
+
+export async function retirerOpposition(rpps: string): Promise<Resultat> {
+  await assertAdmin()
+  const { data, error } = await createServiceRoleClient().from('annuaire_oppositions').delete().eq('rpps', rpps).select('rpps')
+  if (error) return { error: error.message }
+  if (!data || data.length === 0) return { error: 'Opposition introuvable.' }
+  revaliderOppositions()
   return { ok: true }
 }
 

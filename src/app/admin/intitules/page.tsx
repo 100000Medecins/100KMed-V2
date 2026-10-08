@@ -6,10 +6,12 @@ import IntitulesAdminClient from '@/components/admin/IntitulesAdminClient'
 import type { PropositionIntitule, IntituleValide } from '@/components/admin/IntitulesAdminClient'
 import CatalogueAdminClient from '@/components/admin/CatalogueAdminClient'
 import type { CompetenceCatalogue } from '@/components/admin/CatalogueAdminClient'
+import OppositionsAdminClient from '@/components/admin/OppositionsAdminClient'
+import type { Opposition } from '@/components/admin/OppositionsAdminClient'
 
 async function getData() {
   const admin = createServiceRoleClient()
-  const [{ data: propositions }, { data: valides }] = await Promise.all([
+  const [{ data: propositions }, { data: valides }, { data: oppositionsBrut }, { data: version }] = await Promise.all([
     admin
       .from('intitules')
       .select('id, libelle, synonymes, groupe, propose_par, created_at, fiches_intitules(count)')
@@ -22,7 +24,27 @@ async function getData() {
       .eq('type', 'competence')
       .eq('statut', 'valide')
       .order('libelle'),
+    admin.from('annuaire_oppositions').select('rpps, motif, cree_le').order('cree_le', { ascending: false }),
+    admin.from('ans_version').select('lot').eq('cle', 'courante').maybeSingle(),
   ])
+
+  // Nom d'après le lot ANS courant, pour reconnaître le médecin (absent une fois exclu par un import)
+  const nomsAns = new Map<string, string>()
+  const rppsOpposes = (oppositionsBrut ?? []).map((o) => o.rpps)
+  if (version && rppsOpposes.length > 0) {
+    const { data: medecins } = await admin
+      .from('ans_medecins')
+      .select('rpps, nom, prenom')
+      .eq('lot', version.lot)
+      .in('rpps', rppsOpposes)
+    for (const m of medecins ?? []) nomsAns.set(m.rpps, [m.prenom, m.nom].filter(Boolean).join(' '))
+  }
+  const oppositions: Opposition[] = (oppositionsBrut ?? []).map((o) => ({
+    rpps: o.rpps,
+    motif: o.motif,
+    creeLe: o.cree_le,
+    nomAns: nomsAns.get(o.rpps) ?? null,
+  }))
 
   const liste = propositions ?? []
   const auteurs = new Map<string, string>()
@@ -53,7 +75,7 @@ async function getData() {
     nbFiches: v.fiches_intitules[0]?.count ?? 0,
   }))
   const intitulesValides: IntituleValide[] = catalogue.map(({ id, libelle, groupe }) => ({ id, libelle, groupe }))
-  return { propositions: resultat, catalogue, valides: intitulesValides }
+  return { propositions: resultat, catalogue, valides: intitulesValides, oppositions }
 }
 
 function classeOnglet(actif: boolean) {
@@ -64,37 +86,37 @@ function classeOnglet(actif: boolean) {
 
 export default async function AdminIntitulesPage({ searchParams }: { searchParams: Promise<{ onglet?: string }> }) {
   const { onglet } = await searchParams
-  const ongletCatalogue = onglet === 'catalogue'
-  const { propositions, catalogue, valides } = await getData()
+  const actif = onglet === 'catalogue' || onglet === 'oppositions' ? onglet : 'propositions'
+  const { propositions, catalogue, valides, oppositions } = await getData()
+
+  const onglets = [
+    { cle: 'propositions', href: '/admin/intitules', libelle: `Propositions (${propositions.length})` },
+    { cle: 'catalogue', href: '/admin/intitules?onglet=catalogue', libelle: `Catalogue (${catalogue.length})` },
+    { cle: 'oppositions', href: '/admin/intitules?onglet=oppositions', libelle: `Oppositions (${oppositions.length})` },
+  ]
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Annuaire — compétences</h1>
+        <h1 className="text-2xl font-bold text-navy">Annuaire</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Catalogue commun des compétences que les médecins cochent sur leur fiche, et propositions à valider.
-          Chaque décision sur une proposition efface le lien avec son auteur.
+          Catalogue commun des compétences que les médecins cochent sur leur fiche, propositions à valider, et
+          médecins qui ont refusé de figurer dans l&apos;annuaire. Chaque décision sur une proposition efface le lien
+          avec son auteur.
         </p>
       </div>
 
       <nav className="mb-6 flex gap-2" aria-label="Onglets">
-        <Link href="/admin/intitules" className={classeOnglet(!ongletCatalogue)} aria-current={!ongletCatalogue ? 'page' : undefined}>
-          {`Propositions (${propositions.length})`}
-        </Link>
-        <Link
-          href="/admin/intitules?onglet=catalogue"
-          className={classeOnglet(ongletCatalogue)}
-          aria-current={ongletCatalogue ? 'page' : undefined}
-        >
-          {`Catalogue (${catalogue.length})`}
-        </Link>
+        {onglets.map((o) => (
+          <Link key={o.cle} href={o.href} className={classeOnglet(actif === o.cle)} aria-current={actif === o.cle ? 'page' : undefined}>
+            {o.libelle}
+          </Link>
+        ))}
       </nav>
 
-      {ongletCatalogue ? (
-        <CatalogueAdminClient competences={catalogue} />
-      ) : (
-        <IntitulesAdminClient propositions={propositions} valides={valides} />
-      )}
+      {actif === 'catalogue' && <CatalogueAdminClient competences={catalogue} />}
+      {actif === 'oppositions' && <OppositionsAdminClient oppositions={oppositions} />}
+      {actif === 'propositions' && <IntitulesAdminClient propositions={propositions} valides={valides} />}
     </div>
   )
 }

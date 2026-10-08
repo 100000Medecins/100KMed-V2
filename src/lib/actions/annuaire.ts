@@ -55,6 +55,51 @@ export interface MaFicheAnnuaire {
   telephoneCabinet: string
   competences: string[]
   catalogue: IntituleCatalogue[]
+  /** Ce que l'Annuaire Santé connaît pour le RPPS du médecin : proposé, à confirmer d'un clic. */
+  propositionsAns: PropositionsAns | null
+}
+
+export interface LieuAns {
+  nom: string | null
+  voie: string | null
+  codePostal: string | null
+  commune: string | null
+  telephones: string[]
+  lat: number | null
+  lon: number | null
+}
+
+export interface PropositionsAns {
+  version: string
+  lieux: LieuAns[]
+  mssante: string[]
+}
+
+async function propositionsAnsPour(rpps: string): Promise<PropositionsAns | null> {
+  const admin = createServiceRoleClient()
+  const { data: courante } = await admin.from('ans_version').select('lot, version').eq('cle', 'courante').maybeSingle()
+  if (!courante) return null
+  const [{ data: liens }, { data: bal }] = await Promise.all([
+    admin.from('ans_exerce').select('site_id').eq('lot', courante.lot).eq('rpps', rpps),
+    admin.from('ans_mssante').select('adresse').eq('lot', courante.lot).eq('rpps', rpps).order('adresse'),
+  ])
+  const ids = (liens ?? []).map((l) => l.site_id)
+  const { data: sites } = ids.length
+    ? await admin.from('ans_sites').select('nom, voie, code_postal, commune, telephones, lat, lon').eq('lot', courante.lot).in('id', ids)
+    : { data: [] }
+  return {
+    version: courante.version,
+    lieux: (sites ?? []).map((s) => ({
+      nom: s.nom,
+      voie: s.voie,
+      codePostal: s.code_postal,
+      commune: s.commune,
+      telephones: s.telephones,
+      lat: s.lat,
+      lon: s.lon,
+    })),
+    mssante: (bal ?? []).map((b) => b.adresse),
+  }
 }
 
 /** Pour le menu de Mon compte. */
@@ -70,7 +115,7 @@ export async function getMaFicheAnnuaire(): Promise<MaFicheAnnuaire | null> {
 
   const [profil, identite, fiche, portable, liens, catalogue] = await Promise.all([
     supabase.from('users').select('specialite').eq('id', user.id).maybeSingle(),
-    supabase.from('identites_psc').select('user_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('identites_psc').select('user_id, rpps').eq('user_id', user.id).maybeSingle(),
     supabase.from('fiches_annuaire').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('fiches_annuaire_portables').select('portable, visible').eq('user_id', user.id).maybeSingle(),
     supabase.from('fiches_intitules').select('intitule_id').eq('user_id', user.id),
@@ -103,6 +148,7 @@ export async function getMaFicheAnnuaire(): Promise<MaFicheAnnuaire | null> {
     telephoneCabinet: afficherPortable(fiche.data?.telephone_cabinet),
     competences: (liens.data ?? []).map((l) => l.intitule_id),
     catalogue: catalogue.data ?? [],
+    propositionsAns: identite.data ? await propositionsAnsPour(identite.data.rpps) : null,
   }
 }
 

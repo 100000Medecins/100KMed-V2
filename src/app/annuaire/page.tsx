@@ -30,22 +30,32 @@ export default async function AnnuairePage() {
   // Premiers résultats : autour de la commune déclarée sur la fiche du lecteur, s'il en a une
   const supabase = await createServerClient()
   const point = fiche.commune
-  const { data: initiaux } = await supabase.rpc('annuaire_rechercher', {
-    p_lat: point?.lat,
-    p_lon: point?.lon,
-    p_rayon_km: point ? RAYON_PAR_DEFAUT_KM : undefined,
-    p_limite: 50,
-  })
+  const [{ data: initiaux }, { data: sourceVersion }] = await Promise.all([
+    supabase.rpc('annuaire_rechercher', {
+      p_lat: point?.lat,
+      p_lon: point?.lon,
+      p_rayon_km: point ? RAYON_PAR_DEFAUT_KM : undefined,
+      p_limite: 50,
+    }),
+    supabase.rpc('annuaire_source'),
+  ])
 
-  const specialites = Array.from(new Set(Object.values(SM_SPECIALITES))).sort((a, b) => a.localeCompare(b, 'fr'))
+  // Spécialités regroupées par libellé du site (ex. SM26 / SM53 / SM54 → « Médecin généraliste »)
+  const codesParLibelle = new Map<string, string[]>()
+  for (const [code, libelle] of Object.entries(SM_SPECIALITES)) {
+    codesParLibelle.set(libelle, [...(codesParLibelle.get(libelle) ?? []), code])
+  }
+  const specialites = Array.from(codesParLibelle.entries())
+    .map(([libelle, codes]) => ({ libelle, codes }))
+    .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'))
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-navy">Annuaire des confrères</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Trouvez un confrère par son nom, sa spécialité, ses compétences ou sa commune, et voyez comment il préfère être
-          contacté.
+          Tous les médecins de l&apos;Annuaire Santé, et les fiches complétées par les confrères sur 100 000 Médecins :
+          compétences, moyen de contact préféré, portable.
         </p>
       </div>
       <AnnuaireRecherche
@@ -53,6 +63,7 @@ export default async function AnnuairePage() {
         specialites={specialites}
         communeLecteur={fiche.commune}
         resultatsInitiaux={initiaux ?? []}
+        sourceVersion={sourceVersion ?? null}
       />
     </div>
   )

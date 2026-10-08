@@ -12,7 +12,7 @@ _(rien en cours)_
 
 ## En cours
 
-### Annuaire mutualisé — tranche 1 « Ma fiche annuaire » terminée le 2026-10-08 ; suite à décider (posé le 2026-10-06)
+### Annuaire mutualisé — tranches 1, 2a et 2b faites (éteint en prod) ; essais de David et 2b-bis en attente (posé le 2026-10-06)
 
 **Contexte** : chantier préparé dans le dépôt messagerie (`docs/annuaire-mutualise.md`, `annuaire-surspecialites.md`, `annuaire-cgu-confidentialite.md`). Plan de la tranche 1 validé par David le 06/10 : fiche dans Mon compte, invisible des autres ; administration des intitulés proposés ; suppression de compte étendue.
 
@@ -32,10 +32,16 @@ _(rien en cours)_
 
 **Tranche 2 — décisions du 08/10** : champs déclarés ville / code postal, adresse MSSanté, téléphone du cabinet ; portable 10 / jour / lecteur ; page `/annuaire` depuis Mon compte ; lecteurs = médecins avec preuve PSC, sans réciprocité ; recherche par localisation comme dans l'application ; **une seule chaîne de données ANS** pour l'application et le site. Proposition de synchronisation : `docs/2026-10-08-annuaire-tranche-2.md` — validée le 08/10 (localisation : ville saisie ou celle de sa fiche, sinon géolocalisation proposée ; script commun dans le dépôt messagerie ; ordre 2a puis 2b). Le jour J, ajouter à la charte : la ville saisie dans la recherche est envoyée au géocodeur de l'IGN.
 
-**Tranche 2a (08/10)** : migration en base + code faits (`/annuaire`, fiche d'un confrère, portable plafonné, carte, coordonnées déclarées, Analytics exclu, purge du journal). **Reste : essai réel par David** (deux identités PSC pour le plafond et le journal), puis **2b** : tables `ans_*` et liste d'opposition côté site, étapes d'export / import dans `lot8` côté messagerie.
+**Tranche 2a (08/10)** : migration en base + code faits (`/annuaire`, fiche d'un confrère, portable plafonné, carte, coordonnées déclarées, Analytics exclu, purge du journal). Fusionnée dans `main` (éteinte) le 08/10 avec `b5c7764`. **Reste : essai réel par David** (deux identités PSC pour le plafond et le journal).
+
+**Tranche 2b (08/10)** : tables `ans_*` + `annuaire_oppositions`, premier import (199 293 médecins, extraction du 04/10), recherche et fiches sur l'ANS, marqueur au cabinet, propositions dans Ma fiche, onglet Oppositions. Code sur `dev` (`8ef50a1`, `ce9b0c3`, `406c981`), pas encore dans `main`.
+- [ ] **David** : lancer la migration **2b-bis** (recherche accélérée, SQL dans le chat du 08/10 et dans `docs/2026-10-08-annuaire-tranche-2.md`), puis Claude re-mesure.
+- [ ] **David** : essai sur dev.100000medecins.org — recherche par nom, spécialité, compétence ; « Autour de moi » et rayons ; carte (marqueurs aux cabinets) ; fiche d'un confrère sans fiche (carte ANS seule) ; Ma fiche → « Utiliser » un lieu et une MSSanté ; onglet Oppositions (ajouter puis retirer un RPPS de test).
+- [ ] **Messagerie** : exclure `annuaire_oppositions` de `annuaire.db` (base de l'application) ; import mensuel côté site : `npx tsx scripts/annuaire-import-ans.ts --execute` après reconstruction de la base.
+- [ ] Fusion 2b dans `main` (accord de David) — sans effet visible tant que l'interrupteur est éteint.
 
 **Suite (à décider avec David)** :
-- **Tranche 2 — lecture par les confrères** : recherche par compétence et spécialité (`pg_trgm` installé), fiche d'un confrère avec la mention « Informations déclarées par le médecin, non vérifiées » et la date de mise à jour ; portable fiche par fiche par une fonction (plafond quotidien + journal des affichages + purge à 12 mois dans `purge-donnees`) ; pas de Vercel Analytics sur ces pages ; source ANS affichée si les données de l'Annuaire Santé sont reprises.
+- **Tranche 3** : l'application lit les fiches et le portable (mêmes fonctions de la base).
 - **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
 
 ### Relire les pages légales (posé le 2026-09-30)

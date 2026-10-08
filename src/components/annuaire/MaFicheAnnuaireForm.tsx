@@ -19,7 +19,7 @@ import {
   TEXTE_ACCORD_PORTABLE,
   TEXTE_ACCORD_PUBLICATION,
 } from '@/lib/constants/annuaire'
-import { normaliserRecherche } from '@/lib/annuaire/normaliser'
+import { normaliserRecherche, normaliserTelephone, afficherPortable } from '@/lib/annuaire/normaliser'
 
 const MAX_RESULTATS = 12
 
@@ -253,9 +253,62 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
         <Card padding="lg" overflow="visible">
           <h2 className="text-base font-bold text-navy">Coordonnées professionnelles</h2>
           <p className="text-sm text-gray-500 mt-1 max-w-xl">
-            Facultatives. Visibles des confrères quand votre fiche est publiée. Sur la carte, vous êtes placé au centre de
-            votre commune, jamais à votre adresse.
+            Facultatives. Visibles des confrères quand votre fiche est publiée. Sur la carte, vous êtes placé à votre lieu
+            d&apos;exercice publié par l&apos;Annuaire Santé ; une commune choisie à la main vous place au centre de la commune.
           </p>
+
+          {initial.propositionsAns && (initial.propositionsAns.lieux.length > 0 || initial.propositionsAns.mssante.length > 0) && (
+            <div className="mt-4 rounded-card border border-accent-blue/20 bg-accent-blue/5 p-4">
+              <p className="text-sm font-semibold text-navy">
+                D&apos;après l&apos;Annuaire Santé (données du{' '}
+                {new Date(initial.propositionsAns.version).toLocaleDateString('fr-FR')})
+              </p>
+              <ul className="mt-2 space-y-2">
+                {initial.propositionsAns.lieux.map((l, i) => (
+                  <li key={i} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="text-gray-700">
+                      {l.nom && <span className="font-medium">{l.nom} — </span>}
+                      {[l.voie, [l.codePostal, l.commune].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
+                      {l.telephones.length > 0 && <span className="text-gray-500"> · {l.telephones.map((t) => afficherPortable(normaliserTelephone(t) ?? t)).join(', ')}</span>}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        modifie()
+                        if (l.commune && l.lat != null && l.lon != null) {
+                          setCommune({ ville: l.commune, codePostal: l.codePostal ?? '', communeInsee: '', lat: l.lat, lon: l.lon })
+                        }
+                        if (l.telephones[0]) setTelephoneCabinet(afficherPortable(normaliserTelephone(l.telephones[0]) ?? l.telephones[0]))
+                      }}
+                    >
+                      Utiliser
+                    </Button>
+                  </li>
+                ))}
+                {initial.propositionsAns.mssante.map((adresse) => (
+                  <li key={adresse} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-gray-700 break-all">{adresse}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        modifie()
+                        setMssante(adresse)
+                      }}
+                    >
+                      Utiliser
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-gray-500">
+                « Utiliser » remplit les champs ci-dessous ; rien n&apos;est enregistré avant « Enregistrer ma fiche ».
+              </p>
+            </div>
+          )}
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field label="Commune d'exercice" htmlFor="annuaire-commune">
               <ChoixCommune
