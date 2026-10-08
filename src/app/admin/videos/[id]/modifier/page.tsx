@@ -7,7 +7,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import VideoForm from '@/components/admin/VideoForm'
 import SocialPanel from '@/components/admin/SocialPanel'
 import { updateVideo, getSolutionsLieesAVideo } from '@/lib/actions/admin'
-import { listerPosts } from '@/lib/reseaux/envoi'
+import { listerPosts, programmationActive } from '@/lib/reseaux/envoi'
 import { lienEtImageVideo } from '@/lib/reseaux/liens'
 import type { VideoRow, VideoRubrique } from '@/lib/db/misc'
 
@@ -75,6 +75,7 @@ export default async function ModifierVideoPage(props: { params: Promise<{ id: s
             image,
           }}
           postsInitiaux={postsReseaux}
+          programmationActive={programmationActive()}
         />
       </div>
     </div>

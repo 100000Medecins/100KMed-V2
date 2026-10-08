@@ -5,8 +5,9 @@ import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
 import { roleAdmin } from '@/lib/auth/admin-guard'
 
-// Réglages que le rôle « contenus » peut modifier : ceux de la rubrique Emails.
-const CLES_CONTENU = ['crons_routiniers_actifs', 'excuse_draft_html', 'excuse_draft_sujet']
+// Réglages que le rôle « contenus » peut modifier dans la rubrique Emails. Pas l'interrupteur
+// `crons_routiniers_actifs` : il déclenche toutes les relances et envois programmés (admin seul).
+const CLES_CONTENU = ['excuse_draft_html', 'excuse_draft_sujet']
 
 export async function getSiteConfig(cle: string): Promise<string | null> {
   const supabase = createServiceRoleClient()

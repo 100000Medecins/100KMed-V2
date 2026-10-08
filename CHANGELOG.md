@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-10-09] — Réseaux sociaux : liens toujours vers la production
+## [2026-10-09] — Réseaux sociaux : liens vers la production, programmation désactivée, interrupteur des emails réservé à l'admin
 
 ### Fix — Lien des posts réseaux
 - **Constat** (capture du module LinkedIn de David) : le dernier envoi reçu par Make portait `article_url = http://localhost:3000/blog/segur-vague-2…` → le post LinkedIn de l'essai du 08/10, préparé depuis un poste local, contenait un lien `localhost` (dans `article_url` et dans le texte rédigé par l'IA, qui reprend l'adresse fournie).
@@ -13,6 +13,17 @@
 
 ### Make — module LinkedIn image
 - Le module « Create a Company Image Post » propose « Upload by link » : `Image URL` = `image_url` du webhook suffit, le module HTTP « Get a file » n'est pas nécessaire.
+
+### Décision — pas de `pg_cron` pour l'instant : programmation des posts désactivée
+- David préfère ne pas activer de tâche planifiée en base (un envoi de masse involontaire à ~300 personnes par le passé). Sans elle, un post « programmé » ne partirait jamais.
+- [envoi.ts](src/lib/reseaux/envoi.ts) `programmationActive()` = variable `POSTS_PROGRAMMATION_ACTIVE === 'true'` (absente → désactivée). Le [panneau](src/components/admin/SocialPanel.tsx) masque la date, « Programmer » et « Programmer tous les brouillons » (« Envoyer maintenant » passe en bouton principal, mention « La programmation n'est pas encore activée ») ; `programmerPost` refuse côté serveur. Aucun post n'était programmé (table vide de posts `programme`). Activation future : TODO.
+- `pg_cron` / `pg_net` **non installées** (vérifié) ; le premier essai du SQL de l'étape 2 avait échoué (`schema "cron" does not exist`) → rien n'a été créé.
+
+### Sécurité — Interrupteur des emails automatiques réservé à l'admin
+- En ouvrant la rubrique Emails au rôle « contenus » (08/10), l'interrupteur `crons_routiniers_actifs` (éteint) lui était ouvert : l'allumer déclencherait toutes les relances (1 an, 3 mois, incomplets, PSC), la newsletter et les campagnes programmées.
+- [siteConfig.ts](src/lib/actions/siteConfig.ts) : la clé retirée des réglages permis au rôle ; [page Emails](src/app/admin/emails/page.tsx) → `peutModifierCrons` ; [AdminEmailsClient](src/components/admin/AdminEmailsClient.tsx) : interrupteur grisé + « Réglage réservé à l'administrateur ».
+- Au passage : `any` retirés des lectures de la page Emails (`users_notification_preferences`, `users`, `pages_statiques` typées), import inutilisé retiré.
+- Vérifié en local : rôle « contenus » → mention présente, interrupteur désactivé ; admin → actif ; `setSiteConfig('crons_routiniers_actifs', 'false')` par le rôle « contenus » → refusé (testé avec la valeur actuelle, sans risque d'allumer) ; valeur en base toujours `false` ; `programmerPost` → « La programmation n'est pas encore activée ».
 
 ---
 

@@ -5,6 +5,15 @@ import type { PostReseau, SourcePost } from './types'
 
 type Client = ReturnType<typeof createServiceRoleClient>
 
+/**
+ * Programmation des posts : n'a de sens que si la tâche pg_cron qui appelle
+ * /api/cron/envoyer-posts-reseaux est en place (décision de David : pas encore, 2026-10-09).
+ * Tant que `POSTS_PROGRAMMATION_ACTIVE` n'est pas « true », seul l'envoi immédiat est proposé.
+ */
+export function programmationActive(): boolean {
+  return process.env.POSTS_PROGRAMMATION_ACTIVE === 'true'
+}
+
 export function sourceDuPost(post: PostReseau): SourcePost {
   return post.article_id ? { type: 'article', id: post.article_id } : { type: 'video', id: post.video_id! }
 }
