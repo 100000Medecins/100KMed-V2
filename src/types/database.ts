@@ -2700,6 +2700,18 @@ export type Database = {
         Returns: Json
       }
       annuaire_afficher_portable: { Args: { p_rpps: string }; Returns: string }
+      annuaire_compter: {
+        Args: {
+          p_intitule?: string
+          p_lat?: number
+          p_lon?: number
+          p_rayon_km?: number
+          p_specialites?: string[]
+          p_specialites_equivalentes?: string[]
+          p_texte?: string
+        }
+        Returns: number
+      }
       annuaire_fiche: {
         Args: { p_rpps: string }
         Returns: {
@@ -2723,6 +2735,15 @@ export type Database = {
           telephone_cabinet: string
           ville: string
         }[]
+      }
+      annuaire_filtres: {
+        Args: {
+          p_intitule: string
+          p_specialites: string[]
+          p_specialites_equivalentes: string[]
+          p_texte: string
+        }
+        Returns: Record<string, unknown>
       }
       annuaire_lecteur_autorise: { Args: never; Returns: boolean }
       annuaire_normaliser: { Args: { t: string }; Returns: string }

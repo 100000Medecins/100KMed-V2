@@ -30,13 +30,10 @@ export default async function AnnuairePage() {
   // Premiers résultats : autour de la commune déclarée sur la fiche du lecteur, s'il en a une
   const supabase = await createServerClient()
   const point = fiche.commune
-  const [{ data: initiaux }, { data: sourceVersion }] = await Promise.all([
-    supabase.rpc('annuaire_rechercher', {
-      p_lat: point?.lat,
-      p_lon: point?.lon,
-      p_rayon_km: point ? RAYON_PAR_DEFAUT_KM : undefined,
-      p_limite: 50,
-    }),
+  const zone = { p_lat: point?.lat, p_lon: point?.lon, p_rayon_km: point ? RAYON_PAR_DEFAUT_KM : undefined }
+  const [{ data: initiaux }, { data: totalInitial }, { data: sourceVersion }] = await Promise.all([
+    supabase.rpc('annuaire_rechercher', { ...zone, p_limite: 50 }),
+    supabase.rpc('annuaire_compter', zone),
     supabase.rpc('annuaire_source'),
   ])
 
@@ -59,10 +56,12 @@ export default async function AnnuairePage() {
         </p>
       </div>
       <AnnuaireRecherche
+        lecteur={fiche.userId}
         catalogue={fiche.catalogue.filter((i) => i.statut === 'valide')}
         specialites={specialites}
         communeLecteur={fiche.commune}
         resultatsInitiaux={initiaux ?? []}
+        totalInitial={totalInitial ?? null}
         sourceVersion={sourceVersion ?? null}
       />
     </div>
