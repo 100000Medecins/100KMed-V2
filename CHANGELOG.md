@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-09] — Réseaux sociaux : liens toujours vers la production
+
+### Fix — Lien des posts réseaux
+- **Constat** (capture du module LinkedIn de David) : le dernier envoi reçu par Make portait `article_url = http://localhost:3000/blog/segur-vague-2…` → le post LinkedIn de l'essai du 08/10, préparé depuis un poste local, contenait un lien `localhost` (dans `article_url` et dans le texte rédigé par l'IA, qui reprend l'adresse fournie).
+- **Fix** ([liens.ts](src/lib/reseaux/liens.ts)) : `lienArticle` utilise l'adresse fixe `https://www.100000medecins.org` au lieu de `NEXT_PUBLIC_SITE_URL` (même choix que le gabarit de la newsletter) : un post préparé depuis un poste local ou dev pointe vers la production.
+
+### Make — module LinkedIn image
+- Le module « Create a Company Image Post » propose « Upload by link » : `Image URL` = `image_url` du webhook suffit, le module HTTP « Get a file » n'est pas nécessaire.
+
+---
+
 ## [2026-10-08] — Annuaire : rayon visible (total, carte complète) et retour à la dernière recherche
 
 ### Constat (essai de David sur dev)
