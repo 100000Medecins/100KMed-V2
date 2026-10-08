@@ -252,9 +252,11 @@ RLS active sur les 5 tables ; 13 règles (4 + 4 + 3 + 1 + 1) ; `anon` sans aucun
 6. ~~Page « Ma fiche annuaire » (`/mon-compte/annuaire`) : essai réel par David le 07/10 en local
    (connexion PSC BAS), proposition puis refus dans l'admin.~~
 7. ~~Page `/admin/intitules` (07/10) : accepter / reformuler, fusionner comme synonyme, refuser.~~
-8. Suppression (`account.ts`, `admin-users.ts`) et fusion (`merge.ts`) de compte : code fait le
-   07/10 ; essai de suppression du compte de test BAS par l'admin à faire (la fusion n'est pas
-   essayée en réel : il faudrait deux comptes du même médecin).
+8. ~~Suppression (`account.ts`, `admin-users.ts`) et fusion (`merge.ts`) de compte (07/10) ; compte
+   de test BAS supprimé le 08/10 par l'action admin réelle : plus rien dans l'annuaire.~~ (La fusion
+   n'est pas essayée en réel : il faudrait deux comptes du même médecin.)
+
+**Tranche 1 terminée le 2026-10-08**, en production derrière l'interrupteur éteint (`bb41b77`).
 9. ~~Étanchéité (07/10) : anonyme refusé sur les 5 tables ; un autre médecin connecté ne lit ni ne
    modifie rien ; le titulaire voit sa fiche.~~ Test rejouable dans le SQL Editor :
    `select set_config('role','authenticated',true); select set_config('request.jwt.claims','{"sub":"<uuid>","role":"authenticated"}',true);`

@@ -5,6 +5,7 @@ import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
+import { assertAdmin } from '@/lib/auth/admin-guard'
 
 export type EmailCampagne = {
   id: string
@@ -30,6 +31,7 @@ function normalise(row: any): EmailCampagne {
 }
 
 export async function getEmailsCampagnes(): Promise<{ etudes: EmailCampagne[]; questionnaires: EmailCampagne[] }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { data } = await supabase
@@ -45,6 +47,7 @@ export async function getEmailsCampagnes(): Promise<{ etudes: EmailCampagne[]; q
 }
 
 export async function cancelEmailCampagne(id: string): Promise<{ error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase
@@ -66,6 +69,7 @@ export async function scheduleCampagne(
     scheduledAt: string
   }
 ): Promise<{ campagneId: string | null; error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { refId, titre, lien, textePromoteur, specialitesCibles, scheduledAt } = config
@@ -93,6 +97,7 @@ export async function genererTexteEmail(
   titre: string,
   description?: string | null
 ): Promise<{ html: string | null; error: string | null }> {
+  await assertAdmin()
   if (!process.env.ANTHROPIC_API_KEY) {
     return { html: null, error: 'Clé API Anthropic non configurée' }
   }
@@ -149,6 +154,7 @@ export async function sendCampagneNow(
     specialitesCibles: string[]
   }
 ): Promise<{ sent: number; total: number; error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.100000medecins.org'

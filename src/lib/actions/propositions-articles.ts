@@ -175,6 +175,7 @@ export async function lierPropositionAArticle(
   propositionId: string,
   articleId: string
 ): Promise<void> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('propositions_articles')

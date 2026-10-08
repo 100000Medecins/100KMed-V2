@@ -3,6 +3,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
+import { assertAdmin } from '@/lib/auth/admin-guard'
 
 export async function getSiteConfig(cle: string): Promise<string | null> {
   const supabase = createServiceRoleClient()
@@ -16,6 +17,7 @@ export async function getSiteConfig(cle: string): Promise<string | null> {
 }
 
 export async function setSiteConfig(cle: string, valeur: string): Promise<void> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   // Valeur précédente pour le diff du flux de supervision
   const ancienne = await getSiteConfig(cle)

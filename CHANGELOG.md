@@ -5,6 +5,29 @@
 
 ---
 
+## [2026-10-08] — Sécurité : revue des actions serveur
+
+### Fix — 17 actions d'administration appelables sans contrôle
+- **Méthode** : les 226 actions serveur exposées (manifeste de build `server-reference-manifest.json`, qui dit aussi dans quelles pages chacune est embarquée) passées au crible : contrôle admin ? session ? `userId` reçu comparé à la session ? élément modifié par identifiant appartenant bien à l'appelant ? Script d'analyse du corps de chaque fonction, puis relecture à la main des cas signalés.
+- **Embarquées dans des pages de Mon compte** (donc récupérables par tout médecin connecté), sans aucun contrôle :
+  - études cliniques ([etudes-cliniques.ts](src/lib/actions/etudes-cliniques.ts)) : `getEtudesCliniquesSuperAdmin`, `createEtudeCliniqueAdmin`, `updateEtudeCliniqueAdmin`, `deleteEtudeCliniqueAdmin`, `setStatutEtude` — créer, publier (bloc « Participez à la recherche » de l'accueil), modifier, supprimer une étude ;
+  - questionnaires de thèse ([questionnaires-these.ts](src/lib/actions/questionnaires-these.ts)) : `getAllQuestionnairesAdmin` (**noms et emails des auteurs**), `createQuestionnaireAdmin` (publié par défaut), `updateQuestionnaireAdmin`, `setStatutQuestionnaire`, `supprimerQuestionnaireAdmin`.
+- **Embarquées seulement dans l'admin**, sans contrôle (protégées par le seul fait que l'admin ne charge ses pages qu'après connexion) : campagnes d'emails ([emails-campagnes.ts](src/lib/actions/emails-campagnes.ts) : `sendCampagneNow` — **envoi de masse** —, `scheduleCampagne`, `cancelEmailCampagne`, `genererTexteEmail` — appel IA facturé —, `getEmailsCampagnes`), `saveEmailTemplate` (modèles d'emails du site), `setSiteConfig`, `saveSyndicatOverride` / `clearSyndicatOverride`, `lierPropositionAArticle`.
+- **Fix** : `assertAdmin()` ([admin-guard.ts](src/lib/auth/admin-guard.ts)) en tête des 17. Tous leurs appelants sont des pages d'administration ; aucune tâche planifiée ne les appelle.
+- **Deux corrections de plus** : `createUserProfile` ([user.ts](src/lib/actions/user.ts)) prenait l'email **fourni par le navigateur**, qui décide du rôle `digital_medical_hub` (`@digitalmedicalhub.com`) → l'email du compte fait foi ; `getEvaluationCompletionMap` ([solutions.ts](src/lib/actions/solutions.ts)) acceptait n'importe quel `userId` → comparé à la session.
+- **Vérifié sur le build de production en local** (appel direct des actions) : `getAllQuestionnairesAdmin` et `getEmailsCampagnes` refusées sans cookie admin (`Non autorisé`), données renvoyées avec.
+- **Sains après relecture** : les fonctions DMH (`assertDmhRole`), l'espace éditeur (`assertEditeurAccessToSolution`), les évaluations et favoris (filtre sur l'utilisateur), et les actions publiques par conception (suggestion d'acronyme, demande de référencement, évaluation anonyme, mot de passe oublié, lectures de contenus publiés).
+### Sécurité — Connexion PSC : contrôle du `state` (protection CSRF), en mesure
+- **Constat** (07/10) : le cookie `psc_state` était posé au départ de chaque connexion PSC mais jamais relu au retour. Un tiers pouvait faire aboutir dans le navigateur d'un médecin une connexion PSC qu'il avait lancée lui-même (le médecin se retrouve connecté sur le compte du tiers).
+- **Fait** ([psc-callback](src/app/api/auth/psc-callback/route.ts)) : au retour, le `state` reçu (sans préfixe de relais) est comparé au cookie ; le résultat est journalisé dans `psc_session_events` (étape `state_check`, détail `ok` / `absent` / `different`), et les cookies `psc_state` / `psc_nonce` sont effacés (usage unique).
+- **Pas encore bloquant**, volontairement : si l'application e-CPS rouvre parfois le retour dans un autre navigateur que celui de départ, le cookie y est absent et un blocage casserait ces connexions (le projet a déjà perdu des sessions à ce passage, d'où le choix des cookies). Le blocage s'active sans code en posant **`PSC_ETAT_STRICT=true`** dans Vercel ; la page de connexion a son message (`psc_state`).
+- Rythme mesuré : ~9 connexions PSC par jour → une à deux semaines de mesure suffisent (TODO).
+
+- **DMH limité à ses propres études** (décision de David) : `getEtudesAdmin`, `updateEtudeClinique`, `deleteEtudeClinique` filtrent sur `created_by` = le compte DMH, comme le prévoyaient les règles RLS de la table. Les 3 études existantes ont été créées depuis l'admin (`created_by` NULL) : le DMH ne les voit plus, l'admin continue de les gérer.
+- **Signalé, non modifié** : `checkEmailExists` révèle si une adresse a un compte ; l'évaluation anonyme envoie un email à l'adresse saisie sans Turnstile (vecteur de spam) — en TODO.
+
+---
+
 ## [2026-10-07] — Annuaire mutualisé, tranche 1 : tables en base (rien de visible)
 
 ### Base — 5 nouvelles tables, aucune table existante touchée
@@ -77,7 +100,10 @@
   - Appelées depuis l'admin, **sans contrôle admin** : `updateUserField` (nom, email…), `deleteUser` (**suppression de compte**), `assignEditeurToUser` (**rôle éditeur**, l'escalade fermée côté base le 06/10).
   - Appelées depuis Mon compte, **avec un `userId` fourni par le navigateur** : `getEditeurDataForUser`, `updateEditeurByUser`, `updateSolutionByEditeur`, `syncGalerieByEditeur` (espace éditeur), `getHdhOptins` (inscrits aux études, DMH).
 - **Fix** : `assertAdmin()` (nouveau module partagé) sur les trois premières ; `assertUtilisateurSession(userId)` sur les cinq autres (l'identifiant reçu doit être celui de la session). Signatures inchangées : les pages passent déjà `user.id` de la session.
+- **Exposition réelle** : le manifeste de build montre que les identifiants de ces 8 actions sont embarqués dans la page `/mon-compte/etudes-cliniques`, ouverte à **tout médecin connecté** — n'importe quel compte pouvait donc récupérer l'identifiant de `deleteUser` ou `assignEditeurToUser` et l'appeler.
+- **Vérifié sur le build de production en local** (`next start`, appel direct de l'action) : `deleteUser` **sans** cookie admin → `Error: Non autorisé`, compte intact ; **avec** cookie admin → compte de test BAS supprimé (essai de l'étape 8) : `users`, preuve PSC, fiche, compétences cochées à 0, catalogue intact (212), événement `admin_suppression` au journal.
 - Reste en TODO : passer en revue les autres fichiers d'actions serveur avec la même grille.
+- **Déployé** : `dev` fusionné dans `main` (`bb41b77`, accord de David « si rien ne s'affiche ») ; vérifié en production : annuaire éteint et non forcé, `/mon-compte/annuaire` sans session → connexion, onglet Catalogue visible de l'admin seulement.
 
 ### Fix sécurité — Association PSC : le compte cible n'était pas vérifié
 - **Constat** (en préparant le relais dev) : en mode « association » ([psc-callback](src/app/api/auth/psc-callback/route.ts)), le compte auquel rattacher l'identité PSC vient du `state`, donc de l'URL, et n'était **jamais comparé à la session** du navigateur. Avec sa propre identité PSC et l'UUID d'un compte, n'importe qui pouvait faire rattacher son RPPS à ce compte **et se faire ouvrir une session dessus** (magic link généré pour l'email du compte cible). Même chose pour le parcours de fusion, qui partait du même `state`.
