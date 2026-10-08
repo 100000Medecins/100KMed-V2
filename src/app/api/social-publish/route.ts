@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { estAdmin } from '@/lib/auth/admin-guard'
 
 export type SocialPublishPayload = {
   network: 'linkedin' | 'facebook' | 'instagram'
@@ -9,6 +10,10 @@ export type SocialPublishPayload = {
 }
 
 export async function POST(req: Request) {
+  if (!(await estAdmin())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
   if (!process.env.MAKE_WEBHOOK_URL) {
     return NextResponse.json({ error: 'MAKE_WEBHOOK_URL non configuré' }, { status: 500 })
   }

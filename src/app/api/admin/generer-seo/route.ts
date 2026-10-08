@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { estAdmin } from '@/lib/auth/admin-guard'
 import { buildSolutionSeoTitle } from '@/lib/seo/title'
 
 const ANTHROPIC_BODY = (prompt: string) => JSON.stringify({
@@ -32,6 +33,10 @@ async function callAnthropic(prompt: string, apiKey: string): Promise<Response> 
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await estAdmin())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'Clé API Anthropic non configurée' }, { status: 500 })
   }
@@ -81,11 +86,11 @@ export async function POST(request: NextRequest) {
     const tagIds = tagRows.map((r) => r.id_tag).filter(Boolean) as string[]
     const { data: tagsData } = await supabase
       .from('tags')
-      .select('nom_court, nom_capital')
+      .select('libelle')
       .in('id', tagIds)
     tagNames = (tagsData || [])
-      .map((t: any) => t.nom_capital || t.nom_court)
-      .filter(Boolean) as string[]
+      .map((t) => t.libelle)
+      .filter((libelle): libelle is string => !!libelle)
   }
 
   const categorie = (sol.categorie as { nom: string | null } | null)?.nom ?? ''

@@ -1,4 +1,6 @@
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { retryTransientAuth } from '@/lib/supabase/retry'
+import { estAdmin } from '@/lib/auth/admin-guard'
 import { NextResponse } from 'next/server'
 import sharp from 'sharp'
 
@@ -12,7 +14,18 @@ const TARGET_MAX_WIDTH = 1600 // px — largeur d'affichage max (retina) des gal
 const WEBP_QUALITY = 80
 const CACHE_CONTROL = '31536000' // 1 an — le nom de fichier est unique/immuable
 
+// Appelée par l'admin et par Mon compte (espace éditeur, études DMH, questionnaires de thèse).
+async function estConnecte(): Promise<boolean> {
+  const supabase = await createServerClient()
+  const { data } = await retryTransientAuth(() => supabase.auth.getUser())
+  return !!data.user
+}
+
 export async function POST(request: Request) {
+  if (!(await estAdmin()) && !(await estConnecte())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
   const formData = await request.formData()
   const file = formData.get('file') as File | null
 

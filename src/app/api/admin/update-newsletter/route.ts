@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { estAdmin } from '@/lib/auth/admin-guard'
 import { buildNewsletterHtml } from '@/lib/email/newsletter-template'
 import type { NewsletterContent } from '@/lib/email/newsletter-template'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
+  if (!(await estAdmin())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
   const { id, sujet, intro, accroche_article_1, accroche_article_2, conclusion, nouveautes } = await req.json()
 
   if (!id) return NextResponse.json({ error: 'id manquant' }, { status: 400 })
