@@ -15,6 +15,16 @@
 - Vérifié par requête : colonnes et journal présents ; `anon` n'exécute aucune fonction, `authenticated` toutes ; journal fermé. Types régénérés par Claude (CLI Supabase disponible sur ce poste) : +106 lignes, rien de retiré.
 - SQL complet et retour arrière : [docs/2026-10-08-annuaire-tranche-2.md](docs/2026-10-08-annuaire-tranche-2.md).
 
+### Feature — Lecture de l'annuaire par les confrères (`/annuaire`, `/annuaire/<RPPS>`)
+- **« Ma fiche annuaire »** gagne un bloc « Coordonnées professionnelles » : commune d'exercice (autocomplétion par le géocodeur IGN depuis le navigateur, [ChoixCommune](src/components/annuaire/ChoixCommune.tsx) ; position = centre de la commune), adresse MSSanté, téléphone du cabinet ([normaliser.ts](src/lib/annuaire/normaliser.ts) : `normaliserTelephone` fixes et mobiles, outre-mer compris ; `normaliserMssante`).
+- **`/annuaire`** ([AnnuaireRecherche](src/components/annuaire/AnnuaireRecherche.tsx)) : recherche par nom, spécialité, compétence (la spécialité RPPS équivalente compte), commune + rayon 5 / 10 / 20 / 50 km ou France, comme l'application ; vue **liste** ou **carte** (MapLibre + Plan IGN, [CarteAnnuaire](src/components/annuaire/CarteAnnuaire.tsx) : un marqueur par commune, bulles construites en DOM). Point de départ : la commune saisie, à défaut celle de la fiche du lecteur ; sinon la **géolocalisation est proposée** (« Autour de moi », ou à l'ouverture de la carte), position **arrondie à ~1 km** avant envoi, jamais enregistrée (décision de David). Premiers résultats calculés côté serveur, recherches suivantes par appel direct de la fonction depuis le navigateur (aucune fonction Vercel par recherche).
+- **`/annuaire/<RPPS>`** ([FicheConfrere](src/components/annuaire/FicheConfrere.tsx)) : identité, spécialité, commune, moyen de contact préféré, MSSanté, téléphone du cabinet, compétences, bouton **« Afficher le portable »** (fonction de la base : plafond, trace ; message dédié au plafond), mention « Informations déclarées par le médecin, non vérifiées par l'association » et date de mise à jour.
+- Menu de Mon compte : « Annuaire des confrères » (derrière l'interrupteur). Pages privées : protégées par le proxy d'authentification (`/annuaire` ajouté), `noindex`, exclues des robots.
+- **Vercel Analytics exclu** de `/annuaire*` et `/mon-compte/annuaire` ([AnalyticsSansAnnuaire](src/components/AnalyticsSansAnnuaire.tsx), `beforeSend`) — condition n° 4 du `LISEZMOI` des textes de l'annuaire.
+- **Purge à 12 mois** du journal des affichages ajoutée à `/api/cron/purge-donnees`.
+- Dépendance ajoutée : `maplibre-gl` 5 (chargée seulement sur la carte).
+- Vérif : `tsc`, lint, build verts (`/annuaire`, `/annuaire/[rpps]` en `ƒ`, pages privées) ; sur le build de production en local : les trois pages redirigent vers la connexion sans session ; les trois fonctions refusent un visiteur anonyme (`42501`). **Reste : essai réel par David** (connexion PSC, fiche publiée, recherche, carte, portable ; plafond et journal avec une seconde identité).
+
 ---
 
 ## [2026-10-08] — Sécurité : revue des actions serveur

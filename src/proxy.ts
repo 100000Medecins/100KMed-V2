@@ -10,6 +10,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     '/mon-compte/:path*',
+    '/annuaire/:path*',
     '/solution/noter/:path*',
     '/api/auth/:path*',
     '/connexion',

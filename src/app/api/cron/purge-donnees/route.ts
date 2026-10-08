@@ -5,6 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
  * Purge hebdomadaire des données à durée de conservation limitée, telles qu'annoncées
  * dans la Charte de confidentialité (/rgpd, rédigée le 2026-09-30, durées validées par David) :
  *  - journaux techniques (psc_session_events, activity_log) : 12 mois ;
+ *  - journal des affichages de portables de l'annuaire (annuaire_affichages_portables) : 12 mois ;
  *  - trace des comptes supprimés (compte_suppressions : nom, prénom, spécialité, motif) : 3 ans.
  * Si ces durées changent, mettre à jour la charte en même temps.
  *
@@ -17,6 +18,7 @@ export const dynamic = 'force-dynamic'
 const PURGES = [
   { table: 'psc_session_events', colonne: 'created_at', mois: 12 },
   { table: 'activity_log', colonne: 'created_at', mois: 12 },
+  { table: 'annuaire_affichages_portables', colonne: 'affiche_le', mois: 12 },
   { table: 'compte_suppressions', colonne: 'deleted_at', mois: 36 },
 ] as const
 

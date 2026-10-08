@@ -1,13 +1,15 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { CheckCircle, Plus, Search, ShieldCheck, X } from 'lucide-react'
+import { CheckCircle, Plus, Search, X } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Field from '@/components/ui/Field'
 import Badge from '@/components/ui/Badge'
-import { connectWithPsc } from '@/lib/auth/psc'
+import VerificationPsc from '@/components/annuaire/VerificationPsc'
+import ChoixCommune from '@/components/annuaire/ChoixCommune'
+import type { Commune } from '@/lib/annuaire/geocodage'
 import { enregistrerMaFiche, proposerCompetence } from '@/lib/actions/annuaire'
 import type { MaFicheAnnuaire, IntituleCatalogue } from '@/lib/actions/annuaire'
 import {
@@ -44,34 +46,14 @@ function EnTete({ enregistre = false }: { enregistre?: boolean }) {
   )
 }
 
-function VerificationPsc({ userId }: { userId: string }) {
+function VerificationFiche({ userId }: { userId: string }) {
   return (
     <div>
       <EnTete />
-      <Card padding="lg">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-accent-blue/10 text-accent-blue flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-bold text-navy">Vérifiez votre identité avec Pro Santé Connect</h2>
-            <p className="text-sm text-gray-500 mt-1 max-w-xl">
-              L&apos;annuaire est réservé aux médecins dont l&apos;identité est attestée par Pro Santé Connect.
-              Connectez-vous une fois avec votre e-CPS, puis revenez sur cette page pour remplir votre fiche.
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              className="mt-4"
-              leftIcon={<ShieldCheck className="w-4 h-4" />}
-              onClick={() => connectWithPsc({ userId })}
-            >
-              Se connecter avec Pro Santé Connect
-            </Button>
-          </div>
-        </div>
-      </Card>
+      <VerificationPsc
+        userId={userId}
+        texte="L'annuaire est réservé aux médecins dont l'identité est attestée par Pro Santé Connect. Connectez-vous une fois avec votre e-CPS, puis revenez sur cette page pour remplir votre fiche."
+      />
     </div>
   )
 }
@@ -88,6 +70,9 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
   const [moyenContact, setMoyenContact] = useState<string | null>(initial.moyenContact)
   const [portable, setPortable] = useState(initial.portable)
   const [portableVisible, setPortableVisible] = useState(initial.portableVisible)
+  const [commune, setCommune] = useState<Commune | null>(initial.commune)
+  const [mssante, setMssante] = useState(initial.mssante)
+  const [telephoneCabinet, setTelephoneCabinet] = useState(initial.telephoneCabinet)
   const [publiee, setPubliee] = useState(initial.publiee)
   const [publieeLe, setPublieeLe] = useState(initial.publieeLe)
   const [miseAJour, setMiseAJour] = useState(initial.miseAJour)
@@ -203,7 +188,16 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
   function enregistrer() {
     setErreur(null)
     startEnregistrement(async () => {
-      const res = await enregistrerMaFiche({ moyenContact, portable, portableVisible, publiee, competences: selection })
+      const res = await enregistrerMaFiche({
+        moyenContact,
+        portable,
+        portableVisible,
+        publiee,
+        competences: selection,
+        commune,
+        mssante,
+        telephoneCabinet,
+      })
       if ('error' in res) {
         setErreur(res.error)
         return
@@ -211,6 +205,7 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
       setPublieeLe(res.publieeLe)
       setMiseAJour(res.miseAJour)
       setPortable(res.portable)
+      setTelephoneCabinet(res.telephoneCabinet)
       setEnregistre(true)
     })
   }
@@ -251,6 +246,56 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
               ))}
             </div>
           </fieldset>
+        </Card>
+
+        <Card padding="lg" overflow="visible">
+          <h2 className="text-base font-bold text-navy">Coordonnées professionnelles</h2>
+          <p className="text-sm text-gray-500 mt-1 max-w-xl">
+            Facultatives. Visibles des confrères quand votre fiche est publiée. Sur la carte, vous êtes placé au centre de
+            votre commune, jamais à votre adresse.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Field label="Commune d'exercice" htmlFor="annuaire-commune">
+              <ChoixCommune
+                id="annuaire-commune"
+                valeur={commune}
+                onChange={(c) => {
+                  modifie()
+                  setCommune(c)
+                }}
+                ariaLabel="Commune d'exercice"
+              />
+            </Field>
+            <Field label="Téléphone du cabinet" hint="Exemple : 01 23 45 67 89" htmlFor="annuaire-tel-cabinet">
+              <Input
+                id="annuaire-tel-cabinet"
+                type="tel"
+                size="sm"
+                value={telephoneCabinet}
+                onChange={(e) => {
+                  modifie()
+                  setTelephoneCabinet(e.target.value)
+                }}
+              />
+            </Field>
+            <Field
+              label="Adresse MSSanté"
+              hint="Votre messagerie sécurisée de santé, par exemple prenom.nom@medecin.mssante.fr"
+              htmlFor="annuaire-mssante"
+              className="md:col-span-2"
+            >
+              <Input
+                id="annuaire-mssante"
+                type="email"
+                size="sm"
+                value={mssante}
+                onChange={(e) => {
+                  modifie()
+                  setMssante(e.target.value)
+                }}
+              />
+            </Field>
+          </div>
         </Card>
 
         <Card padding="lg">
@@ -440,6 +485,6 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
 }
 
 export default function MaFicheAnnuaireForm({ initial }: { initial: MaFicheAnnuaire }) {
-  if (!initial.verifie) return <VerificationPsc userId={initial.userId} />
+  if (!initial.verifie) return <VerificationFiche userId={initial.userId} />
   return <Formulaire initial={initial} />
 }

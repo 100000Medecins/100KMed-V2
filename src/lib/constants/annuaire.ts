@@ -31,6 +31,13 @@ export const MAX_COMPETENCES = 20
 /** Propositions d'intitulés en attente de validation, par médecin. */
 export const MAX_PROPOSITIONS_EN_ATTENTE = 5
 
+/** Rayons de recherche proposés (km), comme dans l'application ; null = toute la France. */
+export const RAYONS_KM = [5, 10, 20, 50] as const
+export const RAYON_PAR_DEFAUT_KM = 10
+
+/** Fond de carte Plan IGN (Géoplateforme), le même que l'application. */
+export const STYLE_CARTE_PLAN_IGN = 'https://data.geopf.fr/annexes/ressources/vectorTiles/styles/PLAN.IGN/standard.json'
+
 /**
  * Rubriques du catalogue proposées quand le champ de recherche est vide, selon la
  * spécialité RPPS du médecin (code SM, cf. `SM_SPECIALITES`).

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles, BookUser } from 'lucide-react'
+import { Bell, ClipboardCheck, LogOut, UserCircle, Building2, FlaskConical, GraduationCap, BookOpen, Sparkles, BookUser, Users } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -32,7 +32,10 @@ export default function MonCompteLayout({ children }: { children: React.ReactNod
       : [{ href: '/mon-compte/mes-evaluations', label: 'Mes évaluations', icon: ClipboardCheck }]),
     // Annuaire mutualisé : derrière l'interrupteur (admin › Paramètres), médecins seulement
     ...(!isEditeur && annuaireActif
-      ? [{ href: '/mon-compte/annuaire', label: 'Ma fiche annuaire', icon: BookUser }]
+      ? [
+          { href: '/mon-compte/annuaire', label: 'Ma fiche annuaire', icon: BookUser },
+          { href: '/annuaire', label: 'Annuaire des confrères', icon: Users },
+        ]
       : []),
     { href: '/mon-compte/mes-notifications', label: 'Mes notifications', icon: Bell },
     ...(isEditeur
