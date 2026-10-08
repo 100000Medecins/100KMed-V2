@@ -5,6 +5,35 @@
 
 ---
 
+## [2026-10-08] — Annuaire mutualisé, tranche 2b : données de l'Annuaire Santé (ANS)
+
+### Base — migration 2b lancée par David (SQL Editor, une transaction)
+- Tables `ans_version`, `ans_medecins`, `ans_sites`, `ans_exerce`, `ans_mssante` (colonne `lot` : un import = un nouveau lot, activé d'un coup, les anciens purgés ensuite) et `annuaire_oppositions`. RLS active sans règle, écriture `service_role`, lecture `claude_readonly`.
+- `annuaire_rechercher` et `annuaire_fiche` réécrites : tous les médecins de l'ANS + les fiches publiées (marqueur « fiche complétée »), oppositions écartées ; `annuaire_source()` (date de l'extraction) ; `annuaire_activer_lot` (refuse un lot de moins de 150 000 médecins) et `annuaire_purger_lots`, réservées à `service_role`. Types régénérés (commités par l'autre session dans `b17ab07`).
+
+### Données — premier import
+- [annuaire-import-ans.ts](scripts/annuaire-import-ans.ts) : lit `annuaire.db` de l'application (lecture seule), spécialités rattachées aux codes SM (TRE_R38 + abréviations), oppositions exclues, insertion par paquets de 2 000 avec reprises, activation, purge. Dry-run par défaut, `--execute` pour écrire.
+- Import du 08/10 : lot `1791473883`, extraction ANS du 2026-10-04 — **199 293 médecins, 116 016 lieux, 272 074 adresses MSSanté**. Base : 196 Mo. Aucune ligne orpheline (lieux et MSSanté tous rattachés à un médecin).
+
+### Feature — Annuaire sur les données ANS
+- `/annuaire` : liste et carte de tous les médecins ; filtre de spécialité par codes SM (libellés regroupés) ; badge « Fiche complétée » ; source affichée « ANS, Annuaire Santé, données du … (Licence Ouverte 2.0) ».
+- **Carte : marqueur au lieu d'exercice publié par l'ANS** (décision de David), à défaut la commune de la fiche ; un marqueur par position.
+- `/annuaire/<RPPS>` : carte « Sa fiche » (déclaratif : contact préféré, coordonnées, portable, compétences) et carte « Annuaire Santé » (lieux avec téléphones cliquables, MSSanté, mention de la source et de la correction à demander à l'Ordre).
+- **Ma fiche** : bloc « D'après l'Annuaire Santé » — chaque lieu (commune, position, téléphone) et chaque MSSanté se reprend d'un clic « Utiliser », rien n'est enregistré avant « Enregistrer ma fiche ».
+- **Admin → Annuaire → onglet « Oppositions »** : liste, ajout (RPPS à 11 chiffres, identifiant PSC « 8… » accepté, motif facultatif), retrait ; effet immédiat dans les recherches et fiches ANS, exclusion aux imports suivants ; une fiche publiée par le médecin lui-même reste visible. Actions `assertAdmin` (rôle « contenus » exclu, page fermée par le proxy).
+
+### Perf — Recherche par distance trop lente → migration 2b-bis (à lancer par David)
+- **Constat** : 2,2 s pour 10 km autour de Paris (27 000 médecins dans le rayon), 2 à 5 s avec un filtre de spécialité. Cause : une lecture d'`ans_medecins` par médecin du rayon, et des comparaisons de texte ICU (collation de la base) très lentes sur ce serveur.
+- ⚠️ **Piège de mesure** : `EXPLAIN ANALYZE` avec chronométrage par nœud gonfle fortement les temps sur ce serveur (5,7 s affichées pour 2,2 s réelles) → mesurer avec `explain (analyze, timing off)`, et répéter : le serveur varie d'un facteur 5 d'un essai à l'autre.
+- **2b-bis** (même signature, même résultat) : filtres ajoutés seulement s'ils sont demandés (requête dynamique, valeurs passées par `USING`), chacun calculé une fois et comparé en bloc ; avec une position, recherche dans 10 km puis élargissement ×4 tant que la page n'est pas pleine ; `%` et `_` saisis ne sont plus des jokers ; `work_mem` 8 Mo pour la fonction. Mesuré sur la même logique : **~0,17 s** (10 km Paris, avec ou sans filtre de spécialité), recherche par nom ~0,3 s. Même migration : doubles espaces des noms de communes ANS réduits (« Paris 4e  Arrondissement », ~1 800 lignes) ; le script d'import le fait désormais.
+- SQL, archive de la version 2b (retour arrière) et procédure d'import mensuel : [docs/2026-10-08-annuaire-tranche-2.md](docs/2026-10-08-annuaire-tranche-2.md).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` verts (pages de l'annuaire en `ƒ`, privées). Commits `8ef50a1`, `ce9b0c3`, `406c981` poussés sur `dev` (annuaire toujours éteint en production).
+- **Reste** : 2b-bis à lancer par David, puis essai réel sur dev (recherche, filtres, carte, fiche ANS, propositions dans Ma fiche).
+
+---
+
 ## [2026-10-08] — Sécurité : 9 routes API ouvertes sans connexion + accès « contenus » à l'admin
 
 ### Fix — Contrôle d'accès sur les routes de l'admin
