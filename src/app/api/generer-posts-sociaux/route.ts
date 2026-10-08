@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { estAdmin } from '@/lib/auth/admin-guard'
+import { estAdminOuContenu } from '@/lib/auth/admin-guard'
 
 const SYSTEM_PROMPT = `Tu es le compte officiel de l'association 100 000 Médecins. Tu rédiges des posts pour les réseaux sociaux destinés aux médecins libéraux français.
 
@@ -19,7 +19,7 @@ Règles communes :
 - Ton authentique et médical, jamais corporate`
 
 export async function POST(req: Request) {
-  if (!(await estAdmin())) {
+  if (!(await estAdminOuContenu())) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { roleAdmin } from '@/lib/auth/admin-guard'
 import PlanningCalendar, { type PlanningEvent } from './PlanningCalendar'
 
 async function getScheduledContent(): Promise<PlanningEvent[]> {
+  const role = await roleAdmin()
   const supabase = createServiceRoleClient()
   const now = new Date()
   const limit = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate()).toISOString()
@@ -55,7 +57,7 @@ async function getScheduledContent(): Promise<PlanningEvent[]> {
       titre: c.titre ?? '(Email sans titre)',
       date: c.scheduled_at,
       type: c.type === 'etude' ? 'email_etude' as const : 'email_questionnaire' as const,
-      href: '/admin/emails',
+      href: role === 'admin' ? '/admin/emails' : null,
     })),
   ]
 

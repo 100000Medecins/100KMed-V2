@@ -1,6 +1,6 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { retryTransientAuth } from '@/lib/supabase/retry'
-import { estAdmin } from '@/lib/auth/admin-guard'
+import { estAdminOuContenu } from '@/lib/auth/admin-guard'
 import { NextResponse } from 'next/server'
 import sharp from 'sharp'
 
@@ -22,7 +22,7 @@ async function estConnecte(): Promise<boolean> {
 }
 
 export async function POST(request: Request) {
-  if (!(await estAdmin()) && !(await estConnecte())) {
+  if (!(await estAdminOuContenu()) && !(await estConnecte())) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

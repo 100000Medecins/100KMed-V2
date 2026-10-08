@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import { Package, FolderOpen, BarChart3, FileText, Mail, Building2, Home, Newspaper, Users, Search, Video, ListChecks, GraduationCap, BookOpen, CalendarDays, Sparkles, MessageCircle, Settings, Activity, Quote, Megaphone, BookUser, X } from 'lucide-react'
 import type { AdminBadges } from '@/lib/db/admin-badges'
 import { useAdminMobileNav } from '@/stores/useAdminMobileNav'
+import { cheminAutorise, type RoleAdmin } from '@/lib/auth/admin-rubriques'
 
 type NavItem = {
   href: string
@@ -52,6 +53,14 @@ const navItems: NavItem[] = [
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
 
+// Entrée propre au rôle « contenus » : l'admin ouvre les newsletters depuis Emails et Planning.
+const navNewsletters: NavItem = { href: '/admin/newsletters', label: 'Newsletters', icon: Mail }
+
+function navPourRole(role: RoleAdmin): NavItem[] {
+  if (role === 'admin') return navItems
+  return [...navItems.filter((item) => cheminAutorise(role, item.href)), navNewsletters]
+}
+
 function matchPath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/')
 }
@@ -69,7 +78,7 @@ function Badge({ count }: { count: number }) {
  * Liste de navigation extraite — rendue à la fois dans l'aside desktop
  * et dans le drawer mobile pour éviter la duplication du code des liens.
  */
-function NavList({ badges, onLinkClick }: { badges: AdminBadges; onLinkClick?: () => void }) {
+function NavList({ badges, role, onLinkClick }: { badges: AdminBadges; role: RoleAdmin; onLinkClick?: () => void }) {
   const pathname = usePathname()
 
   const getBadgeForItem = (item: NavItem): number => {
@@ -84,7 +93,7 @@ function NavList({ badges, onLinkClick }: { badges: AdminBadges; onLinkClick?: (
 
   return (
     <nav className="bg-white rounded-card shadow-card p-4 space-y-1">
-      {navItems.map((item) => {
+      {navPourRole(role).map((item) => {
         const Icon = item.icon
         const isActive = matchPath(pathname, item.href)
         const isChildActive = item.children?.some((c) => matchPath(pathname, c.href))
@@ -138,7 +147,7 @@ function NavList({ badges, onLinkClick }: { badges: AdminBadges; onLinkClick?: (
   )
 }
 
-export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
+export default function AdminSidebar({ badges, role }: { badges: AdminBadges; role: RoleAdmin }) {
   const { isOpen, close } = useAdminMobileNav()
   const pathname = usePathname()
 
@@ -172,7 +181,7 @@ export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
       {/* Sidebar desktop — sticky, inchangée */}
       <aside className="w-64 flex-shrink-0 p-6 hidden md:block">
         <div className="sticky top-6">
-          <NavList badges={badges} />
+          <NavList badges={badges} role={role} />
         </div>
       </aside>
 
@@ -205,7 +214,7 @@ export default function AdminSidebar({ badges }: { badges: AdminBadges }) {
           </button>
         </div>
         <div className="p-4">
-          <NavList badges={badges} onLinkClick={close} />
+          <NavList badges={badges} role={role} onLinkClick={close} />
         </div>
       </aside>
     </>

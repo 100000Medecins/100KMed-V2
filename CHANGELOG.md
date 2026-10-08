@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-10-08] — Sécurité : 9 routes API ouvertes sans connexion
+## [2026-10-08] — Sécurité : 9 routes API ouvertes sans connexion + accès « contenus » à l'admin
 
 ### Fix — Contrôle d'accès sur les routes de l'admin
 - **Constat** (en préparant un accès admin pour la community manager) : la revue des actions serveur du jour ne couvrait pas les routes API. Neuf d'entre elles n'avaient **aucun contrôle** (le proxy ne tourne pas sur `/api/*` hors `/api/auth`) :
@@ -17,10 +17,22 @@
 - **Bug caché par un `any`** ([generer-seo](src/app/api/admin/generer-seo/route.ts)) : la requête lisait `tags.nom_court` / `nom_capital`, colonnes inexistantes (la colonne est `libelle`) → la requête échouait en silence et les « fonctionnalités clés » n'étaient **jamais** transmises à l'IA pour les meta descriptions. Corrigé (`libelle`). Au passage, les `any` de [suggerer-image](src/app/api/suggerer-image/route.ts) typés (réponses Unsplash / Pexels).
 - **Vérifié sur le build de production en local** : les 9 routes → `401` sans cookie ; avec cookie admin, requêtes incomplètes → `400` (contrôle franchi, aucun effet : rien publié, généré ni écrit). Non testé : `/api/upload` avec une session médecin sans cookie admin.
 - `tsc --noEmit`, lint des fichiers touchés et `npm run build` verts.
+- **Déployé seul en production** (accord de David, sans la tranche 2a de l'annuaire) : report du correctif sur `main` (`8b8cda5`, CHANGELOG laissé à `dev` pour éviter le conflit). Vérifié en production : `/api/social-publish`, `/api/generer-article`, `/api/admin/update-newsletter`, `/api/admin/programmer-newsletter`, `/api/upload` → `401` (sondes à corps vide, sans effet possible).
+
+### Feature — Accès « contenus » à l'admin (community manager)
+- **Second mot de passe** `ADMIN_CONTENU_PASSWORD` (variable Vercel, à poser par David ; absente → rôle inexistant). Même page de connexion : [loginAdmin](src/lib/actions/admin.ts) reconnaît le mot de passe et pose le cookie `admin_token` du rôle (HMAC du mot de passe du rôle, [admin-session.ts](src/lib/auth/admin-session.ts)) ; arrivée sur `/admin/blog`. En-tête : « Contenus » au lieu de « Admin ».
+- **Rubriques ouvertes** (décision de David, à affiner si besoin) : Blog (avec le panneau réseaux et les propositions de sujets), Annonces, Vidéos & Tutos, Citations, Newsletters (page `/admin/newsletters`, **envoi compris** ; pas la rubrique Emails, qui porte les modèles du site et les campagnes), Planning. Liste unique : [admin-rubriques.ts](src/lib/auth/admin-rubriques.ts).
+- **Fermé par défaut** :
+  - pages : le [proxy](src/proxy.ts) tourne désormais sur `/admin/*` et renvoie le rôle « contenus » vers `/admin/blog` hors de ses rubriques → toute nouvelle page d'admin lui est fermée sans rien faire ;
+  - actions et routes : les copies du contrôle admin (une vingtaine de fichiers) ne reconnaissent que le jeton admin → refus d'office. Ouvertes au rôle : 21 actions de [admin.ts](src/lib/actions/admin.ts) (articles, catégories d'articles, annonces, vidéos et leurs rubriques, historique d'article), [citations.ts](src/lib/actions/citations.ts), [videos.ts](src/lib/actions/videos.ts) (propositions de vidéos), [propositions-articles.ts](src/lib/actions/propositions-articles.ts) ; routes `social-publish`, `generer-posts-sociaux`, `generer-article`, `suggerer-image`, `upload`, `admin/generer-newsletter`, `admin/update-newsletter`, `admin/programmer-newsletter`, `admin/send-newsletter`. Les copies locales du contrôle dans ces 3 derniers fichiers d'actions et dans `send-newsletter` remplacées par le module partagé.
+  - [admin-guard.ts](src/lib/auth/admin-guard.ts) : `roleAdmin()`, `estAdmin()` (admin complet seulement), `estAdminOuContenu()`, `assertAdmin()`, `assertAdminOuContenu()`.
+- **Menu** ([AdminSidebar](src/components/admin/AdminSidebar.tsx)) filtré par rôle, + entrée « Newsletters » pour le rôle « contenus ». **Planning** : les campagnes d'emails restent affichées mais sans lien pour ce rôle ([PlanningCalendar](src/app/admin/planning/PlanningCalendar.tsx)).
+- **Vérifié sur le build de production en local** (`ADMIN_CONTENU_PASSWORD` provisoire) : rôle « contenus » → `/admin`, `/admin/utilisateurs`, `/admin/emails`, `/admin/solutions`, `/admin/parametres` renvoyés vers `/admin/blog` ; ses 6 rubriques + `/admin/blog/nouveau` → `200`, menu limité à ses 6 entrées ; ses routes → `400` sur requête incomplète, `generer-seo` / `send-etude` / `recalc-solution` → `401` ; actions : `toggleAnnonceActif` et `setStatutCitation` acceptées, `toggleSolutionActif` refusée (renvoi `/admin`), une action d'une page fermée (`getEmailsCampagnes`) n'est même pas exécutée (Next relaie l'appel vers la page d'origine, le proxy l'arrête). Admin : inchangé (menu complet, actions acceptées). Sans cookie ou cookie inventé : formulaire de connexion.
+- Au passage : apostrophe non échappée du Planning (lint).
 
 ### Constats — Publication sur les réseaux (scénario Make, capture de David)
 - **Image absente du post LinkedIn** : le site envoie bien `image_url` (vérifié : couverture Unsplash de l'article Pro Santé Connect), mais la branche LinkedIn du scénario utilise « Create a Company Text Post », qui ne publie que du texte. À changer dans Make (module image + téléchargement de l'image). Facebook (« Create a Post ») et Instagram (« Create a photo post ») reçoivent ce qu'il faut.
-- **Programmation probablement ignorée** : le scénario (Webhook → Router → 3 modules) ne contient rien qui attende `scheduled_at` → un post « programmé » part sans doute à réception. À confirmer dans l'historique Make.
+- **Programmation probablement ignorée** : le scénario (Webhook → Router → 3 modules) ne contient rien qui attende `scheduled_at` → un post « programmé » part sans doute à réception. Le test de David était « Immédiat » : non confirmé.
 - **Posts préparés gardés dans le navigateur** (`localStorage`, [SocialPanel](src/components/admin/SocialPanel.tsx)) : à deux, chacun ne voit que les siens, et rien n'empêche d'envoyer deux fois le même post.
 - **Images WebP** : une couverture envoyée depuis l'ordinateur est convertie en WebP par `/api/upload` ; Instagram n'accepte que le JPEG. Sans effet aujourd'hui (les 9 couvertures viennent d'Unsplash / Pexels, en JPEG).
 

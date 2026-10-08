@@ -5,8 +5,9 @@ import Image from 'next/image'
 import { logoutAdmin } from '@/lib/actions/admin'
 import { LogOut, Menu } from 'lucide-react'
 import { useAdminMobileNav } from '@/stores/useAdminMobileNav'
+import type { RoleAdmin } from '@/lib/auth/admin-rubriques'
 
-export default function AdminHeader() {
+export default function AdminHeader({ role }: { role: RoleAdmin }) {
   const { toggle } = useAdminMobileNav()
 
   return (
@@ -34,7 +35,7 @@ export default function AdminHeader() {
             unoptimized
           />
           <span className="text-gray-300 text-sm font-light hidden sm:inline">|</span>
-          <span className="text-gray-400 text-xs font-medium uppercase tracking-wide hidden sm:inline">Admin</span>
+          <span className="text-gray-400 text-xs font-medium uppercase tracking-wide hidden sm:inline">{role === 'admin' ? 'Admin' : 'Contenus'}</span>
         </Link>
       </div>
 

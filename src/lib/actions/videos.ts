@@ -1,8 +1,7 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { assertAdminOuContenu } from '@/lib/auth/admin-guard'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
@@ -13,20 +12,8 @@ if (process.env.SENDGRID_API_KEY) {
 
 const NOTIF_TO = 'contact@100000medecins.org'
 
-function generateToken(): string {
-  return createHmac('sha256', process.env.ADMIN_PASSWORD!)
-    .update('admin-session')
-    .digest('hex')
-}
-
-async function assertAdmin() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('admin_token')?.value
-  if (token !== generateToken()) throw new Error('Non autorisé')
-}
-
 export async function approveVideoProposal(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const admin = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
@@ -41,7 +28,7 @@ export async function approveVideoProposal(id: string) {
 }
 
 export async function rejectVideoProposal(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const admin = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
