@@ -95,9 +95,13 @@ téléchargée par l'application et celle du site. Tranche 1 : `docs/2026-10-07-
   (session messagerie) → l'annuaire du site montre tous les médecins, fiches comprises.
 - **3 — application** : lecture des fiches (fichier) et du portable (fonction Supabase).
 
-## Questions à David
+## Réponses de David (08/10)
 
-A. Position sur le site : arrondie (~1 km) et envoyée au serveur sans trace, ou ville / code postal
-   seulement ?
-B. Le script commun reste dans le dépôt messagerie (recommandé) ou passe dans celui du site ?
-C. Ordre 2a puis 2b ?
+A. **Localisation** : la ville ou le code postal saisi dans la recherche, à défaut celui de la fiche
+   du lecteur, sert de point de départ — pas de géolocalisation dans ce cas. Si aucun n'est
+   renseigné quand le médecin ouvre la carte ou « Autour de moi », le site **propose** la
+   géolocalisation du navigateur (position arrondie à ~1 km avant envoi, jamais enregistrée).
+   La ville saisie est géocodée par le service IGN depuis le navigateur → mention à ajouter à la
+   charte le jour J (« la ville que vous saisissez est envoyée au service de géocodage de l'IGN »).
+B. **Le script commun reste dans le dépôt messagerie** ; le site crée les tables et les fonctions.
+C. **Ordre 2a puis 2b.**

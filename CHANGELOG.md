@@ -24,6 +24,7 @@
 - Rythme mesuré : ~9 connexions PSC par jour → une à deux semaines de mesure suffisent (TODO).
 
 - **DMH limité à ses propres études** (décision de David) : `getEtudesAdmin`, `updateEtudeClinique`, `deleteEtudeClinique` filtrent sur `created_by` = le compte DMH, comme le prévoyaient les règles RLS de la table. Les 3 études existantes ont été créées depuis l'admin (`created_by` NULL) : le DMH ne les voit plus, l'admin continue de les gérer.
+- **Déployé** : `dev` fusionné dans `main` (`d5c462a`, accord de David) ; production vérifiée (annuaire éteint, non forcé). La mesure `state_check` démarre avec les connexions PSC suivantes.
 - **Signalé, non modifié** : `checkEmailExists` révèle si une adresse a un compte ; l'évaluation anonyme envoie un email à l'adresse saisie sans Turnstile (vecteur de spam) — en TODO.
 
 ---
