@@ -7,7 +7,8 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import VideoForm from '@/components/admin/VideoForm'
 import SocialPanel from '@/components/admin/SocialPanel'
 import { updateVideo, getSolutionsLieesAVideo } from '@/lib/actions/admin'
-import { getYouTubeId, youTubeThumbnailUrl, youTubeWatchUrl } from '@/lib/youtube'
+import { listerPosts } from '@/lib/reseaux/envoi'
+import { lienEtImageVideo } from '@/lib/reseaux/liens'
 import type { VideoRow, VideoRubrique } from '@/lib/db/misc'
 
 async function getVideoById(id: string): Promise<VideoRow | null> {
@@ -38,16 +39,17 @@ async function getSolutionsForSelector() {
 
 export default async function ModifierVideoPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const [video, rubriques, solutions, initialSolutionIds] = await Promise.all([
+  const [video, rubriques, solutions, initialSolutionIds, postsReseaux] = await Promise.all([
     getVideoById(params.id),
     getRubriques(),
     getSolutionsForSelector(),
     getSolutionsLieesAVideo(params.id),
+    listerPosts({ type: 'video', id: params.id }),
   ])
   if (!video) notFound()
 
   const action = updateVideo.bind(null, video.id)
-  const youTubeId = getYouTubeId(video.url)
+  const { lien, image } = lienEtImageVideo(video.url, video.vignette)
 
   return (
     <div>
@@ -69,9 +71,10 @@ export default async function ModifierVideoPage(props: { params: Promise<{ id: s
             id: video.id,
             titre: video.titre ?? '',
             resume: video.description,
-            lien: youTubeId ? youTubeWatchUrl(youTubeId) : video.url ?? undefined,
-            image: video.vignette ?? (youTubeId ? youTubeThumbnailUrl(youTubeId) : null),
+            lien,
+            image,
           }}
+          postsInitiaux={postsReseaux}
         />
       </div>
     </div>

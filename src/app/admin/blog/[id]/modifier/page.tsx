@@ -7,6 +7,8 @@ import SocialPanel from '@/components/admin/SocialPanel'
 import PageHistoryButton from '@/components/admin/PageHistoryButton'
 import { updateArticle, restoreArticle } from '@/lib/actions/admin'
 import { getArticleHistory } from '@/lib/db/articles'
+import { listerPosts } from '@/lib/reseaux/envoi'
+import { lienArticle } from '@/lib/reseaux/liens'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -26,7 +28,11 @@ async function getCategories() {
 
 export default async function ModifierArticlePage({ params }: PageProps) {
   const { id } = await params
-  const [article, categories] = await Promise.all([getArticle(id), getCategories()])
+  const [article, categories, postsReseaux] = await Promise.all([
+    getArticle(id),
+    getCategories(),
+    listerPosts({ type: 'article', id }),
+  ])
   if (!article) notFound()
 
   // Historique : best-effort (si la migration n'est pas lancée, on continue avec []).
@@ -65,10 +71,11 @@ export default async function ModifierArticlePage({ params }: PageProps) {
           id,
           titre: article.titre,
           resume: article.extrait,
-          lien: article.slug ? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'}/blog/${article.slug}` : undefined,
+          lien: lienArticle(article.slug),
           image: article.image_couverture,
           statut: article.statut,
         }}
+        postsInitiaux={postsReseaux}
       />
     </div>
   )
