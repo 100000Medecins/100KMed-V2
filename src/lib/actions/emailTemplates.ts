@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { assertAdmin } from '@/lib/auth/admin-guard'
+import { assertAdminOuContenu } from '@/lib/auth/admin-guard'
 
 export interface EmailTemplate {
   id: string
@@ -25,7 +25,7 @@ export async function getEmailTemplate(id: string): Promise<EmailTemplate | null
 }
 
 export async function saveEmailTemplate(id: string, sujet: string, contenuHtml: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)

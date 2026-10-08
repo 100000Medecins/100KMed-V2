@@ -5,7 +5,7 @@ import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
-import { assertAdmin } from '@/lib/auth/admin-guard'
+import { assertAdmin, assertAdminOuContenu } from '@/lib/auth/admin-guard'
 
 export type EmailCampagne = {
   id: string
@@ -23,7 +23,7 @@ export type EmailCampagne = {
   created_at: string
 }
 
-function normalise(row: any): EmailCampagne {
+function normalise(row: Omit<EmailCampagne, 'specialites_cibles'> & { specialites_cibles: unknown }): EmailCampagne {
   return {
     ...row,
     specialites_cibles: Array.isArray(row.specialites_cibles) ? row.specialites_cibles : [],
@@ -31,7 +31,7 @@ function normalise(row: any): EmailCampagne {
 }
 
 export async function getEmailsCampagnes(): Promise<{ etudes: EmailCampagne[]; questionnaires: EmailCampagne[] }> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { data } = await supabase
@@ -47,7 +47,7 @@ export async function getEmailsCampagnes(): Promise<{ etudes: EmailCampagne[]; q
 }
 
 export async function cancelEmailCampagne(id: string): Promise<{ error: string | null }> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase
@@ -168,7 +168,7 @@ export async function sendCampagneNow(
     .select('user_id')
     .eq(prefKey, true)
 
-  const userIds = (prefs ?? []).map((p: any) => p.user_id)
+  const userIds = (prefs ?? []).map((p: { user_id: string }) => p.user_id)
   let query = supabase
     .from('users')
     .select('id, email, nom, specialite')

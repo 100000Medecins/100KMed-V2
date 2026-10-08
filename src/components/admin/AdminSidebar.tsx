@@ -53,12 +53,8 @@ const navItems: NavItem[] = [
   { href: '/admin/statistiques', label: 'Statistiques', icon: BarChart3 },
 ]
 
-// Entrée propre au rôle « contenus » : l'admin ouvre les newsletters depuis Emails et Planning.
-const navNewsletters: NavItem = { href: '/admin/newsletters', label: 'Newsletters', icon: Mail }
-
 function navPourRole(role: RoleAdmin): NavItem[] {
-  if (role === 'admin') return navItems
-  return [...navItems.filter((item) => cheminAutorise(role, item.href)), navNewsletters]
+  return navItems.filter((item) => cheminAutorise(role, item.href))
 }
 
 function matchPath(pathname: string, href: string): boolean {

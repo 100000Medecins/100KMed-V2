@@ -10,6 +10,7 @@ export const RUBRIQUES_CONTENU = [
   '/admin/videos',
   '/admin/citations',
   '/admin/newsletters',
+  '/admin/emails',
   '/admin/planning',
 ] as const
 

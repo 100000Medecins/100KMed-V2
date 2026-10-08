@@ -8,7 +8,7 @@ export type PlanningEvent = {
   titre: string
   date: string
   type: 'article' | 'newsletter' | 'email_etude' | 'email_questionnaire'
-  href: string | null // null : rubrique fermée au rôle connecté, ligne affichée sans lien
+  href: string
 }
 
 const TYPE_CONFIG = {
@@ -70,8 +70,8 @@ function EventRow({ event, overdue = false }: { event: PlanningEvent & { dateObj
   const dateStr = event.dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Paris' })
   const timeStr = event.dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
 
-  const contenu = (
-    <>
+  return (
+    <Link href={event.href} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-light transition-colors group">
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${overdue ? 'bg-red-50' : config.bg}`}>
         <Icon className={`w-4 h-4 ${overdue ? 'text-red-400' : config.text}`} />
       </div>
@@ -83,15 +83,7 @@ function EventRow({ event, overdue = false }: { event: PlanningEvent & { dateObj
         <p className={`text-sm font-semibold capitalize ${overdue ? 'text-red-400' : 'text-navy'}`}>{dateStr}</p>
         <p className="text-xs text-gray-400 mt-0.5">{timeStr}</p>
       </div>
-    </>
-  )
-
-  return event.href ? (
-    <Link href={event.href} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-light transition-colors group">
-      {contenu}
     </Link>
-  ) : (
-    <div className="flex items-center gap-4 px-5 py-4">{contenu}</div>
   )
 }
 
