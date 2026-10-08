@@ -56,6 +56,12 @@
 - Génération déplacée dans [posts-sociaux.ts](src/lib/ai/posts-sociaux.ts) (partagée avec la route `generer-posts-sociaux`) ; `/api/social-publish` **supprimée** (plus aucun appelant : l'envoi se fait côté serveur) ; README mis à jour.
 - **Vérifié sur le build local**, avec un faux webhook Make local qui refuse volontairement (variables de lancement prioritaires sur `.env.local`, contrôlées avant tout envoi) : génération des 3 brouillons (rôle « contenus »), refus sans session, date passée refusée, texte non modifiable une fois programmé, annulation, envoi immédiat → `erreur` avec le message de Make, programmation à +61 s → tâche sans secret `401`, avec secret `transmis: 1`, 2e passage `transmis: 0` ; charge utile reçue : image Unsplash et lien de l'article relus en base. Posts de test supprimés (table vide).
 
+### Déploiement — `dev` fusionné dans `main` (`b5c7764`, accord de David « tout fusionner »)
+- Fusion faite dans un **worktree séparé** (une autre session travaillait dans le dossier partagé) ; conflits sur les 9 routes du report `8b8cda5` résolus par la version de `dev` → arbre fusionné **identique à `dev`** (`git diff origin/dev` vide). `npm ci` + `npm run build` verts dans le worktree avant le push.
+- Comprend aussi la tranche 2a de l'annuaire (autre session), toujours éteinte.
+- Vérifié en production (17:50) : `/api/cron/envoyer-posts-reseaux` → `401` sans secret (route présente), `/api/social-publish` → `404`, `/api/upload` et `/api/generer-posts-sociaux` → `401`, accueil / blog `200`, `/admin` → formulaire de connexion.
+- **Restent à David** : `ADMIN_CONTENU_PASSWORD` dans Vercel, étape 2 du SQL (pg_cron), module image LinkedIn dans Make (cf TODO).
+
 ### Constats — Publication sur les réseaux (scénario Make, capture de David)
 - **Image absente du post LinkedIn** : le site envoie bien `image_url` (vérifié : couverture Unsplash de l'article Pro Santé Connect), mais la branche LinkedIn du scénario utilise « Create a Company Text Post », qui ne publie que du texte. À changer dans Make (module image + téléchargement de l'image). Facebook (« Create a Post ») et Instagram (« Create a photo post ») reçoivent ce qu'il faut.
 - **Programmation probablement ignorée** : le scénario (Webhook → Router → 3 modules) ne contient rien qui attende `scheduled_at` → un post « programmé » part sans doute à réception. Le test de David était « Immédiat » : non confirmé.
