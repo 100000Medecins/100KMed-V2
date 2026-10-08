@@ -12,6 +12,9 @@
 - **Cause** : le contrôle était dans le [layout de l'admin](src/app/admin/layout.tsx) (formulaire au lieu de `children`). Next calcule la page **en parallèle** du layout et sérialise sa sortie dans la réponse, même quand le layout ne l'affiche pas. Faille présente depuis l'origine de ce layout, pas introduite par le déploiement du jour.
 - **Fix** : le [proxy](src/proxy.ts), qui tourne déjà sur `/admin/*`, sert la nouvelle page [`/connexion-admin`](src/app/connexion-admin/page.tsx) (formulaire seul, `noindex`, statique) **à la place** de toute page d'admin demandée sans jeton valide, même adresse : la page demandée n'est jamais calculée. Le contrôle du layout reste en seconde ligne.
 - **Vérifié sur le build de production en local** : sans cookie, avec un cookie inventé et en requête RSC, `/admin`, `/admin/utilisateurs`, `/admin/activite`, `/admin/solutions`, `/admin/intitules`, `/admin/emails` → même réponse de 17 Ko (formulaire), **0 adresse** ; avec le jeton admin, pages complètes (`/admin/utilisateurs` 2,5 Mo) ; connexion par le formulaire depuis une adresse réécrite (`/admin/utilisateurs`) : mauvais mot de passe → « Mot de passe incorrect », bon → `303` vers l'accueil admin + cookie `admin_token`.
+- **Déployé en production** (accord de David) : `dev` fusionné dans `main` (`2c38fd5`, worktree séparé, arbre identique à `dev`). Vérifié en production : `/admin`, `/admin/utilisateurs`, `/admin/activite`, `/admin/solutions`, `/admin/intitules` → formulaire seul (17 Ko), 0 adresse, requête RSC comprise ; accueil `200`.
+- Seul layout concerné : `/mon-compte` et `/annuaire` sont protégés par le proxy (redirection avant tout calcul de page). Règle ajoutée dans `CLAUDE.md`.
+- **Inconnu** : si la faille a été exploitée (aucune trace côté site ; les journaux Vercel sont courts sur l'offre Hobby).
 
 ---
 

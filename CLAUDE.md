@@ -41,6 +41,7 @@ French medical software review platform where healthcare professionals browse, c
 
 - **Users**: Supabase Auth with email/password and Pro Santé Connect (PSC) OIDC
 - **Admin**: Separate cookie-based auth with HMAC token (`ADMIN_PASSWORD` env var), not Supabase
+- ⚠️ **Jamais de contrôle d'accès dans un layout seul** : Next calcule la page **en parallèle** du layout et envoie ses données dans la réponse même si le layout affiche autre chose (fuite de 6 839 emails par `/admin/utilisateurs`, corrigée le 2026-10-08). L'admin est gardé par le **proxy** (`src/proxy.ts` : sans jeton valide, `/connexion-admin` est servie à la place) ; ailleurs, contrôler dans le proxy ou dans la page elle-même.
 - **Middleware** only runs on `/mon-compte/*`, `/solution/noter/*`, `/api/auth/*`
 
 #### Pro Santé Connect (PSC) — custom OAuth 2.0 flow
