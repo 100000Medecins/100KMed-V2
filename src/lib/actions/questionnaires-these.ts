@@ -4,6 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
+import { assertAdmin } from '@/lib/auth/admin-guard'
 
 export type QuestionnaireThese = {
   id: string
@@ -156,6 +157,7 @@ export async function supprimerQuestionnaire(id: string): Promise<{ error: strin
  * Récupère tous les questionnaires (admin) avec info auteur.
  */
 export async function getAllQuestionnairesAdmin(): Promise<QuestionnaireThese[]> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -182,6 +184,7 @@ export async function createQuestionnaireAdmin(payload: {
   specialites_cibles?: string[]
   statut?: 'en_attente' | 'publie' | 'refuse'
 }): Promise<{ error: string | null }> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -216,6 +219,7 @@ export async function updateQuestionnaireAdmin(
     statut: 'en_attente' | 'publie' | 'refuse'
   }
 ): Promise<{ error: string | null }> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -244,6 +248,7 @@ export async function setStatutQuestionnaire(
   id: string,
   statut: 'publie' | 'refuse'
 ): Promise<{ error: string | null }> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -260,6 +265,7 @@ export async function setStatutQuestionnaire(
  * Supprime un questionnaire (admin).
  */
 export async function supprimerQuestionnaireAdmin(id: string): Promise<{ error: string | null }> {
+  await assertAdmin()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)

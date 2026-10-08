@@ -120,6 +120,10 @@ export async function deleteSolutionUtilisee(solutionUtiliseeId: string) {
 export async function getEvaluationCompletionMap(
   userId: string
 ): Promise<Record<string, boolean>> {
+  // `userId` vient du navigateur : on exige que ce soit l'utilisateur de la session.
+  const { data: { user } } = await (await createServerClient()).auth.getUser()
+  if (!user || user.id !== userId) throw new Error('Non autorisé')
+
   const supabase = createServiceRoleClient()
 
   // Récupérer les solutions_utilisees avec leur categorie_id

@@ -4,6 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
+import { assertAdmin } from '@/lib/auth/admin-guard'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -149,6 +150,7 @@ export async function deleteEtudeClinique(id: string) {
  * Toutes les études cliniques — pour la page admin /admin/questionnaires-these.
  */
 export async function getEtudesCliniquesSuperAdmin(): Promise<EtudeClinique[]> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { data } = await supabase
@@ -162,6 +164,7 @@ export async function getEtudesCliniquesSuperAdmin(): Promise<EtudeClinique[]> {
  * Crée une étude clinique — admin uniquement.
  */
 export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const images = JSON.parse((formData.get('images') as string) || '[]')
@@ -186,6 +189,7 @@ export async function createEtudeCliniqueAdmin(formData: FormData): Promise<{ er
  * Met à jour une étude clinique — admin uniquement.
  */
 export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): Promise<{ error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const images = JSON.parse((formData.get('images') as string) || '[]')
@@ -210,6 +214,7 @@ export async function updateEtudeCliniqueAdmin(id: string, formData: FormData): 
  * Supprime une étude clinique — admin uniquement.
  */
 export async function deleteEtudeCliniqueAdmin(id: string): Promise<{ error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase.from('etudes_cliniques').delete().eq('id', id)
@@ -225,6 +230,7 @@ export async function setStatutEtude(
   id: string,
   statut: 'publie' | 'refuse'
 ): Promise<{ error: string | null }> {
+  await assertAdmin()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase

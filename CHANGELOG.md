@@ -5,6 +5,22 @@
 
 ---
 
+## [2026-10-08] — Sécurité : revue des actions serveur
+
+### Fix — 17 actions d'administration appelables sans contrôle
+- **Méthode** : les 226 actions serveur exposées (manifeste de build `server-reference-manifest.json`, qui dit aussi dans quelles pages chacune est embarquée) passées au crible : contrôle admin ? session ? `userId` reçu comparé à la session ? élément modifié par identifiant appartenant bien à l'appelant ? Script d'analyse du corps de chaque fonction, puis relecture à la main des cas signalés.
+- **Embarquées dans des pages de Mon compte** (donc récupérables par tout médecin connecté), sans aucun contrôle :
+  - études cliniques ([etudes-cliniques.ts](src/lib/actions/etudes-cliniques.ts)) : `getEtudesCliniquesSuperAdmin`, `createEtudeCliniqueAdmin`, `updateEtudeCliniqueAdmin`, `deleteEtudeCliniqueAdmin`, `setStatutEtude` — créer, publier (bloc « Participez à la recherche » de l'accueil), modifier, supprimer une étude ;
+  - questionnaires de thèse ([questionnaires-these.ts](src/lib/actions/questionnaires-these.ts)) : `getAllQuestionnairesAdmin` (**noms et emails des auteurs**), `createQuestionnaireAdmin` (publié par défaut), `updateQuestionnaireAdmin`, `setStatutQuestionnaire`, `supprimerQuestionnaireAdmin`.
+- **Embarquées seulement dans l'admin**, sans contrôle (protégées par le seul fait que l'admin ne charge ses pages qu'après connexion) : campagnes d'emails ([emails-campagnes.ts](src/lib/actions/emails-campagnes.ts) : `sendCampagneNow` — **envoi de masse** —, `scheduleCampagne`, `cancelEmailCampagne`, `genererTexteEmail` — appel IA facturé —, `getEmailsCampagnes`), `saveEmailTemplate` (modèles d'emails du site), `setSiteConfig`, `saveSyndicatOverride` / `clearSyndicatOverride`, `lierPropositionAArticle`.
+- **Fix** : `assertAdmin()` ([admin-guard.ts](src/lib/auth/admin-guard.ts)) en tête des 17. Tous leurs appelants sont des pages d'administration ; aucune tâche planifiée ne les appelle.
+- **Deux corrections de plus** : `createUserProfile` ([user.ts](src/lib/actions/user.ts)) prenait l'email **fourni par le navigateur**, qui décide du rôle `digital_medical_hub` (`@digitalmedicalhub.com`) → l'email du compte fait foi ; `getEvaluationCompletionMap` ([solutions.ts](src/lib/actions/solutions.ts)) acceptait n'importe quel `userId` → comparé à la session.
+- **Vérifié sur le build de production en local** (appel direct des actions) : `getAllQuestionnairesAdmin` et `getEmailsCampagnes` refusées sans cookie admin (`Non autorisé`), données renvoyées avec.
+- **Sains après relecture** : les fonctions DMH (`assertDmhRole`), l'espace éditeur (`assertEditeurAccessToSolution`), les évaluations et favoris (filtre sur l'utilisateur), et les actions publiques par conception (suggestion d'acronyme, demande de référencement, évaluation anonyme, mot de passe oublié, lectures de contenus publiés).
+- **Signalé, non modifié** : le DMH peut modifier ou supprimer **toutes** les études, y compris celles créées par l'admin (sa liste les montre toutes ; les règles RLS de la table visaient « ses » études) — à trancher par David. `checkEmailExists` révèle si une adresse a un compte ; l'évaluation anonyme envoie un email à l'adresse saisie sans Turnstile (vecteur de spam) — en TODO.
+
+---
+
 ## [2026-10-07] — Annuaire mutualisé, tranche 1 : tables en base (rien de visible)
 
 ### Base — 5 nouvelles tables, aucune table existante touchée

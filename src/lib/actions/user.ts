@@ -195,12 +195,15 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  * Utilise le service role car l'utilisateur n'a pas encore de session active
  * (email non confirmé) et le RLS bloquerait l'insertion.
  */
-export async function createUserProfile(userId: string, email: string) {
+export async function createUserProfile(userId: string, emailFourni: string) {
   const supabase = createServiceRoleClient()
 
   // Vérifier que l'utilisateur existe bien dans auth.users
   const { data: authUser } = await supabase.auth.admin.getUserById(userId)
   if (!authUser?.user) throw new Error('Utilisateur introuvable')
+  // L'email du compte fait foi, pas celui reçu en paramètre : c'est lui qui décide du rôle
+  // `digital_medical_hub` ci-dessous (action appelable depuis le navigateur).
+  const email = authUser.user.email ?? emailFourni
 
   // Vérifier si le profil existe déjà
   const { data: existing } = await supabase
