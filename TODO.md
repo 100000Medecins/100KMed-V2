@@ -34,11 +34,9 @@ _(rien en cours)_
 
 **Tranche 2a (08/10)** : migration en base + code faits (`/annuaire`, fiche d'un confrère, portable plafonné, carte, coordonnées déclarées, Analytics exclu, purge du journal). Fusionnée dans `main` (éteinte) le 08/10 avec `b5c7764`. **Reste : essai réel par David** (deux identités PSC pour le plafond et le journal).
 
-**Tranche 2b (08/10)** : tables `ans_*` + `annuaire_oppositions`, premier import (199 293 médecins, extraction du 04/10), recherche et fiches sur l'ANS, marqueur au cabinet, propositions dans Ma fiche, onglet Oppositions. Code sur `dev` (`8ef50a1`, `ce9b0c3`, `406c981`), pas encore dans `main`.
-- [ ] **David** : lancer la migration **2b-bis** (recherche accélérée, SQL dans le chat du 08/10 et dans `docs/2026-10-08-annuaire-tranche-2.md`), puis Claude re-mesure.
+**Tranche 2b (08/10)** : tables `ans_*` + `annuaire_oppositions`, premier import (199 293 médecins, extraction du 04/10), recherche et fiches sur l'ANS, marqueur au cabinet, propositions dans Ma fiche, onglet Oppositions, recherche accélérée (2b-bis, mesurée). Fusionnée dans `main` (éteinte) le 08/10 avec `6002f31`.
 - [ ] **David** : essai sur dev.100000medecins.org — recherche par nom, spécialité, compétence ; « Autour de moi » et rayons ; carte (marqueurs aux cabinets) ; fiche d'un confrère sans fiche (carte ANS seule) ; Ma fiche → « Utiliser » un lieu et une MSSanté ; onglet Oppositions (ajouter puis retirer un RPPS de test).
 - [ ] **Messagerie** : exclure `annuaire_oppositions` de `annuaire.db` (base de l'application) ; import mensuel côté site : `npx tsx scripts/annuaire-import-ans.ts --execute` après reconstruction de la base.
-- [ ] Fusion 2b dans `main` (accord de David) — sans effet visible tant que l'interrupteur est éteint.
 
 **Suite (à décider avec David)** :
 - **Tranche 3** : l'application lit les fiches et le portable (mêmes fonctions de la base).

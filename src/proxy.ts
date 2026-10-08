@@ -8,11 +8,15 @@ export async function proxy(request: NextRequest) {
   return await updateSession(request)
 }
 
+// Sans jeton admin valide : la page de connexion est servie à la place (même adresse), et la
+// page demandée n'est jamais calculée. Le contrôle du layout ne suffit pas : Next rend la page
+// en parallèle et en envoie les données, même quand le layout affiche le formulaire.
 // Rôle « contenus » : hors de ses rubriques, renvoi vers sa page d'accueil. Toute nouvelle
-// page d'admin lui est donc fermée par défaut. Sans session, le layout affiche la connexion.
+// page d'admin lui est donc fermée par défaut.
 function gardeAdmin(request: NextRequest) {
   const role = roleDepuisJeton(request.cookies.get('admin_token')?.value)
-  if (role && !cheminAutorise(role, request.nextUrl.pathname)) {
+  if (!role) return NextResponse.rewrite(new URL('/connexion-admin', request.url))
+  if (!cheminAutorise(role, request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL(ACCUEIL_PAR_ROLE[role], request.url))
   }
   return NextResponse.next()
