@@ -31,6 +31,7 @@ function ConnexionContent() {
     psc_no_identity: 'Impossible d\'identifier votre compte PSC. Veuillez réessayer.',
     psc_create_error: 'Impossible de créer votre compte. Contactez le support.',
     psc_session_error: 'Erreur lors de l\'établissement de la session. Veuillez réessayer.',
+    psc_state: 'La connexion Pro Santé Connect n\'a pas pu être vérifiée (elle doit se terminer dans le navigateur où elle a commencé). Veuillez réessayer.',
     confirm_invalid: 'Ce lien de confirmation est invalide. Si vous avez déjà confirmé votre adresse, connectez-vous directement ci-dessous.',
     confirm_expired: 'Ce lien de confirmation a expiré. Connectez-vous ci-dessous — si votre adresse n\'est pas encore confirmée, contactez le support.',
   }

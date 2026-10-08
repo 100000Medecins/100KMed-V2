@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createServiceRoleClient, createServerClient } from '@/lib/supabase/server'
 import { exchangePscCode, getPscUserInfo, extractRpps, extractCodeProfession, retirerPrefixeEtat } from '@/lib/auth/psc'
 import { generateFusionToken } from '@/lib/auth/fusionToken'
@@ -97,6 +98,24 @@ export async function GET(request: Request) {
   if (error || !code) {
     console.error('[PSC] callback error:', error || 'no code')
     return NextResponse.redirect(`${origin}/connexion?error=psc_auth_error`)
+  }
+
+  // Protection CSRF : le `state` reçu doit être celui que CE navigateur a demandé (cookie
+  // `psc_state` posé au départ par connectWithPsc / psc-initier). Sans ce contrôle, un tiers
+  // peut faire aboutir dans le navigateur d'un médecin une connexion qu'il a lancée lui-même.
+  // Mesure d'abord (`state_check` : ok / absent / different dans psc_session_events) ; blocage
+  // seulement si PSC_ETAT_STRICT=true, une fois vérifié que les retours via l'application e-CPS
+  // reviennent bien dans le navigateur de départ (sinon le cookie est absent).
+  const cookieStore = await cookies()
+  const etatAttendu = cookieStore.get('psc_state')?.value ?? null
+  const etatRecu = state ? retirerPrefixeEtat(state).split('|')[0] : null
+  const controleEtat = !etatAttendu ? 'absent' : etatAttendu === etatRecu ? 'ok' : 'different'
+  cookieStore.delete('psc_state') // usage unique
+  cookieStore.delete('psc_nonce')
+  await logHandoff(createServiceRoleClient(), crypto.randomUUID(), null, 'state_check', controleEtat)
+  if (controleEtat !== 'ok' && process.env.PSC_ETAT_STRICT === 'true') {
+    console.warn('[PSC] state refusé :', controleEtat)
+    return NextResponse.redirect(`${origin}/connexion?error=psc_state`)
   }
 
   try {

@@ -17,6 +17,12 @@
 - **Deux corrections de plus** : `createUserProfile` ([user.ts](src/lib/actions/user.ts)) prenait l'email **fourni par le navigateur**, qui décide du rôle `digital_medical_hub` (`@digitalmedicalhub.com`) → l'email du compte fait foi ; `getEvaluationCompletionMap` ([solutions.ts](src/lib/actions/solutions.ts)) acceptait n'importe quel `userId` → comparé à la session.
 - **Vérifié sur le build de production en local** (appel direct des actions) : `getAllQuestionnairesAdmin` et `getEmailsCampagnes` refusées sans cookie admin (`Non autorisé`), données renvoyées avec.
 - **Sains après relecture** : les fonctions DMH (`assertDmhRole`), l'espace éditeur (`assertEditeurAccessToSolution`), les évaluations et favoris (filtre sur l'utilisateur), et les actions publiques par conception (suggestion d'acronyme, demande de référencement, évaluation anonyme, mot de passe oublié, lectures de contenus publiés).
+### Sécurité — Connexion PSC : contrôle du `state` (protection CSRF), en mesure
+- **Constat** (07/10) : le cookie `psc_state` était posé au départ de chaque connexion PSC mais jamais relu au retour. Un tiers pouvait faire aboutir dans le navigateur d'un médecin une connexion PSC qu'il avait lancée lui-même (le médecin se retrouve connecté sur le compte du tiers).
+- **Fait** ([psc-callback](src/app/api/auth/psc-callback/route.ts)) : au retour, le `state` reçu (sans préfixe de relais) est comparé au cookie ; le résultat est journalisé dans `psc_session_events` (étape `state_check`, détail `ok` / `absent` / `different`), et les cookies `psc_state` / `psc_nonce` sont effacés (usage unique).
+- **Pas encore bloquant**, volontairement : si l'application e-CPS rouvre parfois le retour dans un autre navigateur que celui de départ, le cookie y est absent et un blocage casserait ces connexions (le projet a déjà perdu des sessions à ce passage, d'où le choix des cookies). Le blocage s'active sans code en posant **`PSC_ETAT_STRICT=true`** dans Vercel ; la page de connexion a son message (`psc_state`).
+- Rythme mesuré : ~9 connexions PSC par jour → une à deux semaines de mesure suffisent (TODO).
+
 - **Signalé, non modifié** : le DMH peut modifier ou supprimer **toutes** les études, y compris celles créées par l'admin (sa liste les montre toutes ; les règles RLS de la table visaient « ses » études) — à trancher par David. `checkEmailExists` révèle si une adresse a un compte ; l'évaluation anonyme envoie un email à l'adresse saisie sans Turnstile (vecteur de spam) — en TODO.
 
 ---
