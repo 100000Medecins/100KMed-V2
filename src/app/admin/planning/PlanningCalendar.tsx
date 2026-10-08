@@ -120,7 +120,7 @@ export default function PlanningCalendar({ events }: { events: PlanningEvent[] }
         <span className="text-sm text-gray-400">·</span>
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-accent-blue flex items-center justify-center text-white text-xs font-bold">1</span>
-          <span className="text-sm text-gray-500">Aujourd'hui</span>
+          <span className="text-sm text-gray-500">Aujourd&apos;hui</span>
         </div>
       </div>
 

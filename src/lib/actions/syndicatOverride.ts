@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { assertAdmin } from '@/lib/auth/admin-guard'
+import { assertAdminOuContenu } from '@/lib/auth/admin-guard'
 
 /**
  * Override HTML par syndicat pour le mail de lancement.
@@ -44,7 +44,7 @@ async function updateSyndicatField(syndicatId: string, mutate: (entry: Record<st
 }
 
 export async function saveSyndicatOverride(syndicatId: string, contenuHtml: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   if (!syndicatId) throw new Error('syndicatId requis')
   await updateSyndicatField(syndicatId, (entry) => ({ ...entry, contenu_html_override: contenuHtml }))
   revalidatePath('/admin/emails')
@@ -52,7 +52,7 @@ export async function saveSyndicatOverride(syndicatId: string, contenuHtml: stri
 }
 
 export async function clearSyndicatOverride(syndicatId: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   if (!syndicatId) throw new Error('syndicatId requis')
   await updateSyndicatField(syndicatId, (entry) => {
     const { contenu_html_override: _drop, ...rest } = entry as Record<string, unknown>

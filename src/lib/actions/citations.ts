@@ -1,8 +1,7 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { assertAdminOuContenu } from '@/lib/auth/admin-guard'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { revalidatePath } from 'next/cache'
 import sgMail from '@sendgrid/mail'
@@ -16,14 +15,6 @@ const NOTIF_TO = 'contact@100000medecins.org'
 
 const CIT_STATUTS = ['en_attente', 'publiee', 'refusee'] as const
 type CitStatut = (typeof CIT_STATUTS)[number]
-
-function generateToken(): string {
-  return createHmac('sha256', process.env.ADMIN_PASSWORD!).update('admin-session').digest('hex')
-}
-async function assertAdmin() {
-  const cookieStore = await cookies()
-  if (cookieStore.get('admin_token')?.value !== generateToken()) throw new Error('Non autorisé')
-}
 
 function revalidateCitations() {
   revalidatePath('/admin/citations')
@@ -104,7 +95,7 @@ export async function proposerCitation(
 
 /** Admin : créer une citation directement publiée. */
 export async function createCitation(input: { text: string; auteur?: string | null }) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const text = input.text.trim()
   if (!text) return { error: 'Le texte est requis.' }
   const admin = createServiceRoleClient()
@@ -121,7 +112,7 @@ export async function createCitation(input: { text: string; auteur?: string | nu
 
 /** Admin : éditer le texte / l'auteur. */
 export async function updateCitation(id: string, input: { text: string; auteur?: string | null }) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const text = input.text.trim()
   if (!text) return { error: 'Le texte est requis.' }
   const admin = createServiceRoleClient()
@@ -138,7 +129,7 @@ export async function updateCitation(id: string, input: { text: string; auteur?:
 
 /** Admin : changer le statut (publier / refuser / remettre en attente). */
 export async function setStatutCitation(id: string, statut: CitStatut) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   if (!CIT_STATUTS.includes(statut)) return { error: 'Statut invalide.' }
   const admin = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,7 +144,7 @@ export async function setStatutCitation(id: string, statut: CitStatut) {
 
 /** Admin : supprimer. */
 export async function deleteCitation(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const admin = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any).from('citations').delete().eq('id', id)

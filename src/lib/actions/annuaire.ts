@@ -20,7 +20,16 @@ import {
   MOYENS_CONTACT,
   type MoyenContact,
 } from '@/lib/constants/annuaire'
-import { normaliserPortable, normaliserLibelle, normaliserRecherche, codesSmDeSpecialite, afficherPortable } from '@/lib/annuaire/normaliser'
+import {
+  normaliserPortable,
+  normaliserTelephone,
+  normaliserMssante,
+  normaliserLibelle,
+  normaliserRecherche,
+  codesSmDeSpecialite,
+  afficherPortable,
+} from '@/lib/annuaire/normaliser'
+import type { Commune } from '@/lib/annuaire/geocodage'
 import type { Database } from '@/types/database'
 
 type IntituleRow = Database['public']['Tables']['intitules']['Row']
@@ -40,6 +49,10 @@ export interface MaFicheAnnuaire {
   miseAJour: string | null
   portable: string
   portableVisible: boolean
+  /** Commune d'exercice déclarée (centre de la commune, pas l'adresse). */
+  commune: Commune | null
+  mssante: string
+  telephoneCabinet: string
   competences: string[]
   catalogue: IntituleCatalogue[]
 }
@@ -76,6 +89,18 @@ export async function getMaFicheAnnuaire(): Promise<MaFicheAnnuaire | null> {
     miseAJour: fiche.data?.mise_a_jour ?? null,
     portable: afficherPortable(portable.data?.portable),
     portableVisible: portable.data?.visible ?? false,
+    commune:
+      fiche.data?.ville && fiche.data.lat != null && fiche.data.lon != null
+        ? {
+            ville: fiche.data.ville,
+            codePostal: fiche.data.code_postal ?? '',
+            communeInsee: fiche.data.commune_insee ?? '',
+            lat: fiche.data.lat,
+            lon: fiche.data.lon,
+          }
+        : null,
+    mssante: fiche.data?.mssante ?? '',
+    telephoneCabinet: afficherPortable(fiche.data?.telephone_cabinet),
     competences: (liens.data ?? []).map((l) => l.intitule_id),
     catalogue: catalogue.data ?? [],
   }
@@ -97,7 +122,13 @@ export async function enregistrerMaFiche(input: {
   portableVisible: boolean
   publiee: boolean
   competences: string[]
-}): Promise<{ ok: true; publieeLe: string | null; miseAJour: string | null; portable: string } | { error: string }> {
+  commune: Commune | null
+  mssante: string
+  telephoneCabinet: string
+}): Promise<
+  | { ok: true; publieeLe: string | null; miseAJour: string | null; portable: string; telephoneCabinet: string }
+  | { error: string }
+> {
   const ctx = await utilisateurVerifie()
   if (ctx.error) return { error: ctx.error }
   const { supabase, userId } = ctx
@@ -107,6 +138,20 @@ export async function enregistrerMaFiche(input: {
   if (input.portable.trim()) {
     portable = normaliserPortable(input.portable)
     if (!portable) return { error: 'Numéro de portable non reconnu. Exemple : 06 12 34 56 78.' }
+  }
+  let telephoneCabinet: string | null = null
+  if (input.telephoneCabinet.trim()) {
+    telephoneCabinet = normaliserTelephone(input.telephoneCabinet)
+    if (!telephoneCabinet) return { error: 'Téléphone du cabinet non reconnu. Exemple : 01 23 45 67 89.' }
+  }
+  let mssante: string | null = null
+  if (input.mssante.trim()) {
+    mssante = normaliserMssante(input.mssante)
+    if (!mssante) return { error: 'Adresse MSSanté non reconnue. Exemple : prenom.nom@medecin.mssante.fr.' }
+  }
+  const c = input.commune
+  if (c && !(c.ville && Number.isFinite(c.lat) && Number.isFinite(c.lon) && Math.abs(c.lat) <= 90 && Math.abs(c.lon) <= 180)) {
+    return { error: 'Commune non reconnue : choisissez-la dans la liste proposée.' }
   }
   const competences = Array.from(new Set(input.competences))
   if (competences.length > MAX_COMPETENCES) return { error: `Une fiche compte au plus ${MAX_COMPETENCES} compétences.` }
@@ -120,6 +165,13 @@ export async function enregistrerMaFiche(input: {
         moyen_contact: moyenContact,
         publiee: input.publiee,
         publiee_accord_version: input.publiee ? ANNUAIRE_VERSION_ACCORD : null,
+        ville: c?.ville ?? null,
+        code_postal: c && /^[0-9]{5}$/.test(c.codePostal) ? c.codePostal : null,
+        commune_insee: c && /^[0-9][0-9AB][0-9]{3}$/.test(c.communeInsee) ? c.communeInsee : null,
+        lat: c?.lat ?? null,
+        lon: c?.lon ?? null,
+        mssante,
+        telephone_cabinet: telephoneCabinet,
       },
       { onConflict: 'user_id' },
     )
@@ -168,7 +220,13 @@ export async function enregistrerMaFiche(input: {
   }
 
   revalidatePath('/mon-compte/annuaire')
-  return { ok: true, publieeLe: fiche.publiee_accord_le, miseAJour: fiche.mise_a_jour, portable: afficherPortable(portable) }
+  return {
+    ok: true,
+    publieeLe: fiche.publiee_accord_le,
+    miseAJour: fiche.mise_a_jour,
+    portable: afficherPortable(portable),
+    telephoneCabinet: afficherPortable(telephoneCabinet),
+  }
 }
 
 /**

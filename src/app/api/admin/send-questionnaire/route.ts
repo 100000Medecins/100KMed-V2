@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { estAdminOuContenu } from '@/lib/auth/admin-guard'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { adresseEnvoi } from '@/lib/email/destinataire'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
-function generateToken(): string {
-  return createHmac('sha256', process.env.ADMIN_PASSWORD!).update('admin-session').digest('hex')
-}
-
-async function assertAdmin() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('admin_token')?.value
-  if (token !== generateToken()) throw new Error('Non autorisé')
-}
-
 export async function POST(req: NextRequest) {
-  try { await assertAdmin() } catch {
+  if (!(await estAdminOuContenu())) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
@@ -30,7 +19,7 @@ export async function POST(req: NextRequest) {
   const siteUrl = new URL(req.url).origin
 
   // Utilisateurs opt-in
-  const { data: prefs } = await (supabase as any)
+  const { data: prefs } = await supabase
     .from('users_notification_preferences')
     .select('user_id')
     .eq('questionnaires_these', true)
@@ -39,8 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ sent: 0, total: 0 })
   }
 
-  const userIds = prefs.map((p: any) => p.user_id)
-  const { data: allUsers } = await (supabase as any)
+  const userIds = prefs.map((p) => p.user_id)
+  const { data: allUsers } = await supabase
     .from('users')
     .select('id, email, contact_email, nom, specialite, specialite_secondaire')
     .in('id', userIds)
@@ -51,7 +40,7 @@ export async function POST(req: NextRequest) {
   // et on inclut la spécialité secondaire saisie à la main.
   const { specialiteConcerneeAvecSecondaire } = await import('@/lib/constants/profil')
   const users = Array.isArray(specialites_cibles) && specialites_cibles.length > 0
-    ? (allUsers ?? []).filter((u: any) => specialiteConcerneeAvecSecondaire(u.specialite, u.specialite_secondaire, specialites_cibles))
+    ? (allUsers ?? []).filter((u) => specialiteConcerneeAvecSecondaire(u.specialite, u.specialite_secondaire, specialites_cibles))
     : (allUsers ?? [])
 
   if (!users || users.length === 0) {

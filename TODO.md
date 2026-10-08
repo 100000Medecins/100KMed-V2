@@ -30,7 +30,9 @@ _(rien en cours)_
 
 **Fait (tranche 1, en production mais éteinte)** : 5 tables + RLS ; catalogue (212 compétences, retouches dans `/admin/intitules?onglet=catalogue`) ; interrupteur (admin › Paramètres) ; preuve PSC écrite par le callback ; page « Ma fiche annuaire » ; administration des propositions ; suppression et fusion de compte ; étanchéité vérifiée ; essai réel de David (PSC BAS). Référence : `docs/2026-10-07-annuaire-tranche-1.md`.
 
-**Tranche 2 — décisions du 08/10** : champs déclarés ville / code postal, adresse MSSanté, téléphone du cabinet ; portable 10 / jour / lecteur ; page `/annuaire` depuis Mon compte ; lecteurs = médecins avec preuve PSC, sans réciprocité ; recherche par localisation comme dans l'application ; **une seule chaîne de données ANS** pour l'application et le site. Proposition de synchronisation : `docs/2026-10-08-annuaire-tranche-2.md` (questions A à C en attente).
+**Tranche 2 — décisions du 08/10** : champs déclarés ville / code postal, adresse MSSanté, téléphone du cabinet ; portable 10 / jour / lecteur ; page `/annuaire` depuis Mon compte ; lecteurs = médecins avec preuve PSC, sans réciprocité ; recherche par localisation comme dans l'application ; **une seule chaîne de données ANS** pour l'application et le site. Proposition de synchronisation : `docs/2026-10-08-annuaire-tranche-2.md` — validée le 08/10 (localisation : ville saisie ou celle de sa fiche, sinon géolocalisation proposée ; script commun dans le dépôt messagerie ; ordre 2a puis 2b). Le jour J, ajouter à la charte : la ville saisie dans la recherche est envoyée au géocodeur de l'IGN.
+
+**Tranche 2a (08/10)** : migration en base + code faits (`/annuaire`, fiche d'un confrère, portable plafonné, carte, coordonnées déclarées, Analytics exclu, purge du journal). **Reste : essai réel par David** (deux identités PSC pour le plafond et le journal), puis **2b** : tables `ans_*` et liste d'opposition côté site, étapes d'export / import dans `lot8` côté messagerie.
 
 **Suite (à décider avec David)** :
 - **Tranche 2 — lecture par les confrères** : recherche par compétence et spécialité (`pg_trgm` installé), fiche d'un confrère avec la mention « Informations déclarées par le médecin, non vérifiées » et la date de mise à jour ; portable fiche par fiche par une fonction (plafond quotidien + journal des affichages + purge à 12 mois dans `purge-donnees`) ; pas de Vercel Analytics sur ces pages ; source ANS affichée si les données de l'Annuaire Santé sont reprises.
@@ -62,9 +64,26 @@ _(rien en cours)_
 - des `completer_error` → bug à corriger ;
 - comparer le taux de complétion avant/après l'ajout des choix de notifications, et lire les choix faits (détail de `completer_success`).
 
+### Réseaux sociaux et accès de la community manager — restes (posé le 2026-10-08)
+
+**Contexte** : accès « contenus » à l'admin, posts réseaux en base avec programmation, panneau sur les vidéos (CHANGELOG du 2026-10-08).
+
+**À faire (David)** :
+- **Make, branche LinkedIn** : remplacer « Create a Company Text Post » par HTTP › Get a file + « Create a Company Image Post » (pas à pas donné le 08/10) ; vérifier le champ Link du module Facebook.
+- **Vercel** : variable `ADMIN_CONTENU_PASSWORD` (Production et Preview), puis redéployer ; tester la connexion avec ce mot de passe.
+- **Après la mise en production** : activer `pg_cron` et `pg_net` (Database › Extensions), puis lancer le SQL de l'étape 2 (secret `cron_secret` dans Vault + `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …)`, texte complet dans la session du 08/10). Sans lui, les posts programmés restent « programmés ».
+- **Tester la programmation** : programmer un post à +15 min et vérifier l'heure de parution (et l'historique Make).
+
 ---
 
 ## En attente / Idées
+
+### Vidéo : dépôt dans l'admin → YouTube + publication native sur les réseaux (posé le 2026-10-08)
+- **Prérequis** : Supabase **Pro** (25 $/mois : fichiers > 50 Mo, 100 Go de stockage, 250 Go de bande passante, et sauvegardes quotidiennes).
+- **Décidé** : vidéos publiées en **publique** sur YouTube ; la lecture sur le site reste YouTube (pas d'hébergement des vidéos sur le site : bande passante, pas de lecture adaptée au débit).
+- **Principe** : dans Vidéos, déposer le MP4 + titre + description → fichier envoyé directement du navigateur au stockage Supabase (bucket privé, adresse signée) → Make (module YouTube « Upload a Video ») le publie → Make rappelle le site, qui crée la fiche vidéo (lien, vignette) → le fichier reste disponible pour une publication **native** (LinkedIn « Create a Company Video Post », Facebook « Upload a Video », Instagram en Reel), puis suppression du fichier.
+- **Pourquoi Make et pas l'API YouTube depuis le site** : une vidéo envoyée par un projet Google non audité est forcée en privé. Make propose public / non répertorié / privé, mais certains signalent des vidéos « Private (locked) » : tester sur une première vidéo.
+- **Contraintes** : Instagram (Reel) veut du MP4 plutôt vertical, durée et poids limités (vérifier les chiffres à jour au moment de construire).
 
 ### Annuaire mutualisé — coller les CGU et la charte le jour du passage en prod (posé le 2026-10-05)
 

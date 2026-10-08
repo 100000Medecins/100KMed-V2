@@ -3,9 +3,20 @@
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { buildEmail } from '@/lib/actions/emailTemplates'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
+import { adresseEnvoi } from '@/lib/email/destinataire'
+import { specialiteConcerneeAvecSecondaire } from '@/lib/constants/profil'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
-import { assertAdmin } from '@/lib/auth/admin-guard'
+import { assertAdmin, assertAdminOuContenu } from '@/lib/auth/admin-guard'
+
+type UtilisateurCible = {
+  id: string
+  email: string | null
+  contact_email: string | null
+  nom: string | null
+  specialite: string | null
+  specialite_secondaire: string | null
+}
 
 export type EmailCampagne = {
   id: string
@@ -23,7 +34,7 @@ export type EmailCampagne = {
   created_at: string
 }
 
-function normalise(row: any): EmailCampagne {
+function normalise(row: Omit<EmailCampagne, 'specialites_cibles'> & { specialites_cibles: unknown }): EmailCampagne {
   return {
     ...row,
     specialites_cibles: Array.isArray(row.specialites_cibles) ? row.specialites_cibles : [],
@@ -31,7 +42,7 @@ function normalise(row: any): EmailCampagne {
 }
 
 export async function getEmailsCampagnes(): Promise<{ etudes: EmailCampagne[]; questionnaires: EmailCampagne[] }> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { data } = await supabase
@@ -47,7 +58,7 @@ export async function getEmailsCampagnes(): Promise<{ etudes: EmailCampagne[]; q
 }
 
 export async function cancelEmailCampagne(id: string): Promise<{ error: string | null }> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServiceRoleClient() as any
   const { error } = await supabase
@@ -168,24 +179,27 @@ export async function sendCampagneNow(
     .select('user_id')
     .eq(prefKey, true)
 
-  const userIds = (prefs ?? []).map((p: any) => p.user_id)
-  let query = supabase
+  const userIds = (prefs ?? []).map((p: { user_id: string }) => p.user_id)
+  const { data: allUsers } = await supabase
     .from('users')
-    .select('id, email, nom, specialite')
+    .select('id, email, contact_email, nom, specialite, specialite_secondaire')
     .in('id', userIds.length > 0 ? userIds : ['00000000-0000-0000-0000-000000000000'])
 
-  if (specialitesCibles.length > 0) {
-    query = query.in('specialite', specialitesCibles)
-  }
-
-  const { data: users } = await query
-  const total = (users ?? []).length
+  // Même filtrage que la tâche des campagnes programmées : les libellés PSC diffèrent de
+  // ceux de la liste admin (un `.in('specialite', …)` raterait les médecins PSC), et la
+  // spécialité secondaire compte.
+  const users: UtilisateurCible[] = (allUsers ?? []).filter((u: UtilisateurCible) =>
+    specialiteConcerneeAvecSecondaire(u.specialite, u.specialite_secondaire, specialitesCibles),
+  )
+  const total = users.length
   let sent = 0
 
   if (total > 0) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
-    for (const user of users ?? []) {
-      if (!user.email) continue
+    for (const user of users) {
+      // Adresse de contact préférée, jamais l'adresse fictive psc-…@psc.sante.fr.
+      const to = adresseEnvoi(user)
+      if (!to) continue
       try {
         const nomDisplay = user.nom ? `Dr. ${user.nom}` : 'Docteur'
         const result = await buildEmail(templateId, {
@@ -196,7 +210,7 @@ export async function sendCampagneNow(
         }, siteUrl)
         if (!result) continue
         await sgMail.send({
-          to: user.email,
+          to,
           from: EMAIL_SENDER,
           subject: result.sujet,
           html: result.html,

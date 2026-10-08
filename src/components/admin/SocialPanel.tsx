@@ -1,33 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Send, Clock, Check, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe } from 'lucide-react'
+import { useState } from 'react'
+import { Send, Clock, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe, CalendarX, Loader2 } from 'lucide-react'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
+import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
 import { publishArticle } from '@/lib/actions/admin'
+import {
+  annulerProgrammation,
+  enregistrerPost,
+  envoyerMaintenant,
+  genererBrouillons,
+  programmerPost,
+  supprimerPost,
+} from '@/lib/actions/posts-reseaux'
+import { RESEAUX, type PostReseau, type Reseau } from '@/lib/reseaux/types'
 
-type Network = 'linkedin' | 'facebook' | 'instagram'
-
-type NetworkPost = {
-  network: Network
-  text: string
-  scheduled_at: string
-  immediate: boolean
-  status: 'idle' | 'sending' | 'sent' | 'error'
-  error?: string
-}
-
-const NETWORK_LABELS: Record<Network, string> = {
+const NETWORK_LABELS: Record<Reseau, string> = {
   linkedin: 'LinkedIn',
   facebook: 'Facebook',
   instagram: 'Instagram',
 }
 
-const NETWORK_COLORS: Record<Network, string> = {
+const NETWORK_COLORS: Record<Reseau, string> = {
   linkedin: 'bg-[#0A66C2] text-white',
   facebook: 'bg-[#1877F2] text-white',
   instagram: 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white',
 }
 
-function NetworkIcon({ network }: { network: Network }) {
+function NetworkIcon({ network }: { network: Reseau }) {
   if (network === 'linkedin') return (
     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
@@ -45,165 +48,160 @@ function NetworkIcon({ network }: { network: Network }) {
   )
 }
 
-const NETWORK_LIMITS: Record<Network, number> = {
+const NETWORK_LIMITS: Record<Reseau, number> = {
   linkedin: 3000,
   facebook: 2000,
   instagram: 2200,
 }
 
-const OPTIMAL_HOURS: Record<Network, number> = {
+const OPTIMAL_HOURS: Record<Reseau, number> = {
   linkedin: 9,
   facebook: 12,
   instagram: 11,
 }
 
-const NETWORKS: Network[] = ['linkedin', 'facebook', 'instagram']
-
-function nextWeekdayAt(hour: number): string {
+/** Prochain jour ouvré à l'heure donnée (heure locale du navigateur), en ISO. */
+function creneauSuggere(heure: number): string {
   const d = new Date()
   d.setDate(d.getDate() + 1)
   if (d.getDay() === 0) d.setDate(d.getDate() + 1)
   if (d.getDay() === 6) d.setDate(d.getDate() + 2)
-  d.setHours(hour, 0, 0, 0)
-  return d.toISOString().slice(0, 16)
+  d.setHours(heure, 0, 0, 0)
+  return d.toISOString()
+}
+
+/** ISO → valeur d'un champ datetime-local, en heure locale. */
+function versSaisie(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+function dateLisible(iso: string | null): string {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+/** Contenu à promouvoir : un article du blog ou une vidéo YouTube de la rubrique Vidéos. */
+export type SourcePublication = {
+  type: 'article' | 'video'
+  id: string
+  titre: string
+  resume?: string | null // chapeau de l'article, description de la vidéo
+  lien?: string // page de l'article, ou vidéo YouTube
+  image?: string | null // couverture de l'article, vignette de la vidéo
+  statut?: string | null // article seulement : « publié » ou non
 }
 
 interface Props {
-  article: {
-    id: string
-    titre: string
-    extrait?: string | null
-    slug?: string | null
-    image_couverture?: string | null
-    statut?: string | null
-  }
+  source: SourcePublication
+  postsInitiaux: PostReseau[]
 }
 
-const STORAGE_KEY = (id: string) => `social_posts_${id}`
+type Resultat = { posts: PostReseau[]; error?: string }
 
-export default function SocialPanel({ article }: Props) {
+export default function SocialPanel({ source, postsInitiaux }: Props) {
   const [open, setOpen] = useState(false)
-  const [posts, setPosts] = useState<NetworkPost[]>([])
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generateError, setGenerateError] = useState<string | null>(null)
+  const [posts, setPosts] = useState<PostReseau[]>(postsInitiaux)
+  // Saisies en cours (texte, créneau) par post, enregistrées à la sortie du champ.
+  const [textes, setTextes] = useState<Record<string, string>>({})
+  const [creneaux, setCreneaux] = useState<Record<string, string>>({})
+  const [occupe, setOccupe] = useState<string | null>(null) // id du post, ou « generer »
+  const [erreur, setErreur] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
-  const [isPublished, setIsPublished] = useState(article.statut === 'publié')
+  // Une vidéo pointe vers YouTube : sa publication sur le site n'a pas d'effet sur l'aperçu du lien.
+  const [isPublished, setIsPublished] = useState(source.type !== 'article' || source.statut === 'publié')
 
-  // Charger les posts sauvegardés au montage
-  useEffect(() => {
+  const ordre = (p: PostReseau) => RESEAUX.indexOf(p.reseau as Reseau)
+  const actifs = posts.filter((p) => p.statut !== 'envoye').sort((a, b) => ordre(a) - ordre(b))
+  const envoyes = posts.filter((p) => p.statut === 'envoye')
+  const nbProgrammes = posts.filter((p) => p.statut === 'programme').length
+
+  const texteDe = (p: PostReseau) => textes[p.id] ?? p.texte
+  const creneauDe = (p: PostReseau) => creneaux[p.id] ?? versSaisie(p.programme_le)
+
+  async function executer(cle: string, action: () => Promise<Resultat>) {
+    setOccupe(cle)
+    setErreur(null)
     try {
-      const saved = localStorage.getItem(STORAGE_KEY(article.id))
-      if (saved) setPosts(JSON.parse(saved))
-    } catch {}
-  }, [article.id])
-
-  const articleUrl = article.slug
-    ? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'}/blog/${article.slug}`
-    : undefined
+      const r = await action()
+      setPosts(r.posts)
+      if (r.error) setErreur(r.error)
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : 'Erreur inconnue')
+    } finally {
+      setOccupe(null)
+    }
+  }
 
   async function handlePublish() {
     setIsPublishing(true)
-    const result = await publishArticle(article.id)
+    const result = await publishArticle(source.id)
     if (!result?.error) setIsPublished(true)
     setIsPublishing(false)
   }
 
-  async function handleGenerate() {
-    setIsGenerating(true)
-    setGenerateError(null)
-
-    const res = await fetch('/api/generer-posts-sociaux', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titre: article.titre,
-        extrait: article.extrait,
-        url: articleUrl,
-      }),
+  function generer() {
+    if (actifs.some((p) => p.statut === 'brouillon') && !confirm('Remplacer les brouillons actuels par de nouveaux messages ?')) return
+    const suggestions = Object.fromEntries(RESEAUX.map((r) => [r, creneauSuggere(OPTIMAL_HOURS[r])])) as Record<Reseau, string>
+    executer('generer', async () => {
+      const r = await genererBrouillons({ type: source.type, id: source.id, titre: source.titre, resume: source.resume, lien: source.lien }, suggestions)
+      setTextes({})
+      setCreneaux({})
+      return r
     })
-    const data = await res.json()
-    if (!res.ok || data.error) {
-      setGenerateError(data.error ?? 'Erreur lors de la génération')
-      setIsGenerating(false)
+  }
+
+  // Sauvegarde discrète à la sortie d'un champ, pour que l'autre personne voie le brouillon à jour.
+  async function sauver(p: PostReseau) {
+    const texte = textes[p.id]
+    const saisie = creneaux[p.id]
+    if (texte === undefined && saisie === undefined) return
+    try {
+      const r = await enregistrerPost(p.id, {
+        ...(texte !== undefined ? { texte } : {}),
+        ...(saisie !== undefined ? { programmeLe: saisie ? new Date(saisie).toISOString() : null } : {}),
+      })
+      setPosts(r.posts)
+    } catch {
+      // L'envoi ou la programmation enregistrent de toute façon le texte affiché.
+    }
+  }
+
+  function programmer(p: PostReseau) {
+    const saisie = creneauDe(p)
+    if (!saisie) {
+      setErreur('Choisissez une date de publication.')
       return
     }
-
-    const newPosts: NetworkPost[] = NETWORKS.map((network) => ({
-      network,
-      text: data[network] ?? '',
-      scheduled_at: nextWeekdayAt(OPTIMAL_HOURS[network]),
-      immediate: false,
-      status: 'idle',
-    }))
-    savePosts(newPosts)
-    setIsGenerating(false)
+    executer(p.id, () => programmerPost(p.id, texteDe(p), new Date(saisie).toISOString()))
   }
 
-  function savePosts(updated: NetworkPost[]) {
-    try { localStorage.setItem(STORAGE_KEY(article.id), JSON.stringify(updated)) } catch {}
-    setPosts(updated)
+  function programmerTout() {
+    const brouillons = actifs.filter((p) => p.statut === 'brouillon' && creneauDe(p) && !(p.reseau === 'instagram' && !source.image))
+    executer('tout', async () => {
+      let dernier: Resultat = { posts }
+      for (const p of brouillons) {
+        dernier = await programmerPost(p.id, texteDe(p), new Date(creneauDe(p)).toISOString())
+        if (dernier.error) break
+      }
+      return dernier
+    })
   }
-
-  function updatePost(network: Network, field: 'text' | 'scheduled_at', value: string) {
-    savePosts(posts.map((p) => p.network === network ? { ...p, [field]: value } : p))
-  }
-
-  function toggleImmediate(network: Network) {
-    savePosts(posts.map((p) => p.network === network ? { ...p, immediate: !p.immediate } : p))
-  }
-
-  function removePost(network: Network) {
-    savePosts(posts.filter((p) => p.network !== network))
-  }
-
-  async function sendPost(network: Network) {
-    const post = posts.find((p) => p.network === network)
-    if (!post) return
-
-    setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'sending' } : p))
-
-    let data: { success?: boolean; error?: string } = {}
-    try {
-      const res = await fetch('/api/social-publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          network: post.network,
-          text: post.text,
-          scheduled_at: post.immediate ? undefined : (post.scheduled_at ? new Date(post.scheduled_at).toISOString() : undefined),
-          image_url: article.image_couverture ?? undefined,
-          article_url: articleUrl,
-        }),
-      })
-      data = await res.json()
-      if (!res.ok || !data.success) throw new Error(data.error ?? 'Erreur inconnue')
-      setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'sent' } : p))
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Erreur inconnue'
-      setPosts((prev) => prev.map((p) => p.network === network ? { ...p, status: 'error', error: msg } : p))
-    }
-  }
-
-  async function sendAll() {
-    for (const post of posts.filter((p) => p.status === 'idle')) {
-      await sendPost(post.network)
-    }
-  }
-
-  const allSent = posts.length > 0 && posts.every((p) => p.status === 'sent')
-  const anySending = posts.some((p) => p.status === 'sending')
 
   return (
-    <div className="bg-white border border-gray-200 rounded-card overflow-hidden">
+    <Card padding="none">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-surface-light transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Send className="w-4 h-4 text-accent-blue" />
           <span className="font-semibold text-navy text-sm">Publier sur les réseaux</span>
-          {allSent && <span className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Programmé</span>}
+          {nbProgrammes > 0 && <Badge variant="info" size="sm">{nbProgrammes} programmé{nbProgrammes > 1 ? 's' : ''}</Badge>}
+          {envoyes.length > 0 && <Badge variant="success" size="sm">{envoyes.length} transmis</Badge>}
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
@@ -213,176 +211,174 @@ export default function SocialPanel({ article }: Props) {
 
           {/* Article non publié */}
           {!isPublished && (
-            <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-button px-4 py-3">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-700">
-                  <strong>L'article n'est pas encore publié.</strong> Publie-le maintenant pour que la vignette de lien s'affiche correctement sur LinkedIn et Facebook.
+                  <strong>L&apos;article n&apos;est pas encore publié.</strong> Publie-le avant l&apos;envoi pour que la vignette de lien s&apos;affiche correctement sur LinkedIn et Facebook.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={isPublishing}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors"
-              >
-                <Globe className="w-3.5 h-3.5" />
-                {isPublishing ? 'Publication…' : 'Publier'}
-              </button>
+              <Button type="button" variant="secondary" size="sm" onClick={handlePublish} loading={isPublishing} leftIcon={<Globe className="w-3.5 h-3.5" />}>
+                Publier
+              </Button>
             </div>
           )}
 
           {/* Instagram sans image */}
-          {!article.image_couverture && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          {!source.image && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-button px-4 py-3">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700">
-                Cet article n'a pas d'image de couverture. Instagram requiert une image — le post Instagram sera envoyé sans image (Make.com gèrera selon ta configuration).
+                {source.type === 'article' ? "Cet article n'a pas d'image de couverture." : "Cette vidéo n'a pas de vignette."} Instagram requiert une image : le post Instagram ne pourra pas partir.
               </p>
             </div>
           )}
 
-          {/* Bouton générer */}
-          {posts.length === 0 && (
+          {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+
+          {/* Génération */}
+          {actifs.length === 0 && (
             <div className="space-y-3">
               <p className="text-sm text-gray-500">
-                Génère 3 messages adaptés à chaque réseau, puis programme leur publication.
+                {envoyes.length > 0
+                  ? 'Préparer une nouvelle série de messages (les envois précédents restent dans l’historique).'
+                  : 'Génère 3 messages adaptés à chaque réseau, puis programme leur publication.'}
               </p>
-              {generateError && <p className="text-xs text-red-600">{generateError}</p>}
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-accent-blue text-white rounded-xl hover:bg-accent-blue/90 disabled:opacity-50 transition-colors"
-              >
-                <Sparkles className="w-4 h-4" />
-                {isGenerating ? 'Génération en cours…' : 'Générer les 3 messages'}
-              </button>
+              <Button type="button" variant="secondary" size="md" onClick={generer} loading={occupe === 'generer'} leftIcon={<Sparkles className="w-4 h-4" />}>
+                {occupe === 'generer' ? 'Génération en cours…' : envoyes.length > 0 ? 'Préparer de nouveaux messages' : 'Générer les 3 messages'}
+              </Button>
             </div>
           )}
 
-          {/* Posts générés */}
-          {posts.length > 0 && (
-            <div className="space-y-5">
-              {posts.map((post) => {
-                const limit = NETWORK_LIMITS[post.network]
-                const count = post.text.length
-                const ok = count <= limit
-                const sent = post.status === 'sent'
-                const sending = post.status === 'sending'
-                const hasError = post.status === 'error'
+          {/* Posts en préparation, programmés ou en erreur */}
+          {actifs.map((p) => {
+            const reseau = p.reseau as Reseau
+            const texte = texteDe(p)
+            const limite = NETWORK_LIMITS[reseau]
+            const tropLong = texte.length > limite
+            const sansImage = reseau === 'instagram' && !source.image
+            const modifiable = p.statut === 'brouillon' || p.statut === 'erreur'
+            const pending = occupe === p.id || occupe === 'tout'
 
-                return (
-                  <div key={post.network} className={`rounded-2xl border p-4 space-y-3 ${sent ? 'border-green-200 bg-green-50/50' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`inline-flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-xl ${NETWORK_COLORS[post.network]}`}>
-                        <NetworkIcon network={post.network} />
-                        {NETWORK_LABELS[post.network]}
-                      </span>
-                      {!sent && (
-                        <button type="button" onClick={() => removePost(post.network)} className="text-gray-300 hover:text-red-400 transition-colors">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    {sent ? (
-                      <p className="text-sm text-green-700 flex items-center gap-1.5">
-                        <Check className="w-4 h-4" /> Envoyé à Make.com avec succès
-                      </p>
-                    ) : (
-                      <>
-                        <div>
-                          <textarea
-                            value={post.text}
-                            onChange={(e) => updatePost(post.network, 'text', e.target.value)}
-                            rows={5}
-                            className="w-full text-sm border border-gray-200 rounded-xl px-4 py-3 resize-y focus:outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50"
-                          />
-                          <p className={`text-xs mt-1 text-right ${ok ? 'text-gray-400' : 'text-red-500 font-semibold'}`}>
-                            {count} / {limit}
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-medium text-gray-500 flex items-center gap-1 mb-2">
-                            <Clock className="w-3.5 h-3.5" /> Date de publication
-                          </label>
-                          <div className="flex gap-2 mb-2">
-                            <button
-                              type="button"
-                              onClick={() => toggleImmediate(post.network)}
-                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${post.immediate ? 'bg-accent-blue text-white border-accent-blue' : 'bg-white text-gray-500 border-gray-200 hover:border-accent-blue/50'}`}
-                            >
-                              Immédiat
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleImmediate(post.network)}
-                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${!post.immediate ? 'bg-accent-blue text-white border-accent-blue' : 'bg-white text-gray-500 border-gray-200 hover:border-accent-blue/50'}`}
-                            >
-                              Programmer
-                            </button>
-                          </div>
-                          {!post.immediate && (
-                            <input
-                              type="datetime-local"
-                              value={post.scheduled_at}
-                              onChange={(e) => updatePost(post.network, 'scheduled_at', e.target.value)}
-                              className="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-blue/30 w-full"
-                            />
-                          )}
-                          {!post.immediate && <p className="text-xs text-gray-400 mt-1">Créneau optimal suggéré</p>}
-                        </div>
-
-                        {hasError && <p className="text-xs text-red-600">{post.error}</p>}
-
-                        {post.network === 'instagram' && !article.image_couverture && (
-                          <p className="text-xs text-red-600 font-medium">
-                            Image de couverture obligatoire pour Instagram. Ajoutez-en une avant d'envoyer.
-                          </p>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => sendPost(post.network)}
-                          disabled={sending || !ok || (post.network === 'instagram' && !article.image_couverture)}
-                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-accent-blue text-accent-blue rounded-xl hover:bg-accent-blue/5 disabled:opacity-50 transition-colors"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                          {sending ? 'Envoi…' : 'Envoyer à Make.com'}
-                        </button>
-                      </>
+            return (
+              <div key={p.id} className={`rounded-card border p-4 space-y-3 ${p.statut === 'programme' ? 'border-accent-blue/30 bg-accent-blue/5' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-button ${NETWORK_COLORS[reseau]}`}>
+                    <NetworkIcon network={reseau} />
+                    {NETWORK_LABELS[reseau]}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {p.statut === 'programme' && <Badge variant="info" size="sm" leftIcon={<Clock className="w-3 h-3" />}>Programmé {dateLisible(p.programme_le)}</Badge>}
+                    {p.statut === 'en_cours' && <Badge variant="neutral" size="sm" leftIcon={<Loader2 className="w-3 h-3 animate-spin" />}>Envoi en cours</Badge>}
+                    {p.statut === 'erreur' && <Badge variant="danger" size="sm">Échec de l&apos;envoi</Badge>}
+                    {p.statut !== 'en_cours' && (
+                      <button
+                        type="button"
+                        onClick={() => confirm(`Supprimer le post ${NETWORK_LABELS[reseau]} ?`) && executer(p.id, () => supprimerPost(p.id))}
+                        className="text-gray-300 hover:text-red-400 transition-colors"
+                        aria-label="Supprimer ce post"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
-                )
-              })}
+                </div>
 
-              {!allSent && posts.some((p) => p.status === 'idle') && (
-                <button
-                  type="button"
-                  onClick={sendAll}
-                  disabled={anySending}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold bg-navy text-white rounded-xl hover:bg-navy-dark disabled:opacity-50 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  {anySending ? 'Envoi en cours…' : 'Tout envoyer à Make.com'}
-                </button>
-              )}
+                {p.statut === 'erreur' && p.erreur && <p className="text-xs text-red-600">{p.erreur}</p>}
 
-              {!allSent && (
-                <button
-                  type="button"
-                  onClick={() => { try { localStorage.removeItem(STORAGE_KEY(article.id)) } catch {} setPosts([]) }}
-                  className="text-xs text-gray-400 hover:text-gray-600 underline"
-                >
-                  Regénérer les messages
-                </button>
-              )}
+                {modifiable ? (
+                  <>
+                    <div>
+                      <Textarea
+                        size="sm"
+                        rows={5}
+                        value={texte}
+                        onChange={(e) => setTextes((t) => ({ ...t, [p.id]: e.target.value }))}
+                        onBlur={() => sauver(p)}
+                        error={tropLong}
+                      />
+                      <p className={`text-xs mt-1 text-right ${tropLong ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                        {texte.length} / {limite}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 flex items-center gap-1 mb-2">
+                        <Clock className="w-3.5 h-3.5" /> Date de publication
+                      </label>
+                      <Input
+                        size="sm"
+                        type="datetime-local"
+                        value={creneauDe(p)}
+                        onChange={(e) => setCreneaux((c) => ({ ...c, [p.id]: e.target.value }))}
+                        onBlur={() => sauver(p)}
+                      />
+                    </div>
+
+                    {sansImage && (
+                      <p className="text-xs text-red-600 font-medium">Image obligatoire pour Instagram. Ajoutez-en une avant d&apos;envoyer.</p>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="primary" size="sm" onClick={() => programmer(p)} loading={pending} disabled={tropLong || sansImage} leftIcon={<Clock className="w-3.5 h-3.5" />}>
+                        Programmer
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => confirm(`Envoyer le post ${NETWORK_LABELS[reseau]} maintenant ?`) && executer(p.id, () => envoyerMaintenant(p.id, texte))}
+                        disabled={pending || tropLong || sansImage}
+                        leftIcon={<Send className="w-3.5 h-3.5" />}
+                      >
+                        Envoyer maintenant
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-600 whitespace-pre-line">{p.texte}</p>
+                    {p.statut === 'programme' && (
+                      <Button type="button" variant="ghost" size="sm" onClick={() => executer(p.id, () => annulerProgrammation(p.id))} loading={pending} leftIcon={<CalendarX className="w-3.5 h-3.5" />}>
+                        Annuler la programmation
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            )
+          })}
+
+          {actifs.filter((p) => p.statut === 'brouillon').length > 1 && (
+            <Button type="button" variant="primary" size="md" fullWidth onClick={programmerTout} loading={occupe === 'tout'} leftIcon={<Clock className="w-4 h-4" />}>
+              Programmer tous les brouillons
+            </Button>
+          )}
+
+          {actifs.some((p) => p.statut === 'brouillon') && (
+            <button type="button" onClick={generer} disabled={occupe !== null} className="text-xs text-gray-400 hover:text-gray-600 underline">
+              Regénérer les brouillons
+            </button>
+          )}
+
+          {/* Historique */}
+          {envoyes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Transmis à Make</p>
+              {envoyes.map((p) => (
+                <details key={p.id} className="rounded-button border border-gray-100 px-4 py-2.5">
+                  <summary className="flex items-center gap-2 text-sm cursor-pointer">
+                    <span className="font-medium text-navy">{NETWORK_LABELS[p.reseau as Reseau]}</span>
+                    <span className="text-xs text-gray-400">{dateLisible(p.envoye_le)}</span>
+                  </summary>
+                  <p className="text-sm text-gray-600 whitespace-pre-line mt-2">{p.texte}</p>
+                </details>
+              ))}
+              <p className="text-xs text-gray-400">« Transmis » : reçu par Make. La publication elle-même se vérifie dans l&apos;historique du scénario Make.</p>
             </div>
           )}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

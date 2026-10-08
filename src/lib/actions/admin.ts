@@ -1,7 +1,7 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { createHmac, randomUUID } from 'crypto'
+import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase/server'
@@ -12,17 +12,13 @@ import { EMAIL_SENDER } from '@/lib/email/sender'
 import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
 import { lierPropositionAArticle } from '@/lib/actions/propositions-articles'
+import { jetonSession, roleDepuisJeton, roleDepuisMotDePasse } from '@/lib/auth/admin-session'
+import { ACCUEIL_PAR_ROLE, type RoleAdmin } from '@/lib/auth/admin-rubriques'
 import type { ContactLigne } from '@/types/models'
 
 // ────────────────────────────────────────────
 // Auth
 // ────────────────────────────────────────────
-
-function generateToken(): string {
-  return createHmac('sha256', process.env.ADMIN_PASSWORD!)
-    .update('admin-session')
-    .digest('hex')
-}
 
 const ADMIN_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -34,15 +30,16 @@ const ADMIN_COOKIE_OPTIONS = {
 
 export async function loginAdmin(formData: FormData) {
   const password = formData.get('password') as string
+  const role = roleDepuisMotDePasse(password)
 
-  if (password !== process.env.ADMIN_PASSWORD) {
+  if (!role) {
     return { error: 'Mot de passe incorrect' }
   }
 
   const cookieStore = await cookies()
-  cookieStore.set('admin_token', generateToken(), ADMIN_COOKIE_OPTIONS)
+  cookieStore.set('admin_token', jetonSession(role)!, ADMIN_COOKIE_OPTIONS)
 
-  redirect('/admin/solutions')
+  redirect(ACCUEIL_PAR_ROLE[role])
 }
 
 export async function logoutAdmin() {
@@ -55,14 +52,24 @@ export async function logoutAdmin() {
 // Guard
 // ────────────────────────────────────────────
 
-async function assertAdmin() {
+async function assertRole(rolesAcceptes: RoleAdmin[]) {
   const cookieStore = await cookies()
   const token = cookieStore.get('admin_token')?.value
-  if (token !== generateToken()) {
+  const role = roleDepuisJeton(token)
+  if (!role || !rolesAcceptes.includes(role)) {
     redirect('/admin')
   }
   // Renouveler le cookie à chaque action pour éviter l'expiration en cours de session
   cookieStore.set('admin_token', token!, ADMIN_COOKIE_OPTIONS)
+}
+
+async function assertAdmin() {
+  await assertRole(['admin'])
+}
+
+/** Rubriques ouvertes à la community manager : blog, annonces, vidéos. */
+async function assertAdminOuContenu() {
+  await assertRole(['admin', 'contenu'])
 }
 
 // ────────────────────────────────────────────
@@ -806,7 +813,7 @@ function extractAnnonceFromFormData(formData: FormData): Record<string, any> {
 }
 
 export async function createAnnonce(formData: FormData) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -819,7 +826,7 @@ export async function createAnnonce(formData: FormData) {
 }
 
 export async function updateAnnonce(id: string, formData: FormData) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -833,7 +840,7 @@ export async function updateAnnonce(id: string, formData: FormData) {
 }
 
 export async function deleteAnnonce(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any).from('annonces').delete().eq('id', id)
@@ -842,7 +849,7 @@ export async function deleteAnnonce(id: string) {
 }
 
 export async function toggleAnnonceActif(id: string, actif: boolean) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
@@ -1246,7 +1253,7 @@ export async function updateSiteConfig(cle: string, valeur: string) {
 // ────────────────────────────────────────────
 
 export async function createArticleCategorie(nom: string, slug: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('articles_categories')
@@ -1257,7 +1264,7 @@ export async function createArticleCategorie(nom: string, slug: string) {
 }
 
 export async function updateArticleCategorie(id: string, nom: string, slug: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('articles_categories')
@@ -1269,7 +1276,7 @@ export async function updateArticleCategorie(id: string, nom: string, slug: stri
 }
 
 export async function deleteArticleCategorie(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('articles_categories')
@@ -1314,7 +1321,7 @@ function extractArticleFromFormData(formData: FormData) {
 }
 
 export async function createArticle(formData: FormData) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
   if (data.statut === 'publié' && !data.date_publication) data.date_publication = new Date().toISOString()
@@ -1335,7 +1342,7 @@ export async function createArticle(formData: FormData) {
 }
 
 export async function updateArticle(id: string, formData: FormData) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const data = extractArticleFromFormData(formData)
   // Un article déjà publié garde sa date : seule une date saisie la change.
@@ -1361,7 +1368,7 @@ export async function updateArticle(id: string, formData: FormData) {
 }
 
 export async function deleteArticle(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('articles')
@@ -1373,7 +1380,7 @@ export async function deleteArticle(id: string) {
 }
 
 export async function updateArticleImageCouverture(id: string, imageUrl: string | null) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('articles')
@@ -1383,7 +1390,7 @@ export async function updateArticleImageCouverture(id: string, imageUrl: string 
 }
 
 export async function publishArticle(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('articles')
@@ -1417,7 +1424,7 @@ function extractVideoFromFormData(formData: FormData): Record<string, any> {
 }
 
 export async function toggleVideoStatut(id: string, statut: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('videos').update({ statut }).eq('id', id)
@@ -1431,7 +1438,7 @@ export async function reorderVideosAndRubriques(
   videoUpdates: { id: string; ordre: number; rubrique_id: string | null }[],
   rubriqueUpdates: { id: string; ordre: number }[]
 ) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   await Promise.all([
     ...videoUpdates.map(({ id, ordre, rubrique_id }) =>
@@ -1449,7 +1456,7 @@ export async function reorderVideosAndRubriques(
 }
 
 export async function createVideoRubrique(nom: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: last } = await (supabase as any).from('video_rubriques').select('ordre').order('ordre', { ascending: false }).limit(1).single()
@@ -1461,7 +1468,7 @@ export async function createVideoRubrique(nom: string) {
 }
 
 export async function deleteVideoRubrique(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // Détacher les vidéos avant de supprimer (évite les erreurs de FK)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1473,7 +1480,7 @@ export async function deleteVideoRubrique(id: string) {
 }
 
 export async function setHomepageVideos(ids: string[]) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const now = new Date().toISOString()
   const limited = ids.slice(0, 4)
@@ -1527,7 +1534,7 @@ function extractSolutionIdsFromFormData(formData: FormData): string[] {
 }
 
 export async function createVideo(formData: FormData) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const newId = randomUUID()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1543,7 +1550,7 @@ export async function createVideo(formData: FormData) {
 }
 
 export async function updateVideo(id: string, formData: FormData) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -1679,7 +1686,7 @@ export async function reorderVideosForSolution(
 }
 
 export async function deleteVideo(id: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('videos').delete().eq('id', id)
@@ -1969,7 +1976,7 @@ export async function setAnnuaireActif(value: boolean) {
 // ────────────────────────────────────────────
 
 export async function restoreArticle(articleId: string, historyId: string) {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
 
   const { data: entry, error: histErr } = await supabase

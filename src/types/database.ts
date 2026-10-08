@@ -137,6 +137,198 @@ export type Database = {
         }
         Relationships: []
       }
+      annuaire_affichages_portables: {
+        Row: {
+          affiche_le: string
+          consulte_id: string
+          id: string
+          lecteur_id: string
+        }
+        Insert: {
+          affiche_le?: string
+          consulte_id: string
+          id?: string
+          lecteur_id: string
+        }
+        Update: {
+          affiche_le?: string
+          consulte_id?: string
+          id?: string
+          lecteur_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annuaire_affichages_portables_consulte_id_fkey"
+            columns: ["consulte_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annuaire_affichages_portables_lecteur_id_fkey"
+            columns: ["lecteur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      annuaire_oppositions: {
+        Row: {
+          cree_le: string
+          motif: string | null
+          rpps: string
+        }
+        Insert: {
+          cree_le?: string
+          motif?: string | null
+          rpps: string
+        }
+        Update: {
+          cree_le?: string
+          motif?: string | null
+          rpps?: string
+        }
+        Relationships: []
+      }
+      ans_exerce: {
+        Row: {
+          lot: number
+          rpps: string
+          site_id: number
+        }
+        Insert: {
+          lot: number
+          rpps: string
+          site_id: number
+        }
+        Update: {
+          lot?: number
+          rpps?: string
+          site_id?: number
+        }
+        Relationships: []
+      }
+      ans_medecins: {
+        Row: {
+          civilite: string | null
+          lot: number
+          nom: string
+          nom_recherche: string | null
+          prenom: string | null
+          rpps: string
+          specialite_code: string | null
+          specialite_libelle: string | null
+        }
+        Insert: {
+          civilite?: string | null
+          lot: number
+          nom: string
+          nom_recherche?: string | null
+          prenom?: string | null
+          rpps: string
+          specialite_code?: string | null
+          specialite_libelle?: string | null
+        }
+        Update: {
+          civilite?: string | null
+          lot?: number
+          nom?: string
+          nom_recherche?: string | null
+          prenom?: string | null
+          rpps?: string
+          specialite_code?: string | null
+          specialite_libelle?: string | null
+        }
+        Relationships: []
+      }
+      ans_mssante: {
+        Row: {
+          adresse: string
+          lot: number
+          rpps: string
+        }
+        Insert: {
+          adresse: string
+          lot: number
+          rpps: string
+        }
+        Update: {
+          adresse?: string
+          lot?: number
+          rpps?: string
+        }
+        Relationships: []
+      }
+      ans_sites: {
+        Row: {
+          code_postal: string | null
+          commune: string | null
+          id: number
+          lat: number | null
+          lon: number | null
+          lot: number
+          nom: string | null
+          origine: string | null
+          telephones: string[]
+          voie: string | null
+        }
+        Insert: {
+          code_postal?: string | null
+          commune?: string | null
+          id: number
+          lat?: number | null
+          lon?: number | null
+          lot: number
+          nom?: string | null
+          origine?: string | null
+          telephones?: string[]
+          voie?: string | null
+        }
+        Update: {
+          code_postal?: string | null
+          commune?: string | null
+          id?: number
+          lat?: number | null
+          lon?: number | null
+          lot?: number
+          nom?: string | null
+          origine?: string | null
+          telephones?: string[]
+          voie?: string | null
+        }
+        Relationships: []
+      }
+      ans_version: {
+        Row: {
+          cle: string
+          importee_le: string
+          lot: number
+          medecins: number
+          mssante: number
+          sites: number
+          version: string
+        }
+        Insert: {
+          cle?: string
+          importee_le?: string
+          lot: number
+          medecins: number
+          mssante: number
+          sites: number
+          version: string
+        }
+        Update: {
+          cle?: string
+          importee_le?: string
+          lot?: number
+          medecins?: number
+          mssante?: number
+          sites?: number
+          version?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           description: string | null
@@ -963,31 +1155,52 @@ export type Database = {
       }
       fiches_annuaire: {
         Row: {
+          code_postal: string | null
+          commune_insee: string | null
           created_at: string
+          lat: number | null
+          lon: number | null
           mise_a_jour: string
           moyen_contact: string | null
+          mssante: string | null
           publiee: boolean
           publiee_accord_le: string | null
           publiee_accord_version: string | null
+          telephone_cabinet: string | null
           user_id: string
+          ville: string | null
         }
         Insert: {
+          code_postal?: string | null
+          commune_insee?: string | null
           created_at?: string
+          lat?: number | null
+          lon?: number | null
           mise_a_jour?: string
           moyen_contact?: string | null
+          mssante?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
+          telephone_cabinet?: string | null
           user_id: string
+          ville?: string | null
         }
         Update: {
+          code_postal?: string | null
+          commune_insee?: string | null
           created_at?: string
+          lat?: number | null
+          lon?: number | null
           mise_a_jour?: string
           moyen_contact?: string | null
+          mssante?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
+          telephone_cabinet?: string | null
           user_id?: string
+          ville?: string | null
         }
         Relationships: [
           {
@@ -1321,6 +1534,69 @@ export type Database = {
           position?: number | null
         }
         Relationships: []
+      }
+      posts_reseaux: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          cree_par: string | null
+          envoye_le: string | null
+          erreur: string | null
+          id: string
+          image_url: string | null
+          programme_le: string | null
+          reseau: string
+          statut: string
+          texte: string
+          updated_at: string
+          video_id: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          cree_par?: string | null
+          envoye_le?: string | null
+          erreur?: string | null
+          id?: string
+          image_url?: string | null
+          programme_le?: string | null
+          reseau: string
+          statut?: string
+          texte?: string
+          updated_at?: string
+          video_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          cree_par?: string | null
+          envoye_le?: string | null
+          erreur?: string | null
+          id?: string
+          image_url?: string | null
+          programme_le?: string | null
+          reseau?: string
+          statut?: string
+          texte?: string
+          updated_at?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_reseaux_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_reseaux_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       preferences: {
         Row: {
@@ -2419,6 +2695,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      annuaire_activer_lot: {
+        Args: { p_lot: number; p_version: string }
+        Returns: Json
+      }
+      annuaire_afficher_portable: { Args: { p_rpps: string }; Returns: string }
+      annuaire_fiche: {
+        Args: { p_rpps: string }
+        Returns: {
+          a_une_fiche: boolean
+          code_postal: string
+          competences: string[]
+          lat: number
+          lieux: Json
+          lon: number
+          mise_a_jour: string
+          moyen_contact: string
+          mssante: string
+          mssante_ans: string[]
+          nom: string
+          portable_disponible: boolean
+          prenom: string
+          rpps: string
+          source_version: string
+          specialite: string
+          specialite_code: string
+          telephone_cabinet: string
+          ville: string
+        }[]
+      }
+      annuaire_lecteur_autorise: { Args: never; Returns: boolean }
+      annuaire_normaliser: { Args: { t: string }; Returns: string }
+      annuaire_purger_lots: { Args: { p_limite?: number }; Returns: number }
+      annuaire_rechercher: {
+        Args: {
+          p_decalage?: number
+          p_intitule?: string
+          p_lat?: number
+          p_limite?: number
+          p_lon?: number
+          p_rayon_km?: number
+          p_specialites?: string[]
+          p_specialites_equivalentes?: string[]
+          p_texte?: string
+        }
+        Returns: {
+          a_une_fiche: boolean
+          code_postal: string
+          competences: string[]
+          distance_km: number
+          lat: number
+          lon: number
+          mise_a_jour: string
+          moyen_contact: string
+          nom: string
+          prenom: string
+          rpps: string
+          specialite: string
+          specialite_code: string
+          ville: string
+        }[]
+      }
+      annuaire_source: { Args: never; Returns: string }
       check_auth_email_exists: { Args: { p_email: string }; Returns: boolean }
       search_articles: {
         Args: { max_results?: number; query: string }

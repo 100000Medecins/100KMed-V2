@@ -8,23 +8,14 @@
  * Turbopack (« Server Actions must be async functions »).
  */
 
-import { cookies } from 'next/headers'
-import { createHmac, randomUUID } from 'crypto'
+import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { assertAdminOuContenu } from '@/lib/auth/admin-guard'
 import { creerLotPropositions } from '@/lib/propositions-articles'
 import { genererArticle, type LongueurArticle } from '@/lib/ai/article'
 import type { SourceActu } from '@/lib/ai/propositions-sujets'
-
-async function assertAdmin() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('admin_token')?.value
-  const expected = createHmac('sha256', process.env.ADMIN_PASSWORD!)
-    .update('admin-session')
-    .digest('hex')
-  if (token !== expected) throw new Error('Non autorisé')
-}
 
 function slugify(text: string): string {
   return text
@@ -76,7 +67,7 @@ function construireBrief(titre: string, angle: string, sources: SourceActu[]): s
 export async function regenererPropositions(
   cadrage: string | null
 ): Promise<{ error?: string } | void> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
 
   const resultat = await creerLotPropositions(supabase, {
@@ -90,7 +81,7 @@ export async function regenererPropositions(
 
 /** Retire une proposition de la liste sans la supprimer (mémoire anti-radotage). */
 export async function ecarterProposition(id: string): Promise<{ error?: string } | void> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
 
   const { error } = await supabase
@@ -108,7 +99,7 @@ export async function ecarterProposition(id: string): Promise<{ error?: string }
  * le brief sans rien écrire.
  */
 export async function redigerMaintenant(id: string): Promise<{ error?: string } | void> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
 
   const { data: proposition, error: lectureError } = await supabase
@@ -175,7 +166,7 @@ export async function lierPropositionAArticle(
   propositionId: string,
   articleId: string
 ): Promise<void> {
-  await assertAdmin()
+  await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
   const { error } = await supabase
     .from('propositions_articles')

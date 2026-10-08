@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
-import { estAdmin } from '@/lib/auth/admin-guard'
+import { estAdminOuContenu } from '@/lib/auth/admin-guard'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildNewsletterHtml } from '@/lib/email/newsletter-template'
 import type { ArticleItem, Item } from '@/lib/email/newsletter-template'
@@ -28,7 +28,7 @@ function getChangelogForMonth(yearMonth: string): string {
 }
 
 export async function POST(req: Request) {
-  if (!(await estAdmin())) {
+  if (!(await estAdminOuContenu())) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { estAdmin } from '@/lib/auth/admin-guard'
+import { estAdminOuContenu } from '@/lib/auth/admin-guard'
 
 export type UnsplashPhoto = {
   id: string
@@ -105,7 +105,7 @@ async function searchPexels(keywords: string): Promise<UnsplashPhoto[]> {
 }
 
 export async function POST(req: Request) {
-  if (!(await estAdmin())) {
+  if (!(await estAdminOuContenu())) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

@@ -39,13 +39,38 @@ export function normaliserPortable(saisie: string): string | null {
   return /^\+[1-9]\d{7,14}$/.test(n) ? n : null
 }
 
-/** Portable au format international → saisie lisible (06 12 34 56 78 pour la métropole). */
+// Fixes d'outre-mer : préfixe national → indicatif
+const FIXES_OUTRE_MER: [string, string][] = [
+  ['0590', '590'], ['0594', '594'], ['0596', '596'], ['0262', '262'], ['0269', '262'],
+]
+
+/**
+ * Téléphone (fixe ou mobile) saisi → format international. `null` si non reconnu.
+ * Accepte un numéro français à 10 chiffres (outre-mer compris) ou international (+…, 00…).
+ */
+export function normaliserTelephone(saisie: string): string | null {
+  let n = saisie.replace(/[\s.\-()]/g, '')
+  if (n.startsWith('00')) n = '+' + n.slice(2)
+  if (/^0[1-9]\d{8}$/.test(n)) {
+    const outreMer = [...MOBILES_OUTRE_MER, ...FIXES_OUTRE_MER].find(([prefixe]) => n.startsWith(prefixe))
+    return outreMer ? `+${outreMer[1]}${n.slice(1)}` : `+33${n.slice(1)}`
+  }
+  return /^\+[1-9]\d{7,14}$/.test(n) ? n : null
+}
+
+/** Numéro au format international → saisie lisible (06 12 34 56 78 pour la métropole). */
 export function afficherPortable(e164: string | null | undefined): string {
   if (!e164) return ''
-  if (/^\+33[67]\d{8}$/.test(e164)) {
+  if (/^\+33[1-9]\d{8}$/.test(e164)) {
     return ('0' + e164.slice(3)).replace(/(\d{2})(?=\d)/g, '$1 ')
   }
   return e164
+}
+
+/** Adresse MSSanté (ou tout courriel) : vérification de forme, minuscules. `null` si invalide. */
+export function normaliserMssante(saisie: string): string | null {
+  const a = saisie.trim().toLowerCase()
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a) ? a : null
 }
 
 /** Codes SM correspondant à une spécialité enregistrée en libellé (`users.specialite`). */

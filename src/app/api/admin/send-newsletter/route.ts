@@ -1,26 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createHmac } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { estAdminOuContenu } from '@/lib/auth/admin-guard'
 import { generateUnsubscribeLink } from '@/lib/email/unsubscribe'
 import { adresseEnvoi } from '@/lib/email/destinataire'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 
-function generateToken(): string {
-  return createHmac('sha256', process.env.ADMIN_PASSWORD!).update('admin-session').digest('hex')
-}
-
-async function assertAdmin() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('admin_token')?.value
-  if (token !== generateToken()) throw new Error('Non autorisé')
-}
-
 export async function POST(req: NextRequest) {
-  try {
-    await assertAdmin()
-  } catch {
+  if (!(await estAdminOuContenu())) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

@@ -75,7 +75,7 @@ src/
 │   ├── api/
 │   │   ├── generer-article/        # POST : brief → article complet via Claude
 │   │   ├── generer-posts-sociaux/  # POST : titre+extrait → 3 posts reseaux via Claude
-│   │   ├── social-publish/         # POST : relais vers webhook Make.com
+│   │   ├── cron/envoyer-posts-reseaux/ # GET : posts programmes dus → webhook Make.com (appel pg_cron)
 │   │   └── suggerer-image/         # POST : mots-cles → photos Unsplash
 │   ├── blog/             # Pages publiques blog (/blog, /blog/[slug])
 │   ├── solutions/        # Fiches et categories solutions
@@ -107,15 +107,15 @@ npx supabase gen types typescript --project-id qnspmlskzgqrqtuvsbuo > src/types/
 ## Architecture publication reseaux sociaux
 
 ```
-Admin → SocialPanel → POST /api/social-publish
-                              ↓
-                       Make.com webhook
-                         ↓    ↓    ↓
-                      LinkedIn Facebook Instagram
+Admin (article ou video) → SocialPanel → actions serveur (src/lib/actions/posts-reseaux.ts)
+                                           ↓ table posts_reseaux
+        envoi immediat  ─────────────────→ Make.com webhook ← pg_cron (toutes les 5 min, si un post
+                                             ↓    ↓    ↓        programme est du) → /api/cron/envoyer-posts-reseaux
+                                          LinkedIn Facebook Instagram
 ```
 
-Make.com recoit : `{ network, text, scheduled_at, image_url, article_url }`
-et route vers le bon reseau via un Router avec filtre sur `network`.
+Make.com recoit : `{ network, text, scheduled_at (toujours null), image_url, article_url }`
+(`article_url` = page de l'article ou video YouTube) et route vers le bon reseau via un Router avec filtre sur `network`.
 
 ## ProSante Connect
 

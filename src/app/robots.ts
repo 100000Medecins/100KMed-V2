@@ -29,7 +29,7 @@ export default function robots(): MetadataRoute.Robots {
     // prod (cf. src/lib/seo/sitemap-entries.ts) → pas de nouvelles URLs offertes à la
     // découverte, on ne fait qu'autoriser la relecture de celles déjà connues.
     return {
-      rules: [{ userAgent: '*', allow: '/', disallow: ['/mon-compte/', '/api/'] }],
+      rules: [{ userAgent: '*', allow: '/', disallow: ['/mon-compte/', '/annuaire', '/api/'] }],
     }
   }
 
@@ -45,6 +45,7 @@ export default function robots(): MetadataRoute.Robots {
         // l'index. Cf. audit SEO 2026-07-19 (« indexée malgré le blocage par robots.txt »).
         disallow: [
           '/mon-compte/',
+          '/annuaire',
           '/api/',
         ],
       },
