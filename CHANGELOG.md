@@ -5,6 +5,35 @@
 
 ---
 
+## [2026-10-08] — Annuaire : rayon visible (total, carte complète) et retour à la dernière recherche
+
+### Constat (essai de David sur dev)
+- « Si je change le rayon, rien ne change » (cardiologues, Paris 20e) : la recherche renvoie les **50 plus proches** et le rayon n'est qu'une borne. Dans une ville dense, les 50 plus proches sont à 2-3 km → 10, 20 ou 50 km donnent les mêmes 50, en liste comme sur la carte (il y en a **888** à moins de 10 km). Le changement de rayon ne relançait pas non plus la recherche ; sans commune sur la fiche du lecteur, la page s'ouvre en ordre alphabétique alors que le menu affichait « 10 km ».
+- Au retour d'une fiche, la recherche était perdue (tout à retaper).
+
+### Base — migration 2b-ter lancée par David (vérifiée)
+- `annuaire_filtres` (interne : `execute` retiré à `anon` et `authenticated`) : morceaux de requête des filtres, partagés par la recherche et le comptage (ils ne peuvent plus diverger).
+- `annuaire_rechercher` : mêmes signature, résultat et droits ; plafond par appel 100 → **2 000** (carte).
+- `annuaire_compter` (nouvelle, `authenticated` seulement) : médecins répondant aux filtres dans le rayon, ou dans toute la France sans rayon. Mesuré sur la même logique : 888 cardiologues à moins de 10 km de Paris 20e en 0,12 s ; 37 866 médecins à moins de 50 km en 0,27 s.
+- Types régénérés par Claude (+21 lignes, rien de retiré). SQL et retour arrière : [docs/2026-10-08-annuaire-tranche-2.md](docs/2026-10-08-annuaire-tranche-2.md).
+
+### Feature — Recherche ([AnnuaireRecherche](src/components/annuaire/AnnuaireRecherche.tsx))
+- Spécialité, compétence, commune et rayon **relancent la recherche** ; le nom attend « Rechercher ». Seule la réponse de la dernière recherche lancée s'affiche.
+- **Total affiché** : « 888 confrères à moins de 10 km de Paris 20e Arrondissement » (« en France, du plus proche au plus éloigné » sans rayon ; « par ordre alphabétique » sans position). Liste : 50 plus proches d'abord, « Afficher plus ».
+- Rayon grisé tant qu'aucune position n'est choisie (« Indiquez une commune ou votre position »).
+- **Retour d'une fiche** : critères, résultats, vue liste/carte et position de défilement retrouvés. Gardés **en mémoire de la page seulement** (variable du module, écrite côté navigateur, propre au lecteur) : rien en base ni dans le stockage du navigateur, perdu au rechargement — la position « Autour de moi » reste « jamais enregistrée ».
+
+### Feature — Carte ([CarteAnnuaire](src/components/annuaire/CarteAnnuaire.tsx)), comme l'application
+- **Tout le rayon** jusqu'à 2 000 médecins (message au-delà : préciser la spécialité ou réduire le rayon), chargé à l'ouverture de la carte et à chaque recherche.
+- Points **regroupés en grappes** (source GeoJSON MapLibre, mêmes réglages que l'application : rayon 40, jusqu'au zoom 13 ; nombre en « Source Sans Pro Bold », police du style Plan IGN) ; clic sur une grappe → zoom ; un point par cabinet, clic → liste des confrères qui y exercent (bulle défilante, éléments DOM).
+- **Cercle du rayon** tracé et cadré, point de départ en bleu.
+- Liens des bulles : navigation dans l'application (avant : rechargement complet de la page, qui perdait la recherche).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` verts. **Reste : essai de David sur dev** (fonction réelle non appelable avec le rôle de lecture de Claude).
+
+---
+
 ## [2026-10-08] — Sécurité : les pages de l'admin envoyaient leurs données sans connexion
 
 ### Fix — Pages `/admin/*` calculées et envoyées à un visiteur non connecté
