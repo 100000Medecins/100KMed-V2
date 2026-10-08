@@ -35,16 +35,23 @@ function afficherDistance(km: number | null): string | null {
   return km < 1 ? 'moins d’1 km' : `${Math.round(km)} km`
 }
 
+/** Libellé de spécialité affiché : celui du site si le code est connu, sinon celui de l'ANS. */
+function libelleSpecialite(r: { specialite: string | null; specialite_code: string | null }): string | null {
+  return (r.specialite_code && SM_SPECIALITES[r.specialite_code]) || r.specialite
+}
+
 export default function AnnuaireRecherche({
   catalogue,
   specialites,
   communeLecteur,
   resultatsInitiaux,
+  sourceVersion,
 }: {
   catalogue: IntituleCatalogue[]
-  specialites: string[]
+  specialites: { libelle: string; codes: string[] }[]
   communeLecteur: Commune | null
   resultatsInitiaux: ResultatAnnuaire[]
+  sourceVersion: string | null
 }) {
   const supabase = useMemo(() => createClient(), [])
 
@@ -85,13 +92,14 @@ export default function AnnuaireRecherche({
     const p = options.pointForce !== undefined ? options.pointForce : point
     const r = options.rayonForce !== undefined ? options.rayonForce : rayon
     // Une compétence vaut aussi pour les médecins dont c'est la spécialité RPPS (ex. Allergologie)
-    const equivalentes = (competence?.specialites_sm ?? []).map((c) => SM_SPECIALITES[c]).filter(Boolean)
+    const equivalentes = competence?.specialites_sm ?? []
+    const codesSpecialite = specialites.find((s) => s.libelle === specialite)?.codes
 
     setChargement(true)
     setErreur(null)
     const { data, error } = await supabase.rpc('annuaire_rechercher', {
       p_texte: texte.trim() || undefined,
-      p_specialites: specialite ? [specialite] : undefined,
+      p_specialites: codesSpecialite,
       p_intitule: competence?.id,
       p_specialites_equivalentes: equivalentes.length > 0 ? equivalentes : undefined,
       p_lat: p?.lat,
@@ -158,8 +166,8 @@ export default function AnnuaireRecherche({
               <Select id="annuaire-specialite" size="sm" value={specialite} onChange={(e) => setSpecialite(e.target.value)}>
                 <option value="">Toutes les spécialités</option>
                 {specialites.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                  <option key={s.libelle} value={s.libelle}>
+                    {s.libelle}
                   </option>
                 ))}
               </Select>
@@ -328,7 +336,12 @@ export default function AnnuaireRecherche({
                     <p className="font-semibold text-navy truncate">
                       Dr {r.prenom} {r.nom}
                     </p>
-                    {r.specialite && <p className="text-sm text-gray-500 truncate">{r.specialite}</p>}
+                    {libelleSpecialite(r) && <p className="text-sm text-gray-500 truncate">{libelleSpecialite(r)}</p>}
+                    {r.a_une_fiche && (
+                      <Badge variant="success" size="sm" className="mt-1">
+                        Fiche complétée
+                      </Badge>
+                    )}
                   </div>
                   {r.ville && (
                     <p className="text-xs text-gray-400 text-right flex-shrink-0">
@@ -374,8 +387,10 @@ export default function AnnuaireRecherche({
       )}
 
       <p className="text-xs text-gray-400">
-        Informations déclarées par les médecins, non vérifiées par l&apos;association. L&apos;annuaire ne note ni ne classe
-        personne : les résultats sont triés par distance, puis par ordre alphabétique.
+        {sourceVersion &&
+          `Source : ANS, Annuaire Santé, données du ${new Date(sourceVersion).toLocaleDateString('fr-FR')} (Licence Ouverte 2.0). `}
+        Fiches complétées : informations déclarées par les médecins, non vérifiées par l&apos;association.
+        L&apos;annuaire ne note ni ne classe personne : les résultats sont triés par distance, puis par ordre alphabétique.
       </p>
     </div>
   )
