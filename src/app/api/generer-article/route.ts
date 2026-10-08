@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { genererArticle, type LongueurArticle } from '@/lib/ai/article'
+import { estAdmin } from '@/lib/auth/admin-guard'
 
 export async function POST(req: Request) {
+  if (!(await estAdmin())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
   const { sujet, longueur = 'article' } = await req.json()
 
   const resultat = await genererArticle(sujet, longueur as LongueurArticle)

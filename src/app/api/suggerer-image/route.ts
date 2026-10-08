@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { estAdmin } from '@/lib/auth/admin-guard'
 
 export type UnsplashPhoto = {
   id: string
@@ -9,6 +10,22 @@ export type UnsplashPhoto = {
   photographer_url: string
   alt: string
   source: 'unsplash' | 'pexels'
+}
+
+// Champs lus dans les réponses des API Unsplash et Pexels.
+type UnsplashResult = {
+  id: string
+  urls: { thumb: string; small: string; regular: string }
+  user: { name: string; links: { html: string } }
+  alt_description: string | null
+}
+
+type PexelsResult = {
+  id: number
+  src: { tiny: string; medium: string; large: string }
+  photographer: string
+  photographer_url: string
+  alt: string | null
 }
 
 async function extractKeywords(titre: string): Promise<string> {
@@ -55,7 +72,7 @@ async function searchUnsplash(keywords: string): Promise<UnsplashPhoto[]> {
   )
   if (!res.ok) throw new Error(`Unsplash error: ${await res.text()}`)
   const data = await res.json()
-  return (data.results ?? []).map((p: Record<string, any>) => ({
+  return ((data.results ?? []) as UnsplashResult[]).map((p) => ({
     id: `u_${p.id}`,
     thumb_url: p.urls.thumb,
     small_url: p.urls.small,
@@ -75,7 +92,7 @@ async function searchPexels(keywords: string): Promise<UnsplashPhoto[]> {
   )
   if (!res.ok) throw new Error(`Pexels error: ${await res.text()}`)
   const data = await res.json()
-  return (data.photos ?? []).map((p: Record<string, any>) => ({
+  return ((data.photos ?? []) as PexelsResult[]).map((p) => ({
     id: `p_${p.id}`,
     thumb_url: p.src.tiny,
     small_url: p.src.medium,
@@ -88,6 +105,10 @@ async function searchPexels(keywords: string): Promise<UnsplashPhoto[]> {
 }
 
 export async function POST(req: Request) {
+  if (!(await estAdmin())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
   const { titre, provider = 'unsplash' } = await req.json()
 
   if (!titre?.trim()) {
@@ -106,7 +127,7 @@ export async function POST(req: Request) {
       : await searchUnsplash(keywords)
 
     return NextResponse.json({ photos, keywords })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'Erreur de recherche' }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Erreur de recherche' }, { status: 500 })
   }
 }

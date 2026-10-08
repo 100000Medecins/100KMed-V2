@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-10-08] — Sécurité : 9 routes API ouvertes sans connexion
+
+### Fix — Contrôle d'accès sur les routes de l'admin
+- **Constat** (en préparant un accès admin pour la community manager) : la revue des actions serveur du jour ne couvrait pas les routes API. Neuf d'entre elles n'avaient **aucun contrôle** (le proxy ne tourne pas sur `/api/*` hors `/api/auth`) :
+  - `/api/social-publish` : **n'importe qui pouvait publier sur les pages LinkedIn, Facebook et Instagram** de l'association (relais direct vers le webhook Make) ;
+  - `/api/admin/update-newsletter`, `/api/admin/programmer-newsletter` : réécrire et programmer un brouillon de newsletter (identifiant du brouillon nécessaire) ;
+  - `/api/generer-article`, `/api/generer-posts-sociaux`, `/api/admin/generer-newsletter`, `/api/admin/generer-seo`, `/api/suggerer-image` : appels IA facturés (et quota Unsplash/Pexels) ;
+  - `/api/upload` : dépôt de fichiers (SVG compris) dans le bucket public `images`.
+- **Fix** : `estAdmin()` ajouté à [admin-guard.ts](src/lib/auth/admin-guard.ts) (`assertAdmin()` s'appuie dessus) ; les huit routes d'admin répondent `401` sans cookie admin. `/api/upload` accepte l'admin **ou** un utilisateur connecté : elle sert aussi à Mon compte (espace éditeur, études DMH, questionnaires de thèse) ; tous ses appelants sont dans l'admin ou Mon compte.
+- **Bug caché par un `any`** ([generer-seo](src/app/api/admin/generer-seo/route.ts)) : la requête lisait `tags.nom_court` / `nom_capital`, colonnes inexistantes (la colonne est `libelle`) → la requête échouait en silence et les « fonctionnalités clés » n'étaient **jamais** transmises à l'IA pour les meta descriptions. Corrigé (`libelle`). Au passage, les `any` de [suggerer-image](src/app/api/suggerer-image/route.ts) typés (réponses Unsplash / Pexels).
+- **Vérifié sur le build de production en local** : les 9 routes → `401` sans cookie ; avec cookie admin, requêtes incomplètes → `400` (contrôle franchi, aucun effet : rien publié, généré ni écrit). Non testé : `/api/upload` avec une session médecin sans cookie admin.
+- `tsc --noEmit`, lint des fichiers touchés et `npm run build` verts.
+
+### Constats — Publication sur les réseaux (scénario Make, capture de David)
+- **Image absente du post LinkedIn** : le site envoie bien `image_url` (vérifié : couverture Unsplash de l'article Pro Santé Connect), mais la branche LinkedIn du scénario utilise « Create a Company Text Post », qui ne publie que du texte. À changer dans Make (module image + téléchargement de l'image). Facebook (« Create a Post ») et Instagram (« Create a photo post ») reçoivent ce qu'il faut.
+- **Programmation probablement ignorée** : le scénario (Webhook → Router → 3 modules) ne contient rien qui attende `scheduled_at` → un post « programmé » part sans doute à réception. À confirmer dans l'historique Make.
+- **Posts préparés gardés dans le navigateur** (`localStorage`, [SocialPanel](src/components/admin/SocialPanel.tsx)) : à deux, chacun ne voit que les siens, et rien n'empêche d'envoyer deux fois le même post.
+- **Images WebP** : une couverture envoyée depuis l'ordinateur est convertie en WebP par `/api/upload` ; Instagram n'accepte que le JPEG. Sans effet aujourd'hui (les 9 couvertures viennent d'Unsplash / Pexels, en JPEG).
+
+---
+
 ## [2026-10-08] — Annuaire mutualisé, tranche 2a : lecture par les confrères (base)
 
 ### Base — migration lancée par David (SQL Editor, une transaction)
