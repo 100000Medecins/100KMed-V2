@@ -5,6 +5,26 @@
 
 ---
 
+## [2026-10-10] — Annuaire, tranche 3 : étape 2, l'application raccordée au site
+
+### Base — migration lancée par David (vérifiée)
+- `annuaire_filtres`, `annuaire_rechercher`, `annuaire_fiche` lisent les fiches **par RPPS** (nom et spécialité de l'identité PSC, à défaut du compte du site), fiches sans compte du site comprises. Mêmes signatures et droits ; `annuaire_compter` inchangée.
+- `annuaire_portable_pour(lecteur, rpps)` (serveur seulement) : logique unique du portable, **plafond et journal par RPPS**, communs au site et à l'application. `annuaire_afficher_portable` (site) l'appelle avec le RPPS du lecteur connecté. Types régénérés (+4 lignes).
+
+### Code — un seul code pour le site et l'application
+- [fiche-serveur.ts](src/lib/annuaire/fiche-serveur.ts) : lire, enregistrer, proposer une compétence, supprimer une fiche **par RPPS** (service role après contrôle de l'identité), catalogue du médecin, propositions de l'Annuaire Santé. « Ma fiche » du site ([annuaire.ts](src/lib/actions/annuaire.ts)) s'appuie dessus ; formats de retour inchangés pour la page. Au passage : une compétence cochée doit exister au catalogue (validée ou proposée par le médecin), contrôle qui manquait côté serveur.
+- Preuve PSC écrite par RPPS avec nom, prénom, spécialité ([identite-psc.ts](src/lib/annuaire/identite-psc.ts)) ; un compte n'est rattaché qu'à un RPPS. Suppression de compte : fiche, propositions en attente et **journal des portables** du médecin effacés ([compte.ts](src/lib/annuaire/compte.ts)). Admin : auteur d'une proposition retrouvé par RPPS.
+- **Identification de l'application** ([app-session.ts](src/lib/annuaire/app-session.ts)) : jeton d'accès PSC présenté par l'application → contrôles du client émetteur (`azp` = client PSC de l'association, partagé avec le relais), de l'environnement (`iss`) et de l'expiration → validation par PSC (`userinfo`) → médecins seulement → jeton du site signé (HMAC, `ANNUAIRE_APP_SECRET`, 30 min). Adresse `userinfo` remplaçable par un faux PSC pour les essais locaux, jamais chez Vercel.
+- **Adresses de l'application** (`/api/annuaire/app/…`) : `POST session`, `GET fiches` (fiches publiées + catalogue, **sans les portables**, seulement `portable_disponible`), `POST portable`, `GET/PUT/DELETE ma-fiche` (mêmes contrôles et accords que le site ; accord exigé sur la version en vigueur des textes, sinon `409`), `POST competences`.
+- Contrat d'échange pour la session messagerie : [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+### Vérif
+- `tsc`, lint, `npm run build` verts.
+- **Essai local** (build de production, faux PSC d'essai, médecins fictifs 99900000001 / 99900000002) : **27 / 27** — refus des jetons absents, d'un autre client, d'un autre environnement, expirés, refusés par PSC, du jeton du site falsifié et d'un jeton PSC à la place du jeton du site ; fiche vide, enregistrement refusé pour accord périmé, portable invalide, corps mal formé, compétence inconnue ; enregistrement (téléphones normalisés) et relecture ; fichier des fiches avec `portable_disponible` et **sans numéro** ; portable vu par B, revu (non recompté), le sien (sans trace), absent (`404`) ; proposition de compétence, libellé existant reconnu ; suppression. Journal contrôlé en base : **une seule ligne** (B → A). Données d'essai effacées (base revenue à 1 identité, 1 fiche, 3 compétences, 0 proposition).
+- **Reste** : essai de David sur dev (Ma fiche, `/annuaire`, admin Annuaire) ; suppression et fusion de comptes de test avant l'étape 3 ; côté messagerie, l'application.
+
+---
+
 ## [2026-10-09] — Étude inscriptions / connexions / emails + interrupteur séparé de la relance PSC
 
 ### Étude — parcours d'inscription et emails depuis le lancement

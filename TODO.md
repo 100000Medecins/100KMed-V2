@@ -38,8 +38,13 @@ _(rien en cours)_
 - [ ] **David** : essai sur dev.100000medecins.org — recherche par nom, spécialité, compétence ; « Autour de moi » et rayons ; carte (marqueurs aux cabinets) ; fiche d'un confrère sans fiche (carte ANS seule) ; Ma fiche → « Utiliser » un lieu et une MSSanté ; onglet Oppositions (ajouter puis retirer un RPPS de test).
 - [ ] **Messagerie** : exclure `annuaire_oppositions` de `annuaire.db` (base de l'application) ; import mensuel côté site : `npx tsx scripts/annuaire-import-ans.ts --execute` après reconstruction de la base.
 
+**Tranche 3 — raccordement de l'application (10/10)** : décisions de David (identification par jeton PSC vérifié par le site, fiches téléchargées à chaque connexion, modification de sa fiche dans l'application, médecins seulement). Étape 1 (annuaire rangé par RPPS, migration d'ajout) et étape 2 (fonctions par RPPS, module serveur commun, adresses `/api/annuaire/app/…`, essai local 27/27) faites sur `dev`. Doc et contrat d'échange : `docs/2026-10-10-annuaire-tranche-3.md`.
+- [ ] **David** : essai sur dev — Ma fiche (enregistrer, proposer une compétence), `/annuaire` (sa fiche visible, portable), admin Annuaire.
+- [ ] **Claude** : avant l'étape 3, essais de suppression et de fusion de comptes de test sur dev (accord de David pour créer deux comptes de test).
+- [ ] Fusion de l'étape 2 dans `main` (accord de David), puis **étape 3** : retrait de `user_id` des tables de fiches, des passerelles, de `intitules.propose_par`, de `lecteur_id` / `consulte_id` du journal et des règles RLS d'écriture par `user_id` (migration montrée à David).
+- [ ] **Messagerie** : session au site après chaque validation PSC, téléchargement des fiches, fiche d'un confrère (badge, contact préféré, compétences, portable), recherche par compétence, écran « Ma fiche » — selon le contrat d'échange.
+
 **Suite (à décider avec David)** :
-- **Tranche 3** : l'application lit les fiches et le portable (mêmes fonctions de la base).
 - **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
 
 ### Relire les pages légales (posé le 2026-09-30)
