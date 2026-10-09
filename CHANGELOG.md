@@ -67,6 +67,24 @@
 
 ---
 
+## [2026-10-10] — Annuaire, tranche 3 (raccordement de l'application) : étape 1, annuaire rangé par RPPS
+
+### Décisions de David
+- Identification de l'application par des adresses du site qui vérifient son jeton PSC (option A, pas de compte site pour elle) ; fiches publiées téléchargées à chaque connexion (pas dans le fichier mensuel) ; modification de sa fiche dans l'application ; lecteurs : médecins seulement.
+- Conséquence : les tables de l'annuaire passent du `user_id` au RPPS (un médecin de l'application n'a pas de compte site). Le reste du site garde `user_id`.
+
+### Base — migration d'ajout lancée par David (vérifiée)
+- Base partagée avec la production, dont le code utilise `user_id` sur ces tables même annuaire éteint (suppression de compte par le médecin et par l'admin, fusion de comptes) → **trois temps** : ajout (fait), nouveau code via `dev`, retrait des anciennes colonnes une fois la production passée au nouveau code.
+- `identites_psc` : clé `rpps` (11 chiffres contrôlés), `user_id` facultatif et unique, colonnes `nom` / `prenom` / `specialite_code`. Fiches, portables, compétences cochées : colonne `rpps` en clé primaire, `user_id` gardé, unique et rempli. `intitules.propose_par_rpps`, journal des portables `lecteur_rpps` / `consulte_rpps`.
+- Passerelles de transition (déclencheurs) : `user_id` et `rpps` toujours remplis ; une fusion de comptes emmène les fiches. Plafond de 20 compétences compté par RPPS.
+- Constat : clés en place, aucune clé manquante, la fiche existante et ses 3 compétences cohérentes. Types régénérés (+34 lignes, `user_id` devenu facultatif sur ces tables).
+
+### Code
+- Insertions de l'annuaire ([annuaire.ts](src/lib/actions/annuaire.ts), fusion de compétences dans [admin-intitules.ts](src/lib/actions/admin-intitules.ts)) : RPPS fourni en plus du `user_id` (exigé par les nouveaux types). Comportement du site inchangé.
+- `tsc`, lint, `npm run build` verts. Plan, retour arrière et étape 2 : [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+---
+
 ## [2026-10-08] — Annuaire : rayon visible (total, carte complète) et retour à la dernière recherche
 
 ### Constat (essai de David sur dev)
