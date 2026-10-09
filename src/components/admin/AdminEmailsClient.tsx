@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import AdminEmailsAccordion from '@/components/admin/AdminEmailsAccordion'
 import EmailTemplateEditor from '@/components/admin/EmailTemplateEditor'
 import NewslettersClient from '@/app/admin/newsletters/NewslettersClient'
@@ -40,7 +40,10 @@ interface Props {
   sections: Section[]
   newsletters?: Newsletter[]
   cronsActifs?: boolean
-  // Interrupteur des emails automatiques : admin seulement (lecture seule pour le rôle « contenus »).
+  // Interrupteur propre à la relance PSC, indépendant de `cronsActifs`.
+  relancePscActive?: boolean
+  evaluationsPscRelancables?: number
+  // Interrupteurs des emails automatiques : admin seulement (lecture seule pour le rôle « contenus »).
   peutModifierCrons: boolean
   excuseDefaultSujet?: string
   excuseDefaultHtml?: string
@@ -58,6 +61,8 @@ export default function AdminEmailsClient({
   sections,
   newsletters = [],
   cronsActifs = false,
+  relancePscActive = false,
+  evaluationsPscRelancables = 0,
   peutModifierCrons,
   excuseDefaultSujet = '',
   excuseDefaultHtml = '',
@@ -73,6 +78,7 @@ export default function AdminEmailsClient({
   const [activeTab, setActiveTab] = useState(sections[0]?.key ?? '')
   const masterLayoutHtml = masterLayoutTemplate?.contenu_html ?? undefined
   const [cronsOn, setCronsOn] = useState(cronsActifs)
+  const [pscOn, setPscOn] = useState(relancePscActive)
   const [isPending, startTransition] = useTransition()
   const [excuseSending, setExcuseSending] = useState(false)
   const [excuseResult, setExcuseResult] = useState<{ ok?: boolean; sent?: number; total?: number; errors?: string[]; error?: string } | null>(null)
@@ -203,7 +209,27 @@ export default function AdminEmailsClient({
     const next = !cronsOn
     setCronsOn(next)
     startTransition(async () => {
-      await setSiteConfig('crons_routiniers_actifs', String(next))
+      try {
+        await setSiteConfig('crons_routiniers_actifs', String(next))
+      } catch {
+        setCronsOn(!next)
+      }
+    })
+  }
+
+  function handleRelancePscToggle() {
+    if (!peutModifierCrons) return
+    const next = !pscOn
+    if (next && !window.confirm(
+      `Activer la relance PSC ? Dès lundi matin, chaque évaluation en attente depuis plus de 7 jours recevra une relance, puis une par semaine (4 au plus). ${evaluationsPscRelancables} évaluation(s) en attente aujourd'hui.`
+    )) return
+    setPscOn(next)
+    startTransition(async () => {
+      try {
+        await setSiteConfig('relance_psc_active', String(next))
+      } catch {
+        setPscOn(!next)
+      }
     })
   }
 
@@ -231,40 +257,44 @@ export default function AdminEmailsClient({
         </div>
       )}
 
-      {/* Kill-switch crons routiniers */}
-      <div className={`mb-6 rounded-xl border-2 p-4 flex items-start gap-4 ${
-        cronsOn ? 'border-green-400 bg-green-50' : 'border-red-300 bg-red-50'
-      }`}>
-        <div className="flex-1">
-          <p className={`font-bold text-sm ${cronsOn ? 'text-green-800' : 'text-red-800'}`}>
-            {cronsOn ? 'Emails routiniers actifs' : 'Emails routiniers désactivés'}
-          </p>
-          <p className="text-xs text-gray-600 mt-0.5">
-            Ce switch contrôle l&apos;envoi automatique des relances (1 an, 3 mois, incomplets, PSC, newsletter).
-            Les emails transactionnels (confirmation d&apos;inscription, réinitialisation mdp) ne sont pas affectés.
-            {!cronsOn && (
-              <span className="block mt-1 font-semibold text-red-700">
-                À activer uniquement au déploiement final en production.
-              </span>
-            )}
-            {!peutModifierCrons && (
-              <span className="block mt-1 text-gray-500">Réglage réservé à l&apos;administrateur.</span>
-            )}
-          </p>
-        </div>
-        <button
-          onClick={handleCronsToggle}
+      {/* Interrupteurs des emails automatiques */}
+      <div className="mb-6 space-y-3">
+        <InterrupteurEnvois
+          actif={cronsOn}
+          titreActif="Emails routiniers actifs"
+          titreInactif="Emails routiniers désactivés"
+          onToggle={handleCronsToggle}
           disabled={isPending || !peutModifierCrons}
-          className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-60 ${
-            cronsOn ? 'bg-green-500' : 'bg-gray-300'
-          }`}
-          role="switch"
-          aria-checked={cronsOn}
         >
-          <span className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-            cronsOn ? 'translate-x-6' : 'translate-x-0'
-          }`} />
-        </button>
+          Ce switch contrôle l&apos;envoi automatique des relances (1 an, 3 mois, incomplets), de la newsletter et des campagnes programmées.
+          La relance PSC a son propre interrupteur, ci-dessous.
+          Les emails transactionnels (confirmation d&apos;inscription, réinitialisation mdp) ne sont pas affectés.
+          {!cronsOn && (
+            <span className="block mt-1 font-semibold text-red-700">
+              À activer uniquement au déploiement final en production.
+            </span>
+          )}
+          {!peutModifierCrons && (
+            <span className="block mt-1 text-gray-500">Réglage réservé à l&apos;administrateur.</span>
+          )}
+        </InterrupteurEnvois>
+
+        <InterrupteurEnvois
+          actif={pscOn}
+          titreActif="Relance PSC active"
+          titreInactif="Relance PSC désactivée"
+          onToggle={handleRelancePscToggle}
+          disabled={isPending || !peutModifierCrons}
+        >
+          Chaque lundi matin, relance les évaluations déposées sans compte et non validées par Pro Santé Connect depuis plus de 7 jours :
+          une relance par semaine, 4 au plus. Indépendant de l&apos;interrupteur ci-dessus.
+          <span className="block mt-1 font-semibold text-gray-700">
+            {evaluationsPscRelancables} évaluation(s) en attente pouvant encore être relancée(s).
+          </span>
+          {!peutModifierCrons && (
+            <span className="block mt-1 text-gray-500">Réglage réservé à l&apos;administrateur.</span>
+          )}
+        </InterrupteurEnvois>
       </div>
 
       {/* Onglets */}
@@ -674,6 +704,43 @@ function CampagnesHistory({ campagnes, type }: { campagnes: EmailCampagne[]; typ
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Bandeau d'un interrupteur d'envois automatiques (vert allumé, rouge éteint).
+function InterrupteurEnvois({ actif, titreActif, titreInactif, onToggle, disabled, children }: {
+  actif: boolean
+  titreActif: string
+  titreInactif: string
+  onToggle: () => void
+  disabled: boolean
+  children: ReactNode
+}) {
+  return (
+    <div className={`rounded-xl border-2 p-4 flex items-start gap-4 ${
+      actif ? 'border-green-400 bg-green-50' : 'border-red-300 bg-red-50'
+    }`}>
+      <div className="flex-1">
+        <p className={`font-bold text-sm ${actif ? 'text-green-800' : 'text-red-800'}`}>
+          {actif ? titreActif : titreInactif}
+        </p>
+        <p className="text-xs text-gray-600 mt-0.5">{children}</p>
+      </div>
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-60 ${
+          actif ? 'bg-green-500' : 'bg-gray-300'
+        }`}
+        role="switch"
+        aria-checked={actif}
+        aria-label={actif ? titreActif : titreInactif}
+      >
+        <span className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+          actif ? 'translate-x-6' : 'translate-x-0'
+        }`} />
+      </button>
     </div>
   )
 }
