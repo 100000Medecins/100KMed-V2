@@ -7,7 +7,7 @@ import SocialPanel from '@/components/admin/SocialPanel'
 import PageHistoryButton from '@/components/admin/PageHistoryButton'
 import { updateArticle, restoreArticle } from '@/lib/actions/admin'
 import { getArticleHistory } from '@/lib/db/articles'
-import { listerPosts } from '@/lib/reseaux/envoi'
+import { listerPosts, programmationActive } from '@/lib/reseaux/envoi'
 import { lienArticle } from '@/lib/reseaux/liens'
 
 interface PageProps {
@@ -76,6 +76,7 @@ export default async function ModifierArticlePage({ params }: PageProps) {
           statut: article.statut,
         }}
         postsInitiaux={postsReseaux}
+        programmationActive={programmationActive()}
       />
     </div>
   )

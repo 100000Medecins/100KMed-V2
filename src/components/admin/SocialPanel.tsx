@@ -97,11 +97,12 @@ export type SourcePublication = {
 interface Props {
   source: SourcePublication
   postsInitiaux: PostReseau[]
+  programmationActive: boolean // tâche planifiée en place ; sinon envoi immédiat seulement
 }
 
 type Resultat = { posts: PostReseau[]; error?: string }
 
-export default function SocialPanel({ source, postsInitiaux }: Props) {
+export default function SocialPanel({ source, postsInitiaux, programmationActive }: Props) {
   const [open, setOpen] = useState(false)
   const [posts, setPosts] = useState<PostReseau[]>(postsInitiaux)
   // Saisies en cours (texte, créneau) par post, enregistrées à la sortie du champ.
@@ -234,6 +235,10 @@ export default function SocialPanel({ source, postsInitiaux }: Props) {
             </div>
           )}
 
+          {!programmationActive && (
+            <p className="text-xs text-gray-500">La programmation n&apos;est pas encore activée : les posts partent avec « Envoyer maintenant ».</p>
+          )}
+
           {erreur && <p className="text-xs text-red-600">{erreur}</p>}
 
           {/* Génération */}
@@ -242,7 +247,7 @@ export default function SocialPanel({ source, postsInitiaux }: Props) {
               <p className="text-sm text-gray-500">
                 {envoyes.length > 0
                   ? 'Préparer une nouvelle série de messages (les envois précédents restent dans l’historique).'
-                  : 'Génère 3 messages adaptés à chaque réseau, puis programme leur publication.'}
+                  : `Génère 3 messages adaptés à chaque réseau, puis ${programmationActive ? 'programme leur publication' : 'envoie-les'}.`}
               </p>
               <Button type="button" variant="secondary" size="md" onClick={generer} loading={occupe === 'generer'} leftIcon={<Sparkles className="w-4 h-4" />}>
                 {occupe === 'generer' ? 'Génération en cours…' : envoyes.length > 0 ? 'Préparer de nouveaux messages' : 'Générer les 3 messages'}
@@ -302,30 +307,34 @@ export default function SocialPanel({ source, postsInitiaux }: Props) {
                       </p>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 flex items-center gap-1 mb-2">
-                        <Clock className="w-3.5 h-3.5" /> Date de publication
-                      </label>
-                      <Input
-                        size="sm"
-                        type="datetime-local"
-                        value={creneauDe(p)}
-                        onChange={(e) => setCreneaux((c) => ({ ...c, [p.id]: e.target.value }))}
-                        onBlur={() => sauver(p)}
-                      />
-                    </div>
+                    {programmationActive && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 flex items-center gap-1 mb-2">
+                          <Clock className="w-3.5 h-3.5" /> Date de publication
+                        </label>
+                        <Input
+                          size="sm"
+                          type="datetime-local"
+                          value={creneauDe(p)}
+                          onChange={(e) => setCreneaux((c) => ({ ...c, [p.id]: e.target.value }))}
+                          onBlur={() => sauver(p)}
+                        />
+                      </div>
+                    )}
 
                     {sansImage && (
                       <p className="text-xs text-red-600 font-medium">Image obligatoire pour Instagram. Ajoutez-en une avant d&apos;envoyer.</p>
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="primary" size="sm" onClick={() => programmer(p)} loading={pending} disabled={tropLong || sansImage} leftIcon={<Clock className="w-3.5 h-3.5" />}>
-                        Programmer
-                      </Button>
+                      {programmationActive && (
+                        <Button type="button" variant="primary" size="sm" onClick={() => programmer(p)} loading={pending} disabled={tropLong || sansImage} leftIcon={<Clock className="w-3.5 h-3.5" />}>
+                          Programmer
+                        </Button>
+                      )}
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant={programmationActive ? 'ghost' : 'primary'}
                         size="sm"
                         onClick={() => confirm(`Envoyer le post ${NETWORK_LABELS[reseau]} maintenant ?`) && executer(p.id, () => envoyerMaintenant(p.id, texte))}
                         disabled={pending || tropLong || sansImage}
@@ -349,7 +358,7 @@ export default function SocialPanel({ source, postsInitiaux }: Props) {
             )
           })}
 
-          {actifs.filter((p) => p.statut === 'brouillon').length > 1 && (
+          {programmationActive && actifs.filter((p) => p.statut === 'brouillon').length > 1 && (
             <Button type="button" variant="primary" size="md" fullWidth onClick={programmerTout} loading={occupe === 'tout'} leftIcon={<Clock className="w-4 h-4" />}>
               Programmer tous les brouillons
             </Button>

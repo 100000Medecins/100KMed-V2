@@ -9,7 +9,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { assertAdminOuContenu, roleAdmin } from '@/lib/auth/admin-guard'
 import { genererPostsSociaux } from '@/lib/ai/posts-sociaux'
-import { listerPosts, sourceDuPost, transmettre } from '@/lib/reseaux/envoi'
+import { listerPosts, programmationActive, sourceDuPost, transmettre } from '@/lib/reseaux/envoi'
 import { lienEtImageVideo } from '@/lib/reseaux/liens'
 import { RESEAUX, type PostReseau, type Reseau, type SourcePost } from '@/lib/reseaux/types'
 
@@ -97,6 +97,8 @@ export async function envoyerMaintenant(id: string, texte: string): Promise<Resu
 /** Programme l'envoi : la tâche planifiée le transmettra à Make à l'heure dite. */
 export async function programmerPost(id: string, texte: string, programmeLe: string): Promise<Resultat> {
   await assertAdminOuContenu()
+  // Sans la tâche planifiée, un post programmé ne partirait jamais.
+  if (!programmationActive()) return listeDuPost(id, "La programmation n'est pas encore activée : utilisez « Envoyer maintenant ».")
   const date = new Date(programmeLe)
   if (Number.isNaN(date.getTime())) return listeDuPost(id, 'Date de publication invalide.')
   if (date.getTime() < Date.now() + 60_000) return listeDuPost(id, 'La date de publication est passée : choisissez une heure à venir, ou « Envoyer maintenant ».')

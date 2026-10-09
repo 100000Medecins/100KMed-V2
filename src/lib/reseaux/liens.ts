@@ -1,6 +1,9 @@
 import { getYouTubeId, youTubeThumbnailUrl, youTubeWatchUrl } from '@/lib/youtube'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://100000medecins.org'
+// Adresse fixe, pas NEXT_PUBLIC_SITE_URL : un post réseau est public et doit pointer vers la
+// production même s'il est préparé depuis un poste local ou dev (un lien localhost est parti
+// sur LinkedIn lors du premier essai, le 2026-10-08).
+const SITE_URL = 'https://www.100000medecins.org'
 
 /** Lien partagé pour un article du blog. */
 export function lienArticle(slug: string | null | undefined): string | undefined {

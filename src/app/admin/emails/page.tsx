@@ -3,14 +3,16 @@ import { getSiteConfig } from '@/lib/actions/siteConfig'
 import AdminEmailsClient from '@/components/admin/AdminEmailsClient'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import type { Newsletter } from '@/app/admin/newsletters/page'
-import { getEmailsCampagnes, type EmailCampagne } from '@/lib/actions/emails-campagnes'
+import { getEmailsCampagnes } from '@/lib/actions/emails-campagnes'
+import { roleAdmin } from '@/lib/auth/admin-guard'
+import type { SyndicatLancement } from '@/components/admin/LancementSyndicatsManager'
 
 export const dynamic = 'force-dynamic'
 
 async function getOptedInCount(prefKey: 'etudes_cliniques' | 'questionnaires_these'): Promise<number> {
   try {
     const supabase = createServiceRoleClient()
-    const { count } = await (supabase as any)
+    const { count } = await supabase
       .from('users_notification_preferences')
       .select('user_id', { count: 'exact', head: true })
       .eq(prefKey, true)
@@ -23,37 +25,40 @@ async function getOptedInCount(prefKey: 'etudes_cliniques' | 'questionnaires_the
 async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_these'): Promise<string[]> {
   try {
     const supabase = createServiceRoleClient()
-    const { data: prefs } = await (supabase as any)
+    const { data: prefs } = await supabase
       .from('users_notification_preferences')
       .select('user_id')
       .eq(prefKey, true)
     if (!prefs || prefs.length === 0) return []
-    const userIds = prefs.map((p: any) => p.user_id)
-    const { data: users } = await (supabase as any)
+    const userIds = prefs.map((p) => p.user_id)
+    const { data: users } = await supabase
       .from('users')
       .select('email')
       .in('id', userIds)
-    return (users ?? []).map((u: any) => u.email).filter(Boolean)
+    return (users ?? []).map((u) => u.email).filter((email): email is string => !!email)
   } catch {
     return []
   }
 }
 
+// Entrée brute de `pages_statiques.metadata` (JSON libre) pour un syndicat.
+type SyndicatBrut = { [cle: string]: unknown; id?: string; nom?: string; nom_complet?: string | null; article?: string; citation?: string; presidents?: string; titre?: string }
+
 // Syndicats émetteurs du mail de lancement (mots des présidents = métadonnées de la page « Qui sommes-nous »).
-async function getSyndicatsLancement() {
+async function getSyndicatsLancement(): Promise<SyndicatLancement[]> {
   try {
     const supabase = createServiceRoleClient()
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('pages_statiques')
       .select('metadata')
       .eq('slug', 'qui-sommes-nous')
       .single()
-    const arr = Array.isArray(data?.metadata) ? data.metadata : []
+    const arr = (Array.isArray(data?.metadata) ? data.metadata : []) as SyndicatBrut[]
     return arr
-      .filter((s: any) => s?.id && s.id !== 'mg-france')
-      .map((s: any) => ({
+      .filter((s): s is SyndicatBrut & { id: string } => !!s?.id && s.id !== 'mg-france')
+      .map((s) => ({
         id: s.id,
-        nom: s.nom,
+        nom: s.nom ?? '',
         nom_complet: s.nom_complet ?? null,
         article: s.article ?? '',
         citation: s.citation ?? '',
@@ -266,6 +271,7 @@ export default async function AdminEmailsPage() {
   ]
 
   const cronsActifs = cronsActifsRaw === 'true'
+  const role = await roleAdmin()
 
   return (
     <div>
@@ -279,6 +285,7 @@ export default async function AdminEmailsPage() {
         sections={sections}
         newsletters={(newsletters as Newsletter[]) ?? []}
         cronsActifs={cronsActifs}
+        peutModifierCrons={role === 'admin'}
         excuseDefaultSujet={excuseDraftSujet ?? 'Correction — votre email de relance pour {{solution_nom}}'}
         excuseDefaultHtml={excuseDraftHtml ?? ''}
         excuseScheduledAt={excuseScheduledAtRaw}

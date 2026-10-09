@@ -40,6 +40,8 @@ interface Props {
   sections: Section[]
   newsletters?: Newsletter[]
   cronsActifs?: boolean
+  // Interrupteur des emails automatiques : admin seulement (lecture seule pour le rôle « contenus »).
+  peutModifierCrons: boolean
   excuseDefaultSujet?: string
   excuseDefaultHtml?: string
   excuseScheduledAt?: string | null
@@ -56,6 +58,7 @@ export default function AdminEmailsClient({
   sections,
   newsletters = [],
   cronsActifs = false,
+  peutModifierCrons,
   excuseDefaultSujet = '',
   excuseDefaultHtml = '',
   excuseScheduledAt = null,
@@ -196,6 +199,7 @@ export default function AdminEmailsClient({
   }
 
   function handleCronsToggle() {
+    if (!peutModifierCrons) return
     const next = !cronsOn
     setCronsOn(next)
     startTransition(async () => {
@@ -243,11 +247,14 @@ export default function AdminEmailsClient({
                 À activer uniquement au déploiement final en production.
               </span>
             )}
+            {!peutModifierCrons && (
+              <span className="block mt-1 text-gray-500">Réglage réservé à l&apos;administrateur.</span>
+            )}
           </p>
         </div>
         <button
           onClick={handleCronsToggle}
-          disabled={isPending}
+          disabled={isPending || !peutModifierCrons}
           className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-60 ${
             cronsOn ? 'bg-green-500' : 'bg-gray-300'
           }`}
