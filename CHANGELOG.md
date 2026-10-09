@@ -37,7 +37,10 @@
   - `/admin/emails` en admin affiche les deux bandeaux éteints et « 126 évaluation(s) en attente ».
   - Interrupteur non actionné : la base est celle de la production.
 - Vérifications : `tsc`, lint des fichiers touchés (0 erreur ; 5 avertissements déjà présents, code mort de l'email d'excuse) et `npm run build` passent.
-- **Reste** : fusion dans `main`, test du modèle, puis allumage par David (TODO).
+- **Déployé** (accord de David) : report du code seul de `d722545` et `36c0c00` sur `main` (`6cb56be`, worktree séparé, sans les commits annuaire de l'autre session ; CHANGELOG, TODO et étude laissés à `dev`), build vert dans le worktree, Vercel `success`.
+  - Production : accueil `200` ; `/api/cron/relance-psc` → `401` sans secret, et `skipped` « relance PSC désactivée par l'admin » avec le secret (nouveau code en ligne, rien envoyé) ; `/admin/emails` sans jeton → formulaire de connexion sans contenu.
+  - Base : `relance_psc_active` absente, interrupteur général `false`, aucune évaluation relancée.
+- **Reste** : test du modèle, puis allumage de « Relance PSC » par David (TODO).
 
 ---
 

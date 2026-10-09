@@ -263,9 +263,8 @@ _(rien en cours)_
 
 ### Déploiement final
 
-#### Relance PSC — interrupteur séparé (fait le 2026-10-09 sur `dev`)
-- **Fusionner dans `main`** (la tâche du lundi ne tourne qu'en production).
-- Puis, dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
+#### Relance PSC — interrupteur séparé (en production depuis le 2026-10-09, `6cb56be`)
+- Dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
 - Effet attendu : ~116 relances le premier lundi vers 11 h, selon la date d'activation (126 évaluations en attente au 09/10, dont les 34 MedGPT, gardées par décision de David), puis une par semaine, 4 au plus.
 - À vérifier au premier envoi : les liens du mail doivent pointer vers `www.100000medecins.org`. L'adresse est tirée de l'appel de Vercel ; on peut la voir dans le récapitulatif « [Activité] » du lundi.
 
