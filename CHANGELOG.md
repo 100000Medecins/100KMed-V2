@@ -23,6 +23,7 @@
 - En ouvrant la rubrique Emails au rôle « contenus » (08/10), l'interrupteur `crons_routiniers_actifs` (éteint) lui était ouvert : l'allumer déclencherait toutes les relances (1 an, 3 mois, incomplets, PSC), la newsletter et les campagnes programmées.
 - [siteConfig.ts](src/lib/actions/siteConfig.ts) : la clé retirée des réglages permis au rôle ; [page Emails](src/app/admin/emails/page.tsx) → `peutModifierCrons` ; [AdminEmailsClient](src/components/admin/AdminEmailsClient.tsx) : interrupteur grisé + « Réglage réservé à l'administrateur ».
 - Au passage : `any` retirés des lectures de la page Emails (`users_notification_preferences`, `users`, `pages_statiques` typées), import inutilisé retiré.
+- **Déployé** (accord de David) : report seul de `f8de287` et `52e83bc` sur `main` (`400ee3c`, worktree séparé, sans les commits annuaire en cours de l'autre session ; CHANGELOG / TODO laissés à `dev`), build vert ; Vercel `success` à 08:19. Production : accueil `200`, `/admin/emails` sans jeton → formulaire de connexion sans contenu, `/api/upload` et la tâche des posts → `401`.
 - Vérifié en local : rôle « contenus » → mention présente, interrupteur désactivé ; admin → actif ; `setSiteConfig('crons_routiniers_actifs', 'false')` par le rôle « contenus » → refusé (testé avec la valeur actuelle, sans risque d'allumer) ; valeur en base toujours `false` ; `programmerPost` → « La programmation n'est pas encore activée ».
 
 ---
