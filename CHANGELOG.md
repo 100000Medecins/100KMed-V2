@@ -5,6 +5,42 @@
 
 ---
 
+## [2026-10-09] — Étude inscriptions / connexions / emails + interrupteur séparé de la relance PSC
+
+### Étude — parcours d'inscription et emails depuis le lancement
+- [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md). Sources : comptes Supabase, `users`, `evaluations`, `psc_session_events`, `activity_log` et statistiques SendGrid, en lecture seule.
+- **Aucune relance n'est partie depuis le lancement** (`crons_routiniers_actifs = false`). Les compteurs de relance PSC sont à 0 pour cette raison.
+- 41 % des évaluations écrites depuis le lancement attendent la validation PSC (129 sur 314). Parmi les évaluations déposées sans compte, 61 % ne sont jamais validées.
+- 64 % des comptes PSC créés depuis le lancement n'ont aucune adresse utilisable. Le retour de PSC échoue dans 0,8 % des cas depuis le 05/07.
+- Les ouvertures et clics SendGrid (≈ 90 % / 45 %) sont gonflés par les robots ; l'étude mesure l'effet en base. Les envois n'ont pas de catégorie et le détail par message n'est gardé que 3 jours.
+- **Prévision à l'activation de l'interrupteur général** :
+  - 527 rappels de revalidation (499 destinataires, 100 par jour) ;
+  - 116 relances PSC le premier lundi ;
+  - 19 relances d'évaluations incomplètes ;
+  - un rappel quotidien à l'admin, déclenché par le brouillon de newsletter d'avril.
+- **Défaut relevé** : le lien de revalidation en un clic agit à l'ouverture (GET). Les antivirus des messageries le déclencheraient. Noté en TODO, à corriger avant l'activation.
+- Au passage : la clé SendGrid du site a tous les droits, y compris la création de clés. La restreindre à l'envoi est à faire par David dans SendGrid.
+
+### Feature — Interrupteur séparé pour la relance PSC (décision de David)
+- [relance-psc](src/app/api/cron/relance-psc/route.ts) ne lit plus `crons_routiniers_actifs` mais `site_config.relance_psc_active`. Clé absente ⇒ éteint, aucun SQL nécessaire.
+  - Relancer les évaluations en attente n'allume plus la revalidation ni la newsletter, et l'inverse non plus.
+  - `as any` de la tâche retirés (table et lecture du réglage typées via `getSiteConfig`).
+- [Page Emails](src/app/admin/emails/page.tsx) et [AdminEmailsClient](src/components/admin/AdminEmailsClient.tsx) :
+  - second bandeau « Relance PSC », avec le nombre d'évaluations encore relançables (126 au 09/10) ;
+  - confirmation à l'allumage, admin seulement (la clé n'est pas dans les réglages permis au rôle « contenus ») ;
+  - les deux bandeaux partagent le composant local `InterrupteurEnvois` ;
+  - un échec d'enregistrement remet l'interrupteur dans sa position ;
+  - textes corrigés : l'interrupteur général ne mentionne plus la relance PSC, et le modèle `relance_psc` indique « jusqu'à 4 relances, une par semaine » au lieu de « 1 à 3 ».
+- Décision de David : les 34 évaluations MedGPT des 27-28/08 sont relancées comme les autres.
+- **Vérifié sur le build local, sans rien écrire** :
+  - la tâche répond `401` sans secret, et `skipped` « relance PSC désactivée » avec le secret ;
+  - `/admin/emails` en admin affiche les deux bandeaux éteints et « 126 évaluation(s) en attente ».
+  - Interrupteur non actionné : la base est celle de la production.
+- Vérifications : `tsc`, lint des fichiers touchés (0 erreur ; 5 avertissements déjà présents, code mort de l'email d'excuse) et `npm run build` passent.
+- **Reste** : fusion dans `main`, test du modèle, puis allumage par David (TODO).
+
+---
+
 ## [2026-10-09] — Réseaux sociaux : liens vers la production, programmation désactivée, interrupteur des emails réservé à l'admin
 
 ### Fix — Lien des posts réseaux

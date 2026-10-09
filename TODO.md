@@ -263,15 +263,24 @@ _(rien en cours)_
 
 ### Déploiement final
 
+#### Relance PSC — interrupteur séparé (fait le 2026-10-09 sur `dev`)
+- **Fusionner dans `main`** (la tâche du lundi ne tourne qu'en production).
+- Puis, dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
+- Effet attendu : ~116 relances le premier lundi vers 11 h, selon la date d'activation (126 évaluations en attente au 09/10, dont les 34 MedGPT, gardées par décision de David), puis une par semaine, 4 au plus.
+- À vérifier au premier envoi : les liens du mail doivent pointer vers `www.100000medecins.org`. L'adresse est tirée de l'appel de Vercel ; on peut la voir dans le récapitulatif « [Activité] » du lundi.
+
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
-- **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
+- **Tant qu'il est OFF** : aucune relance évaluation / newsletter ne partira (la relance PSC a son propre interrupteur depuis le 2026-10-09)
+- **À corriger avant de l'activer** (vu le 2026-10-09) :
+  - le lien « revalider en un clic » ([revalider-avis](src/app/api/revalider-avis/route.ts)) agit dès l'ouverture (GET, jeton sans expiration) : les antivirus des messageries qui suivent les liens revalideraient des avis à la place des médecins → page de confirmation avec bouton ;
+  - 499 destinataires, dont ~27 seulement se sont connectés au nouveau site ; objet « Votre avis a 1 an » alors que 148 avis datent de 2023 ; 249 reçoivent un « Rappel » qui renvoie au mail parti par erreur le 23/04.
 - **Avant d'activer (2026-09-24)** :
   1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
   2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;
   3. Supprimer le brouillon de newsletter d'**avril** dans `/admin/newsletters` (sinon rappel quotidien à `contact@`).
-- **Volume attendu** (compté le 2026-09-24) : ~522 rappels de revalidation en retard → **100/jour** grâce au plafond, donc ~6 jours ; le lundi suivant +106 relances PSC et +19 relances d'évals incomplètes. Ensuite quelques mails/jour.
+- **Volume attendu** (recompté le 2026-10-09) : 527 rappels de revalidation en retard (499 destinataires) → **100/jour** grâce au plafond, donc ~6 jours ; le lundi +19 relances d'évals incomplètes. Ensuite 5 à 15 rappels par mois, et les ~500 reviennent tous les 3 mois tant qu'ils ne revalident pas. Détail : [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md).
 
 #### ⚠️ Newsletter : l'envoi ne toucherait que 1 000 inscrits sur 6 545 (constaté le 2026-09-24)
 - `send-newsletter`, `send-infos-mensuels` et le cron `envoyer-newsletter-programmee` lisent les opt-in sans pagination → Supabase plafonne à **1 000 lignes**. Puis `.in('id', …)` avec 1 000 uuid dans l'URL risque d'échouer, et 6 500 envois séquentiels dépasseraient la durée max d'une fonction Vercel.

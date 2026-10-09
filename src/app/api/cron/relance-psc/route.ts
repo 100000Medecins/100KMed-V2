@@ -4,6 +4,7 @@ import { buildEmail } from '@/lib/actions/emailTemplates'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 import { estEmailFictif } from '@/lib/email/destinataire'
+import { getSiteConfig } from '@/lib/actions/siteConfig'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,17 +27,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: true, env: process.env.VERCEL_ENV })
   }
 
-  const supabase = createServiceRoleClient()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: configRow } = await (supabase as any)
-    .from('site_config')
-    .select('valeur')
-    .eq('cle', 'crons_routiniers_actifs')
-    .maybeSingle()
-  if (configRow?.valeur !== 'true') {
-    return NextResponse.json({ skipped: true, reason: 'crons disabled by admin' })
+  // Interrupteur propre à cette relance (Admin → Emails), indépendant de
+  // `crons_routiniers_actifs` : relancer les évaluations en attente de validation
+  // sans déclencher les autres envois automatiques (revalidation, newsletter…).
+  if ((await getSiteConfig('relance_psc_active')) !== 'true') {
+    return NextResponse.json({ skipped: true, reason: 'relance PSC désactivée par l\'admin' })
   }
+
+  const supabase = createServiceRoleClient()
 
   const siteUrl = new URL(req.url).origin
 
@@ -45,8 +43,7 @@ export async function GET(req: NextRequest) {
   cutoff.setDate(cutoff.getDate() - DELAY_DAYS)
 
   // ── 1. Premières relances : jamais relancé, email initial envoyé il y a > 7 jours ──
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: premieres } = await (supabase as any)
+  const { data: premieres } = await supabase
     .from('evaluations')
     .select('id, email_temp, token_verification, solution:solutions(nom), relance_psc_count')
     .eq('statut', 'en_attente_psc')
@@ -56,8 +53,7 @@ export async function GET(req: NextRequest) {
     .lt('last_date_note', cutoff.toISOString())
 
   // ── 2. Relances suivantes : déjà relancé, dernière relance il y a > 7 jours, cap non atteint ──
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: suivantes } = await (supabase as any)
+  const { data: suivantes } = await supabase
     .from('evaluations')
     .select('id, email_temp, token_verification, solution:solutions(nom), relance_psc_count')
     .eq('statut', 'en_attente_psc')
@@ -75,8 +71,7 @@ export async function GET(req: NextRequest) {
   const errors: string[] = []
 
   for (const ev of toProcess) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const solution = ev.solution as any
+    const solution = ev.solution
     if (!ev.email_temp || estEmailFictif(ev.email_temp) || !ev.token_verification || !solution?.nom) continue
 
     const relanceNum = (ev.relance_psc_count ?? 0) + 1
@@ -101,8 +96,7 @@ export async function GET(req: NextRequest) {
         html: result.html,
       })
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      await supabase
         .from('evaluations')
         .update({
           last_relance_psc_sent_at: now.toISOString(),

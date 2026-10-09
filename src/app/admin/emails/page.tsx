@@ -41,6 +41,24 @@ async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_th
   }
 }
 
+// Évaluations déposées sans compte, toujours en attente de validation PSC et pas encore
+// relancées 4 fois : celles que la relance PSC du lundi peut encore viser.
+async function getEvaluationsPscRelancables(): Promise<number> {
+  try {
+    const supabase = createServiceRoleClient()
+    const { count } = await supabase
+      .from('evaluations')
+      .select('id', { count: 'exact', head: true })
+      .eq('statut', 'en_attente_psc')
+      .not('email_temp', 'is', null)
+      .not('token_verification', 'is', null)
+      .lt('relance_psc_count', 4)
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
+
 // Entrée brute de `pages_statiques.metadata` (JSON libre) pour un syndicat.
 type SyndicatBrut = { [cle: string]: unknown; id?: string; nom?: string; nom_complet?: string | null; article?: string; citation?: string; presidents?: string; titre?: string }
 
@@ -88,6 +106,8 @@ export default async function AdminEmailsPage() {
     countEtudes, countQuestionnaires,
     { data: newsletters },
     cronsActifsRaw,
+    relancePscActiveRaw,
+    evaluationsPscRelancables,
     excuseScheduledAtRaw,
     excuseDraftHtml,
     excuseDraftSujet,
@@ -120,6 +140,8 @@ export default async function AdminEmailsPage() {
       .select('id, mois, sujet, contenu_html, contenu_json, status, created_at, sent_at, scheduled_at, recipient_count, notified_at, reminded_at')
       .order('created_at', { ascending: false }),
     getSiteConfig('crons_routiniers_actifs'),
+    getSiteConfig('relance_psc_active'),
+    getEvaluationsPscRelancables(),
     getSiteConfig('excuse_scheduled_at'),
     getSiteConfig('excuse_draft_html'),
     getSiteConfig('excuse_draft_sujet'),
@@ -202,7 +224,7 @@ export default async function AdminEmailsPage() {
         {
           id: 'relance_psc',
           title: 'Relance vérification PSC',
-          description: "Envoyé aux utilisateurs n'ayant pas finalisé leur vérification Pro Santé Connect (1 à 3 relances).",
+          description: "Envoyé le lundi aux auteurs d'une évaluation non validée par Pro Santé Connect depuis plus de 7 jours (jusqu'à 4 relances, une par semaine).",
           variables: ['{{prenom}}', '{{nom}}', '{{solution_nom}}', '{{psc_link}}', '{{relance_num}}', '{{max_relances}}'],
           data: templateRelancePsc,
           defaultSujet: 'Finalisez votre évaluation de {{solution_nom}} avec ProSanté Connect',
@@ -285,6 +307,8 @@ export default async function AdminEmailsPage() {
         sections={sections}
         newsletters={(newsletters as Newsletter[]) ?? []}
         cronsActifs={cronsActifs}
+        relancePscActive={relancePscActiveRaw === 'true'}
+        evaluationsPscRelancables={evaluationsPscRelancables}
         peutModifierCrons={role === 'admin'}
         excuseDefaultSujet={excuseDraftSujet ?? 'Correction — votre email de relance pour {{solution_nom}}'}
         excuseDefaultHtml={excuseDraftHtml ?? ''}
