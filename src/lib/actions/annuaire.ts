@@ -157,9 +157,9 @@ async function utilisateurVerifie() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Vous devez être connecté.' } as const
-  const { data: identite } = await supabase.from('identites_psc').select('user_id').eq('user_id', user.id).maybeSingle()
+  const { data: identite } = await supabase.from('identites_psc').select('rpps').eq('user_id', user.id).maybeSingle()
   if (!identite) return { error: 'Vérifiez d’abord votre identité avec Pro Santé Connect.' } as const
-  return { supabase, userId: user.id } as const
+  return { supabase, userId: user.id, rpps: identite.rpps } as const
 }
 
 export async function enregistrerMaFiche(input: {
@@ -177,7 +177,7 @@ export async function enregistrerMaFiche(input: {
 > {
   const ctx = await utilisateurVerifie()
   if (ctx.error) return { error: ctx.error }
-  const { supabase, userId } = ctx
+  const { supabase, userId, rpps } = ctx
 
   const moyenContact = MOYENS_CONTACT.some((m) => m.valeur === input.moyenContact) ? input.moyenContact : null
   let portable: string | null = null
@@ -208,6 +208,7 @@ export async function enregistrerMaFiche(input: {
     .upsert(
       {
         user_id: userId,
+        rpps,
         moyen_contact: moyenContact,
         publiee: input.publiee,
         publiee_accord_version: input.publiee ? ANNUAIRE_VERSION_ACCORD : null,
@@ -229,6 +230,7 @@ export async function enregistrerMaFiche(input: {
     const { error } = await supabase.from('fiches_annuaire_portables').upsert(
       {
         user_id: userId,
+        rpps,
         portable,
         visible: input.portableVisible,
         visible_accord_version: input.portableVisible ? ANNUAIRE_VERSION_ACCORD : null,
@@ -261,7 +263,7 @@ export async function enregistrerMaFiche(input: {
   if (aAjouter.length > 0) {
     const { error } = await supabase
       .from('fiches_intitules')
-      .insert(aAjouter.map((intitule_id) => ({ user_id: userId, intitule_id })))
+      .insert(aAjouter.map((intitule_id) => ({ user_id: userId, rpps, intitule_id })))
     if (error) return { error: `Compétences non ajoutées : ${error.message}` }
   }
 
@@ -285,7 +287,7 @@ export async function proposerCompetence(
 ): Promise<{ intitule: IntituleCatalogue } | { existant: IntituleCatalogue } | { error: string }> {
   const ctx = await utilisateurVerifie()
   if (ctx.error) return { error: ctx.error }
-  const { userId } = ctx
+  const { userId, rpps } = ctx
 
   const libelle = normaliserLibelle(saisie)
   if (libelle.length < 2 || libelle.length > 120) return { error: 'Un intitulé compte de 2 à 120 caractères.' }
@@ -318,17 +320,17 @@ export async function proposerCompetence(
 
   const { error: errFiche } = await admin
     .from('fiches_annuaire')
-    .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true })
+    .upsert({ user_id: userId, rpps }, { onConflict: 'user_id', ignoreDuplicates: true })
   if (errFiche) return { error: errFiche.message }
 
   const { data: cree, error: errCree } = await admin
     .from('intitules')
-    .insert({ type: 'competence', libelle, statut: 'propose', propose_par: userId })
+    .insert({ type: 'competence', libelle, statut: 'propose', propose_par: userId, propose_par_rpps: rpps })
     .select(COLONNES_CATALOGUE)
     .single()
   if (errCree) return { error: errCree.message }
 
-  const { error: errLien } = await admin.from('fiches_intitules').insert({ user_id: userId, intitule_id: cree.id })
+  const { error: errLien } = await admin.from('fiches_intitules').insert({ user_id: userId, rpps, intitule_id: cree.id })
   if (errLien) return { error: errLien.message }
 
   // Sans l'auteur : la charte promet d'effacer le lien proposition ↔ auteur à la décision,
