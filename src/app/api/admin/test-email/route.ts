@@ -24,7 +24,7 @@ const SAMPLE_VARS: Record<string, Record<string, string>> = {
   },
   relance_psc: {
     nom: 'Dr. DUPONT', prenom: 'Dr. DUPONT', solution_nom: 'MonLogiciel Pro',
-    psc_link: '#', lien_desabonnement: '#',
+    psc_link: '#', lien_desabonnement: '#', relance_num: '1', max_relances: '4',
   },
   verification_psc: { psc_link: '#' },
   suppression_compte: { nom: 'DUPONT', prenom: 'Marie' },
