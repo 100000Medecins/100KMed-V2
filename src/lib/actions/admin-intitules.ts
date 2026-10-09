@@ -49,6 +49,7 @@ export async function accepterIntitule(
       groupe: input.groupe?.trim() || null,
       statut: 'valide',
       propose_par: null,
+      propose_par_rpps: null,
       decide_le: new Date().toISOString(),
     })
     .eq('id', id)
@@ -80,7 +81,7 @@ export async function fusionnerIntitule(id: string, cibleId: string): Promise<Re
   if (!proposition) return { error: 'Proposition introuvable (déjà traitée ?).' }
   if (!cible) return { error: 'Intitulé cible introuvable.' }
 
-  const { data: liens, error: errLiens } = await admin.from('fiches_intitules').select('user_id, rpps').eq('intitule_id', id)
+  const { data: liens, error: errLiens } = await admin.from('fiches_intitules').select('rpps').eq('intitule_id', id)
   if (errLiens) return { error: errLiens.message }
 
   const { error: errSyn } = await admin
@@ -98,7 +99,7 @@ export async function fusionnerIntitule(id: string, cibleId: string): Promise<Re
     const { error: errIns } = await admin
       .from('fiches_intitules')
       .upsert(
-        liens.map((l) => ({ user_id: l.user_id, rpps: l.rpps, intitule_id: cibleId })),
+        liens.map((l) => ({ rpps: l.rpps, intitule_id: cibleId })),
         { onConflict: 'rpps,intitule_id', ignoreDuplicates: true },
       )
     if (errIns) return { error: `Fusion faite, mais la compétence n'a pas été reportée sur toutes les fiches : ${errIns.message}` }

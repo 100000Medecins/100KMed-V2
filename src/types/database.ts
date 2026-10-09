@@ -2781,6 +2781,10 @@ export type Database = {
       }
       annuaire_lecteur_autorise: { Args: never; Returns: boolean }
       annuaire_normaliser: { Args: { t: string }; Returns: string }
+      annuaire_portable_pour: {
+        Args: { p_lecteur_rpps: string; p_rpps: string }
+        Returns: string
+      }
       annuaire_purger_lots: { Args: { p_limite?: number }; Returns: number }
       annuaire_rechercher: {
         Args: {

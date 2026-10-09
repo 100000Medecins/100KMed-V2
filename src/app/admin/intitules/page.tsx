@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { SM_SPECIALITES } from '@/lib/constants/profil'
 import IntitulesAdminClient from '@/components/admin/IntitulesAdminClient'
 import type { PropositionIntitule, IntituleValide } from '@/components/admin/IntitulesAdminClient'
 import CatalogueAdminClient from '@/components/admin/CatalogueAdminClient'
@@ -14,7 +15,7 @@ async function getData() {
   const [{ data: propositions }, { data: valides }, { data: oppositionsBrut }, { data: version }] = await Promise.all([
     admin
       .from('intitules')
-      .select('id, libelle, synonymes, groupe, propose_par, created_at, fiches_intitules(count)')
+      .select('id, libelle, synonymes, groupe, propose_par_rpps, created_at, fiches_intitules(count)')
       .eq('type', 'competence')
       .eq('statut', 'propose')
       .order('created_at', { ascending: true }),
@@ -46,14 +47,19 @@ async function getData() {
     nomAns: nomsAns.get(o.rpps) ?? null,
   }))
 
+  // Auteur d'une proposition : son identité PSC (nom, spécialité), à défaut son compte du site
   const liste = propositions ?? []
   const auteurs = new Map<string, string>()
-  const auteurIds = Array.from(new Set(liste.map((p) => p.propose_par).filter((x): x is string => !!x)))
-  if (auteurIds.length > 0) {
-    const { data: users } = await admin.from('users').select('id, prenom, nom, specialite').in('id', auteurIds)
-    for (const u of users ?? []) {
-      const nom = [u.prenom, u.nom].filter(Boolean).join(' ') || 'Médecin sans nom'
-      auteurs.set(u.id, u.specialite ? `${nom} (${u.specialite})` : nom)
+  const auteurRpps = Array.from(new Set(liste.map((p) => p.propose_par_rpps).filter((x): x is string => !!x)))
+  if (auteurRpps.length > 0) {
+    const { data: identites } = await admin
+      .from('identites_psc')
+      .select('rpps, nom, prenom, specialite_code, compte:users(nom, prenom, specialite)')
+      .in('rpps', auteurRpps)
+    for (const i of identites ?? []) {
+      const nom = [i.prenom ?? i.compte?.prenom, i.nom ?? i.compte?.nom].filter(Boolean).join(' ') || 'Médecin sans nom'
+      const specialite = (i.specialite_code && SM_SPECIALITES[i.specialite_code]) || i.compte?.specialite
+      auteurs.set(i.rpps, specialite ? `${nom} (${specialite})` : nom)
     }
   }
 
@@ -62,7 +68,7 @@ async function getData() {
     libelle: p.libelle,
     synonymes: p.synonymes,
     groupe: p.groupe,
-    auteur: p.propose_par ? auteurs.get(p.propose_par) ?? null : null,
+    auteur: p.propose_par_rpps ? auteurs.get(p.propose_par_rpps) ?? null : null,
     creeLe: p.created_at,
     nbFiches: p.fiches_intitules[0]?.count ?? 0,
   }))
