@@ -5,6 +5,36 @@
 
 ---
 
+## [2026-10-10] — Annuaire : l'application ouvre sa session, import ANS du 09/10, pédopsychiatrie en une entrée
+
+### Application — deuxième essai réussi (17:15, rapporté par la session messagerie)
+- `POST /api/annuaire/app/session` sur `dev` avec un vrai jeton du relais de production (flux CIBA, scopes `openid scope_all`) : **session ouverte**, RPPS rendu égal à celui du compte, textes d'accord lus, `GET /fiches` (1 fiche, 212 compétences), réouverture après un `401 jeton_invalide` provoqué. Le correctif `acb8245` est donc validé par un vrai jeton.
+- **`userinfo` de PSC rend bien l'identité pour ces jetons** (lu en base) : la ligne `identites_psc` du médecin de l'essai porte profession `10`, spécialité `SM53`, nom et prénom, dernière connexion à 18:17 (heure de Paris). Aucune connexion PSC au site à cette heure (`psc_session_events`, dernière à 17:33) : l'écriture vient d'une session de l'application, qui remplace ces champs par ce que PSC rend.
+- **Reste une faiblesse du code, sans effet constaté** : une profession absente n'est pas refusée (TODO, à décider).
+
+### Feature — `GET /api/annuaire/app/ma-fiche` rend la spécialité du médecin (demande de l'application)
+- Champ `specialite_code` (code SM de l'identité PSC, `null` si absent) : l'application en a besoin pour masquer à la saisie les compétences qui font redite avec la spécialité, comme le site. [authentifierApp](src/lib/annuaire/app-session.ts) lit la spécialité avec la profession (même requête) ; contrat mis à jour.
+- Vérifié en local (gestionnaire de la route appelé directement, lecture seule) : `200`, `specialite_code = "SM53"` ; identité inexistante → `401 identite_inconnue` ; jeton faux → `401 jeton_invalide`.
+
+### Données — import mensuel de l'Annuaire Santé (accord de David)
+- Nouvelle base de l'application (`annuaire.db`, extraction ANS du 2026-10-09, construite le 10/10). Import exécuté le 10/10 : lot `1791651599`, **199 578 médecins, 116 213 lieux, 309 992 liens médecin-lieu, 272 354 adresses MSSanté** ; ancien lot effacé (896 871 lignes).
+- **Vérifié par requête** : version active `2026-10-09`, un seul lot dans chaque table, 191 389 médecins avec un code SM, aucun code hors spécialités, aucun lien ni adresse MSSanté sans médecin.
+
+### Import — le code SM est lu dans l'extraction RPPS quand il existe
+- La base de l'application porte une nouvelle colonne `pro.savoir_faire_code`. Comparée au code que le script déduisait du libellé (199 578 médecins) : identiques pour 190 508 ; **177 pédopsychiatres rangés à tort en SM92** (vrai code SM43, les deux libellés ne diffèrent que d'une virgule) ; 642 médecins dont la colonne porte un code hors spécialités (`CEX22`, `CEX24`, `CEX26`, `CEX64`, gynécologie et urologie) que le libellé range correctement ; 62 sans code mais avec libellé.
+- [annuaire-import-ans.ts](scripts/annuaire-import-ans.ts) : code de la colonne quand c'est une spécialité connue du site, sinon rapprochement du libellé (inchangé). Les bases sans la colonne restent lisibles (essai à blanc sur la base du 04/10 : 199 293 médecins et 191 217 codes, les chiffres de l'import du 08/10).
+- Effet sur l'import du 10/10 : 190 685 codes lus, 704 déduits du libellé ; en base, **SM43 = 177, SM92 = 242** (avant : 0 et 418).
+
+### Fix — Filtre de spécialité de l'annuaire : pédopsychiatrie en une seule entrée
+- Le filtre avait deux entrées presque identiques, « Psychiatrie, option enfant et adolescent » (SM43, vide) et « Psychiatrie option enfant et adolescent » (SM92). [/annuaire](src/app/annuaire/page.tsx) regroupe maintenant les libellés comparés sans ponctuation : une seule entrée, codes SM43 + SM92 (93 entrées → 92, aucune autre fusion, les 95 codes toujours couverts). Libellés des fiches et de `SM_SPECIALITES` non touchés.
+- Mis en ligne sur `dev` **avant** l'import, pour que les 177 médecins passés en SM43 restent trouvés par le filtre.
+
+### Vérif
+- `tsc`, lint des fichiers touchés et `npm run build` passent. `e476fb6` poussé sur `dev`, Vercel `success` ; `main` non touché.
+- **Non vérifié** : le filtre dans le navigateur (page réservée à un médecin connecté ; les fonctions `annuaire_*` ne sont pas appelables par le rôle de lecture) et `GET /ma-fiche` sur `dev` avec un vrai jeton (prochain essai de l'application). En production, l'annuaire reste éteint et `main` n'a pas le regroupement du filtre : à emporter au prochain report.
+
+---
+
 ## [2026-10-10] — Vidéo native sur les réseaux : dépôt des fichiers et envoi de l'adresse à Make (côté site)
 
 Suite du cadrage du matin (Supabase passé en Pro par David). **Côté site terminé et vérifié en local ; restent les branches Make et l'essai réel par réseau (David).** Rien en production.
