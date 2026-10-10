@@ -72,14 +72,14 @@ _(rien en cours)_
 - des `completer_error` → bug à corriger ;
 - comparer le taux de complétion avant/après l'ajout des choix de notifications, et lire les choix faits (détail de `completer_success`).
 
-### Réseaux sociaux et accès de la community manager — restes (posé le 2026-10-08)
+### Réseaux sociaux et accès de la community manager — opérationnel ; reste la programmation (posé le 2026-10-08)
 
-**Contexte** : accès « contenus » à l'admin, posts réseaux en base avec programmation, panneau sur les vidéos (CHANGELOG du 2026-10-08).
+**Contexte** : accès « contenus » à l'admin, posts réseaux en base, panneau sur les articles et les vidéos (CHANGELOG des 08 et 09/10). **Validé de bout en bout le 10/10** sur LinkedIn, Facebook et Instagram.
 
 **À faire (David)** :
 - ~~**Make, branche LinkedIn** : « Create a Company Image Post » en Upload by link~~ ✅ fait par David le 09/10 : post LinkedIn arrivé **avec sa photo** (article Pro Santé Connect, `posts_reseaux` « envoye », sans lien localhost).
 - ~~**Supprimer sur LinkedIn le post d'essai du 08/10**~~ ✅ supprimé par David le 09/10.
-- **Facebook et Instagram** : pas encore essayés avec le nouveau panneau (brouillons prêts sur l'article Pro Santé Connect). Vérifier au premier envoi le champ Link du module Facebook (carte de l'article) et la photo Instagram.
+- ~~**Facebook et Instagram** : premier envoi avec le nouveau panneau~~ ✅ « fonctionne parfaitement » (David, 10/10).
 - ~~**Vercel** : variable `ADMIN_CONTENU_PASSWORD`~~ ✅ fait et testé par David le 09/10.
 
 **Programmation des posts — désactivée (décision de David, 2026-10-09)** : pas de `pg_cron` pour l'instant (méfiance après un envoi de masse involontaire par le passé). Le panneau ne propose que « Envoyer maintenant » ; le serveur refuse toute programmation. **Pour l'activer un jour** : (1) activer `pg_cron` et `pg_net` (Database › Extensions) ; (2) SQL : `delete from vault.secrets where name = 'cron_secret'`, `vault.create_secret('<CRON_SECRET>', 'cron_secret')`, `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …net.http_get(…/api/cron/envoyer-posts-reseaux)… where exists (posts dus))` — texte complet dans le CHANGELOG du 2026-10-08 ; la tâche ne touche que `posts_reseaux`, aucun email ; (3) variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true` + redéploiement ; (4) tester un post à +15 min.

@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-10] — Réseaux sociaux : publication validée sur les trois réseaux
+
+- Essai réel de David en production avec le nouveau panneau (article Pro Santé Connect) : **LinkedIn** (09/10, image arrivée grâce au module « Create a Company Image Post » en *Upload by link*), **Facebook** et **Instagram** (10/10) — « fonctionne parfaitement ». Post d'essai du 08/10 (lien `localhost`) supprimé de LinkedIn par David.
+- Reste ouvert : la programmation des posts (désactivée, sans `pg_cron`, décision de David du 09/10) et le projet vidéo (dépôt → YouTube → publication native) — cf. TODO.
+
+---
+
 ## [2026-10-10] — Annuaire, tranche 3 : étape 3, retrait des anciennes colonnes
 
 - Feu vert de David pour mener l'étape 3 seul (la migration reste lancée par lui). Préalables : essais de suppression et de fusion de comptes (14 / 14), production passée au nouveau code (`9c97175`), voir l'entrée de l'étape 2.
