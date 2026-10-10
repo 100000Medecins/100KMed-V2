@@ -271,16 +271,23 @@ _(rien en cours)_
 #### Relance PSC — interrupteur séparé (en production ; une relance toutes les 2 semaines depuis le 2026-10-10, `24cdadc`)
 - **Allumé par David le 2026-10-10 à 13 h 08** (`relance_psc_active = true` ; interrupteur général toujours `false`). Premier envoi : lundi 12/10 vers 11 h, 119 relances attendues (127 évaluations en attente au 10/10) ; suivants les 26/10, 09/11 et 23/11.
 - **⏰ Lundi 12/10 après 11 h — contrôler le premier envoi** : demander à Claude le nombre d'évaluations avec `relance_psc_count = 1` (≈ 119 attendues) et les rebonds SendGrid du jour ; vérifier dans un mail reçu que le lien pointe vers `www.100000medecins.org`.
-- Le mail initial `verification_psc` (« Validez votre évaluation ») affirme encore « Ce lien est valable 7 jours » : c'est faux (le lien ne périme pas). Proposition : « Vous pourrez aussi utiliser ce lien plus tard. » À modifier dans Admin → Emails, ou par Claude sur accord de David (même méthode que `relance_psc`, corrigé le 10/10).
 - Rappel du fonctionnement : première relance le lundi qui suit les 7 jours après le dépôt, puis une toutes les 2 semaines, 4 au plus. Les 34 évaluations MedGPT sont relancées comme les autres (décision de David). L'adresse des liens est tirée de l'appel de Vercel.
+
+#### Clé SendGrid du site à restreindre (David, dans SendGrid — vu le 2026-10-09)
+- La clé `SENDGRID_API_KEY` du site a tous les droits du compte (créer des clés, lire les destinataires, changer les réglages). Le site n'a besoin que d'envoyer.
+- SendGrid → Settings → API Keys → Create API Key → « Restricted Access » → **Mail Send** seul → remplacer la valeur dans Vercel (Production et Preview) et dans les `.env.local` des deux postes → redéployer → vérifier un envoi (test d'un modèle depuis Admin → Emails) → supprimer l'ancienne clé.
+- Pour les études de statistiques, créer à part une clé en lecture seule (Stats), gardée hors de Vercel.
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
 - **Tant qu'il est OFF** : aucune relance évaluation / newsletter ne partira (la relance PSC a son propre interrupteur depuis le 2026-10-09)
-- **À corriger avant de l'activer** (vu le 2026-10-09) :
-  - le lien « revalider en un clic » ([revalider-avis](src/app/api/revalider-avis/route.ts)) agit dès l'ouverture (GET, jeton sans expiration) : les antivirus des messageries qui suivent les liens revalideraient des avis à la place des médecins → page de confirmation avec bouton ;
-  - 499 destinataires, dont ~27 seulement se sont connectés au nouveau site ; objet « Votre avis a 1 an » alors que 148 avis datent de 2023 ; 249 reçoivent un « Rappel » qui renvoie au mail parti par erreur le 23/04.
+- **Avant de l'activer** (point du 2026-10-10) :
+  - **Reporter sur `main` le correctif du lien de revalidation** (fait sur `dev` le 10/10 : page de confirmation `/confirmer-avis`, le lien du mail n'écrit plus rien à l'ouverture). Sans ce report, les mails partiraient avec un lien vers une page absente de la production.
+  - Textes à relire par David (facultatif) : les mails disent « Confirmer mon avis en 1 clic » / « Un clic suffit », alors qu'il y a désormais un clic dans le mail puis un sur la page.
+  - Décision de David : 249 médecins recevraient d'abord le « Rappel — votre avis est en attente de mise à jour » (`relance_3mois`), parce que leur première relance est le mail parti par erreur du site de développement le 23/04. Soit on laisse, soit on remet leur compteur à zéro pour qu'ils reçoivent le premier mail (écriture sur 267 évaluations).
+  - 499 destinataires, dont ~27 seulement se sont connectés au nouveau site : pour les autres, ce sera le premier mail du nouveau site.
+  - Fait le 10/10 : objet et texte de `relance_1an` (« a plus d'un an » au lieu de « a 1 an » : 188 avis sur 262 dataient de 2023-2024).
 - **Avant d'activer (2026-09-24)** :
   1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
   2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;

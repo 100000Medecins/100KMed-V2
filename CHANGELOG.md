@@ -5,6 +5,34 @@
 
 ---
 
+## [2026-10-10] — Emails : le lien « confirmer mon avis » n'agit plus à l'ouverture + phrases fausses des modèles
+
+### Fix — Revalidation d'un avis déclenchée par la simple ouverture du lien
+- **Constat** (étude du 09/10) : le bouton « Confirmer mon avis en 1 clic » des rappels pointait vers `/api/revalider-avis`, qui revalidait l'avis sur un simple GET (jeton signé sans expiration). Les antivirus des messageries ouvrent les liens des mails : ils auraient revalidé des avis à la place des médecins (date de l'avis et ordre des témoignages faussés).
+- **Fix** :
+  - nouvelle page [/confirmer-avis](src/app/confirmer-avis/page.tsx) : nom du logiciel, bouton « Oui, je confirme mon avis » (formulaire POST), lien « Non, je le mets à jour » ; `noindex`, dynamique (propre à chaque lien, comme `/gerer-notifications`), composants `Card` et `Button` ;
+  - [revalider-avis](src/app/api/revalider-avis/route.ts) : un GET n'écrit plus rien et renvoie vers la page (les liens des mails déjà partis restent utilisables) ; seul le POST revalide ;
+  - [revalidation.ts](src/lib/email/revalidation.ts) : les nouveaux liens pointent directement vers la page ; vérification du jeton partagée (`jetonRevalidationValide`, comparaison à temps constant) au lieu d'une copie dans la route.
+- **Deux défauts corrigés au passage** :
+  - un lien invalide affichait « Merci ! Votre avis a bien été confirmé » (`/avis-confirme` ignore le paramètre `erreur`) → message « Ce lien n'est plus valable » ;
+  - une revalidation qui ne touchait aucune évaluation (avis supprimé) était annoncée comme réussie → le POST vérifie qu'une ligne a été modifiée.
+- `as any` de la route retirés.
+- **Vérifié sur le build local** :
+  - ancien lien (GET, jeton valide d'une vraie évaluation) → `307` vers la page, évaluation **inchangée en base** (relue avant / après) ;
+  - page avec jeton valide → titre avec le nom du logiciel, formulaire POST, `noindex` ; jeton faux ou paramètres absents → « Ce lien n'est plus valable » ;
+  - POST avec jeton faux → `303`, `erreur=lien-invalide` ; POST avec jeton valide sur une évaluation inexistante → `303`, `erreur=revalidation-echouee`, message affiché.
+  - **Non testé** : le POST réussi (il modifierait l'avis d'un vrai médecin, la base locale étant celle de la production). La mise à jour elle-même est celle d'avant, plus le contrôle du nombre de lignes.
+- `tsc`, lint des fichiers touchés et `npm run build` passent (`/confirmer-avis` en `ƒ`, voulu).
+- **Reste** : report sur `main` (accord de David). Les rappels de revalidation ne partent pas tant que l'interrupteur général est éteint.
+
+### Modèles d'emails corrigés en base (demande de David)
+- [scripts/fix-phrases-modeles-emails.ts](scripts/fix-phrases-modeles-emails.ts) (ex `fix-modele-relance-psc.ts`, généralisé : liste de corrections, sujet ou contenu, correction ignorée si la phrase d'origine n'est pas trouvée une seule fois). Exécuté le 10/10, relu par une requête indépendante ; anciens modèles sauvegardés dans `backups/` (hors dépôt).
+- `verification_psc` (mail « Validez votre évaluation », envoyé chaque jour) : « Ce lien est valable 7 jours. » → « Vous pourrez aussi utiliser ce lien plus tard. »
+- `relance_1an` : objet « … a 1 an — toujours d'actualité ? » → « … a plus d'un an — toujours d'actualité ? » ; texte « Il y a un an, vous avez évalué » → « Il y a plus d'un an, vous avez évalué ». 188 des 262 avis concernés dataient de 2023 ou 2024.
+- **Non modifié** : `relance_3mois` (rien de faux dans le texte ; la question des 249 médecins qui le recevraient en premier est une décision de David, cf. TODO) ; la mention « en 1 clic » des deux rappels.
+
+---
+
 ## [2026-10-10] — Relance PSC : une relance toutes les 2 semaines
 
 - **Demande de David** : garder 4 relances, mais espacées de 2 semaines au lieu d'une.
