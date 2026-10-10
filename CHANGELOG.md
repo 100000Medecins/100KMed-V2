@@ -5,6 +5,45 @@
 
 ---
 
+## [2026-10-10] — Vidéo native sur les réseaux : dépôt des fichiers et envoi de l'adresse à Make (côté site)
+
+Suite du cadrage du matin (Supabase passé en Pro par David). **Côté site terminé et vérifié en local ; restent les branches Make et l'essai réel par réseau (David).** Rien en production.
+
+### Base et stockage — lancés par David (vérifiés)
+- Réglage Supabase « Global file size limit » relevé (vérifié par un dépôt de 320 Mo).
+- Bucket **privé** `videos-reseaux` : 500 Mo par fichier, `video/mp4` et `video/quicktime` seulement, aucune règle d'accès (tout passe par des adresses signées).
+- Table `videos_fichiers` (un `vertical` et un `horizontal` par vidéo, suppression en cascade ; RLS active sans règle, `anon` et `authenticated` sans droit, `service_role` complet, `claude_readonly` en lecture).
+- Colonne `posts_reseaux.media` (`image` par défaut, ou `video` ; `video` réservé aux posts d'une vidéo). Ajouts seuls : la production tourne sans changement, les 6 posts existants sont en `image`.
+- Types régénérés par Claude (+47 lignes, rien de retiré).
+
+### Feature — Fichiers vidéo dans le panneau « Publier sur les réseaux » d'une vidéo
+- [FichiersVideoReseaux](src/components/admin/FichiersVideoReseaux.tsx) : deux emplacements (vertical = Reel Instagram, 300 Mo, plafond de Meta ; horizontal = vidéo Facebook, 500 Mo). Le navigateur dépose le fichier **directement au stockage** par une adresse de dépôt signée (valable 2 h), avec barre de progression et annulation ; un seul envoi, pas de reprise (320 Mo en 13 s lors de l'essai).
+- Contrôles avant dépôt : MP4 / MOV, poids, **sens du fichier** (un horizontal déposé dans l'emplacement vertical est refusé), durée d'un Reel (3 s à 15 min). Si le navigateur ne sait pas lire le fichier (MOV en HEVC), le sens et la durée ne sont pas contrôlés.
+- [videos-fichiers.ts](src/lib/actions/videos-fichiers.ts) : `preparerDepot` (session admin ou « contenus », chemin choisi par le serveur), `confirmerDepot` (poids et type **relus au stockage**, ancien fichier effacé en cas de remplacement), `supprimerFichier` (refusé si un post programmé attend le fichier).
+- [SocialPanel](src/components/admin/SocialPanel.tsx) : choix « Image » / « Vidéo » sur les posts Instagram et Facebook d'une vidéo (LinkedIn inchangé : lien YouTube + vignette). « Vidéo » est grisé tant que le fichier du réseau manque.
+  - **Choix par défaut** (décision de Claude, à revoir si besoin) : un fichier déposé fait passer le brouillon du réseau concerné en vidéo, et les nouveaux brouillons naissent en vidéo si le fichier est là. Supprimer un fichier repasse les brouillons en image.
+  - Instagram en vidéo n'exige plus d'image.
+- [envoi.ts](src/lib/reseaux/envoi.ts) : Make reçoit deux champs de plus, `media` (`image` / `video`) et `video_url` (adresse signée valable 24 h, générée au moment de l'envoi, ou `null`). Les champs existants ne changent pas.
+
+### Feature — Effacement automatique des fichiers
+- [purge-videos-reseaux](src/app/api/cron/purge-videos-reseaux/route.ts), chaque jour à 4 h 30 (production seulement) → `purgerFichiers` ([fichiers.ts](src/lib/reseaux/fichiers.ts)) :
+  - fichier publié en vidéo : effacé 7 jours après la dernière activité (dépôt, modification ou envoi d'un post en vidéo du réseau) ;
+  - fichier jamais publié : 30 jours ;
+  - jamais effacé tant qu'un post programmé ou en cours d'envoi l'attend ;
+  - les brouillons en vidéo restés sans fichier repassent en image ;
+  - fichier arrivé au stockage sans avoir été enregistré (onglet fermé) : effacé après 1 jour.
+- Supprimer une vidéo efface aussi ses fichiers ([admin.ts](src/lib/actions/admin.ts) `deleteVideo`, `as any` retiré au passage).
+
+### Vérif
+- `tsc`, lint des fichiers touchés (0 erreur) et `npm run build` passent.
+- **Stockage, par script** : dépôt par adresse signée sans aucune clé (60 Mo et 320 Mo acceptés, 510 Mo refusé `413`), autre type refusé (`415`), lecture par adresse signée `206`, lecture sans jeton ou par l'adresse publique `400`.
+- **Panneau, dans un vrai navigateur** (build local, vidéo temporaire non publiée, faux Make local à la place du vrai : aucun post n'est parti) : **23 / 23** — refus du mauvais sens, dépôt des deux fichiers, brouillons Instagram et Facebook en vidéo et LinkedIn en image, bascule image / vidéo, envoi : le faux Make reçoit `media=video` et une adresse qui rend **le fichier identique à l'octet près**, LinkedIn inchangé, remplacement (ancien fichier effacé), suppression, bouton « Vidéo » grisé sans fichier.
+- **Effacement** (tâche appelée en local) : fichier récent gardé ; gardé tant qu'un post programmé l'attend ; effacé à 10 jours une fois publié (brouillon repassé en image) ; jamais publié : gardé à 10 jours, effacé à 31 ; suppression de vidéos depuis la liste de l'admin : fichiers et lignes partis.
+- Données d'essai effacées : base revenue à 19 vidéos, 0 fichier, 6 posts ; bucket vide.
+- **Non testé** : la publication réelle par Make (branches à créer), l'effacement d'un dépôt abandonné de plus d'un jour (la date d'un fichier du stockage ne se falsifie pas ; le cas « récent, donc gardé » est vérifié), un MOV en HEVC.
+
+---
+
 ## [2026-10-10] — Annuaire, tranche 3 : le site attendait son propre client PSC au lieu de celui de l'application
 
 ### Fix — Premier essai réel de l'application refusé (`401 jeton_psc_autre_client`)

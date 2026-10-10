@@ -10,8 +10,9 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { assertAdminOuContenu, roleAdmin } from '@/lib/auth/admin-guard'
 import { genererPostsSociaux } from '@/lib/ai/posts-sociaux'
 import { listerPosts, programmationActive, sourceDuPost, transmettre } from '@/lib/reseaux/envoi'
+import { fichierDuPost, listerFichiers } from '@/lib/reseaux/fichiers'
 import { lienEtImageVideo } from '@/lib/reseaux/liens'
-import { RESEAUX, type PostReseau, type Reseau, type SourcePost } from '@/lib/reseaux/types'
+import { RESEAUX, formatDuReseau, type MediaPost, type PostReseau, type Reseau, type SourcePost } from '@/lib/reseaux/types'
 
 type Resultat = { posts: PostReseau[]; error?: string }
 
@@ -48,27 +49,35 @@ export async function genererBrouillons(
   const colonne = source.type === 'article' ? 'article_id' : 'video_id'
   await supabase.from('posts_reseaux').delete().eq(colonne, source.id).in('statut', MODIFIABLES)
 
+  // Un fichier vidéo déposé est là pour être publié : le post du réseau concerné naît en vidéo.
+  const formats = source.type === 'video' ? (await listerFichiers(source.id)).map((f) => f.format) : []
   const { error } = await supabase.from('posts_reseaux').insert(
     RESEAUX.map((reseau) => ({
       [colonne]: source.id,
       reseau,
       texte: resultat.posts[reseau],
       programme_le: creneaux[reseau] ?? null,
+      media: formats.includes(formatDuReseau(reseau) ?? '') ? 'video' : 'image',
       cree_par: role,
     })),
   )
   return { posts: await listerPosts(source), error: error?.message }
 }
 
-/** Enregistre le texte et/ou le créneau d'un brouillon (sans effet sur un post programmé ou envoyé). */
-export async function enregistrerPost(id: string, champs: { texte?: string; programmeLe?: string | null }): Promise<Resultat> {
+/** Enregistre le texte, le créneau et/ou le média d'un brouillon (sans effet sur un post programmé ou envoyé). */
+export async function enregistrerPost(id: string, champs: { texte?: string; programmeLe?: string | null; media?: MediaPost }): Promise<Resultat> {
   await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
+  if (champs.media === 'video') {
+    const post = await postModifiable(id)
+    if (!post || !(await fichierDuPost(supabase, post))) return listeDuPost(id, "Déposez d'abord le fichier vidéo de ce réseau.")
+  }
   await supabase
     .from('posts_reseaux')
     .update({
       ...(champs.texte !== undefined ? { texte: champs.texte } : {}),
       ...(champs.programmeLe !== undefined ? { programme_le: champs.programmeLe } : {}),
+      ...(champs.media !== undefined ? { media: champs.media === 'video' ? 'video' : 'image' } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -105,9 +114,13 @@ export async function programmerPost(id: string, texte: string, programmeLe: str
 
   const post = await postModifiable(id)
   if (!post) return listeDuPost(id, "Ce post n'est plus modifiable (déjà programmé ou envoyé).")
-  if (post.reseau === 'instagram' && !(await imageDisponible(post))) return listeDuPost(id, 'Instagram exige une image.')
-
   const supabase = createServiceRoleClient()
+  if (post.media === 'video') {
+    if (!(await fichierDuPost(supabase, post))) return listeDuPost(id, 'Le fichier vidéo de ce réseau manque : déposez-le, ou repassez le post en « image ».')
+  } else if (post.reseau === 'instagram' && !(await imageDisponible(post))) {
+    return listeDuPost(id, 'Instagram exige une image.')
+  }
+
   await supabase
     .from('posts_reseaux')
     .update({ texte, programme_le: date.toISOString(), statut: 'programme', erreur: null, updated_at: new Date().toISOString() })

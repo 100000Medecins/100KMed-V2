@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, Clock, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe, CalendarX, Loader2 } from 'lucide-react'
+import { Send, Clock, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe, CalendarX, Loader2, Film } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
+import FichiersVideoReseaux from '@/components/admin/FichiersVideoReseaux'
 import { publishArticle } from '@/lib/actions/admin'
 import {
   annulerProgrammation,
@@ -16,7 +17,7 @@ import {
   programmerPost,
   supprimerPost,
 } from '@/lib/actions/posts-reseaux'
-import { RESEAUX, type PostReseau, type Reseau } from '@/lib/reseaux/types'
+import { RESEAUX, formatDuReseau, type FichierVideo, type MediaPost, type PostReseau, type Reseau } from '@/lib/reseaux/types'
 
 const NETWORK_LABELS: Record<Reseau, string> = {
   linkedin: 'LinkedIn',
@@ -98,13 +99,15 @@ interface Props {
   source: SourcePublication
   postsInitiaux: PostReseau[]
   programmationActive: boolean // tâche planifiée en place ; sinon envoi immédiat seulement
+  fichiersInitiaux?: FichierVideo[] // vidéo seulement : fichiers déposés pour la publication native
 }
 
 type Resultat = { posts: PostReseau[]; error?: string }
 
-export default function SocialPanel({ source, postsInitiaux, programmationActive }: Props) {
+export default function SocialPanel({ source, postsInitiaux, programmationActive, fichiersInitiaux = [] }: Props) {
   const [open, setOpen] = useState(false)
   const [posts, setPosts] = useState<PostReseau[]>(postsInitiaux)
+  const [fichiers, setFichiers] = useState<FichierVideo[]>(fichiersInitiaux)
   // Saisies en cours (texte, créneau) par post, enregistrées à la sortie du champ.
   const [textes, setTextes] = useState<Record<string, string>>({})
   const [creneaux, setCreneaux] = useState<Record<string, string>>({})
@@ -121,6 +124,11 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
 
   const texteDe = (p: PostReseau) => textes[p.id] ?? p.texte
   const creneauDe = (p: PostReseau) => creneaux[p.id] ?? versSaisie(p.programme_le)
+  // Fichier que le réseau publierait (vertical pour Instagram, horizontal pour Facebook) ; rien pour un article.
+  const formatDe = (p: PostReseau) => (source.type === 'video' ? formatDuReseau(p.reseau) : null)
+  const fichierDepose = (p: PostReseau) => fichiers.some((f) => f.format === formatDe(p))
+  // Instagram en image exige une image ; en vidéo, le fichier suffit.
+  const sansImageDe = (p: PostReseau) => p.reseau === 'instagram' && p.media !== 'video' && !source.image
 
   async function executer(cle: string, action: () => Promise<Resultat>) {
     setOccupe(cle)
@@ -179,8 +187,12 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
     executer(p.id, () => programmerPost(p.id, texteDe(p), new Date(saisie).toISOString()))
   }
 
+  function choisirMedia(p: PostReseau, media: MediaPost) {
+    if (p.media !== media) executer(p.id, () => enregistrerPost(p.id, { media }))
+  }
+
   function programmerTout() {
-    const brouillons = actifs.filter((p) => p.statut === 'brouillon' && creneauDe(p) && !(p.reseau === 'instagram' && !source.image))
+    const brouillons = actifs.filter((p) => p.statut === 'brouillon' && creneauDe(p) && !sansImageDe(p))
     executer('tout', async () => {
       let dernier: Resultat = { posts }
       for (const p of brouillons) {
@@ -225,8 +237,8 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
             </div>
           )}
 
-          {/* Instagram sans image */}
-          {!source.image && (
+          {/* Instagram sans image (ni fichier vertical à publier à la place) */}
+          {!source.image && !fichiers.some((f) => f.format === 'vertical') && (
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-button px-4 py-3">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700">
@@ -237,6 +249,17 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
 
           {!programmationActive && (
             <p className="text-xs text-gray-500">La programmation n&apos;est pas encore activée : les posts partent avec « Envoyer maintenant ».</p>
+          )}
+
+          {source.type === 'video' && (
+            <FichiersVideoReseaux
+              videoId={source.id}
+              fichiers={fichiers}
+              onChange={(etat) => {
+                setFichiers(etat.fichiers)
+                setPosts(etat.posts)
+              }}
+            />
           )}
 
           {erreur && <p className="text-xs text-red-600">{erreur}</p>}
@@ -261,7 +284,8 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
             const texte = texteDe(p)
             const limite = NETWORK_LIMITS[reseau]
             const tropLong = texte.length > limite
-            const sansImage = reseau === 'instagram' && !source.image
+            const sansImage = sansImageDe(p)
+            const format = formatDe(p)
             const modifiable = p.statut === 'brouillon' || p.statut === 'erreur'
             const pending = occupe === p.id || occupe === 'tout'
 
@@ -273,6 +297,7 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
                     {NETWORK_LABELS[reseau]}
                   </span>
                   <div className="flex items-center gap-2">
+                    {!modifiable && p.media === 'video' && <Badge variant="neutral" size="sm" leftIcon={<Film className="w-3 h-3" />}>Vidéo</Badge>}
                     {p.statut === 'programme' && <Badge variant="info" size="sm" leftIcon={<Clock className="w-3 h-3" />}>Programmé {dateLisible(p.programme_le)}</Badge>}
                     {p.statut === 'en_cours' && <Badge variant="neutral" size="sm" leftIcon={<Loader2 className="w-3 h-3 animate-spin" />}>Envoi en cours</Badge>}
                     {p.statut === 'erreur' && <Badge variant="danger" size="sm">Échec de l&apos;envoi</Badge>}
@@ -293,6 +318,19 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
 
                 {modifiable ? (
                   <>
+                    {format && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-medium text-gray-500">Publier</span>
+                        <Button type="button" variant={p.media === 'video' ? 'ghost' : 'secondary'} size="sm" aria-pressed={p.media !== 'video'} onClick={() => choisirMedia(p, 'image')} disabled={pending}>
+                          Image
+                        </Button>
+                        <Button type="button" variant={p.media === 'video' ? 'secondary' : 'ghost'} size="sm" aria-pressed={p.media === 'video'} onClick={() => choisirMedia(p, 'video')} disabled={pending || !fichierDepose(p)} leftIcon={<Film className="w-3.5 h-3.5" />}>
+                          Vidéo
+                        </Button>
+                        {!fichierDepose(p) && <span className="text-xs text-gray-400">Déposez le fichier {format} pour publier la vidéo.</span>}
+                      </div>
+                    )}
+
                     <div>
                       <Textarea
                         size="sm"
@@ -378,7 +416,7 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
                 <details key={p.id} className="rounded-button border border-gray-100 px-4 py-2.5">
                   <summary className="flex items-center gap-2 text-sm cursor-pointer">
                     <span className="font-medium text-navy">{NETWORK_LABELS[p.reseau as Reseau]}</span>
-                    <span className="text-xs text-gray-400">{dateLisible(p.envoye_le)}</span>
+                    <span className="text-xs text-gray-400">{dateLisible(p.envoye_le)}{p.media === 'video' ? ' · vidéo' : ''}</span>
                   </summary>
                   <p className="text-sm text-gray-600 whitespace-pre-line mt-2">{p.texte}</p>
                 </details>

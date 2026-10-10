@@ -52,6 +52,10 @@
     {
       "path": "/api/cron/purge-donnees",
       "schedule": "0 4 * * 0"
+    },
+    {
+      "path": "/api/cron/purge-videos-reseaux",
+      "schedule": "30 4 * * *"
     }
   ]
 }

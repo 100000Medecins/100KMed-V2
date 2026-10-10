@@ -8,6 +8,7 @@ import VideoForm from '@/components/admin/VideoForm'
 import SocialPanel from '@/components/admin/SocialPanel'
 import { updateVideo, getSolutionsLieesAVideo } from '@/lib/actions/admin'
 import { listerPosts, programmationActive } from '@/lib/reseaux/envoi'
+import { listerFichiers } from '@/lib/reseaux/fichiers'
 import { lienEtImageVideo } from '@/lib/reseaux/liens'
 import type { VideoRow, VideoRubrique } from '@/lib/db/misc'
 
@@ -39,12 +40,13 @@ async function getSolutionsForSelector() {
 
 export default async function ModifierVideoPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const [video, rubriques, solutions, initialSolutionIds, postsReseaux] = await Promise.all([
+  const [video, rubriques, solutions, initialSolutionIds, postsReseaux, fichiersReseaux] = await Promise.all([
     getVideoById(params.id),
     getRubriques(),
     getSolutionsForSelector(),
     getSolutionsLieesAVideo(params.id),
     listerPosts({ type: 'video', id: params.id }),
+    listerFichiers(params.id),
   ])
   if (!video) notFound()
 
@@ -75,6 +77,7 @@ export default async function ModifierVideoPage(props: { params: Promise<{ id: s
             image,
           }}
           postsInitiaux={postsReseaux}
+          fichiersInitiaux={fichiersReseaux}
           programmationActive={programmationActive()}
         />
       </div>

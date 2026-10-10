@@ -12,6 +12,7 @@ import { EMAIL_SENDER } from '@/lib/email/sender'
 import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
 import { lierPropositionAArticle } from '@/lib/actions/propositions-articles'
+import { supprimerFichiersDeLaVideo } from '@/lib/reseaux/fichiers'
 import { jetonSession, roleDepuisJeton, roleDepuisMotDePasse } from '@/lib/auth/admin-session'
 import { ACCUEIL_PAR_ROLE, type RoleAdmin } from '@/lib/auth/admin-rubriques'
 import type { ContactLigne } from '@/types/models'
@@ -1688,8 +1689,9 @@ export async function reorderVideosForSolution(
 export async function deleteVideo(id: string) {
   await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('videos').delete().eq('id', id)
+  // Les fichiers vidéo des posts réseaux ne partent pas avec la cascade : les effacer d'abord.
+  await supprimerFichiersDeLaVideo(supabase, id)
+  const { error } = await supabase.from('videos').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/videos')
   revalidatePath('/stories-tutos')

@@ -84,29 +84,32 @@ _(rien en cours)_
 
 **Programmation des posts — ✅ active et validée (2026-10-10)** : `pg_cron` + `pg_net` activées par David, tâche `envoyer-posts-reseaux` (toutes les 5 min, secret `cron_secret` dans Vault), variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true`. Premier post programmé (Facebook, 13 h 10) transmis à Make à 13:10:03. La tâche ne touche que `posts_reseaux`, aucun email. **Arrêt** : `select cron.unschedule('envoyer-posts-reseaux');` + retirer la variable.
 
----
+### Vidéo native sur les réseaux — côté site fait le 2026-10-10 ; restent Make et l'essai réel (posé le 2026-10-08)
 
-## En attente / Idées
-
-### Vidéo native sur les réseaux — cadrage décidé le 2026-10-10, à lancer dans une nouvelle conversation (posé le 2026-10-08)
+**Fait (CHANGELOG du 10/10)** : Supabase Pro, bucket privé `videos-reseaux`, table `videos_fichiers`, colonne `posts_reseaux.media`, dépôt des deux fichiers dans le panneau « Publier sur les réseaux » d'une vidéo, choix image / vidéo par post, envoi de `media` et `video_url` à Make, effacement automatique des fichiers. Sur `dev`, **pas en production**.
 
 **Décisions de David (10/10)** :
 - **Aucun fichier ne passe par Make** (pas de formule Make payante : Free limite un fichier à 5 Mo, Core à 100 Mo, et les vidéos font 2-3 min, soit ~100-200 Mo).
-- **Instagram** : Reel avec le fichier **vertical** ; **Facebook** : vidéo avec le fichier **horizontal**. Les deux réseaux téléchargent eux-mêmes le fichier à une adresse (`video_url` / `file_url`) : Make ne transmet que l’adresse.
-- **YouTube** : dépôt **à la main** dans YouTube Studio, en **public**, puis lien collé dans l’admin (existant). Pas d’envoi automatique (une vidéo envoyée par un projet Google non audité reste privée).
+- **Instagram** : Reel avec le fichier **vertical** ; **Facebook** : vidéo avec le fichier **horizontal**. Les deux réseaux téléchargent eux-mêmes le fichier à l'adresse transmise : Make ne transmet que l'adresse.
+- **YouTube** : dépôt **à la main** dans YouTube Studio, en **public**, puis lien collé dans l'admin (existant). Pas d'envoi automatique (une vidéo envoyée par un projet Google non audité reste privée).
 - **LinkedIn** : post avec lien YouTube + vignette (existant) ; vidéo déposée à la main pour les plus importantes.
 - **Hébergement du fichier le temps de la publication : Supabase Pro** (25 $/mois ; apporte aussi les sauvegardes quotidiennes). La lecture sur le site reste YouTube.
 - **n8n sur le Synology écarté** : en auto-hébergé, il faut ses propres applications développeur, chacune soumise à validation (LinkedIn Community Management, App Review Meta, audit Google), plus un NAS exposé à internet.
 
-**Avant de lancer (David)** : passer Supabase en **Pro**, puis relever la taille maximale d’un fichier dans les réglages du stockage (ex. 500 Mo).
+**⚠️ Tant que les branches Make ne sont pas en place** : ne pas envoyer un post en « Vidéo ». Le scénario actuel ne regarde pas `media` et le publierait comme un post image.
 
-**À construire (Claude, puis David pour le SQL et Make)** :
-1. SQL : espace de stockage **privé** pour les fichiers (adresses signées) + colonnes sur `posts_reseaux` ou une table liée (fichier vertical, fichier horizontal).
-2. Panneau « Publier sur les réseaux » d’une vidéo : dépôt des deux fichiers **directement du navigateur au stockage** (le serveur du site n’accepte que quelques Mo), choix « image ou vidéo » par post.
-3. Make : branche vidéo Instagram (Reel par adresse) et Facebook (vidéo par adresse — vérifier que le module accepte une adresse, sinon « Make an API Call » avec `file_url`). Pas à pas à donner à David.
-4. Essai par réseau avec une vidéo courte, puis suppression automatique des fichiers après publication.
+**À faire (David, pas-à-pas donné par Claude le 10/10)** :
+1. **Make, branches existantes Instagram et Facebook** : ajouter au filtre la condition « `media` différent de `video` » (un envoi sans champ `media`, comme ceux de la production actuelle, continue de passer).
+2. **Make, branche Reel Instagram** : filtre `network` = `instagram` et `media` = `video` ; module « Create a Reel Post », adresse de la vidéo = `video_url`, légende = `text`.
+3. **Make, branche vidéo Facebook** : filtre `network` = `facebook` et `media` = `video` ; module « Upload a Video » s'il accepte une adresse, sinon « Make an API Call » (`POST /{id de la page}/videos`, corps `file_url` = `video_url`, `description` = `text`). À vérifier dans le module : la documentation de Make ne le dit pas.
+4. **Essai par réseau** depuis `dev` avec une vidéo courte, par **« Envoyer maintenant »** (pas « Programmer » : la tâche planifiée appelle la production, qui n'a pas encore ce code et enverrait le post en image).
+5. **Mise en production** (`dev` → `main`, sur ordre de David), puis essai d'un post programmé.
 
-**Contraintes à vérifier au moment de construire** : Reel = MP4 / MOV, 9:16 recommandé, 3 s à 15 min, poids maximal annoncé entre 300 Mo et 1 Go selon les sources ; au-delà de ~90 s un Reel peut ne pas apparaître dans l’onglet Reels ; Facebook doit pouvoir télécharger le fichier (robot `facebookexternalhit`).
+**À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
+
+---
+
+## En attente / Idées
 
 ### Annuaire mutualisé — coller les CGU et la charte le jour du passage en prod (posé le 2026-10-05)
 

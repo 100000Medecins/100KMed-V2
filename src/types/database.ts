@@ -1553,6 +1553,7 @@ export type Database = {
           erreur: string | null
           id: string
           image_url: string | null
+          media: string
           programme_le: string | null
           reseau: string
           statut: string
@@ -1568,6 +1569,7 @@ export type Database = {
           erreur?: string | null
           id?: string
           image_url?: string | null
+          media?: string
           programme_le?: string | null
           reseau: string
           statut?: string
@@ -1583,6 +1585,7 @@ export type Database = {
           erreur?: string | null
           id?: string
           image_url?: string | null
+          media?: string
           programme_le?: string | null
           reseau?: string
           statut?: string
@@ -2695,6 +2698,50 @@ export type Database = {
             columns: ["rubrique_id"]
             isOneToOne: false
             referencedRelation: "video_rubriques"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos_fichiers: {
+        Row: {
+          chemin: string
+          created_at: string
+          depose_par: string | null
+          format: string
+          id: string
+          nom_origine: string | null
+          taille: number
+          type_mime: string
+          video_id: string
+        }
+        Insert: {
+          chemin: string
+          created_at?: string
+          depose_par?: string | null
+          format: string
+          id?: string
+          nom_origine?: string | null
+          taille: number
+          type_mime: string
+          video_id: string
+        }
+        Update: {
+          chemin?: string
+          created_at?: string
+          depose_par?: string | null
+          format?: string
+          id?: string
+          nom_origine?: string | null
+          taille?: number
+          type_mime?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_fichiers_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
