@@ -31,7 +31,8 @@
 
 ### Vérif
 - `tsc`, lint des fichiers touchés et `npm run build` passent. `e476fb6` poussé sur `dev`, Vercel `success` ; `main` non touché.
-- **Non vérifié** : le filtre dans le navigateur (page réservée à un médecin connecté ; les fonctions `annuaire_*` ne sont pas appelables par le rôle de lecture) et `GET /ma-fiche` sur `dev` avec un vrai jeton (prochain essai de l'application). En production, l'annuaire reste éteint et `main` n'a pas le regroupement du filtre : à emporter au prochain report.
+- **`GET /ma-fiche` avec un vrai jeton** (application, `dev`, rapporté par David le 11/10) : `specialite_code = SM53`, lu par l'application.
+- **Non vérifié** : le filtre dans le navigateur (page réservée à un médecin connecté ; les fonctions `annuaire_*` ne sont pas appelables par le rôle de lecture). En production, l'annuaire reste éteint et `main` n'a pas le regroupement du filtre : à emporter au prochain report.
 
 ---
 

@@ -42,7 +42,7 @@ _(rien en cours)_
 - [ ] **David** : essai sur dev — Ma fiche (enregistrer, proposer une compétence), `/annuaire` (sa fiche visible, portable), admin Annuaire.
 - [x] ~~Essai avec un vrai jeton PSC de l'application sur `POST /api/annuaire/app/session` (dev)~~ ✅ 10/10 : refusé à 14:36 (client PSC du relais distinct de celui du site en production), corrigé, session ouverte à 17:15 ; `userinfo` rend RPPS, profession et spécialité (lu dans `identites_psc`).
 - [ ] **À décider (David)** : refuser l'ouverture de session de l'application quand PSC ne rend pas la profession. Aujourd'hui seule une profession présente et différente de `10` est refusée ; PSC la rend, donc sans effet constaté.
-- [ ] Vérifier `GET /api/annuaire/app/ma-fiche` avec un vrai jeton : champ `specialite_code` ajouté le 10/10 (demande de l'application), vérifié en local seulement.
+- [x] ~~Vérifier `GET /api/annuaire/app/ma-fiche` avec un vrai jeton : champ `specialite_code` ajouté le 10/10 (demande de l'application)~~ ✅ lu par l'application sur dev (`SM53`), rapporté le 11/10.
 - [ ] **David** : sur dev, `/annuaire` → spécialité « Psychiatrie option enfant et adolescent » : une seule entrée dans la liste, 419 médecins France entière (SM43 + SM92). À emporter dans `main` avec le prochain report (annuaire éteint en production).
 - [ ] **Messagerie** : session au site après chaque validation PSC, téléchargement des fiches, fiche d'un confrère (badge, contact préféré, compétences, portable), recherche par compétence, écran « Ma fiche » — selon le contrat d'échange.
 
