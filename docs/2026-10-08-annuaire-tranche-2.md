@@ -433,3 +433,24 @@ begin
   end if;
 end $function$;
 ```
+
+## Migration 2b-ter — rayon visible : comptage et carte complète (2026-10-08)
+
+Retour de David : changer le rayon ne changeait rien. La recherche renvoie les 50 plus proches ; dans une ville
+dense, ils sont tous à 2-3 km, donc 10, 20 ou 50 km donnent les mêmes 50, en liste comme sur la carte.
+Correction, alignée sur l'application : total affiché (« 888 confrères à moins de 10 km »), carte avec tout le
+rayon (jusqu'à 2 000 médecins, en grappes, cercle du rayon), relance à chaque changement de critère.
+
+- `annuaire_filtres` (interne, `execute` retiré à `anon` et `authenticated`) : morceaux de requête des filtres,
+  communs à la recherche et au comptage (ils ne peuvent plus diverger).
+- `annuaire_rechercher` : mêmes signature et résultat ; plafond par appel 100 → 2 000 (carte).
+- `annuaire_compter` (nouvelle, `authenticated`) : nombre de médecins répondant aux filtres dans le rayon ; sans
+  rayon, dans toute la France. Mesuré : 888 cardiologues à moins de 10 km de Paris 20e en 0,12 s ; 37 866 médecins
+  à moins de 50 km en 0,27 s.
+- SQL : donné dans le fil du 08/10 (même texte que les fonctions en base, relisible par
+  `select pg_get_functiondef('public.annuaire_compter'::regproc)`).
+
+Retour arrière : recréer `annuaire_rechercher` 2b-bis (filtres construits dans la fonction elle-même, plafond
+`least(greatest(coalesce(p_limite, 50), 1), 100)` — texte donné dans le fil du 08/10), puis
+`drop function public.annuaire_compter(text, text[], uuid, text[], double precision, double precision, double precision);`
+et `drop function public.annuaire_filtres(text, text[], uuid, text[]);`.

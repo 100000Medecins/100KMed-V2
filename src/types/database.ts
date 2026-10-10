@@ -140,21 +140,27 @@ export type Database = {
       annuaire_affichages_portables: {
         Row: {
           affiche_le: string
-          consulte_id: string
+          consulte_id: string | null
+          consulte_rpps: string | null
           id: string
-          lecteur_id: string
+          lecteur_id: string | null
+          lecteur_rpps: string | null
         }
         Insert: {
           affiche_le?: string
-          consulte_id: string
+          consulte_id?: string | null
+          consulte_rpps?: string | null
           id?: string
-          lecteur_id: string
+          lecteur_id?: string | null
+          lecteur_rpps?: string | null
         }
         Update: {
           affiche_le?: string
-          consulte_id?: string
+          consulte_id?: string | null
+          consulte_rpps?: string | null
           id?: string
-          lecteur_id?: string
+          lecteur_id?: string | null
+          lecteur_rpps?: string | null
         }
         Relationships: [
           {
@@ -1166,8 +1172,9 @@ export type Database = {
           publiee: boolean
           publiee_accord_le: string | null
           publiee_accord_version: string | null
+          rpps: string
           telephone_cabinet: string | null
-          user_id: string
+          user_id: string | null
           ville: string | null
         }
         Insert: {
@@ -1182,8 +1189,9 @@ export type Database = {
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
+          rpps: string
           telephone_cabinet?: string | null
-          user_id: string
+          user_id?: string | null
           ville?: string | null
         }
         Update: {
@@ -1198,17 +1206,18 @@ export type Database = {
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
+          rpps?: string
           telephone_cabinet?: string | null
-          user_id?: string
+          user_id?: string | null
           ville?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fiches_annuaire_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "fiches_annuaire_rpps_fkey"
+            columns: ["rpps"]
             isOneToOne: true
             referencedRelation: "identites_psc"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["rpps"]
           },
         ]
       }
@@ -1216,7 +1225,8 @@ export type Database = {
         Row: {
           mise_a_jour: string
           portable: string
-          user_id: string
+          rpps: string
+          user_id: string | null
           visible: boolean
           visible_accord_le: string | null
           visible_accord_version: string | null
@@ -1224,7 +1234,8 @@ export type Database = {
         Insert: {
           mise_a_jour?: string
           portable: string
-          user_id: string
+          rpps: string
+          user_id?: string | null
           visible?: boolean
           visible_accord_le?: string | null
           visible_accord_version?: string | null
@@ -1232,18 +1243,19 @@ export type Database = {
         Update: {
           mise_a_jour?: string
           portable?: string
-          user_id?: string
+          rpps?: string
+          user_id?: string | null
           visible?: boolean
           visible_accord_le?: string | null
           visible_accord_version?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fiches_annuaire_portables_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "fiches_annuaire_portables_rpps_fkey"
+            columns: ["rpps"]
             isOneToOne: true
             referencedRelation: "fiches_annuaire"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["rpps"]
           },
         ]
       }
@@ -1251,17 +1263,20 @@ export type Database = {
         Row: {
           created_at: string
           intitule_id: string
-          user_id: string
+          rpps: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           intitule_id: string
-          user_id: string
+          rpps: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           intitule_id?: string
-          user_id?: string
+          rpps?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1272,11 +1287,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fiches_intitules_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "fiches_intitules_rpps_fkey"
+            columns: ["rpps"]
             isOneToOne: false
             referencedRelation: "fiches_annuaire"
-            referencedColumns: ["user_id"]
+            referencedColumns: ["rpps"]
           },
         ]
       }
@@ -1302,22 +1317,31 @@ export type Database = {
         Row: {
           code_profession: string | null
           derniere_connexion_psc: string
+          nom: string | null
+          prenom: string | null
           rpps: string
-          user_id: string
+          specialite_code: string | null
+          user_id: string | null
           verifie_le: string
         }
         Insert: {
           code_profession?: string | null
           derniere_connexion_psc?: string
+          nom?: string | null
+          prenom?: string | null
           rpps: string
-          user_id: string
+          specialite_code?: string | null
+          user_id?: string | null
           verifie_le?: string
         }
         Update: {
           code_profession?: string | null
           derniere_connexion_psc?: string
+          nom?: string | null
+          prenom?: string | null
           rpps?: string
-          user_id?: string
+          specialite_code?: string | null
+          user_id?: string | null
           verifie_le?: string
         }
         Relationships: [
@@ -1338,6 +1362,7 @@ export type Database = {
           id: string
           libelle: string
           propose_par: string | null
+          propose_par_rpps: string | null
           specialites_sm: string[]
           statut: string
           synonymes: string[]
@@ -1350,6 +1375,7 @@ export type Database = {
           id?: string
           libelle: string
           propose_par?: string | null
+          propose_par_rpps?: string | null
           specialites_sm?: string[]
           statut?: string
           synonymes?: string[]
@@ -1362,6 +1388,7 @@ export type Database = {
           id?: string
           libelle?: string
           propose_par?: string | null
+          propose_par_rpps?: string | null
           specialites_sm?: string[]
           statut?: string
           synonymes?: string[]
@@ -1374,6 +1401,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intitules_propose_par_rpps_fkey"
+            columns: ["propose_par_rpps"]
+            isOneToOne: false
+            referencedRelation: "identites_psc"
+            referencedColumns: ["rpps"]
           },
         ]
       }
@@ -2700,6 +2734,18 @@ export type Database = {
         Returns: Json
       }
       annuaire_afficher_portable: { Args: { p_rpps: string }; Returns: string }
+      annuaire_compter: {
+        Args: {
+          p_intitule?: string
+          p_lat?: number
+          p_lon?: number
+          p_rayon_km?: number
+          p_specialites?: string[]
+          p_specialites_equivalentes?: string[]
+          p_texte?: string
+        }
+        Returns: number
+      }
       annuaire_fiche: {
         Args: { p_rpps: string }
         Returns: {
@@ -2724,8 +2770,21 @@ export type Database = {
           ville: string
         }[]
       }
+      annuaire_filtres: {
+        Args: {
+          p_intitule: string
+          p_specialites: string[]
+          p_specialites_equivalentes: string[]
+          p_texte: string
+        }
+        Returns: Record<string, unknown>
+      }
       annuaire_lecteur_autorise: { Args: never; Returns: boolean }
       annuaire_normaliser: { Args: { t: string }; Returns: string }
+      annuaire_portable_pour: {
+        Args: { p_lecteur_rpps: string; p_rpps: string }
+        Returns: string
+      }
       annuaire_purger_lots: { Args: { p_limite?: number }; Returns: number }
       annuaire_rechercher: {
         Args: {

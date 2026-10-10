@@ -155,6 +155,7 @@ export async function GET(request: Request) {
 
     const supabaseAdmin = createServiceRoleClient()
     const userEmail = email || `psc-${rpps || sub}@psc.sante.fr`
+    const infosPsc = { rpps, codeProfession, nom, prenom, specialiteCode }
 
     // Le compte à associer vient du `state`, donc de l'URL : n'importe qui peut l'écrire.
     // On ne l'accepte que s'il est celui de la session du navigateur ; sinon, connexion PSC
@@ -206,7 +207,7 @@ export async function GET(request: Request) {
           user_metadata: { provider: 'psc', rpps, given_name: prenom, family_name: nom, psc_sub: sub },
         })
       )
-      await enregistrerIdentitePsc(supabaseAdmin, currentUserId, rpps, codeProfession)
+      await enregistrerIdentitePsc(supabaseAdmin, infosPsc, currentUserId)
 
       // Publier les évaluations en attente de PSC pour cet utilisateur
       const { data: pendingAssoc } = await supabaseAdmin
@@ -381,7 +382,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (userId) await enregistrerIdentitePsc(supabaseAdmin, userId, rpps, codeProfession)
+    if (userId) await enregistrerIdentitePsc(supabaseAdmin, infosPsc, userId)
 
     // Flux de supervision admin : nouvelle inscription via Pro Santé Connect
     if (isNewUser && userId) {

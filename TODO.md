@@ -38,8 +38,13 @@ _(rien en cours)_
 - [ ] **David** : essai sur dev.100000medecins.org — recherche par nom, spécialité, compétence ; « Autour de moi » et rayons ; carte (marqueurs aux cabinets) ; fiche d'un confrère sans fiche (carte ANS seule) ; Ma fiche → « Utiliser » un lieu et une MSSanté ; onglet Oppositions (ajouter puis retirer un RPPS de test).
 - [ ] **Messagerie** : exclure `annuaire_oppositions` de `annuaire.db` (base de l'application) ; import mensuel côté site : `npx tsx scripts/annuaire-import-ans.ts --execute` après reconstruction de la base.
 
+**Tranche 3 — raccordement de l'application (10/10)** : décisions de David (identification par jeton PSC vérifié par le site, fiches téléchargées à chaque connexion, modification de sa fiche dans l'application, médecins seulement). Étape 1 (annuaire rangé par RPPS, migration d'ajout) et étape 2 (fonctions par RPPS, module serveur commun, adresses `/api/annuaire/app/…`, essai local 27/27) faites sur `dev`. Doc et contrat d'échange : `docs/2026-10-10-annuaire-tranche-3.md`.
+- [ ] **David** : essai sur dev — Ma fiche (enregistrer, proposer une compétence), `/annuaire` (sa fiche visible, portable), admin Annuaire.
+- [ ] **Claude** : avant l'étape 3, essais de suppression et de fusion de comptes de test sur dev (accord de David pour créer deux comptes de test).
+- [ ] Fusion de l'étape 2 dans `main` (accord de David), puis **étape 3** : retrait de `user_id` des tables de fiches, des passerelles, de `intitules.propose_par`, de `lecteur_id` / `consulte_id` du journal et des règles RLS d'écriture par `user_id` (migration montrée à David).
+- [ ] **Messagerie** : session au site après chaque validation PSC, téléchargement des fiches, fiche d'un confrère (badge, contact préféré, compétences, portable), recherche par compétence, écran « Ma fiche » — selon le contrat d'échange.
+
 **Suite (à décider avec David)** :
-- **Tranche 3** : l'application lit les fiches et le portable (mêmes fonctions de la base).
 - **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
 
 ### Relire les pages légales (posé le 2026-09-30)
@@ -73,10 +78,12 @@ _(rien en cours)_
 **Contexte** : accès « contenus » à l'admin, posts réseaux en base avec programmation, panneau sur les vidéos (CHANGELOG du 2026-10-08).
 
 **À faire (David)** :
-- **Make, branche LinkedIn** : remplacer « Create a Company Text Post » par HTTP › Get a file + « Create a Company Image Post » (pas à pas donné le 08/10) ; vérifier le champ Link du module Facebook.
-- **Vercel** : variable `ADMIN_CONTENU_PASSWORD` (Production et Preview), puis redéployer ; tester la connexion avec ce mot de passe.
-- **Après la mise en production** : activer `pg_cron` et `pg_net` (Database › Extensions), puis lancer le SQL de l'étape 2 (secret `cron_secret` dans Vault + `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …)`, texte complet dans la session du 08/10). Sans lui, les posts programmés restent « programmés ».
-- **Tester la programmation** : programmer un post à +15 min et vérifier l'heure de parution (et l'historique Make).
+- ~~**Make, branche LinkedIn** : « Create a Company Image Post » en Upload by link~~ ✅ fait par David le 09/10 : post LinkedIn arrivé **avec sa photo** (article Pro Santé Connect, `posts_reseaux` « envoye », sans lien localhost).
+- ~~**Supprimer sur LinkedIn le post d'essai du 08/10**~~ ✅ supprimé par David le 09/10.
+- **Facebook et Instagram** : pas encore essayés avec le nouveau panneau (brouillons prêts sur l'article Pro Santé Connect). Vérifier au premier envoi le champ Link du module Facebook (carte de l'article) et la photo Instagram.
+- ~~**Vercel** : variable `ADMIN_CONTENU_PASSWORD`~~ ✅ fait et testé par David le 09/10.
+
+**Programmation des posts — désactivée (décision de David, 2026-10-09)** : pas de `pg_cron` pour l'instant (méfiance après un envoi de masse involontaire par le passé). Le panneau ne propose que « Envoyer maintenant » ; le serveur refuse toute programmation. **Pour l'activer un jour** : (1) activer `pg_cron` et `pg_net` (Database › Extensions) ; (2) SQL : `delete from vault.secrets where name = 'cron_secret'`, `vault.create_secret('<CRON_SECRET>', 'cron_secret')`, `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …net.http_get(…/api/cron/envoyer-posts-reseaux)… where exists (posts dus))` — texte complet dans le CHANGELOG du 2026-10-08 ; la tâche ne touche que `posts_reseaux`, aucun email ; (3) variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true` + redéploiement ; (4) tester un post à +15 min.
 
 ---
 
@@ -261,15 +268,23 @@ _(rien en cours)_
 
 ### Déploiement final
 
+#### Relance PSC — interrupteur séparé (en production depuis le 2026-10-09, `6cb56be`)
+- Dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
+- Effet attendu : ~116 relances le premier lundi vers 11 h, selon la date d'activation (126 évaluations en attente au 09/10, dont les 34 MedGPT, gardées par décision de David), puis une par semaine, 4 au plus.
+- À vérifier au premier envoi : les liens du mail doivent pointer vers `www.100000medecins.org`. L'adresse est tirée de l'appel de Vercel ; on peut la voir dans le récapitulatif « [Activité] » du lundi.
+
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
-- **Tant qu'il est OFF** : aucune relance évaluation / PSC / newsletter ne partira
+- **Tant qu'il est OFF** : aucune relance évaluation / newsletter ne partira (la relance PSC a son propre interrupteur depuis le 2026-10-09)
+- **À corriger avant de l'activer** (vu le 2026-10-09) :
+  - le lien « revalider en un clic » ([revalider-avis](src/app/api/revalider-avis/route.ts)) agit dès l'ouverture (GET, jeton sans expiration) : les antivirus des messageries qui suivent les liens revalideraient des avis à la place des médecins → page de confirmation avec bouton ;
+  - 499 destinataires, dont ~27 seulement se sont connectés au nouveau site ; objet « Votre avis a 1 an » alors que 148 avis datent de 2023 ; 249 reçoivent un « Rappel » qui renvoie au mail parti par erreur le 23/04.
 - **Avant d'activer (2026-09-24)** :
   1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
   2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;
   3. Supprimer le brouillon de newsletter d'**avril** dans `/admin/newsletters` (sinon rappel quotidien à `contact@`).
-- **Volume attendu** (compté le 2026-09-24) : ~522 rappels de revalidation en retard → **100/jour** grâce au plafond, donc ~6 jours ; le lundi suivant +106 relances PSC et +19 relances d'évals incomplètes. Ensuite quelques mails/jour.
+- **Volume attendu** (recompté le 2026-10-09) : 527 rappels de revalidation en retard (499 destinataires) → **100/jour** grâce au plafond, donc ~6 jours ; le lundi +19 relances d'évals incomplètes. Ensuite 5 à 15 rappels par mois, et les ~500 reviennent tous les 3 mois tant qu'ils ne revalident pas. Détail : [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md).
 
 #### ⚠️ Newsletter : l'envoi ne toucherait que 1 000 inscrits sur 6 545 (constaté le 2026-09-24)
 - `send-newsletter`, `send-infos-mensuels` et le cron `envoyer-newsletter-programmee` lisent les opt-in sans pagination → Supabase plafonne à **1 000 lignes**. Puis `.in('id', …)` avec 1 000 uuid dans l'URL risque d'échouer, et 6 500 envois séquentiels dépasseraient la durée max d'une fonction Vercel.

@@ -5,6 +5,135 @@
 
 ---
 
+## [2026-10-10] — Annuaire, tranche 3 : étape 2, l'application raccordée au site
+
+### Base — migration lancée par David (vérifiée)
+- `annuaire_filtres`, `annuaire_rechercher`, `annuaire_fiche` lisent les fiches **par RPPS** (nom et spécialité de l'identité PSC, à défaut du compte du site), fiches sans compte du site comprises. Mêmes signatures et droits ; `annuaire_compter` inchangée.
+- `annuaire_portable_pour(lecteur, rpps)` (serveur seulement) : logique unique du portable, **plafond et journal par RPPS**, communs au site et à l'application. `annuaire_afficher_portable` (site) l'appelle avec le RPPS du lecteur connecté. Types régénérés (+4 lignes).
+
+### Code — un seul code pour le site et l'application
+- [fiche-serveur.ts](src/lib/annuaire/fiche-serveur.ts) : lire, enregistrer, proposer une compétence, supprimer une fiche **par RPPS** (service role après contrôle de l'identité), catalogue du médecin, propositions de l'Annuaire Santé. « Ma fiche » du site ([annuaire.ts](src/lib/actions/annuaire.ts)) s'appuie dessus ; formats de retour inchangés pour la page. Au passage : une compétence cochée doit exister au catalogue (validée ou proposée par le médecin), contrôle qui manquait côté serveur.
+- Preuve PSC écrite par RPPS avec nom, prénom, spécialité ([identite-psc.ts](src/lib/annuaire/identite-psc.ts)) ; un compte n'est rattaché qu'à un RPPS. Suppression de compte : fiche, propositions en attente et **journal des portables** du médecin effacés ([compte.ts](src/lib/annuaire/compte.ts)). Admin : auteur d'une proposition retrouvé par RPPS.
+- **Identification de l'application** ([app-session.ts](src/lib/annuaire/app-session.ts)) : jeton d'accès PSC présenté par l'application → contrôles du client émetteur (`azp` = client PSC de l'association, partagé avec le relais), de l'environnement (`iss`) et de l'expiration → validation par PSC (`userinfo`) → médecins seulement → jeton du site signé (HMAC, `ANNUAIRE_APP_SECRET`, 30 min). Adresse `userinfo` remplaçable par un faux PSC pour les essais locaux, jamais chez Vercel.
+- **Adresses de l'application** (`/api/annuaire/app/…`) : `POST session`, `GET fiches` (fiches publiées + catalogue, **sans les portables**, seulement `portable_disponible`), `POST portable`, `GET/PUT/DELETE ma-fiche` (mêmes contrôles et accords que le site ; accord exigé sur la version en vigueur des textes, sinon `409`), `POST competences`.
+- Contrat d'échange pour la session messagerie : [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+### Vérif
+- `tsc`, lint, `npm run build` verts.
+- **Essai local** (build de production, faux PSC d'essai, médecins fictifs 99900000001 / 99900000002) : **27 / 27** — refus des jetons absents, d'un autre client, d'un autre environnement, expirés, refusés par PSC, du jeton du site falsifié et d'un jeton PSC à la place du jeton du site ; fiche vide, enregistrement refusé pour accord périmé, portable invalide, corps mal formé, compétence inconnue ; enregistrement (téléphones normalisés) et relecture ; fichier des fiches avec `portable_disponible` et **sans numéro** ; portable vu par B, revu (non recompté), le sien (sans trace), absent (`404`) ; proposition de compétence, libellé existant reconnu ; suppression. Journal contrôlé en base : **une seule ligne** (B → A). Données d'essai effacées (base revenue à 1 identité, 1 fiche, 3 compétences, 0 proposition).
+- **Reste** : essai de David sur dev (Ma fiche, `/annuaire`, admin Annuaire) ; suppression et fusion de comptes de test avant l'étape 3 ; côté messagerie, l'application.
+
+---
+
+## [2026-10-09] — Étude inscriptions / connexions / emails + interrupteur séparé de la relance PSC
+
+### Étude — parcours d'inscription et emails depuis le lancement
+- [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md). Sources : comptes Supabase, `users`, `evaluations`, `psc_session_events`, `activity_log` et statistiques SendGrid, en lecture seule.
+- **Aucune relance n'est partie depuis le lancement** (`crons_routiniers_actifs = false`). Les compteurs de relance PSC sont à 0 pour cette raison.
+- 41 % des évaluations écrites depuis le lancement attendent la validation PSC (129 sur 314). Parmi les évaluations déposées sans compte, 61 % ne sont jamais validées.
+- 64 % des comptes PSC créés depuis le lancement n'ont aucune adresse utilisable. Le retour de PSC échoue dans 0,8 % des cas depuis le 05/07.
+- Les ouvertures et clics SendGrid (≈ 90 % / 45 %) sont gonflés par les robots ; l'étude mesure l'effet en base. Les envois n'ont pas de catégorie et le détail par message n'est gardé que 3 jours.
+- **Prévision à l'activation de l'interrupteur général** :
+  - 527 rappels de revalidation (499 destinataires, 100 par jour) ;
+  - 116 relances PSC le premier lundi ;
+  - 19 relances d'évaluations incomplètes ;
+  - un rappel quotidien à l'admin, déclenché par le brouillon de newsletter d'avril.
+- **Défaut relevé** : le lien de revalidation en un clic agit à l'ouverture (GET). Les antivirus des messageries le déclencheraient. Noté en TODO, à corriger avant l'activation.
+- Au passage : la clé SendGrid du site a tous les droits, y compris la création de clés. La restreindre à l'envoi est à faire par David dans SendGrid.
+
+### Feature — Interrupteur séparé pour la relance PSC (décision de David)
+- [relance-psc](src/app/api/cron/relance-psc/route.ts) ne lit plus `crons_routiniers_actifs` mais `site_config.relance_psc_active`. Clé absente ⇒ éteint, aucun SQL nécessaire.
+  - Relancer les évaluations en attente n'allume plus la revalidation ni la newsletter, et l'inverse non plus.
+  - `as any` de la tâche retirés (table et lecture du réglage typées via `getSiteConfig`).
+- [Page Emails](src/app/admin/emails/page.tsx) et [AdminEmailsClient](src/components/admin/AdminEmailsClient.tsx) :
+  - second bandeau « Relance PSC », avec le nombre d'évaluations encore relançables (126 au 09/10) ;
+  - confirmation à l'allumage, admin seulement (la clé n'est pas dans les réglages permis au rôle « contenus ») ;
+  - les deux bandeaux partagent le composant local `InterrupteurEnvois` ;
+  - un échec d'enregistrement remet l'interrupteur dans sa position ;
+  - textes corrigés : l'interrupteur général ne mentionne plus la relance PSC, et le modèle `relance_psc` indique « jusqu'à 4 relances, une par semaine » au lieu de « 1 à 3 ».
+- Décision de David : les 34 évaluations MedGPT des 27-28/08 sont relancées comme les autres.
+- **Vérifié sur le build local, sans rien écrire** :
+  - la tâche répond `401` sans secret, et `skipped` « relance PSC désactivée » avec le secret ;
+  - `/admin/emails` en admin affiche les deux bandeaux éteints et « 126 évaluation(s) en attente ».
+  - Interrupteur non actionné : la base est celle de la production.
+- Vérifications : `tsc`, lint des fichiers touchés (0 erreur ; 5 avertissements déjà présents, code mort de l'email d'excuse) et `npm run build` passent.
+- **Déployé** (accord de David) : report du code seul de `d722545` et `36c0c00` sur `main` (`6cb56be`, worktree séparé, sans les commits annuaire de l'autre session ; CHANGELOG, TODO et étude laissés à `dev`), build vert dans le worktree, Vercel `success`.
+  - Production : accueil `200` ; `/api/cron/relance-psc` → `401` sans secret, et `skipped` « relance PSC désactivée par l'admin » avec le secret (nouveau code en ligne, rien envoyé) ; `/admin/emails` sans jeton → formulaire de connexion sans contenu.
+  - Base : `relance_psc_active` absente, interrupteur général `false`, aucune évaluation relancée.
+- **Reste** : test du modèle, puis allumage de « Relance PSC » par David (TODO).
+
+---
+
+## [2026-10-09] — Réseaux sociaux : liens vers la production, programmation désactivée, interrupteur des emails réservé à l'admin
+
+### Fix — Lien des posts réseaux
+- **Constat** (capture du module LinkedIn de David) : le dernier envoi reçu par Make portait `article_url = http://localhost:3000/blog/segur-vague-2…` → le post LinkedIn de l'essai du 08/10, préparé depuis un poste local, contenait un lien `localhost` (dans `article_url` et dans le texte rédigé par l'IA, qui reprend l'adresse fournie).
+- **Fix** ([liens.ts](src/lib/reseaux/liens.ts)) : `lienArticle` utilise l'adresse fixe `https://www.100000medecins.org` au lieu de `NEXT_PUBLIC_SITE_URL` (même choix que le gabarit de la newsletter) : un post préparé depuis un poste local ou dev pointe vers la production.
+
+### Make — module LinkedIn image
+- Le module « Create a Company Image Post » propose « Upload by link » : `Image URL` = `image_url` du webhook suffit, le module HTTP « Get a file » n'est pas nécessaire.
+
+### Décision — pas de `pg_cron` pour l'instant : programmation des posts désactivée
+- David préfère ne pas activer de tâche planifiée en base (un envoi de masse involontaire à ~300 personnes par le passé). Sans elle, un post « programmé » ne partirait jamais.
+- [envoi.ts](src/lib/reseaux/envoi.ts) `programmationActive()` = variable `POSTS_PROGRAMMATION_ACTIVE === 'true'` (absente → désactivée). Le [panneau](src/components/admin/SocialPanel.tsx) masque la date, « Programmer » et « Programmer tous les brouillons » (« Envoyer maintenant » passe en bouton principal, mention « La programmation n'est pas encore activée ») ; `programmerPost` refuse côté serveur. Aucun post n'était programmé (table vide de posts `programme`). Activation future : TODO.
+- `pg_cron` / `pg_net` **non installées** (vérifié) ; le premier essai du SQL de l'étape 2 avait échoué (`schema "cron" does not exist`) → rien n'a été créé.
+
+### Sécurité — Interrupteur des emails automatiques réservé à l'admin
+- En ouvrant la rubrique Emails au rôle « contenus » (08/10), l'interrupteur `crons_routiniers_actifs` (éteint) lui était ouvert : l'allumer déclencherait toutes les relances (1 an, 3 mois, incomplets, PSC), la newsletter et les campagnes programmées.
+- [siteConfig.ts](src/lib/actions/siteConfig.ts) : la clé retirée des réglages permis au rôle ; [page Emails](src/app/admin/emails/page.tsx) → `peutModifierCrons` ; [AdminEmailsClient](src/components/admin/AdminEmailsClient.tsx) : interrupteur grisé + « Réglage réservé à l'administrateur ».
+- Au passage : `any` retirés des lectures de la page Emails (`users_notification_preferences`, `users`, `pages_statiques` typées), import inutilisé retiré.
+- **Déployé** (accord de David) : report seul de `f8de287` et `52e83bc` sur `main` (`400ee3c`, worktree séparé, sans les commits annuaire en cours de l'autre session ; CHANGELOG / TODO laissés à `dev`), build vert ; Vercel `success` à 08:19. Production : accueil `200`, `/admin/emails` sans jeton → formulaire de connexion sans contenu, `/api/upload` et la tâche des posts → `401`.
+- Vérifié en local : rôle « contenus » → mention présente, interrupteur désactivé ; admin → actif ; `setSiteConfig('crons_routiniers_actifs', 'false')` par le rôle « contenus » → refusé (testé avec la valeur actuelle, sans risque d'allumer) ; valeur en base toujours `false` ; `programmerPost` → « La programmation n'est pas encore activée ».
+
+---
+
+## [2026-10-10] — Annuaire, tranche 3 (raccordement de l'application) : étape 1, annuaire rangé par RPPS
+
+### Décisions de David
+- Identification de l'application par des adresses du site qui vérifient son jeton PSC (option A, pas de compte site pour elle) ; fiches publiées téléchargées à chaque connexion (pas dans le fichier mensuel) ; modification de sa fiche dans l'application ; lecteurs : médecins seulement.
+- Conséquence : les tables de l'annuaire passent du `user_id` au RPPS (un médecin de l'application n'a pas de compte site). Le reste du site garde `user_id`.
+
+### Base — migration d'ajout lancée par David (vérifiée)
+- Base partagée avec la production, dont le code utilise `user_id` sur ces tables même annuaire éteint (suppression de compte par le médecin et par l'admin, fusion de comptes) → **trois temps** : ajout (fait), nouveau code via `dev`, retrait des anciennes colonnes une fois la production passée au nouveau code.
+- `identites_psc` : clé `rpps` (11 chiffres contrôlés), `user_id` facultatif et unique, colonnes `nom` / `prenom` / `specialite_code`. Fiches, portables, compétences cochées : colonne `rpps` en clé primaire, `user_id` gardé, unique et rempli. `intitules.propose_par_rpps`, journal des portables `lecteur_rpps` / `consulte_rpps`.
+- Passerelles de transition (déclencheurs) : `user_id` et `rpps` toujours remplis ; une fusion de comptes emmène les fiches. Plafond de 20 compétences compté par RPPS.
+- Constat : clés en place, aucune clé manquante, la fiche existante et ses 3 compétences cohérentes. Types régénérés (+34 lignes, `user_id` devenu facultatif sur ces tables).
+
+### Code
+- Insertions de l'annuaire ([annuaire.ts](src/lib/actions/annuaire.ts), fusion de compétences dans [admin-intitules.ts](src/lib/actions/admin-intitules.ts)) : RPPS fourni en plus du `user_id` (exigé par les nouveaux types). Comportement du site inchangé.
+- `tsc`, lint, `npm run build` verts. Plan, retour arrière et étape 2 : [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+---
+
+## [2026-10-08] — Annuaire : rayon visible (total, carte complète) et retour à la dernière recherche
+
+### Constat (essai de David sur dev)
+- « Si je change le rayon, rien ne change » (cardiologues, Paris 20e) : la recherche renvoie les **50 plus proches** et le rayon n'est qu'une borne. Dans une ville dense, les 50 plus proches sont à 2-3 km → 10, 20 ou 50 km donnent les mêmes 50, en liste comme sur la carte (il y en a **888** à moins de 10 km). Le changement de rayon ne relançait pas non plus la recherche ; sans commune sur la fiche du lecteur, la page s'ouvre en ordre alphabétique alors que le menu affichait « 10 km ».
+- Au retour d'une fiche, la recherche était perdue (tout à retaper).
+
+### Base — migration 2b-ter lancée par David (vérifiée)
+- `annuaire_filtres` (interne : `execute` retiré à `anon` et `authenticated`) : morceaux de requête des filtres, partagés par la recherche et le comptage (ils ne peuvent plus diverger).
+- `annuaire_rechercher` : mêmes signature, résultat et droits ; plafond par appel 100 → **2 000** (carte).
+- `annuaire_compter` (nouvelle, `authenticated` seulement) : médecins répondant aux filtres dans le rayon, ou dans toute la France sans rayon. Mesuré sur la même logique : 888 cardiologues à moins de 10 km de Paris 20e en 0,12 s ; 37 866 médecins à moins de 50 km en 0,27 s.
+- Types régénérés par Claude (+21 lignes, rien de retiré). SQL et retour arrière : [docs/2026-10-08-annuaire-tranche-2.md](docs/2026-10-08-annuaire-tranche-2.md).
+
+### Feature — Recherche ([AnnuaireRecherche](src/components/annuaire/AnnuaireRecherche.tsx))
+- Spécialité, compétence, commune et rayon **relancent la recherche** ; le nom attend « Rechercher ». Seule la réponse de la dernière recherche lancée s'affiche.
+- **Total affiché** : « 888 confrères à moins de 10 km de Paris 20e Arrondissement » (« en France, du plus proche au plus éloigné » sans rayon ; « par ordre alphabétique » sans position). Liste : 50 plus proches d'abord, « Afficher plus ».
+- Rayon grisé tant qu'aucune position n'est choisie (« Indiquez une commune ou votre position »).
+- **Retour d'une fiche** : critères, résultats, vue liste/carte et position de défilement retrouvés. Gardés **en mémoire de la page seulement** (variable du module, écrite côté navigateur, propre au lecteur) : rien en base ni dans le stockage du navigateur, perdu au rechargement — la position « Autour de moi » reste « jamais enregistrée ».
+
+### Feature — Carte ([CarteAnnuaire](src/components/annuaire/CarteAnnuaire.tsx)), comme l'application
+- **Tout le rayon** jusqu'à 2 000 médecins (message au-delà : préciser la spécialité ou réduire le rayon), chargé à l'ouverture de la carte et à chaque recherche.
+- Points **regroupés en grappes** (source GeoJSON MapLibre, mêmes réglages que l'application : rayon 40, jusqu'au zoom 13 ; nombre en « Source Sans Pro Bold », police du style Plan IGN) ; clic sur une grappe → zoom ; un point par cabinet, clic → liste des confrères qui y exercent (bulle défilante, éléments DOM).
+- **Cercle du rayon** tracé et cadré, point de départ en bleu.
+- Liens des bulles : navigation dans l'application (avant : rechargement complet de la page, qui perdait la recherche).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` verts. **Reste : essai de David sur dev** (fonction réelle non appelable avec le rôle de lecture de Claude).
+
+---
+
 ## [2026-10-08] — Sécurité : les pages de l'admin envoyaient leurs données sans connexion
 
 ### Fix — Pages `/admin/*` calculées et envoyées à un visiteur non connecté
@@ -12,6 +141,9 @@
 - **Cause** : le contrôle était dans le [layout de l'admin](src/app/admin/layout.tsx) (formulaire au lieu de `children`). Next calcule la page **en parallèle** du layout et sérialise sa sortie dans la réponse, même quand le layout ne l'affiche pas. Faille présente depuis l'origine de ce layout, pas introduite par le déploiement du jour.
 - **Fix** : le [proxy](src/proxy.ts), qui tourne déjà sur `/admin/*`, sert la nouvelle page [`/connexion-admin`](src/app/connexion-admin/page.tsx) (formulaire seul, `noindex`, statique) **à la place** de toute page d'admin demandée sans jeton valide, même adresse : la page demandée n'est jamais calculée. Le contrôle du layout reste en seconde ligne.
 - **Vérifié sur le build de production en local** : sans cookie, avec un cookie inventé et en requête RSC, `/admin`, `/admin/utilisateurs`, `/admin/activite`, `/admin/solutions`, `/admin/intitules`, `/admin/emails` → même réponse de 17 Ko (formulaire), **0 adresse** ; avec le jeton admin, pages complètes (`/admin/utilisateurs` 2,5 Mo) ; connexion par le formulaire depuis une adresse réécrite (`/admin/utilisateurs`) : mauvais mot de passe → « Mot de passe incorrect », bon → `303` vers l'accueil admin + cookie `admin_token`.
+- **Déployé en production** (accord de David) : `dev` fusionné dans `main` (`2c38fd5`, worktree séparé, arbre identique à `dev`). Vérifié en production : `/admin`, `/admin/utilisateurs`, `/admin/activite`, `/admin/solutions`, `/admin/intitules` → formulaire seul (17 Ko), 0 adresse, requête RSC comprise ; accueil `200`.
+- Seul layout concerné : `/mon-compte` et `/annuaire` sont protégés par le proxy (redirection avant tout calcul de page). Règle ajoutée dans `CLAUDE.md`.
+- **Inconnu** : si la faille a été exploitée (aucune trace côté site ; les journaux Vercel sont courts sur l'offre Hobby).
 
 ---
 
