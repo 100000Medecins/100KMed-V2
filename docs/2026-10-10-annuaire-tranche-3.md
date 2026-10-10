@@ -150,7 +150,10 @@ commit;
   (`100000medecins-100000medecins-org`, enregistré par PSC le 09/10), distinct de celui du site
   (`100000medecins`).
 - **Correctif** : `verifierJetonPsc` compare `azp` au client de l'application pour l'environnement PSC du site
-  (tableau du contrat ci-dessous). Le message de refus cite le client attendu.
+  (tableau du contrat ci-dessous). Le message de refus cite le client attendu. Le client du site n'est pas
+  accepté en plus sur ces adresses (choix confirmé par David le 10/10).
+- **Identifiant de production recoupé** : c'est la valeur de `PSC_PROD_CLIENT_ID` dans le `.env` du dépôt
+  messagerie.
 - **Vérifié** (fonction appelée directement, faux `userinfo` local, rien écrit en base), dans les deux
   environnements, 16 / 16 : client de l'application accepté ; client de l'application de l'autre environnement,
   client du site en production, client inconnu et `azp` absent refusés avant tout appel à PSC ; refus d'un autre
