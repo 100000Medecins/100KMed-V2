@@ -11,6 +11,10 @@
  * téléphones, position) ; adresses MSSanté personnelles. Les RPPS de `annuaire_oppositions` sont
  * exclus.
  *
+ * Code SM : celui de l'extraction RPPS (`pro.savoir_faire_code`, depuis la base du 2026-10-09)
+ * quand c'est une spécialité connue du site ; sinon rapprochement du libellé (bases plus
+ * anciennes, médecins sans code, codes hors spécialités comme CEX22 en gynécologie).
+ *
  * Écriture par « lot » (aucune requête longue : délai de 8 s par requête côté Supabase) :
  * insertion par paquets d'un nouveau lot → `annuaire_activer_lot` (bascule instantanée, refusée
  * sous 150 000 médecins) → `annuaire_purger_lots` (anciens lots effacés par paquets). Pas de
@@ -143,20 +147,25 @@ async function main() {
   const lot = Math.floor(Date.now() / 1000)
   const idMedecin = (db.prepare("select id from libelle where texte = 'Médecin'").get() as { id: number }).id
 
-  // Médecins
-  const pros = db.prepare(`select p.id, p.rpps, p.civilite, p.nom, p.prenom, l.texte as sf
+  // Médecins (la colonne du code n'existe pas dans les bases d'avant le 2026-10-09)
+  const avecColonneCode = (db.prepare('pragma table_info(pro)').all() as { name: string }[]).some((c) => c.name === 'savoir_faire_code')
+  const pros = db.prepare(`select p.id, p.rpps, p.civilite, p.nom, p.prenom, l.texte as sf, ${avecColonneCode ? 'p.savoir_faire_code' : 'null'} as sf_code
     from pro p left join libelle l on l.id = p.savoir_faire_id where p.profession_id = ?`).all(idMedecin) as
-    { id: number; rpps: string | null; civilite: string | null; nom: string | null; prenom: string | null; sf: string | null }[]
+    { id: number; rpps: string | null; civilite: string | null; nom: string | null; prenom: string | null; sf: string | null; sf_code: string | null }[]
   const rppsParPro = new Map<number, string>()
   const medecins: LigneMedecin[] = []
   const nonRapproches = new Map<string, number>()
   let rppsInvalides = 0
+  let codesLus = 0
   for (const p of pros) {
     const id = p.rpps ?? ''
     const rpps = id.length === 12 && id.startsWith('8') ? id.slice(1) : id
     if (!/^[0-9]{11}$/.test(rpps) || !p.nom) { rppsInvalides++; continue }
     if (exclus.has(rpps)) continue
-    const code = p.sf ? CODE_PAR_LIBELLE.get(normaliser(p.sf)) ?? null : null
+    const lu = p.sf_code?.trim()
+    const codeLu = lu && lu in TRE_R38 ? lu : null
+    if (codeLu) codesLus++
+    const code = codeLu ?? (p.sf ? CODE_PAR_LIBELLE.get(normaliser(p.sf)) ?? null : null)
     if (p.sf && !code) nonRapproches.set(p.sf, (nonRapproches.get(p.sf) ?? 0) + 1)
     rppsParPro.set(p.id, rpps)
     medecins.push({ lot, rpps, civilite: p.civilite || null, nom: p.nom, prenom: p.prenom || null, specialite_libelle: p.sf, specialite_code: code })
@@ -201,7 +210,7 @@ async function main() {
 
   const avecCode = medecins.filter((m) => m.specialite_code).length
   console.log(`\nMédecins : ${medecins.length} (RPPS invalides ou sans nom écartés : ${rppsInvalides})`)
-  console.log(`  spécialité rapprochée d'un code SM : ${avecCode} ; sans spécialité : ${medecins.filter((m) => !m.specialite_libelle).length}`)
+  console.log(`  avec un code SM : ${avecCode} (lu dans l'extraction : ${codesLus}, déduit du libellé : ${avecCode - codesLus}) ; sans spécialité : ${medecins.filter((m) => !m.specialite_libelle).length}`)
   if (nonRapproches.size > 0) {
     console.log('  libellés non rapprochés :')
     for (const [libelle, n] of [...nonRapproches.entries()].sort((a, b) => b[1] - a[1])) console.log(`    ${n}\t${libelle}`)

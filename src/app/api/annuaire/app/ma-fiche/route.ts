@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   const [fiche, catalogue, ans] = await Promise.all([lireFiche(auth.rpps), catalogueDe(auth.rpps), propositionsAnsPour(auth.rpps)])
   return reponse({
     rpps: auth.rpps,
+    specialite_code: auth.specialiteCode,
     fiche: fiche && {
       moyen_contact: fiche.moyenContact,
       publiee: fiche.publiee,

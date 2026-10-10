@@ -76,23 +76,26 @@ function jetonPorteur(request: Request): string | null {
 
 /**
  * Contrôle d'un appel de l'application : annuaire ouvert, jeton du site valide, identité de
- * médecin toujours présente. Renvoie le RPPS du lecteur, ou la réponse de refus à renvoyer.
+ * médecin toujours présente. Renvoie le RPPS du lecteur et sa spécialité d'après PSC, ou la
+ * réponse de refus à renvoyer.
  */
-export async function authentifierApp(request: Request): Promise<{ rpps: string } | NextResponse> {
+export async function authentifierApp(
+  request: Request,
+): Promise<{ rpps: string; specialiteCode: string | null } | NextResponse> {
   if (!(await getAnnuaireActif())) return refus(404, 'annuaire_ferme', "L'annuaire n'est pas ouvert.")
   const jeton = jetonPorteur(request)
   const lu = jeton ? lireJetonApp(jeton) : null
   if (!lu) return refus(401, 'jeton_invalide', 'Jeton absent, invalide ou expiré : ouvrir une nouvelle session.')
   const { data: identite } = await createServiceRoleClient()
     .from('identites_psc')
-    .select('code_profession')
+    .select('code_profession, specialite_code')
     .eq('rpps', lu.rpps)
     .maybeSingle()
   if (!identite) return refus(401, 'identite_inconnue', 'Identité inconnue : ouvrir une nouvelle session.')
   if ((identite.code_profession ?? '10') !== '10') {
     return refus(403, 'profession_non_admise', "L'annuaire est réservé aux médecins.")
   }
-  return lu
+  return { rpps: lu.rpps, specialiteCode: identite.specialite_code }
 }
 
 /** Adresse `userinfo` de PSC ; remplaçable pour les essais locaux seulement (faux PSC), jamais chez Vercel. */

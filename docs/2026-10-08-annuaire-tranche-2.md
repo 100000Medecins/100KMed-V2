@@ -277,6 +277,14 @@ end $$;
    nouveau lot, l'active (`annuaire_activer_lot`), puis purge les anciens par paquets. `--base <chemin>` pour une
    autre base SQLite.
 
+Code de spécialité (depuis l'import du 2026-10-10) : le script lit le code SM de l'extraction RPPS
+(`pro.savoir_faire_code`, présent depuis la base du 2026-10-09) quand c'est une spécialité connue du site, et
+ne déduit le code du libellé que pour le reste : bases plus anciennes, médecins sans code, codes hors
+spécialités (`CEX22`, `CEX24`, `CEX26`, `CEX64` en gynécologie et urologie, que le libellé range en SM20, SM19
+et SM12). Le libellé seul ne distinguait pas SM43 de SM92 (pédopsychiatrie avant et après la réforme de 2017,
+même libellé à une virgule près) : tous étaient rangés en SM92. Le filtre de `/annuaire` regroupe ces deux
+codes en une seule entrée.
+
 ## Migration 2b-bis — recherche accélérée (2026-10-08)
 
 Constat : la recherche par distance prenait 2,2 s (10 km autour de Paris) et 2 à 5 s avec un filtre de

@@ -158,11 +158,16 @@ commit;
   environnements, 16 / 16 : client de l'application accepté ; client de l'application de l'autre environnement,
   client du site en production, client inconnu et `azp` absent refusés avant tout appel à PSC ; refus d'un autre
   émetteur, d'un jeton expiré et d'un jeton refusé par PSC inchangés.
-- **Pas encore vérifié** : que `userinfo` de PSC, appelé par le site avec un jeton du flux CIBA, rende le RPPS,
-  la profession et la spécialité. Le prochain essai de l'application le dira : `403 rpps_absent` si le RPPS
-  manque ; une spécialité absente laisse `specialite_code` vide. **À regarder de près** : une profession absente
-  n'est pas refusée (seule une profession présente et différente de `10` l'est) ; si `userinfo` ne la rend pas
-  pour ces jetons, la règle « médecins seulement » ne s'applique plus à l'application.
+- **Deuxième essai de l'application (10/10, 17:15) : session ouverte** avec un vrai jeton du relais de
+  production (flux CIBA, scopes `openid scope_all`). Textes d'accord lus, `GET /fiches` rendu (1 fiche, 212
+  compétences), réouverture de session après un `401 jeton_invalide` provoqué.
+- **`userinfo` rend bien l'identité pour ces jetons** (lu en base le 10/10) : la ligne `identites_psc` du médecin
+  de l'essai porte profession `10`, spécialité `SM53`, nom et prénom, avec une dernière connexion à 18:17 (heure
+  de Paris). Aucune connexion PSC au site à cette heure (`psc_session_events`, dernière à 17:33) : cette écriture
+  vient d'une session de l'application, qui remplace ces champs par ce que PSC rend (vide si absent).
+- **Reste une faiblesse du code, sans effet constaté** : une profession absente n'est pas refusée (seule une
+  profession présente et différente de `10` l'est). PSC la rend aujourd'hui ; si un jour il ne la rendait plus,
+  la règle « médecins seulement » ne s'appliquerait plus à l'application.
 
 ## Contrat d'échange avec l'application (pour la session messagerie)
 
@@ -239,7 +244,7 @@ propre numéro ni plafond ni trace), `400 rpps_invalide`, `403 lecteur_non_admis
 **`GET /ma-fiche`** — la fiche du médecin connecté :
 
 ```json
-{ "rpps": "…",
+{ "rpps": "…", "specialite_code": "SM53" | null,
   "fiche": null | { "moyen_contact": "…", "publiee": true, "publiee_le": "…", "mise_a_jour": "…",
                     "portable": "+336…" | null, "portable_visible": false,
                     "commune": null | { "ville": "…", "code_postal": "…", "commune_insee": "…", "lat": 0, "lon": 0 },
@@ -253,8 +258,10 @@ propre numéro ni plafond ni trace), `400 rpps_invalide`, `403 lecteur_non_admis
       "mssante": ["…"] } }
 ```
 
-`catalogue` : compétences validées + propositions en attente de ce médecin. `annuaire_sante` : ce que l'ANS
-connaît pour lui, à proposer en un geste (« Utiliser ce lieu ») comme sur le site.
+`specialite_code` (ajouté le 10/10) : spécialité du médecin connecté telle que PSC l'a donnée à sa dernière
+ouverture de session (code SM, `null` si PSC n'en donne pas). Elle sert à masquer à la saisie les compétences
+dont `specialites_sm` la contient. `catalogue` : compétences validées + propositions en attente de ce médecin.
+`annuaire_sante` : ce que l'ANS connaît pour lui, à proposer en un geste (« Utiliser ce lieu ») comme sur le site.
 
 **`PUT /ma-fiche`** — corps :
 

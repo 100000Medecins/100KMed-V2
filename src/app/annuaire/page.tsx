@@ -3,6 +3,7 @@ import { getMaFicheAnnuaire } from '@/lib/actions/annuaire'
 import { createServerClient } from '@/lib/supabase/server'
 import { SM_SPECIALITES } from '@/lib/constants/profil'
 import { RAYON_PAR_DEFAUT_KM } from '@/lib/constants/annuaire'
+import { normaliserRecherche } from '@/lib/annuaire/normaliser'
 import VerificationPsc from '@/components/annuaire/VerificationPsc'
 import AnnuaireRecherche from '@/components/annuaire/AnnuaireRecherche'
 import EnteteAnnuaire from '@/components/annuaire/EnteteAnnuaire'
@@ -38,14 +39,15 @@ export default async function AnnuairePage() {
     supabase.rpc('annuaire_source'),
   ])
 
-  // Spécialités regroupées par libellé du site (ex. SM26 / SM53 / SM54 → « Médecin généraliste »)
-  const codesParLibelle = new Map<string, string[]>()
+  // Spécialités regroupées par libellé du site (ex. SM26 / SM53 / SM54 → « Médecin généraliste »),
+  // comparé sans ponctuation : SM43 et SM92 (pédopsychiatrie, avant et après la réforme de 2017) ne
+  // diffèrent que d'une virgule et font une seule entrée, sous le libellé du code le plus récent.
+  const groupes = new Map<string, { libelle: string; codes: string[] }>()
   for (const [code, libelle] of Object.entries(SM_SPECIALITES)) {
-    codesParLibelle.set(libelle, [...(codesParLibelle.get(libelle) ?? []), code])
+    const cle = normaliserRecherche(libelle)
+    groupes.set(cle, { libelle, codes: [...(groupes.get(cle)?.codes ?? []), code] })
   }
-  const specialites = Array.from(codesParLibelle.entries())
-    .map(([libelle, codes]) => ({ libelle, codes }))
-    .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'))
+  const specialites = Array.from(groupes.values()).sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'))
 
   return (
     <div>
