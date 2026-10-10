@@ -12,6 +12,16 @@
 
 ---
 
+## [2026-10-10] — Annuaire : dans l'espace Mon compte, onglets, champ « Près de »
+
+Retours de l'essai de David sur dev :
+- **Menu de gauche absent sur l'annuaire** : `/annuaire` avait son propre gabarit, hors de Mon compte. Le gabarit de Mon compte devient un composant commun ([EspaceMonCompte](src/components/layout/EspaceMonCompte.tsx)), utilisé par `/mon-compte/*` et `/annuaire/*` (adresses inchangées : analytics, robots, proxy non touchés).
+- **Une seule entrée « Annuaire MSSanté »** dans le menu (active sur les deux onglets et la fiche d'un confrère) ; en-tête commun [EnteteAnnuaire](src/components/annuaire/EnteteAnnuaire.tsx) avec les onglets « Ma fiche annuaire » (`/mon-compte/annuaire`) et « Annuaire MSSanté complet » (`/annuaire`), aussi sur la fiche d'un confrère (le lien de retour n'est plus collé au logo).
+- **« Près de » décalé vers le bas quand on le vide** : l'aide sous le rayon (seulement sans position) allongeait sa colonne ; sortie de la grille. Vider « Près de » relance maintenant la recherche (toute la France).
+- `tsc`, lint, build verts.
+
+---
+
 ## [2026-10-10] — Annuaire, tranche 3 : étape 3, retrait des anciennes colonnes
 
 - Feu vert de David pour mener l'étape 3 seul (la migration reste lancée par lui). Préalables : essais de suppression et de fusion de comptes (14 / 14), production passée au nouveau code (`9c97175`), voir l'entrée de l'étape 2.

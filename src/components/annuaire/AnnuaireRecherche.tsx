@@ -382,15 +382,11 @@ export default function AnnuaireRecherche({
               <ChoixCommune
                 id="annuaire-commune-recherche"
                 valeur={criteres.commune}
-                onChange={(c) => modifier({ commune: c, position: c ? null : criteres.position }, c !== null)}
+                onChange={(c) => modifier({ commune: c, position: c ? null : criteres.position }, true)}
                 ariaLabel="Près de quelle commune"
               />
             </Field>
-            <Field
-              label="Rayon"
-              htmlFor="annuaire-rayon"
-              hint={point ? undefined : 'Indiquez une commune ou votre position.'}
-            >
+            <Field label="Rayon" htmlFor="annuaire-rayon">
               <Select
                 id="annuaire-rayon"
                 size="sm"
@@ -422,6 +418,8 @@ export default function AnnuaireRecherche({
               </Button>
             </div>
           </div>
+          {/* Hors de la grille : une aide sous un seul champ décalait les autres colonnes */}
+          {!point && <p className="text-xs text-gray-400">Pour chercher par distance, indiquez une commune ou votre position.</p>}
           {criteres.position && !criteres.commune && (
             <p className="text-xs text-gray-400">
               Recherche autour de votre position, arrondie à environ 1 km. Elle sert à cette recherche et n&apos;est pas

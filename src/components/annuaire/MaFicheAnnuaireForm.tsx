@@ -29,19 +29,17 @@ function formaterDate(iso: string): string {
 
 function EnTete({ enregistre = false }: { enregistre?: boolean }) {
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-bold text-navy">Ma fiche annuaire</h1>
-        {enregistre && (
-          <div className="flex items-center gap-1.5 text-green-700 text-sm">
-            <CheckCircle className="w-4 h-4" />
-            Fiche enregistrée
-          </div>
-        )}
-      </div>
-      <p className="text-sm text-gray-500 mt-1">
+    // Titre et onglets : EnteteAnnuaire, au-dessus (page)
+    <div className="mb-6 flex items-start justify-between gap-4">
+      <p className="text-sm text-gray-500">
         Comment vos confrères médecins peuvent vous joindre, et pour quoi vous adresser un patient.
       </p>
+      {enregistre && (
+        <div className="flex items-center gap-1.5 text-green-700 text-sm flex-shrink-0">
+          <CheckCircle className="w-4 h-4" />
+          Fiche enregistrée
+        </div>
+      )}
     </div>
   )
 }
