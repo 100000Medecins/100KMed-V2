@@ -8,7 +8,8 @@
 ## [2026-10-10] — Réseaux sociaux : publication validée sur les trois réseaux
 
 - Essai réel de David en production avec le nouveau panneau (article Pro Santé Connect) : **LinkedIn** (09/10, image arrivée grâce au module « Create a Company Image Post » en *Upload by link*), **Facebook** et **Instagram** (10/10) — « fonctionne parfaitement ». Post d'essai du 08/10 (lien `localhost`) supprimé de LinkedIn par David.
-- Reste ouvert : la programmation des posts (désactivée, sans `pg_cron`, décision de David du 09/10) et le projet vidéo (dépôt → YouTube → publication native) — cf. TODO.
+- **Programmation des posts — activation lancée par David (10/10)**, après confirmation que la tâche ne touche que les posts réseaux (route relue : écrit `posts_reseaux`, lit `articles` / `videos`, un seul appel sortant vers Make, aucun envoi d'email). `pg_cron` 1.6.4 (`pg_catalog`) et `pg_net` 0.19.5 (`extensions`) installées (vérifié) ; `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …)` a renvoyé `1`. `claude_readonly` ne lit pas le schéma `cron` (tâche non relue). Reste : variable `POSTS_PROGRAMMATION_ACTIVE=true` dans Vercel + essai d'un post programmé.
+- Reste ouvert : le projet vidéo (dépôt → YouTube → publication native) — cf. TODO.
 
 ---
 

@@ -82,7 +82,7 @@ _(rien en cours)_
 - ~~**Facebook et Instagram** : premier envoi avec le nouveau panneau~~ ✅ « fonctionne parfaitement » (David, 10/10).
 - ~~**Vercel** : variable `ADMIN_CONTENU_PASSWORD`~~ ✅ fait et testé par David le 09/10.
 
-**Programmation des posts — désactivée (décision de David, 2026-10-09)** : pas de `pg_cron` pour l'instant (méfiance après un envoi de masse involontaire par le passé). Le panneau ne propose que « Envoyer maintenant » ; le serveur refuse toute programmation. **Pour l'activer un jour** : (1) activer `pg_cron` et `pg_net` (Database › Extensions) ; (2) SQL : `delete from vault.secrets where name = 'cron_secret'`, `vault.create_secret('<CRON_SECRET>', 'cron_secret')`, `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …net.http_get(…/api/cron/envoyer-posts-reseaux)… where exists (posts dus))` — texte complet dans le CHANGELOG du 2026-10-08 ; la tâche ne touche que `posts_reseaux`, aucun email ; (3) variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true` + redéploiement ; (4) tester un post à +15 min.
+**Programmation des posts — en cours d'activation (David, 2026-10-10)** : après explication (la tâche ne touche que `posts_reseaux`, aucun email), David a activé `pg_cron` (1.6.4) et `pg_net`, et créé la tâche `envoyer-posts-reseaux` (toutes les 5 min, n° 1, secret `cron_secret` dans Vault) — extensions vérifiées par Claude. **Reste** : (1) variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true` (Production) + redéploiement, sans quoi le bouton « Programmer » reste masqué ; (2) tester un post à +15 min (s'il reste « programmé » plus de 10 min après l'heure : secret Vault ≠ `CRON_SECRET` de Vercel, à recréer). **Arrêt** : `select cron.unschedule('envoyer-posts-reseaux');` + retirer la variable.
 
 ---
 
