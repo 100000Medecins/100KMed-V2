@@ -224,7 +224,7 @@ export default async function AdminEmailsPage() {
         {
           id: 'relance_psc',
           title: 'Relance vérification PSC',
-          description: "Envoyé le lundi aux auteurs d'une évaluation non validée par Pro Santé Connect depuis plus de 7 jours (jusqu'à 4 relances, une par semaine).",
+          description: "Envoyé le lundi aux auteurs d'une évaluation non validée par Pro Santé Connect depuis plus de 7 jours (jusqu'à 4 relances, une toutes les 2 semaines).",
           variables: ['{{prenom}}', '{{nom}}', '{{solution_nom}}', '{{psc_link}}', '{{relance_num}}', '{{max_relances}}'],
           data: templateRelancePsc,
           defaultSujet: 'Finalisez votre évaluation de {{solution_nom}} avec ProSanté Connect',
