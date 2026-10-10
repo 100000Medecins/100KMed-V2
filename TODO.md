@@ -276,25 +276,23 @@ _(rien en cours)_
 - Rappel du fonctionnement : première relance le lundi qui suit les 7 jours après le dépôt, puis une toutes les 2 semaines, 4 au plus. Les 34 évaluations MedGPT sont relancées comme les autres (décision de David). L'adresse des liens est tirée de l'appel de Vercel.
 
 #### Clé SendGrid du site à restreindre (David, dans SendGrid — vu le 2026-10-09)
-- La clé `SENDGRID_API_KEY` du site a tous les droits du compte (créer des clés, lire les destinataires, changer les réglages). Le site n'a besoin que d'envoyer.
-- SendGrid → Settings → API Keys → Create API Key → « Restricted Access » → **Mail Send** seul → remplacer la valeur dans Vercel (Production et Preview) et dans les `.env.local` des deux postes → redéployer → vérifier un envoi (test d'un modèle depuis Admin → Emails) → supprimer l'ancienne clé.
-- Pour les études de statistiques, créer à part une clé en lecture seule (Stats), gardée hors de Vercel.
+- La clé `SENDGRID_API_KEY` du site (nommée **« 100KMed Production »** dans SendGrid) a tous les droits du compte (créer des clés, lire les destinataires, changer les réglages). Le site n'a besoin que d'envoyer.
+- Le plus simple, sans toucher à Vercel ni aux `.env.local` : SendGrid → Settings → API Keys → ligne « 100KMed Production » → roue dentée → « Edit API Key » → « Restricted Access » → **Mail Send : Full Access** et **Stats : Read Access**, tout le reste sur « No Access » → Update. Puis envoyer un test d'un modèle depuis Admin → Emails.
+- Si l'écran ne permet pas de modifier la clé : en créer une nouvelle avec ces mêmes droits, la mettre dans Vercel (Production et Preview) et dans les `.env.local` des deux postes, redéployer, tester, puis supprimer l'ancienne.
+- Le compte contient 4 autres clés (« 100kMed » deux fois, « BonneAnneeBonneSante », « Site Portabilité-Conservation ») : à passer en revue par David.
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
 - **Tant qu'il est OFF** : aucune relance évaluation / newsletter ne partira (la relance PSC a son propre interrupteur depuis le 2026-10-09)
 - **Avant de l'activer** (point du 2026-10-10) :
-  - **Reporter sur `main` le correctif du lien de revalidation** (fait sur `dev` le 10/10 : page de confirmation `/confirmer-avis`, le lien du mail n'écrit plus rien à l'ouverture). Sans ce report, les mails partiraient avec un lien vers une page absente de la production.
-  - Textes à relire par David (facultatif) : les mails disent « Confirmer mon avis en 1 clic » / « Un clic suffit », alors qu'il y a désormais un clic dans le mail puis un sur la page.
-  - Décision de David : 249 médecins recevraient d'abord le « Rappel — votre avis est en attente de mise à jour » (`relance_3mois`), parce que leur première relance est le mail parti par erreur du site de développement le 23/04. Soit on laisse, soit on remet leur compteur à zéro pour qu'ils reçoivent le premier mail (écriture sur 267 évaluations).
-  - 499 destinataires, dont ~27 seulement se sont connectés au nouveau site : pour les autres, ce sera le premier mail du nouveau site.
-  - Fait le 10/10 : objet et texte de `relance_1an` (« a plus d'un an » au lieu de « a 1 an » : 188 avis sur 262 dataient de 2023-2024).
+  - 497 destinataires, dont ~27 seulement se sont connectés au nouveau site : pour les autres, ce sera le premier mail du nouveau site. C'est le seul point qui reste à peser.
+  - Fait le 10/10 : lien de confirmation qui n'écrit plus à l'ouverture (page `/confirmer-avis`, en production) ; objet et texte de `relance_1an` (« a plus d'un an ») ; « en 2 clics » dans `relance_1an`, `relance_3mois` et `lancement` ; compteurs de relance du 23/04 remis à zéro (267 évaluations : tout le monde reçoit le premier rappel, plus personne le « Rappel » d'abord).
 - **Avant d'activer (2026-09-24)** :
   1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
   2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;
   3. Supprimer le brouillon de newsletter d'**avril** dans `/admin/newsletters` (sinon rappel quotidien à `contact@`).
-- **Volume attendu** (recompté le 2026-10-09) : 527 rappels de revalidation en retard (499 destinataires) → **100/jour** grâce au plafond, donc ~6 jours ; le lundi +19 relances d'évals incomplètes. Ensuite 5 à 15 rappels par mois, et les ~500 reviennent tous les 3 mois tant qu'ils ne revalident pas. Détail : [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md).
+- **Volume attendu** (recompté le 2026-10-10, après remise à zéro) : 525 premiers rappels « a plus d'un an » (497 destinataires), aucun « Rappel » → **100/jour** grâce au plafond, donc ~6 jours ; le lundi +19 relances d'évals incomplètes. Ensuite 5 à 15 rappels par mois, et les ~500 reçoivent le « Rappel » 3 mois plus tard s'ils n'ont pas confirmé. Détail : [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md).
 
 #### ⚠️ Newsletter : l'envoi ne toucherait que 1 000 inscrits sur 6 545 (constaté le 2026-09-24)
 - `send-newsletter`, `send-infos-mensuels` et le cron `envoyer-newsletter-programmee` lisent les opt-in sans pagination → Supabase plafonne à **1 000 lignes**. Puis `.in('id', …)` avec 1 000 uuid dans l'URL risque d'échouer, et 6 500 envois séquentiels dépasseraient la durée max d'une fonction Vercel.

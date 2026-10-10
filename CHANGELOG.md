@@ -23,13 +23,24 @@
   - POST avec jeton faux → `303`, `erreur=lien-invalide` ; POST avec jeton valide sur une évaluation inexistante → `303`, `erreur=revalidation-echouee`, message affiché.
   - **Non testé** : le POST réussi (il modifierait l'avis d'un vrai médecin, la base locale étant celle de la production). La mise à jour elle-même est celle d'avant, plus le contrôle du nombre de lignes.
 - `tsc`, lint des fichiers touchés et `npm run build` passent (`/confirmer-avis` en `ƒ`, voulu).
-- **Reste** : report sur `main` (accord de David). Les rappels de revalidation ne partent pas tant que l'interrupteur général est éteint.
+- **Même principe que `/gerer-notifications`** (désabonnement « HMAC-only » d'avril, que David avait en tête) : lien signé, page qui ne modifie rien à l'ouverture, action sur POST. Le lien de revalidation avait le jeton signé mais pas la seconde moitié.
+- **Déployé** (accord de David) : report du code seul de `9e40a3c` sur `main` (`e11c04f`, worktree séparé ; CHANGELOG, TODO et scripts laissés à `dev`), build vert dans le worktree, Vercel `success`.
+  - Production : ancien lien avec faux jeton → `307` vers `/confirmer-avis` (nouveau code en ligne) ; ancien lien avec le jeton valide d'une vraie évaluation → `307`, évaluation **inchangée en base** ; page → titre avec le nom du logiciel ; sans paramètres → « Ce lien n'est plus valable » ; POST faux jeton → `erreur=lien-invalide` ; POST sur une évaluation inexistante → `erreur=revalidation-echouee` ; accueil et `/avis-confirme` `200`.
+  - Toujours non testé : le POST réussi.
 
 ### Modèles d'emails corrigés en base (demande de David)
 - [scripts/fix-phrases-modeles-emails.ts](scripts/fix-phrases-modeles-emails.ts) (ex `fix-modele-relance-psc.ts`, généralisé : liste de corrections, sujet ou contenu, correction ignorée si la phrase d'origine n'est pas trouvée une seule fois). Exécuté le 10/10, relu par une requête indépendante ; anciens modèles sauvegardés dans `backups/` (hors dépôt).
 - `verification_psc` (mail « Validez votre évaluation », envoyé chaque jour) : « Ce lien est valable 7 jours. » → « Vous pourrez aussi utiliser ce lien plus tard. »
 - `relance_1an` : objet « … a 1 an — toujours d'actualité ? » → « … a plus d'un an — toujours d'actualité ? » ; texte « Il y a un an, vous avez évalué » → « Il y a plus d'un an, vous avez évalué ». 188 des 262 avis concernés dataient de 2023 ou 2024.
-- **Non modifié** : `relance_3mois` (rien de faux dans le texte ; la question des 249 médecins qui le recevraient en premier est une décision de David, cf. TODO) ; la mention « en 1 clic » des deux rappels.
+- **« en 2 clics »** (décision de David, un clic dans le mail puis un sur la page) dans `relance_1an`, `relance_3mois` et `lancement` (même bouton) : « Confirmer mon avis en 2 clics », « Deux clics suffisent pour le confirmer », « deux clics suffisent pour reconfirmer votre avis ».
+
+### Données — compteurs de relance du 23/04 remis à zéro (décision de David)
+- **Pourquoi** : 267 évaluations (250 médecins) gardaient la trace de la relance partie par erreur du site de développement le 23/04 (`last_relance_sent_at`, `relance_count = 1`). À la réactivation des rappels, leurs auteurs auraient d'abord reçu le « Rappel — votre avis est en attente de mise à jour », qui renvoie à ce mail.
+- [scripts/fix-compteurs-relance-incident-avril.ts](scripts/fix-compteurs-relance-incident-avril.ts) : dry-run par défaut, `--execute`, périmètre limité au 23/04, backup dans `backups/`. Exécuté le 10/10 : 267 évaluations → `last_relance_sent_at = null`, `relance_count = 0` ; notes et dates de note inchangées (seul `updated_at` bouge, par le trigger).
+- **Vérifié par requête** : plus aucune évaluation avec un compteur de relance. À la réactivation de l'interrupteur général : 525 premiers rappels (497 destinataires), aucun « Rappel ».
+
+### Sécurité — clé SendGrid du site
+- La clé du site s'appelle « 100KMed Production » dans SendGrid (identifiée par son identifiant, lecture seule) ; elle a tous les droits. Jamais examinée avant l'étude du 09/10 : l'envoi fonctionne de la même façon avec une clé complète, rien ne le signalait. Pas-à-pas donné à David (restriction sur place à « Mail Send » + « Stats » en lecture), noté en TODO.
 
 ---
 

@@ -6,6 +6,9 @@
  *   rythme des relances, pour rester vraie s'il change.
  * - 2026-10-10 `relance_1an` : « a 1 an » / « Il y a un an ». Le rappel part pour tout avis de
  *   plus d'un an jamais relancé ; 188 des 262 avis concernés dataient de 2023 ou 2024.
+ * - 2026-10-10 `relance_1an`, `relance_3mois`, `lancement` : « en 1 clic » devient « en 2 clics »
+ *   (décision de David). Le lien du mail mène désormais à la page /confirmer-avis, où un bouton
+ *   enregistre la confirmation : un clic dans le mail, un sur la page.
  *
  * Périmètre : uniquement les phrases listées ci-dessous. Une correction est ignorée si la phrase
  * d'origine n'est pas trouvée une seule fois (déjà corrigée, ou modèle modifié depuis l'admin).
@@ -52,6 +55,30 @@ const CORRECTIONS: { id: string; champ: Champ; avant: string; apres: string }[] 
     champ: 'contenu_html',
     avant: 'Il y a un an, vous avez évalué',
     apres: "Il y a plus d'un an, vous avez évalué",
+  },
+  ...['relance_1an', 'relance_3mois', 'lancement'].map((id) => ({
+    id,
+    champ: 'contenu_html' as const,
+    avant: 'Confirmer mon avis en 1 clic',
+    apres: 'Confirmer mon avis en 2 clics',
+  })),
+  {
+    id: 'relance_1an',
+    champ: 'contenu_html',
+    avant: 'Un clic suffit pour le confirmer.',
+    apres: 'Deux clics suffisent pour le confirmer.',
+  },
+  {
+    id: 'relance_3mois',
+    champ: 'contenu_html',
+    avant: 'un simple clic suffit pour reconfirmer votre avis',
+    apres: 'deux clics suffisent pour reconfirmer votre avis',
+  },
+  {
+    id: 'lancement',
+    champ: 'contenu_html',
+    avant: 'Un clic suffit pour le confirmer ou',
+    apres: 'Deux clics suffisent pour le confirmer ou',
   },
 ]
 
