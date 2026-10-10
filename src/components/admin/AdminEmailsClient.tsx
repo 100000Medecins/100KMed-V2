@@ -221,7 +221,7 @@ export default function AdminEmailsClient({
     if (!peutModifierCrons) return
     const next = !pscOn
     if (next && !window.confirm(
-      `Activer la relance PSC ? Dès lundi matin, chaque évaluation en attente depuis plus de 7 jours recevra une relance, puis une par semaine (4 au plus). ${evaluationsPscRelancables} évaluation(s) en attente aujourd'hui.`
+      `Activer la relance PSC ? Dès lundi matin, chaque évaluation en attente depuis plus de 7 jours recevra une relance, puis une toutes les 2 semaines (4 au plus). ${evaluationsPscRelancables} évaluation(s) en attente aujourd'hui.`
     )) return
     setPscOn(next)
     startTransition(async () => {
@@ -287,7 +287,7 @@ export default function AdminEmailsClient({
           disabled={isPending || !peutModifierCrons}
         >
           Chaque lundi matin, relance les évaluations déposées sans compte et non validées par Pro Santé Connect depuis plus de 7 jours :
-          une relance par semaine, 4 au plus. Indépendant de l&apos;interrupteur ci-dessus.
+          une relance toutes les 2 semaines, 4 au plus. Indépendant de l&apos;interrupteur ci-dessus.
           <span className="block mt-1 font-semibold text-gray-700">
             {evaluationsPscRelancables} évaluation(s) en attente pouvant encore être relancée(s).
           </span>

@@ -10,7 +10,17 @@ export const dynamic = 'force-dynamic'
 
 const TEMPLATE_ID = 'relance_psc'
 const MAX_RELANCES = 4
-const DELAY_DAYS = 7
+// Première relance : 7 jours après le dépôt de l'évaluation.
+const DELAI_PREMIERE_RELANCE_JOURS = 7
+// Relances suivantes : un lundi sur deux. 13 jours et non 14 : la tâche ne démarre pas à la
+// seconde près d'un lundi à l'autre, un seuil de 14 jours pile repousserait l'envoi au 3e lundi.
+const DELAI_ENTRE_RELANCES_JOURS = 13
+
+function ilYA(jours: number, depuis: Date): string {
+  const date = new Date(depuis)
+  date.setDate(date.getDate() - jours)
+  return date.toISOString()
+}
 
 function isAuthorized(req: NextRequest): boolean {
   const auth = req.headers.get('authorization')
@@ -39,8 +49,6 @@ export async function GET(req: NextRequest) {
   const siteUrl = new URL(req.url).origin
 
   const now = new Date()
-  const cutoff = new Date(now)
-  cutoff.setDate(cutoff.getDate() - DELAY_DAYS)
 
   // ── 1. Premières relances : jamais relancé, email initial envoyé il y a > 7 jours ──
   const { data: premieres } = await supabase
@@ -50,9 +58,9 @@ export async function GET(req: NextRequest) {
     .not('email_temp', 'is', null)
     .not('token_verification', 'is', null)
     .is('last_relance_psc_sent_at', null)
-    .lt('last_date_note', cutoff.toISOString())
+    .lt('last_date_note', ilYA(DELAI_PREMIERE_RELANCE_JOURS, now))
 
-  // ── 2. Relances suivantes : déjà relancé, dernière relance il y a > 7 jours, cap non atteint ──
+  // ── 2. Relances suivantes : déjà relancé, dernière relance il y a 2 semaines, cap non atteint ──
   const { data: suivantes } = await supabase
     .from('evaluations')
     .select('id, email_temp, token_verification, solution:solutions(nom), relance_psc_count')
@@ -60,7 +68,7 @@ export async function GET(req: NextRequest) {
     .not('email_temp', 'is', null)
     .not('token_verification', 'is', null)
     .not('last_relance_psc_sent_at', 'is', null)
-    .lt('last_relance_psc_sent_at', cutoff.toISOString())
+    .lt('last_relance_psc_sent_at', ilYA(DELAI_ENTRE_RELANCES_JOURS, now))
     .lt('relance_psc_count', MAX_RELANCES)
 
   const toProcess = [...(premieres ?? []), ...(suivantes ?? [])]

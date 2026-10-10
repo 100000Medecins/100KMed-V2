@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-10-10] — Relance PSC : une relance toutes les 2 semaines
+
+- **Demande de David** : garder 4 relances, mais espacées de 2 semaines au lieu d'une.
+- [relance-psc](src/app/api/cron/relance-psc/route.ts) : la première relance part toujours 7 jours après le dépôt de l'évaluation ; les suivantes un lundi sur deux (`DELAI_ENTRE_RELANCES_JOURS = 13`). La dernière part donc 6 semaines après la première.
+- **Pourquoi 13 jours et non 14** : la tâche ne démarre pas à la seconde près d'un lundi à l'autre. Avec un seuil pile, un démarrage un peu plus tôt que la fois précédente repousse l'envoi au lundi suivant. Simulé avec des démarrages décalés de moins d'une heure : seuil 14 → lundis 0, 2, 5, 8 ; seuil 13 → lundis 0, 2, 4, 6. Le même défaut touchait l'ancien seuil de 7 jours : la relance « hebdomadaire » pouvait sauter des semaines.
+- Textes de la page Emails alignés (bandeau, confirmation à l'allumage, description du modèle).
+- **Relevé, non modifié** : le modèle `relance_psc` (en base) affirme « Ce lien est valable 7 jours ». Le lien ne périme pas (`token_verification` sans date limite). Phrase à retirer par David dans Admin → Emails (TODO).
+- Vérifié : `tsc`, lint des fichiers touchés (0 erreur) et `npm run build` passent. La sélection réelle n'a pas été exécutée (elle enverrait les mails) ; interrupteur toujours absent en base, aucune évaluation relancée.
+- **Reste** : report sur `main` (accord de David).
+
+---
+
 ## [2026-10-10] — Réseaux sociaux : publication validée sur les trois réseaux
 
 - Essai réel de David en production avec le nouveau panneau (article Pro Santé Connect) : **LinkedIn** (09/10, image arrivée grâce au module « Create a Company Image Post » en *Upload by link*), **Facebook** et **Instagram** (10/10) — « fonctionne parfaitement ». Post d'essai du 08/10 (lien `localhost`) supprimé de LinkedIn par David.
