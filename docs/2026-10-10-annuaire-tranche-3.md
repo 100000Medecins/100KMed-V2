@@ -3,9 +3,9 @@
 ## Décisions de David (09-10/10)
 
 1. **Identification (option A)** : le site ouvre des adresses réservées à l'application ; elle y présente son
-   jeton PSC (obtenu par le relais, même client PSC que le site), le site le fait vérifier par PSC (`userinfo`),
-   contrôle le client émetteur, et rend un jeton du site (30 min). Pas de compte site pour les utilisateurs de
-   l'application.
+   jeton PSC (obtenu par le relais), le site le fait vérifier par PSC (`userinfo`), contrôle le client émetteur,
+   et rend un jeton du site (30 min). Pas de compte site pour les utilisateurs de l'application. Le client PSC
+   du relais n'est pas celui du site en production : voir « Environnement et client PSC » dans le contrat.
 2. **Fiches téléchargées à chaque connexion** (pas dans le fichier mensuel `annuaire.db`) : un médecin qui
    dépublie disparaît à la connexion suivante. Sans les portables.
 3. **Modification de sa fiche dans l'application** (pas seulement un lien vers le site).
@@ -142,6 +142,25 @@ commit;
   1 fiche, 3 compétences.
 - Retour arrière : pas de retour simple (les `user_id` des fiches se recalculeraient depuis `identites_psc`).
 
+## Premier essai réel de l'application (10/10, 14:36) : client PSC
+
+- `POST /api/annuaire/app/session` contre `dev` → `401 jeton_psc_autre_client`.
+- **Cause** : le site comparait `azp` à son propre client PSC (`NEXT_PUBLIC_PSC_CLIENT_ID`). Au bac à sable, le
+  site et le relais partagent le même client, d'où des essais locaux verts ; en production, le relais a le sien
+  (`100000medecins-100000medecins-org`, enregistré par PSC le 09/10), distinct de celui du site
+  (`100000medecins`).
+- **Correctif** : `verifierJetonPsc` compare `azp` au client de l'application pour l'environnement PSC du site
+  (tableau du contrat ci-dessous). Le message de refus cite le client attendu.
+- **Vérifié** (fonction appelée directement, faux `userinfo` local, rien écrit en base), dans les deux
+  environnements, 16 / 16 : client de l'application accepté ; client de l'application de l'autre environnement,
+  client du site en production, client inconnu et `azp` absent refusés avant tout appel à PSC ; refus d'un autre
+  émetteur, d'un jeton expiré et d'un jeton refusé par PSC inchangés.
+- **Pas encore vérifié** : que `userinfo` de PSC, appelé par le site avec un jeton du flux CIBA, rende le RPPS,
+  la profession et la spécialité. Le prochain essai de l'application le dira : `403 rpps_absent` si le RPPS
+  manque ; une spécialité absente laisse `specialite_code` vide. **À regarder de près** : une profession absente
+  n'est pas refusée (seule une profession présente et différente de `10` l'est) ; si `userinfo` ne la rend pas
+  pour ces jetons, la règle « médecins seulement » ne s'applique plus à l'application.
+
 ## Contrat d'échange avec l'application (pour la session messagerie)
 
 ### Principes
@@ -156,10 +175,20 @@ commit;
 - **Accords** : l'application affiche au médecin les textes d'accord rendus par le site (`accord.publication`,
   `accord.portable`) et renvoie `accord_version` quand elle publie la fiche ou rend le portable visible. Si les
   textes ont changé : `409 accord_perime` → afficher les nouveaux.
-- **Environnement** : le site n'accepte que les jetons PSC de **son** environnement (émetteur `iss`) et du
-  client PSC de l'association (`azp` = celui du relais). `www.100000medecins.org` et `dev.100000medecins.org` :
-  PSC de production ; poste local de David : bac à sable. Tant que l'annuaire est éteint sur www, toutes les
-  adresses y répondent `404 annuaire_ferme` ; `dev` l'a allumé.
+- **Environnement et client PSC** : le site n'accepte que les jetons PSC de **son** environnement (émetteur
+  `iss`) émis pour le **client PSC de l'application** (`azp`), c'est-à-dire celui du relais de la messagerie
+  (service « Messagerie 100000Médecins », flux CIBA). Ce n'est pas le client du site : en production ils sont
+  distincts, et un jeton émis pour le client du site y est refusé (`401 jeton_psc_autre_client`).
+
+  | Environnement PSC | Sites | `iss` attendu | `azp` attendu (application) | Client du site |
+  |---|---|---|---|---|
+  | production | `www.100000medecins.org`, `dev.100000medecins.org` | `https://auth.esw.esante.gouv.fr/auth/realms/esante-wallet` | `100000medecins-100000medecins-org` | `100000medecins` |
+  | bac à sable | poste local de David | `https://auth.bas.psc.esante.gouv.fr/auth/realms/esante-wallet` | `100000medecins-100000medecins-org-bas` | le même |
+
+  Les deux identifiants sont écrits dans [app-session.ts](../src/lib/annuaire/app-session.ts)
+  (`CLIENT_PSC_APPLICATION`) et choisis par `NEXT_PUBLIC_PSC_ENV` : aucune variable à poser chez Vercel. Si PSC
+  change l'identifiant du relais, le corriger là. Tant que l'annuaire est éteint sur www, toutes les adresses y
+  répondent `404 annuaire_ferme` ; `dev` l'a allumé.
 
 ### Adresses
 

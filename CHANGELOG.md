@@ -5,6 +5,21 @@
 
 ---
 
+## [2026-10-10] — Annuaire, tranche 3 : le site attendait son propre client PSC au lieu de celui de l'application
+
+### Fix — Premier essai réel de l'application refusé (`401 jeton_psc_autre_client`)
+- **Constat** (essai de l'application contre `dev`, 10/10 à 14:36, rapporté par la session messagerie) : `POST /api/annuaire/app/session` → `401 jeton_psc_autre_client`.
+- **Cause** : `verifierJetonPsc` comparait `azp` à `NEXT_PUBLIC_PSC_CLIENT_ID`, le client PSC du site. Au bac à sable, le site et le relais de l'application partagent le même client (`100000medecins-100000medecins-org-bas`, relu dans `.env.local`), d'où l'essai local 27 / 27. En production, le relais a le sien (`100000medecins-100000medecins-org`, service « Messagerie 100000Médecins », flux CIBA, enregistré par PSC le 09/10), distinct de celui du site (`100000medecins`). L'entrée de l'étape 2 (« client PSC de l'association, partagé avec le relais ») n'était vraie qu'au bac à sable.
+- **Fix** ([app-session.ts](src/lib/annuaire/app-session.ts)) : `azp` comparé au client PSC **de l'application**, choisi par l'environnement PSC du site (`CLIENT_PSC_APPLICATION`, `PSC_ENV` exporté par [psc.ts](src/lib/auth/psc.ts)) : production → `100000medecins-100000medecins-org`, bac à sable → `100000medecins-100000medecins-org-bas`. Identifiants écrits dans le code (publics, liés au même réglage que l'émetteur attendu) : aucune variable à poser chez Vercel.
+  - Le client du site n'est **pas** accepté en plus : en production, un jeton émis pour `100000medecins` est refusé sur ces adresses (rien de légitime n'en présente).
+  - Le message de refus cite le client attendu.
+- Contrat précisé ([docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md)) : tableau environnement / sites / `iss` / `azp` attendu / client du site, à la place de « client PSC de l'association (`azp` = celui du relais) ».
+- **Vérifié** (script temporaire non commité : fonction appelée directement, faux `userinfo` local, rien écrit en base), dans les deux environnements, **16 / 16** : client de l'application accepté ; client de l'application de l'autre environnement, client du site en production, client inconnu et `azp` absent refusés avant tout appel à PSC ; autre émetteur, jeton expiré et jeton refusé par PSC inchangés.
+- `tsc`, lint des fichiers touchés et `npm run build` passent.
+- **Pas vérifié** : un vrai jeton du relais de production (prochain essai de l'application) ; l'identifiant du client de production lui-même, repris de la note de la session messagerie (aucune trace dans ce dépôt) ; que `userinfo` de PSC rende RPPS, profession et spécialité pour un jeton du flux CIBA. Point à regarder : une profession absente n'est pas refusée (seule une profession présente et différente de `10` l'est).
+
+---
+
 ## [2026-10-10] — Emails : le lien « confirmer mon avis » n'agit plus à l'ouverture + phrases fausses des modèles
 
 ### Fix — Revalidation d'un avis déclenchée par la simple ouverture du lien

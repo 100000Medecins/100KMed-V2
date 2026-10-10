@@ -40,7 +40,7 @@ _(rien en cours)_
 
 **Tranche 3 — raccordement de l'application (10/10)** : décisions de David (identification par jeton PSC vérifié par le site, fiches téléchargées à chaque connexion, modification de sa fiche dans l'application, médecins seulement). Étapes 1 à 3 faites le 10/10 (annuaire rangé par RPPS, module serveur commun, adresses `/api/annuaire/app/…`, anciennes colonnes retirées ; essais 27/27 et 14/14), en production (éteint). Doc et contrat d'échange : `docs/2026-10-10-annuaire-tranche-3.md`.
 - [ ] **David** : essai sur dev — Ma fiche (enregistrer, proposer une compétence), `/annuaire` (sa fiche visible, portable), admin Annuaire.
-- [ ] Premier essai avec un vrai jeton PSC dès que l'application appelle `POST /api/annuaire/app/session` (sur dev).
+- [ ] Essai avec un vrai jeton PSC de l'application sur `POST /api/annuaire/app/session` (dev). Premier essai du 10/10 (14:36) refusé, `401 jeton_psc_autre_client` : en production le relais a son propre client PSC, distinct de celui du site ; contrôle corrigé le 10/10 (client de l'application, par environnement). **Reste** : nouvel essai de l'application ; vérifier que `userinfo` rend RPPS, profession et spécialité avec un jeton du flux CIBA (une profession absente n'est pas refusée aujourd'hui).
 - [ ] **Messagerie** : session au site après chaque validation PSC, téléchargement des fiches, fiche d'un confrère (badge, contact préféré, compétences, portable), recherche par compétence, écran « Ma fiche » — selon le contrat d'échange.
 
 **Suite (à décider avec David)** :
