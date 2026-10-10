@@ -16,8 +16,6 @@ export async function effacerDonneesAnnuaire(admin: ClientAdmin, userId: string)
     await admin.from('annuaire_affichages_portables').delete().or(`lecteur_rpps.eq.${rpps},consulte_rpps.eq.${rpps}`)
     await admin.from('identites_psc').delete().eq('rpps', rpps)
   }
-  // Propositions d'avant le rangement par RPPS (transition)
-  await admin.from('intitules').delete().eq('propose_par', userId).eq('statut', 'propose')
 }
 
 /**
@@ -30,6 +28,4 @@ export async function transfererDonneesAnnuaire(admin: ClientAdmin, sourceId: st
   if (!identiteCible) {
     await admin.from('identites_psc').update({ user_id: cibleId }).eq('user_id', sourceId)
   }
-  // Colonne d'avant le rangement par RPPS (transition)
-  await admin.from('intitules').update({ propose_par: cibleId }).eq('propose_par', sourceId).eq('statut', 'propose')
 }

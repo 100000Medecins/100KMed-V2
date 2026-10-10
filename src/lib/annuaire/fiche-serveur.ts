@@ -104,12 +104,6 @@ export async function propositionsAnsPour(rpps: string): Promise<PropositionsAns
 
 type Resultat<T> = ({ ok: true } & T) | { error: string }
 
-/** Compte du site rattaché à ce RPPS, s'il y en a un (journal des propositions, transition). */
-async function compteDe(rpps: string): Promise<string | null> {
-  const { data } = await createServiceRoleClient().from('identites_psc').select('user_id').eq('rpps', rpps).maybeSingle()
-  return data?.user_id ?? null
-}
-
 /** La fiche du médecin (null s'il n'en a pas encore). */
 export async function lireFiche(rpps: string): Promise<FicheAnnuaire | null> {
   const admin = createServiceRoleClient()
@@ -297,7 +291,7 @@ export async function proposerCompetence(
 
   const { data: cree, error: errCree } = await admin
     .from('intitules')
-    .insert({ type: 'competence', libelle, statut: 'propose', propose_par_rpps: rpps, propose_par: await compteDe(rpps) })
+    .insert({ type: 'competence', libelle, statut: 'propose', propose_par_rpps: rpps })
     .select(COLONNES_CATALOGUE)
     .single()
   if (errCree) return { error: errCree.message }

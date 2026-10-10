@@ -5,7 +5,7 @@
  * par les médecins (Accepter / Reformuler, Fusionner comme synonyme, Refuser), et
  * gestion des compétences validées (ajouter, modifier, supprimer).
  * Chaque décision efface le lien avec l'auteur (promesse de la charte) : acceptée,
- * la proposition perd `propose_par` ; fusionnée ou refusée, elle est supprimée.
+ * la proposition perd `propose_par_rpps` ; fusionnée ou refusée, elle est supprimée.
  * Aussi : oppositions (médecins retirés de l'annuaire issu de l'ANS).
  */
 
@@ -48,7 +48,6 @@ export async function accepterIntitule(
       synonymes: nettoyerSynonymes(input.synonymes),
       groupe: input.groupe?.trim() || null,
       statut: 'valide',
-      propose_par: null,
       propose_par_rpps: null,
       decide_le: new Date().toISOString(),
     })
