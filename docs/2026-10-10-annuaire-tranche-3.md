@@ -127,12 +127,20 @@ commit;
 - Écritures directes depuis le navigateur (règles RLS par `user_id`) : plus utilisées par le site, retirées à
   l'étape 3.
 
-## Étape 3 — après le passage de la production au nouveau code
+## Étape 3 — faite (10/10)
 
-- Retirer `user_id` de `fiches_annuaire`, `fiches_annuaire_portables`, `fiches_intitules`, les passerelles
-  (`annuaire_cles`, `annuaire_suivre_compte`), `intitules.propose_par`, `lecteur_id` / `consulte_id` du journal
-  (`lecteur_rpps` / `consulte_rpps` obligatoires), et les règles RLS d'écriture par `user_id`.
-- Avant : essais de suppression et de fusion de comptes de test sur `dev`.
+- Préalables : suppression et fusion de comptes éprouvées sur trois comptes de test (14 / 14, données effacées) ;
+  production passée au nouveau code (`9c97175`).
+- **Migration de retrait** (lancée par David, vérifiée) : passerelles supprimées ; règles RLS des tables de
+  fiches supprimées et droits de `authenticated` retirés (le site passe par le serveur) ; règle de lecture des
+  intitulés réduite aux validés ; `user_id` retiré des tables de fiches, `intitules.propose_par` retiré ; journal
+  des portables par RPPS seulement (`lecteur_rpps` / `consulte_rpps` obligatoires, liés à `identites_psc` en
+  cascade : le journal part avec l'identité) ; `annuaire_portable_pour` n'écrit plus que les RPPS.
+- État final : l'annuaire est rangé par RPPS ; `identites_psc.user_id` reste le seul lien (facultatif) avec un
+  compte du site. Types régénérés.
+- Vérifié après migration : essai de l'application 27 / 27, essai des comptes 14 / 14 ; base revenue à 1 identité,
+  1 fiche, 3 compétences.
+- Retour arrière : pas de retour simple (les `user_id` des fiches se recalculeraient depuis `identites_psc`).
 
 ## Contrat d'échange avec l'application (pour la session messagerie)
 

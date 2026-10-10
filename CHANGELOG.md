@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-10] — Annuaire, tranche 3 : étape 3, retrait des anciennes colonnes
+
+- Feu vert de David pour mener l'étape 3 seul (la migration reste lancée par lui). Préalables : essais de suppression et de fusion de comptes (14 / 14), production passée au nouveau code (`9c97175`), voir l'entrée de l'étape 2.
+- **Migration de retrait lancée par David, vérifiée** : passerelles de transition supprimées ; règles RLS des fiches, portables et compétences cochées supprimées et **droits de `authenticated` retirés** sur ces tables (le site passe par le serveur) ; lecture des intitulés réduite aux validés ; `user_id` retiré des tables de fiches, `intitules.propose_par` retiré ; journal des portables **par RPPS seulement**, lié aux identités en cascade ; `annuaire_portable_pour` n'écrit plus que les RPPS. `identites_psc.user_id` reste le seul lien (facultatif) avec un compte du site.
+- Types régénérés (53 lignes, colonnes retirées) ; `tsc` et build verts sans changement de code (le code n'utilisait déjà plus ces colonnes).
+- **Revérifié après la migration** : essai local de l'application **27 / 27**, essai des comptes (suppression, fusion) **14 / 14** ; le journal des médecins fictifs est parti avec leurs identités (nouvelle cascade). Base revenue à 1 identité, 1 fiche, 3 compétences, 0 proposition, 0 compte d'essai.
+- Doc : [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+---
+
 ## [2026-10-10] — Annuaire, tranche 3 : étape 2, l'application raccordée au site
 
 ### Base — migration lancée par David (vérifiée)
