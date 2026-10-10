@@ -267,10 +267,9 @@ _(rien en cours)_
 
 ### Déploiement final
 
-#### Relance PSC — interrupteur séparé (en production depuis le 2026-10-09, `6cb56be`)
-- **Rythme passé à une relance toutes les 2 semaines (2026-10-10, sur `dev`) : à reporter sur `main`.** Tant que ce n'est pas fait, la production relance au mieux chaque semaine.
+#### Relance PSC — interrupteur séparé (en production ; une relance toutes les 2 semaines depuis le 2026-10-10, `24cdadc`)
 - Dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
-- Le modèle `relance_psc` affirme « Ce lien est valable 7 jours » : c'est faux (le lien ne périme pas) et contradictoire avec une relance toutes les 2 semaines. Phrase à retirer par David dans Admin → Emails.
+- Le mail initial `verification_psc` (« Validez votre évaluation ») affirme encore « Ce lien est valable 7 jours » : c'est faux (le lien ne périme pas). Proposition : « Vous pourrez aussi utiliser ce lien plus tard. » À modifier dans Admin → Emails, ou par Claude sur accord de David (même méthode que `relance_psc`, corrigé le 10/10).
 - Effet attendu : ~116 relances le premier lundi vers 11 h, selon la date d'activation (126 évaluations en attente au 09/10, dont les 34 MedGPT, gardées par décision de David), puis une toutes les 2 semaines, 4 au plus (la dernière 6 semaines après la première).
 - À vérifier au premier envoi : les liens du mail doivent pointer vers `www.100000medecins.org`. L'adresse est tirée de l'appel de Vercel ; on peut la voir dans le récapitulatif « [Activité] » du lundi.
 

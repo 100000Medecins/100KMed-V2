@@ -11,9 +11,14 @@
 - [relance-psc](src/app/api/cron/relance-psc/route.ts) : la première relance part toujours 7 jours après le dépôt de l'évaluation ; les suivantes un lundi sur deux (`DELAI_ENTRE_RELANCES_JOURS = 13`). La dernière part donc 6 semaines après la première.
 - **Pourquoi 13 jours et non 14** : la tâche ne démarre pas à la seconde près d'un lundi à l'autre. Avec un seuil pile, un démarrage un peu plus tôt que la fois précédente repousse l'envoi au lundi suivant. Simulé avec des démarrages décalés de moins d'une heure : seuil 14 → lundis 0, 2, 5, 8 ; seuil 13 → lundis 0, 2, 4, 6. Le même défaut touchait l'ancien seuil de 7 jours : la relance « hebdomadaire » pouvait sauter des semaines.
 - Textes de la page Emails alignés (bandeau, confirmation à l'allumage, description du modèle).
-- **Relevé, non modifié** : le modèle `relance_psc` (en base) affirme « Ce lien est valable 7 jours ». Le lien ne périme pas (`token_verification` sans date limite). Phrase à retirer par David dans Admin → Emails (TODO).
-- Vérifié : `tsc`, lint des fichiers touchés (0 erreur) et `npm run build` passent. La sélection réelle n'a pas été exécutée (elle enverrait les mails) ; interrupteur toujours absent en base, aucune évaluation relancée.
-- **Reste** : report sur `main` (accord de David).
+- **Modèle `relance_psc` corrigé en base** (demande de David) : il affirmait « Ce lien est valable 7 jours. Relance n/4. » alors que le lien ne périme pas (`token_verification` sans date limite). Nouvelle phrase : « Nous vous enverrons au plus {{max_relances}} rappels à ce sujet. Celui-ci est le n° {{relance_num}}. » Elle ne cite pas le rythme, pour rester vraie s'il change.
+  - [scripts/fix-modele-relance-psc.ts](scripts/fix-modele-relance-psc.ts) : dry-run par défaut, `--execute`, refus si la phrase attendue n'est pas trouvée une seule fois. Exécuté le 10/10, relu par une requête indépendante ; ancien modèle sauvegardé dans `backups/` (hors dépôt).
+  - **Non modifié** : le mail initial `verification_psc` porte la même phrase « Ce lien est valable 7 jours » (TODO).
+- Vérifié : `tsc`, lint des fichiers touchés (0 erreur) et `npm run build` passent. La sélection réelle n'a pas été exécutée (elle enverrait les mails).
+- **Déployé** (accord de David) : report du code seul de `2cd43b9` sur `main` (`24cdadc`, worktree séparé ; CHANGELOG et TODO laissés à `dev`), build vert dans le worktree, déploiement Vercel « Production » `success`.
+  - Production : accueil `200` ; `/api/cron/relance-psc` → `401` sans secret, `skipped` avec le secret ; `/admin/emails` sans jeton → formulaire de connexion sans contenu.
+  - Base : `relance_psc_active` absente, interrupteur général `false`, aucune évaluation relancée.
+- **Reste** : test du modèle puis allumage de « Relance PSC » par David.
 
 ---
 
