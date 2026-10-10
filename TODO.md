@@ -268,10 +268,10 @@ _(rien en cours)_
 ### Déploiement final
 
 #### Relance PSC — interrupteur séparé (en production ; une relance toutes les 2 semaines depuis le 2026-10-10, `24cdadc`)
-- Dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
+- **Allumé par David le 2026-10-10 à 13 h 08** (`relance_psc_active = true` ; interrupteur général toujours `false`). Premier envoi : lundi 12/10 vers 11 h, 119 relances attendues (127 évaluations en attente au 10/10) ; suivants les 26/10, 09/11 et 23/11.
+- **⏰ Lundi 12/10 après 11 h — contrôler le premier envoi** : demander à Claude le nombre d'évaluations avec `relance_psc_count = 1` (≈ 119 attendues) et les rebonds SendGrid du jour ; vérifier dans un mail reçu que le lien pointe vers `www.100000medecins.org`.
 - Le mail initial `verification_psc` (« Validez votre évaluation ») affirme encore « Ce lien est valable 7 jours » : c'est faux (le lien ne périme pas). Proposition : « Vous pourrez aussi utiliser ce lien plus tard. » À modifier dans Admin → Emails, ou par Claude sur accord de David (même méthode que `relance_psc`, corrigé le 10/10).
-- Effet attendu : ~116 relances le premier lundi vers 11 h, selon la date d'activation (126 évaluations en attente au 09/10, dont les 34 MedGPT, gardées par décision de David), puis une toutes les 2 semaines, 4 au plus (la dernière 6 semaines après la première).
-- À vérifier au premier envoi : les liens du mail doivent pointer vers `www.100000medecins.org`. L'adresse est tirée de l'appel de Vercel ; on peut la voir dans le récapitulatif « [Activité] » du lundi.
+- Rappel du fonctionnement : première relance le lundi qui suit les 7 jours après le dépôt, puis une toutes les 2 semaines, 4 au plus. Les 34 évaluations MedGPT sont relancées comme les autres (décision de David). L'adresse des liens est tirée de l'appel de Vercel.
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
