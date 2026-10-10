@@ -82,7 +82,7 @@ _(rien en cours)_
 - ~~**Facebook et Instagram** : premier envoi avec le nouveau panneau~~ ✅ « fonctionne parfaitement » (David, 10/10).
 - ~~**Vercel** : variable `ADMIN_CONTENU_PASSWORD`~~ ✅ fait et testé par David le 09/10.
 
-**Programmation des posts — en cours d'activation (David, 2026-10-10)** : après explication (la tâche ne touche que `posts_reseaux`, aucun email), David a activé `pg_cron` (1.6.4) et `pg_net`, et créé la tâche `envoyer-posts-reseaux` (toutes les 5 min, n° 1, secret `cron_secret` dans Vault) — extensions vérifiées par Claude. **Reste** : (1) variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true` (Production) + redéploiement, sans quoi le bouton « Programmer » reste masqué ; (2) tester un post à +15 min (s'il reste « programmé » plus de 10 min après l'heure : secret Vault ≠ `CRON_SECRET` de Vercel, à recréer). **Arrêt** : `select cron.unschedule('envoyer-posts-reseaux');` + retirer la variable.
+**Programmation des posts — ✅ active et validée (2026-10-10)** : `pg_cron` + `pg_net` activées par David, tâche `envoyer-posts-reseaux` (toutes les 5 min, secret `cron_secret` dans Vault), variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true`. Premier post programmé (Facebook, 13 h 10) transmis à Make à 13:10:03. La tâche ne touche que `posts_reseaux`, aucun email. **Arrêt** : `select cron.unschedule('envoyer-posts-reseaux');` + retirer la variable.
 
 ---
 
