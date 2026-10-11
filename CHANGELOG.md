@@ -16,7 +16,7 @@
 - Webhook : le bouton s'appelle « Detect new values » (ancien « Redetermine data structure »). Envoi neutre fait par Claude sur le signal de David (`network = essai-structure`, aucune branche ne le prend, Make a répondu `200 Accepted`) : `media` et `video_url` apparaissent dans les listes.
 - Branche « Instagram reel » : filtre `network` = `instagram` et `media` = `video`, module « Create a reel post ».
 - Branche « Facebook Video » : mêmes filtres pour `facebook` ; « Upload a Video » (type « download a video from URL », `video_url`, « Video caption » vide) puis « Update a Video » (« Video ID » du module précédent). Deux modules parce que la documentation de Make prévient qu'une description contenant des chiffres à l'envoi fait masquer la vidéo par Facebook.
-- **Non confirmé** : `text` dans « Video caption » de « Update a Video », emplacement du filtre « Facebook Video », règle « `media` différent de `video` » sur les branches d'origine. **Aucun essai réel de publication à ce stade.**
+- Confirmé par David le 11/10 : `text` dans « Video caption » de « Update a Video », filtre « Facebook Video » placé avant « Upload a Video », règle « `media` différent de `video` » sur les branches d'origine. **Aucun essai réel de publication à ce stade** (prévu par David le 12/10).
 
 ### Tutoriel pour la community manager
 - « Publier une vidéo sur les réseaux : mode d'emploi » (Claude Docs, deux captures du panneau) : https://claude.ai/code/artifact/802932ef-93f1-4bdf-8f50-15908eb08078. Il décrit le parcours une fois le code en production ; à relire après l'essai réel (délais de publication, comportement de Facebook).
