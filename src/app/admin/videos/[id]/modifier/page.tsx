@@ -38,8 +38,9 @@ async function getSolutionsForSelector() {
   }))
 }
 
-export default async function ModifierVideoPage(props: { params: Promise<{ id: string }> }) {
+export default async function ModifierVideoPage(props: { params: Promise<{ id: string }>; searchParams: Promise<{ publier?: string }> }) {
   const params = await props.params;
+  const { publier } = await props.searchParams
   const [video, rubriques, solutions, initialSolutionIds, postsReseaux, fichiersReseaux] = await Promise.all([
     getVideoById(params.id),
     getRubriques(),
@@ -79,6 +80,7 @@ export default async function ModifierVideoPage(props: { params: Promise<{ id: s
           postsInitiaux={postsReseaux}
           fichiersInitiaux={fichiersReseaux}
           programmationActive={programmationActive()}
+          ouvertAuDepart={publier === '1'}
         />
       </div>
     </div>

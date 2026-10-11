@@ -5,6 +5,24 @@
 
 ---
 
+## [2026-10-11] — Vidéo native : arrivée sur la page de la vidéo après sa création, Make configuré, tutoriel
+
+### Feature — Après « Créer la vidéo », on arrive sur la page de la vidéo, panneau des réseaux ouvert
+- **Constat de David** (essai sur `dev`) : la page « Nouvelle vidéo » ne propose que le lien YouTube ; le dépôt des fichiers n'existe que sur la page d'une vidéo déjà enregistrée, et la création renvoyait à la liste.
+- [admin.ts](src/lib/actions/admin.ts) `createVideo` redirige vers `/admin/videos/<id>/modifier?publier=1` ; la [page](src/app/admin/videos/[id]/modifier/page.tsx) lit le paramètre et le [panneau](src/components/admin/SocialPanel.tsx) s'ouvre et se place à l'écran (`ouvertAuDepart`). Une vidéo rouverte par le crayon garde le panneau fermé, comme avant. Le lien YouTube reste obligatoire (le site lit les vidéos sur YouTube).
+- **Vérifié dans un vrai navigateur** (build local, vidéo temporaire en brouillon créée par le formulaire puis supprimée depuis la liste) : arrivée sur `…/modifier?publier=1`, panneau ouvert et entièrement visible (court, il se cale en bas de la fenêtre ; rempli, son haut vient à 24 px du bord) ; sans le paramètre, panneau fermé. `tsc`, lint des fichiers touchés et build passent. Base revenue à 19 vidéos, 0 fichier, 6 posts, bucket vide.
+
+### Make — scénario complété par David (captures)
+- Webhook : le bouton s'appelle « Detect new values » (ancien « Redetermine data structure »). Envoi neutre fait par Claude sur le signal de David (`network = essai-structure`, aucune branche ne le prend, Make a répondu `200 Accepted`) : `media` et `video_url` apparaissent dans les listes.
+- Branche « Instagram reel » : filtre `network` = `instagram` et `media` = `video`, module « Create a reel post ».
+- Branche « Facebook Video » : mêmes filtres pour `facebook` ; « Upload a Video » (type « download a video from URL », `video_url`, « Video caption » vide) puis « Update a Video » (« Video ID » du module précédent). Deux modules parce que la documentation de Make prévient qu'une description contenant des chiffres à l'envoi fait masquer la vidéo par Facebook.
+- **Non confirmé** : `text` dans « Video caption » de « Update a Video », emplacement du filtre « Facebook Video », règle « `media` différent de `video` » sur les branches d'origine. **Aucun essai réel de publication à ce stade.**
+
+### Tutoriel pour la community manager
+- « Publier une vidéo sur les réseaux : mode d'emploi » (Claude Docs, deux captures du panneau) : https://claude.ai/code/artifact/802932ef-93f1-4bdf-8f50-15908eb08078. Il décrit le parcours une fois le code en production ; à relire après l'essai réel (délais de publication, comportement de Facebook).
+
+---
+
 ## [2026-10-10] — Annuaire : l'application ouvre sa session, import ANS du 09/10, pédopsychiatrie en une entrée
 
 ### Application — deuxième essai réussi (17:15, rapporté par la session messagerie)

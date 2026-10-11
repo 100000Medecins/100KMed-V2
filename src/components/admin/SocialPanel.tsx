@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Send, Clock, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe, CalendarX, Loader2, Film } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -100,12 +100,17 @@ interface Props {
   postsInitiaux: PostReseau[]
   programmationActive: boolean // tâche planifiée en place ; sinon envoi immédiat seulement
   fichiersInitiaux?: FichierVideo[] // vidéo seulement : fichiers déposés pour la publication native
+  ouvertAuDepart?: boolean // arrivée depuis la création d'une vidéo : panneau ouvert et amené à l'écran
 }
 
 type Resultat = { posts: PostReseau[]; error?: string }
 
-export default function SocialPanel({ source, postsInitiaux, programmationActive, fichiersInitiaux = [] }: Props) {
-  const [open, setOpen] = useState(false)
+export default function SocialPanel({ source, postsInitiaux, programmationActive, fichiersInitiaux = [], ouvertAuDepart = false }: Props) {
+  const [open, setOpen] = useState(ouvertAuDepart)
+  const panneau = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (ouvertAuDepart) panneau.current?.scrollIntoView({ block: 'start' })
+  }, [ouvertAuDepart])
   const [posts, setPosts] = useState<PostReseau[]>(postsInitiaux)
   const [fichiers, setFichiers] = useState<FichierVideo[]>(fichiersInitiaux)
   // Saisies en cours (texte, créneau) par post, enregistrées à la sortie du champ.
@@ -204,7 +209,7 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
   }
 
   return (
-    <Card padding="none">
+    <Card padding="none" ref={panneau} className="scroll-mt-6">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

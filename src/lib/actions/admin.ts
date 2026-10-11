@@ -1547,7 +1547,9 @@ export async function createVideo(formData: FormData) {
   revalidatePath('/admin/videos')
   revalidatePath('/stories-tutos')
   revalidatePath('/')
-  redirect('/admin/videos')
+  // Vers la page de la vidéo, panneau « Publier sur les réseaux » ouvert : c'est là que se
+  // déposent les fichiers, et il n'existe qu'une fois la vidéo enregistrée.
+  redirect(`/admin/videos/${newId}/modifier?publier=1`)
 }
 
 export async function updateVideo(id: string, formData: FormData) {
