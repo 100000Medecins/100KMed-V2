@@ -15,7 +15,7 @@
 - `tsc` et `npm run build` verts dans le worktree. Turbopack refuse un `node_modules` relié par lien (« points out of the filesystem root ») : dépendances installées dans le worktree (`npm ci`), puis worktree et copie de `.env.local` supprimés.
 - Vercel « Production » `success`.
 - **Vérifié en production** : accueil, `/stories-tutos` et `/videos` `200` ; `/api/cron/purge-videos-reseaux` `404` avant le déploiement, `401` sans secret après (nouveau code en ligne) ; `/api/cron/envoyer-posts-reseaux` `401` sans secret ; `/admin/videos` sans session → formulaire de connexion, aucun titre de vidéo dans la page.
-- Tâche d'effacement lancée une fois en production avec le secret : `{ ok, effaces: 0, abandonnes: 0 }`, les deux fichiers de l'essai (moins de 7 jours) toujours présents, en base et au stockage. Elle tournera ensuite seule chaque jour à 4 h 30.
+- Tâche d'effacement lancée une fois en production avec le secret : `{ ok, effaces: 0, abandonnes: 0 }`, les deux fichiers de l'essai (moins de 7 jours) toujours présents, en base et au stockage. Elle tournera ensuite seule chaque jour à 4 h 30 UTC ; les fichiers de l'essai seront effacés le 20/10.
 - **Reste** (David) : essai d'un post **programmé** en vidéo depuis la production, coup d'œil au panneau avec l'accès « contenus », relecture du tutoriel.
 
 ---
@@ -90,7 +90,7 @@ Suite du cadrage du matin (Supabase passé en Pro par David). **Côté site term
 - [envoi.ts](src/lib/reseaux/envoi.ts) : Make reçoit deux champs de plus, `media` (`image` / `video`) et `video_url` (adresse signée valable 24 h, générée au moment de l'envoi, ou `null`). Les champs existants ne changent pas.
 
 ### Feature — Effacement automatique des fichiers
-- [purge-videos-reseaux](src/app/api/cron/purge-videos-reseaux/route.ts), chaque jour à 4 h 30 (production seulement) → `purgerFichiers` ([fichiers.ts](src/lib/reseaux/fichiers.ts)) :
+- [purge-videos-reseaux](src/app/api/cron/purge-videos-reseaux/route.ts), chaque jour à 4 h 30 UTC, soit 6 h 30 à Paris en été (production seulement) → `purgerFichiers` ([fichiers.ts](src/lib/reseaux/fichiers.ts)) :
   - fichier publié en vidéo : effacé 7 jours après la dernière activité (dépôt, modification ou envoi d'un post en vidéo du réseau) ;
   - fichier jamais publié : 30 jours ;
   - jamais effacé tant qu'un post programmé ou en cours d'envoi l'attend ;
