@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { adresseVideo } from './fichiers'
 import { lienArticle, lienEtImageVideo } from './liens'
 import type { PostReseau, SourcePost } from './types'
 
@@ -46,11 +47,15 @@ async function lienEtImage(supabase: Client, post: PostReseau): Promise<{ lien: 
  */
 export async function transmettre(supabase: Client, post: PostReseau): Promise<void> {
   const { lien, image } = await lienEtImage(supabase, post)
+  // Post en vidéo : Make ne reçoit que l'adresse du fichier, que le réseau télécharge lui-même.
+  const video = post.media === 'video' ? await adresseVideo(supabase, post) : null
   let erreur: string | null = null
 
   if (!process.env.MAKE_WEBHOOK_URL) {
     erreur = 'MAKE_WEBHOOK_URL non configuré'
-  } else if (post.reseau === 'instagram' && !image) {
+  } else if (video && 'erreur' in video) {
+    erreur = video.erreur
+  } else if (post.reseau === 'instagram' && !video && !image) {
     erreur = 'Instagram exige une image'
   } else {
     try {
@@ -58,7 +63,15 @@ export async function transmettre(supabase: Client, post: PostReseau): Promise<v
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // Noms de champs attendus par le scénario Make (article_url vaut aussi pour une vidéo).
-        body: JSON.stringify({ network: post.reseau, text: post.texte, scheduled_at: null, image_url: image, article_url: lien }),
+        body: JSON.stringify({
+          network: post.reseau,
+          text: post.texte,
+          scheduled_at: null,
+          image_url: image,
+          article_url: lien,
+          media: post.media,
+          video_url: video?.url ?? null,
+        }),
       })
       if (!res.ok) erreur = `Make : ${(await res.text()).slice(0, 300)}`
     } catch (e) {
