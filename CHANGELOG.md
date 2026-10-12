@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-12] — Vidéo native : essai réel validé sur Instagram et Facebook
+
+- **Essai de David depuis `dev`** (vidéo « Introduction ») : fichiers réels de 141 Mo (vertical) et 152 Mo (horizontal), en MP4, déposés par le panneau ; Reel Instagram transmis à 23 h 13 et vidéo Facebook à 23 h 16 (heure de Paris). Retour de David : « ça fonctionne parfaitement sur Facebook et Instagram ». En base : les deux posts sont `envoye`, `media = video`, sans erreur ; le post LinkedIn est resté en brouillon (non envoyé).
+- La branche Facebook en deux modules (« Upload a Video » sans texte, puis « Update a Video ») est donc celle qui a servi.
+- **« Publié par Make » sur Facebook** : mention d'attribution de l'application qui a publié. D'après les éditeurs d'outils de publication (Publer, Ayrshare, Hopper HQ, ContentStudio), seuls les gestionnaires de la page la voient, pas les abonnés, et elle ne se retire pas ; pas de source Meta trouvée. David l'accepte.
+- **Reste** : mise en production (ordre de David), puis essai d'un post programmé et relecture du tutoriel. Tant que le code n'est pas en production, les fichiers de l'essai restent au stockage (la tâche d'effacement ne tourne qu'en production).
+
+---
+
 ## [2026-10-11] — Vidéo native : arrivée sur la page de la vidéo après sa création, Make configuré, tutoriel
 
 ### Feature — Après « Créer la vidéo », on arrive sur la page de la vidéo, panneau des réseaux ouvert

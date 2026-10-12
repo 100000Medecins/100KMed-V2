@@ -87,7 +87,7 @@ _(rien en cours)_
 
 **Programmation des posts — ✅ active et validée (2026-10-10)** : `pg_cron` + `pg_net` activées par David, tâche `envoyer-posts-reseaux` (toutes les 5 min, secret `cron_secret` dans Vault), variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true`. Premier post programmé (Facebook, 13 h 10) transmis à Make à 13:10:03. La tâche ne touche que `posts_reseaux`, aucun email. **Arrêt** : `select cron.unschedule('envoyer-posts-reseaux');` + retirer la variable.
 
-### Vidéo native sur les réseaux — côté site fait le 2026-10-10, Make configuré et confirmé le 11/10 ; reste l'essai réel (posé le 2026-10-08)
+### Vidéo native sur les réseaux — essai réel validé le 2026-10-12 sur Instagram et Facebook ; reste la mise en production (posé le 2026-10-08)
 
 **Fait (CHANGELOG du 10/10)** : Supabase Pro, bucket privé `videos-reseaux`, table `videos_fichiers`, colonne `posts_reseaux.media`, dépôt des deux fichiers dans le panneau « Publier sur les réseaux » d'une vidéo, choix image / vidéo par post, envoi de `media` et `video_url` à Make, effacement automatique des fichiers. Sur `dev`, **pas en production**.
 
@@ -99,7 +99,9 @@ _(rien en cours)_
 - **Hébergement du fichier le temps de la publication : Supabase Pro** (25 $/mois ; apporte aussi les sauvegardes quotidiennes). La lecture sur le site reste YouTube.
 - **n8n sur le Synology écarté** : en auto-hébergé, il faut ses propres applications développeur, chacune soumise à validation (LinkedIn Community Management, App Review Meta, audit Google), plus un NAS exposé à internet.
 
-**⚠️ Tant que les branches Make ne sont pas en place** : ne pas envoyer un post en « Vidéo ». Le scénario actuel ne regarde pas `media` et le publierait comme un post image.
+**Essai réel du 12/10 (David, depuis `dev`)** : vidéo « Introduction », fichiers de 141 Mo (vertical) et 152 Mo (horizontal) ; Reel Instagram et vidéo Facebook publiés, « fonctionne parfaitement ». Facebook affiche « Publié par Make » : mention d'attribution que seuls les gestionnaires de la page voient d'après les éditeurs d'outils de publication (pas de source Meta), non retirable ; David l'accepte.
+
+**⚠️ Tant que le code n'est pas en production** : ne pas « Programmer » un post en vidéo depuis `dev` (la tâche planifiée appelle la production, qui l'enverrait en image), et les fichiers déposés ne sont pas effacés (la tâche d'effacement ne tourne qu'en production).
 
 **Make — état au 2026-10-11** (captures de David) : champs `media` et `video_url` détectés par le webhook (« Detect new values », nouveau nom de « Redetermine data structure », avec un envoi neutre de Claude) ; branche « Instagram reel » créée (« Create a reel post ») ; branche « Facebook Video » créée (« Upload a Video » en « download a video from URL », « Video caption » vide, puis « Update a Video » avec le « Video ID » du module précédent). **Confirmé par David le 11/10** : `text` dans « Video caption » de « Update a Video », filtre « Facebook Video » placé avant « Upload a Video », règle « `media` différent de `video` » sur les deux branches d'origine. **Reste l'essai réel, prévu par David le 12/10.**
 
@@ -110,7 +112,7 @@ _(rien en cours)_
 2. ~~**Make, branche Reel Instagram** : filtre `network` = `instagram` et `media` = `video` ; module « Create a Reel Post », adresse de la vidéo = `video_url`, légende = `text`.~~ ✅ fait par David le 11/10
 3. ~~**Make, branche vidéo Facebook** : filtre `network` = `facebook` et `media` = `video` ; module « Upload a Video » en mode « Download a video from URL » (adresse = `video_url`), **description laissée vide**, suivi du module « Update a Video » (description = `text`). Raison : la documentation de Make prévient qu'une description contenant des chiffres au moment de l'envoi fait masquer la vidéo par Facebook (« Your post goes against our community standards so only you can see it »), et nos textes en contiennent (nom de l'association, lien). Repli si le module télécharge lui-même le fichier (limite de 5 Mo) : « Make an API Call » (`POST /{id de la page}/videos`, `file_url` = `video_url`). Libellés relevés dans la documentation et des tutoriels, pas à l'écran : à confirmer à la mise en place.~~ ✅ fait par David le 11/10
    - ~~Au préalable, pour que `media` et `video_url` apparaissent dans Make : « Redetermine data structure » sur le webhook, puis un envoi neutre fait par Claude (réseau fictif, aucune branche ne publie).~~ ✅ fait par David le 11/10
-4. **Essai par réseau** depuis `dev` (ouvrir une vidéo existante par le crayon, ou en créer une : on arrive désormais sur sa page, panneau ouvert) avec une vidéo courte, par **« Envoyer maintenant »** (pas « Programmer » : la tâche planifiée appelle la production, qui n'a pas encore ce code et enverrait le post en image).
+4. ~~**Essai par réseau** depuis `dev` (ouvrir une vidéo existante par le crayon, ou en créer une : on arrive désormais sur sa page, panneau ouvert) avec une vidéo courte, par **« Envoyer maintenant »** (pas « Programmer » : la tâche planifiée appelle la production, qui n'a pas encore ce code et enverrait le post en image).~~ ✅ fait par David le 12/10 (Instagram et Facebook)
 5. **Mise en production** (`dev` → `main`, sur ordre de David), puis essai d'un post programmé.
 
 **À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
