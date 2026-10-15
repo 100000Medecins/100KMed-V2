@@ -5,6 +5,23 @@
 
 ---
 
+## [2026-10-15] — Annuaire : « accepte de nouveaux patients » (généralistes), étape 1 : colonnes en base
+
+Demande de David : sur la fiche d'un médecin généraliste, lui demander s'il accepte de nouveaux patients comme médecin traitant, le montrer aux confrères (fiche et filtre de l'annuaire) et à l'application. Travail sur `dev` (annuaire derrière l'interrupteur).
+
+### Décisions de David
+- Généralistes = spécialité PSC (`identites_psc.specialite_code`) **SM26** « Qualifié en Médecine générale », **SM53** « Spécialiste en Médecine générale », **SM54** « Médecine générale » : les trois seuls codes de médecine générale de la nomenclature des spécialités ordinales de l'ANS (TRE-R38, consultée le 15/10), tous en vigueur.
+- Réponse à trois états (oui / non / non renseigné, par défaut) et date de la dernière réponse, **remise au jour à chaque enregistrement qui contient la réponse** (une confirmation date aussi).
+- Question : « … comme médecin traitant ». Sur la fiche d'un confrère, le « non » est affiché aussi.
+
+### Base — migration lancée par David (vérifiée)
+- `fiches_annuaire.nouveaux_patients` (booléen, `null` = non renseigné) et `nouveaux_patients_le` (date et heure), contrainte : les deux vides ou les deux remplis.
+- **Constat** (rôle de lecture, transaction en lecture seule ; serveur MCP Supabase hors ligne, même connexion utilisée par script) : colonnes et contrainte présentes ; droits inchangés, lus dans le catalogue : `service_role` tout, `claude_readonly` lecture, `anon` et `authenticated` rien, aucun droit par colonne ; RLS active sans règle (seul le serveur écrit les fiches) ; 1 fiche, publiée, non renseignée.
+- Volumes : 18 985 (SM26), 59 967 (SM53) et 2 646 (SM54) médecins dans l'Annuaire Santé ; 2 identités PSC, toutes deux SM53.
+- Types régénérés (+6 lignes, rien de retiré), `tsc` passe. Rien de visible.
+
+---
+
 ## [2026-10-15] — Mise en production : outil Prévisionnel Maison de Santé et correctif de la redirection après connexion
 
 Ordre de David (« on passe en prod »). Report du **code seul** de `b7275b5` à `5f31f2e` sur `main`, dans un worktree séparé, sans les autres travaux en cours sur `dev` ni CHANGELOG :

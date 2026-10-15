@@ -46,6 +46,16 @@ _(rien en cours)_
 - [ ] **David** : sur dev, `/annuaire` → spécialité « Psychiatrie option enfant et adolescent » : une seule entrée dans la liste, 419 médecins France entière (SM43 + SM92). À emporter dans `main` avec le prochain report (annuaire éteint en production).
 - [ ] **Messagerie** : session au site après chaque validation PSC, téléchargement des fiches, fiche d'un confrère (badge, contact préféré, compétences, portable), recherche par compétence, écran « Ma fiche » — selon le contrat d'échange.
 
+**« Accepte de nouveaux patients » — généralistes (demande du 15/10)** : question dans Ma fiche (comme médecin traitant ; oui / non / non renseigné ; date remise au jour à chaque enregistrement qui contient la réponse), mention sur la fiche d'un confrère (« oui » et « non », avec la date), filtre dans la recherche, deux champs de plus dans le contrat de l'application (ajout rétrocompatible). Généralistes = spécialité PSC SM26, SM53, SM54. Voir CHANGELOG du 15/10.
+- [x] ~~Étape 1 : colonnes `fiches_annuaire.nouveaux_patients` / `nouveaux_patients_le`~~ ✅ 15/10 (migration lancée par David, constat fait, types régénérés).
+- [ ] **David** : `PUT /ma-fiche` d'un non-généraliste qui envoie la réponse → ignoré (proposé) ou refusé (`422`) ?
+- [ ] Étape 2 : serveur commun et adresses de l'application (`GET /fiches`, `GET` / `PUT /ma-fiche`, `nouveaux_patients_possible`), contrat dans `docs/2026-10-10-annuaire-tranche-3.md`.
+- [ ] Étape 3 : la question dans Ma fiche (site).
+- [ ] Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche` (filtre, deux colonnes rendues).
+- [ ] Étape 5 : mention sur la fiche d'un confrère et filtre dans la recherche (site).
+- [ ] **Jour J, CGU et charte** (textes préparés dans le dépôt messagerie) : remplacer « vos disponibilités » (champ qui n'existe pas) par la réponse sur les nouveaux patients dans CGU art. 4 bis « Votre fiche », charte « Données traitées » et « Ce qui est visible » ; l'ajouter aux déclarations non vérifiées (CGU art. 5).
+- [ ] **Messagerie** : poser la question dans « Ma fiche » si `nouveaux_patients_possible`, l'afficher sur la fiche d'un confrère, filtre — selon le contrat.
+
 **Suite (à décider avec David)** :
 - **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
 

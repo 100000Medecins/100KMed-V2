@@ -1163,6 +1163,8 @@ export type Database = {
           mise_a_jour: string
           moyen_contact: string | null
           mssante: string | null
+          nouveaux_patients: boolean | null
+          nouveaux_patients_le: string | null
           publiee: boolean
           publiee_accord_le: string | null
           publiee_accord_version: string | null
@@ -1179,6 +1181,8 @@ export type Database = {
           mise_a_jour?: string
           moyen_contact?: string | null
           mssante?: string | null
+          nouveaux_patients?: boolean | null
+          nouveaux_patients_le?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
@@ -1195,6 +1199,8 @@ export type Database = {
           mise_a_jour?: string
           moyen_contact?: string | null
           mssante?: string | null
+          nouveaux_patients?: boolean | null
+          nouveaux_patients_le?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
