@@ -2,13 +2,15 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import OutilPrevisionnel from '@/components/outils/OutilPrevisionnel'
+import { OUTIL_HTML } from './outil-html'
+import './outil.css'
 
-// Page 100 % statique : l'outil est une page HTML autonome (public/outils/previsionnel-msp),
-// encadrée ici. L'enregistrement dans le compte et les exports passent par l'outil lui-même
-// (API /api/outils/previsionnels), donc cette page ne lit jamais la session.
+// Page 100 % statique : le balisage de l'outil est rendu ici, son script (public/outils/
+// previsionnel-msp/outil.js) le fait vivre dans le navigateur. L'enregistrement dans le compte, le
+// partage et les exports passent par l'API /api/outils/*, donc cette page ne lit jamais la session.
 
 const CHEMIN = '/outils/previsionnel-maison-de-sante'
-const OUTIL = '/outils/previsionnel-msp/index.html'
 const TITRE = 'Prévisionnel Maison de Santé – simulateur de business-plan'
 const DESCRIPTION =
   "Simulez les charges mensuelles, le revenu net par praticien, l'investissement et le plan de financement de votre cabinet de groupe ou de votre MSP."
@@ -54,22 +56,13 @@ export default function PrevisionnelMaisonDeSantePage() {
           </div>
         </section>
 
-        <section className="max-w-[1440px] mx-auto px-3 sm:px-6 py-8">
-          <iframe
-            src={OUTIL}
-            title="Simulateur de prévisionnel pour maison de santé"
-            loading="lazy"
-            className="block w-full h-[calc(100vh_-_72px)] min-h-[800px] rounded-card border border-gray-200 bg-white shadow-card"
-          />
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-500">
-            <a href={OUTIL} target="_blank" rel="noopener" className="font-semibold text-navy hover:underline">
-              Ouvrir l&apos;outil en plein écran
-            </a>
-            <p>
-              Vos saisies restent dans votre navigateur ; rien n&apos;est envoyé au serveur, sauf les prévisionnels que
-              vous enregistrez dans votre compte.
-            </p>
-          </div>
+        <section className="bg-[#F3F6F8] pb-10">
+          <div id="msp" className="msp" dangerouslySetInnerHTML={{ __html: OUTIL_HTML }} />
+          <OutilPrevisionnel />
+          <p className="max-w-[1280px] mx-auto px-4 text-center text-sm text-gray-500">
+            Vos saisies restent dans votre navigateur ; rien n&apos;est envoyé au serveur, sauf les prévisionnels que vous
+            enregistrez dans votre compte.
+          </p>
         </section>
       </main>
       <Footer />

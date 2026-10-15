@@ -1,482 +1,13 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<title>Prévisionnel Maison de Santé</title>
-<!-- Encadré dans la page du site (claire, sans mode sombre) : l'outil s'y affiche toujours en clair,
-     et sans son titre, que la page porte déjà. -->
-<script>try{if(window.self!==window.top){var r=document.documentElement;r.setAttribute('data-theme','light');r.setAttribute('data-embedded','')}}catch(e){}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
-<style>
-/* Layout: en-tête fin, colonne de saisie par onglets à gauche, synthèse collante à droite (empilée sur mobile). */
-:root{
-  --bg:#F3F6F8; --surface:#FFFFFF; --surface-2:#EAF0F3;
-  --ink:#16222B; --ink-2:#4E5E69; --muted:#86949D; --line:#D8E1E6; --line-strong:#B9C6CE;
-  --accent:#1B2A4A; --accent-ink:#FFFFFF; --accent-soft:#E3E8F2; --accent-text:#2A3F66;
-  --good:#1B8A3A; --good-soft:#E3F3E7; --warn:#B07200; --warn-soft:#FBF0D6; --bad:#C23B3B; --bad-soft:#FBE3E3;
-  --input-bg:#FFFFFF; --input-ro:#F0F4F6;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
-  --grid:#E3E9ED; --axis:#B9C6CE;
-  --shadow:0 1px 2px rgba(22,34,43,.06),0 6px 20px -8px rgba(22,34,43,.12);
-  --font-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
-  --font-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --radius:10px;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0F1518; --surface:#171F24; --surface-2:#1E2A31;
-    --ink:#ECF1F3; --ink-2:#AEBBC3; --muted:#7F8D95; --line:#2A353C; --line-strong:#3B4851;
-    --accent:#9DB4E0; --accent-ink:#0B1A20; --accent-soft:#1E2A42; --accent-text:#B4C6EA;
-    --good:#4CC26B; --good-soft:#15301D; --warn:#E6B14A; --warn-soft:#3A2E12; --bad:#F07A7A; --bad-soft:#3C1C1C;
-    --input-bg:#121A1E; --input-ro:#1A242A;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-    --grid:#26323A; --axis:#3B4851;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0F1518; --surface:#171F24; --surface-2:#1E2A31;
-  --ink:#ECF1F3; --ink-2:#AEBBC3; --muted:#7F8D95; --line:#2A353C; --line-strong:#3B4851;
-  --accent:#9DB4E0; --accent-ink:#0B1A20; --accent-soft:#1E2A42; --accent-text:#B4C6EA;
-  --good:#4CC26B; --good-soft:#15301D; --warn:#E6B14A; --warn-soft:#3A2E12; --bad:#F07A7A; --bad-soft:#3C1C1C;
-  --input-bg:#121A1E; --input-ro:#1A242A;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-  --grid:#26323A; --axis:#3B4851;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;margin:0}
-.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
-h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0}
-h1{font-size:1.45rem}
-h2{font-size:1.25rem}
-h3{font-size:1.02rem}
-p{margin:0}
-a{color:var(--accent-text)}
-button{font:inherit;color:inherit}
-input,select{font:inherit;color:var(--ink)}
-.num,.tnum{font-variant-numeric:tabular-nums}
-
-/* En-tête */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding:10px 16px}
-.top-in{max-width:1248px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand .mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:.85rem;flex:none}
-.brand small{display:block;color:var(--ink-2);font-size:.8rem;margin-top:-2px}
-.top-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-.scenario{display:flex;align-items:center;gap:6px;color:var(--ink-2);font-size:.9rem}
-.scenario input{width:min(260px,60vw);background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 8px;font-weight:600;color:var(--ink)}
-.scenario input:hover,.scenario input:focus{border-color:var(--line-strong);background:var(--input-bg);outline:none}
-
-.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{border-color:var(--accent);color:var(--accent-text)}
-.btn:focus-visible,input:focus-visible,select:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.primary:hover{filter:brightness(1.08);color:var(--accent-ink)}
-.btn.ghost{border-color:transparent;background:transparent}
-.btn.ghost:hover{background:var(--surface-2)}
-.btn.small{padding:4px 9px;font-size:.82rem}
-.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
-
-/* Grille principale */
-.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;margin-top:18px;align-items:start}
-@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}.aside{position:static!important;order:-1}.syn .m-hide{display:none}}
-@media (max-width:700px){.top{position:static}.brand small{display:none}.brand h1{font-size:1.2rem}}
-.aside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 66px)}
-
-/* Onglets */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
-.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;cursor:pointer;color:var(--ink-2);font-weight:600;white-space:nowrap;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px}
-.tab .n{width:20px;height:20px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);font-size:.75rem;display:grid;place-items:center;font-family:var(--font-display)}
-.tab[aria-selected="true"]{color:var(--accent-text);border-bottom-color:var(--accent)}
-.tab[aria-selected="true"] .n{background:var(--accent);color:var(--accent-ink)}
-.panel{padding-top:18px;display:grid;gap:18px}
-
-/* Cartes et champs */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
-.main>section{min-width:0}
-.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.card-h p{color:var(--ink-2);font-size:.9rem}
-.lead{color:var(--ink-2);max-width:68ch}
-.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 16px}
-.field{display:grid;gap:4px;min-width:0}
-.field label{font-size:.85rem;color:var(--ink-2);font-weight:600;line-height:1.25}
-.ctl{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:8px;background:var(--input-bg);overflow:hidden}
-.ctl:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.ctl input,.ctl select{border:0;background:transparent;padding:7px 10px;width:100%;min-width:0;font-variant-numeric:tabular-nums}
-.ctl input:focus,.ctl select:focus{outline:none}
-.ctl input[type=number]{appearance:textfield;-moz-appearance:textfield}
-.ctl .unit{padding:0 10px 0 4px;color:var(--muted);font-size:.85rem;white-space:nowrap}
-.ctl.ro{background:var(--input-ro)}
-.ctl.ro input{color:var(--ink-2)}
-.help{font-size:.8rem;color:var(--muted);line-height:1.3}
-.check{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem;cursor:pointer;color:var(--ink)}
-.check input{width:17px;height:17px;accent-color:var(--accent);margin:0}
-.sub{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
-.sub-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.sub-h h4{font-size:.92rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:var(--font-body)}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--surface-2);color:var(--ink-2)}
-.dot{width:10px;height:10px;border-radius:3px;flex:none}
-.inline-total{display:flex;justify-content:flex-end;gap:14px;flex-wrap:wrap;font-size:.9rem;color:var(--ink-2);margin-top:10px}
-.inline-total b{color:var(--ink)}
-
-/* Professions */
-.prof{border-left:4px solid var(--pc,var(--accent))}
-.prof .card-h{align-items:center}
-.prof-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
-.prof-title input.name{font-family:var(--font-display);font-weight:700;font-size:1.05rem;border:1px solid transparent;border-radius:6px;padding:3px 6px;background:transparent;min-width:0;width:min(260px,100%)}
-.prof-title input.name:hover,.prof-title input.name:focus{border-color:var(--line-strong);background:var(--input-bg);outline:none}
-.prof-sum{font-size:.85rem;color:var(--ink-2);flex-basis:100%}
-.add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.add-row select{border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;background:var(--input-bg)}
-
-/* Tableaux */
-.tscroll{overflow-x:auto;max-width:100%}
-table{border-collapse:collapse;width:100%;font-size:.9rem}
-th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
-th{color:var(--ink-2);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
-th:first-child,td:first-child{text-align:left;white-space:normal}
-tr.total td{font-weight:700;border-top:2px solid var(--line-strong)}
-tr.group td{background:var(--surface-2);font-weight:700;text-align:left;color:var(--ink-2);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
-td .ctl{min-width:88px}
-td .ctl input{padding:4px 8px}
-td .ctl select{padding:4px 6px}
-td input.txt{border:1px solid transparent;border-radius:6px;padding:4px 6px;background:transparent;width:100%;min-width:160px}
-td input.txt:hover,td input.txt:focus{border-color:var(--line-strong);background:var(--input-bg);outline:none}
-.neg{color:var(--bad)}
-.pos{color:var(--good)}
-.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1;padding:2px 6px;border-radius:6px}
-.x:hover{color:var(--bad);background:var(--bad-soft)}
-
-/* Synthèse */
-.syn{display:grid;gap:12px}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
-.tile .k{font-size:.78rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-.tile .v{font-family:var(--font-display);font-size:1.5rem;font-weight:700;line-height:1.15;margin-top:2px}
-.tile .d{font-size:.82rem;color:var(--muted);margin-top:2px}
-.tile.hero{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.tile.hero .k,.tile.hero .d{color:var(--accent-ink);opacity:.85}
-.tile-list{display:grid;gap:6px;margin-top:8px}
-.tile-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.9rem}
-.tile-row .l{display:flex;align-items:center;gap:7px;color:var(--ink-2);min-width:0}
-.tile-row .l span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tile-row b{font-variant-numeric:tabular-nums}
-.alert{border-radius:8px;padding:8px 11px;font-size:.86rem;display:flex;gap:8px;align-items:flex-start}
-.alert.warn{background:var(--warn-soft);color:var(--ink)}
-.alert.bad{background:var(--bad-soft);color:var(--ink)}
-.alert.good{background:var(--good-soft);color:var(--ink)}
-.alert .ic{font-weight:700;flex:none}
-@media (max-width:980px){
-  .syn{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-  .syn .tile.wide{grid-column:1/-1}
-}
-
-/* Résultats */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.chart{position:relative}
-.chart svg{display:block;width:100%;height:auto;max-width:100%}
-.chart text{font-family:var(--font-body);fill:var(--ink-2);font-size:11px}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--ink-2);margin:6px 0 2px}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:.82rem;box-shadow:var(--shadow);min-width:160px;z-index:5;display:none}
-.tip .t{font-weight:700;margin-bottom:4px}
-.tip .r{display:flex;justify-content:space-between;gap:12px}
-.tip .r .l{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
-details summary{cursor:pointer;font-weight:600;color:var(--accent-text);padding:4px 0}
-.notice{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--ink);font-size:.92rem}
-.notice b{color:var(--accent-text)}
-.io textarea{width:100%;min-height:120px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font:12px ui-monospace,Menlo,Consolas,monospace;background:var(--input-bg);color:var(--ink);resize:vertical}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:.88rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
-.toast.on{opacity:1}
-@media (prefers-reduced-motion:reduce){.toast{transition:none}}
-.about ol,.about ul{margin:6px 0 0 18px;padding:0;color:var(--ink-2)}
-.about li{margin:3px 0}
-.footer{margin-top:28px;color:var(--muted);font-size:.82rem;text-align:center}
-
-/* Compte et exports (ajouts de l'intégration au site) */
-a.btn{text-decoration:none;color:var(--ink)}
-a.btn.primary{color:var(--accent-ink)}
-.btn svg{width:15px;height:15px;flex:none}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
-.btn[aria-busy="true"]{opacity:.7;cursor:progress}
-.acct-status{font-size:.88rem;color:var(--ink-2);margin-top:8px}
-.acct-status.warn{color:var(--warn)}
-.acct-list td:last-child{text-align:right;white-space:nowrap}
-.acct-list td:last-child .btn{margin-left:6px}
-.acct-list td .help{margin-top:2px}
-/* En-tête : le nom du scénario s'étire, les actions restent sur la même ligne tant que la largeur le permet. */
-html[data-embedded] .brand{display:none}
-.scenario{flex:1 1 300px;min-width:0;flex-wrap:wrap}
-.scenario input{flex:1 1 160px;width:auto;max-width:340px;min-width:0}
-.switch{position:relative}
-.switch-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:260px;max-width:min(360px,90vw);background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:grid;gap:2px}
-.switch-item{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--ink);font-weight:600}
-.switch-item:hover,.switch-item:focus-visible{background:var(--surface-2);outline:none}
-.switch-item small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}
-.switch-item.armed{background:var(--warn-soft)}
-.switch-item.armed small{color:var(--ink)}
-/* Lien de partage (propriétaire) et prévisionnel partagé en lecture seule (visiteur du lien) */
-.share-url{flex:1 1 280px}
-.share-url input{font-size:.85rem}
-#sharedBanner{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
-#sharedBanner[hidden]{display:none!important}
-#sharedBanner .add-row{flex:0 1 auto;min-width:0}
-html[data-shared="loading"] .main{visibility:hidden}
-html[data-shared="on"] #btnReset,html[data-shared="on"] #btnShare,html[data-shared="on"] #switchWrap,html[data-shared="on"] #ioCard,
-html[data-shared="on"] #addProfCard,html[data-shared="on"] [data-action]{display:none!important}
-html[data-shared="on"] .ctl.ro,html[data-shared="on"] .ctl:has(:disabled){background:var(--input-ro)}
-</style>
-</head>
-<body>
-
-<div class="wrap">
-  <header class="top">
-    <div class="top-in">
-      <div class="brand">
-        <div class="mark">MSP</div>
-        <div><h1>Prévisionnel Maison de Santé</h1><small>Simulateur de business-plan pour cabinet de groupe / MSP</small></div>
-      </div>
-      <div class="scenario"><span>Scénario</span><input id="scenarioName" type="text" aria-label="Nom du scénario">
-        <div class="switch" id="switchWrap" hidden>
-          <button class="btn small" id="btnSwitch" type="button" aria-haspopup="menu" aria-expanded="false" title="Ouvrir un autre prévisionnel enregistré">Changer<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button>
-          <div class="switch-menu" id="switchMenu" role="menu" hidden></div>
-        </div>
-      </div>
-      <div class="top-actions">
-        <button class="btn ghost" id="btnReset" type="button">Valeurs par défaut</button>
-        <button class="btn" id="btnShare" type="button">Sauvegarder / partager</button>
-        <button class="btn" id="btnXlsx" type="button" title="Exporter en Excel (.xlsx)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13h10"/></svg>Excel</button>
-        <button class="btn" id="btnPdf" type="button" title="Exporter en PDF"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13h10"/></svg>PDF</button>
-      </div>
-    </div>
-  </header>
-
-  <div id="sharedBanner" hidden></div>
-
-  <div class="main">
-    <section>
-      <nav class="tabs" role="tablist" aria-label="Étapes">
-        <button class="tab" role="tab" data-tab="equipe" type="button"><span class="n">1</span>Équipe &amp; activité</button>
-        <button class="tab" role="tab" data-tab="local" type="button"><span class="n">2</span>Local &amp; charges</button>
-        <button class="tab" role="tab" data-tab="materiel" type="button"><span class="n">3</span>Matériel</button>
-        <button class="tab" role="tab" data-tab="financement" type="button"><span class="n">4</span>Investissement &amp; financement</button>
-        <button class="tab" role="tab" data-tab="resultats" type="button"><span class="n">5</span>Résultats</button>
-        <button class="tab" role="tab" data-tab="apropos" type="button"><span class="n">?</span>Méthode</button>
-      </nav>
-
-      <div class="panel" id="tab-equipe" role="tabpanel">
-        <div class="card">
-          <div class="card-h"><h2>Montée en charge et horizon</h2><p>Commun à toute l'équipe</p></div>
-          <div class="fields">
-            <div class="field"><label for="f-ramp-start">Taux d'activité au mois 1</label><div class="ctl"><input id="f-ramp-start" type="number" data-path="ramp.start" data-kind="pct" min="0" max="100" step="5"><span class="unit">%</span></div><div class="help">Part des créneaux réellement remplis à l'ouverture.</div></div>
-            <div class="field"><label for="f-ramp-end">Taux d'activité en vitesse de croisière</label><div class="ctl"><input id="f-ramp-end" type="number" data-path="ramp.end" data-kind="pct" min="0" max="100" step="5"><span class="unit">%</span></div><div class="help">95 % = agenda quasi plein, le reste étant les trous et absences.</div></div>
-            <div class="field"><label for="f-ramp-months">Durée de la montée en charge</label><div class="ctl"><input id="f-ramp-months" type="number" data-path="ramp.months" min="0" max="60" step="1"><span class="unit">mois</span></div><div class="help">Progression linéaire ; chaque nouvel arrivant suit la même courbe à partir de son arrivée.</div></div>
-            <div class="field"><label for="f-horizon">Horizon du prévisionnel</label><div class="ctl"><select id="f-horizon" data-path="horizon" data-kind="int"><option value="36">3 ans (36 mois)</option><option value="48">4 ans (48 mois)</option><option value="60">5 ans (60 mois)</option><option value="84">7 ans (84 mois)</option></select></div></div>
-          </div>
-        </div>
-
-        <div id="profList" style="display:grid;gap:18px"></div>
-
-        <div class="card" id="addProfCard">
-          <div class="card-h"><h3>Ajouter une profession</h3><p>Chaque profession a ses propres tarifs, horaires, congés et cotisations.</p></div>
-          <div class="add-row">
-            <select id="addProfSel" aria-label="Profession à ajouter"></select>
-            <button class="btn primary" id="btnAddProf" type="button">Ajouter</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel" id="tab-local" role="tabpanel" hidden>
-        <div class="card">
-          <div class="card-h"><h2>Local</h2><p>Loyer, charges locatives, travaux</p></div>
-          <div class="fields">
-            <div class="field"><label for="f-surface">Surface</label><div class="ctl"><input id="f-surface" type="number" data-path="local.surface" min="0" step="5"><span class="unit">m²</span></div><div class="help" id="surfaceHint"></div></div>
-            <div class="field"><label for="f-rent">Loyer HT hors charges</label><div class="ctl"><input id="f-rent" type="number" data-path="local.rentM2" min="0" step="5"><span class="unit">€/m²/an</span></div></div>
-            <div class="field"><label for="f-tva">TVA sur le loyer</label><div class="ctl"><select id="f-tva" data-path="local.tva" data-kind="num"><option value="0">Non assujetti (0 %)</option><option value="0.2">20 %</option></select></div><div class="help">Souvent non due si ni le bailleur ni les praticiens ne sont assujettis.</div></div>
-            <div class="field"><label for="f-chm2">Charges locatives</label><div class="ctl"><input id="f-chm2" type="number" data-path="local.chargesM2" min="0" step="1"><span class="unit">€/m²/an</span></div><div class="help">Eau, électricité, chauffage, entretien des communs.</div></div>
-            <div class="field"><label for="f-tf">Taxe foncière refacturée</label><div class="ctl"><input id="f-tf" type="number" data-path="local.taxeM2" min="0" step="1"><span class="unit">€/m²/an</span></div></div>
-            <div class="field"><label for="f-franchise">Franchise de loyer</label><div class="ctl"><input id="f-franchise" type="number" data-path="local.franchise" min="0" step="1"><span class="unit">mois</span></div><div class="help">Mois gratuits négociés avec le bailleur.</div></div>
-            <div class="field"><label for="f-works">Travaux d'aménagement</label><div class="ctl"><input id="f-works" type="number" data-path="local.worksM2" min="0" step="50"><span class="unit">€ TTC/m²</span></div><div class="help">Second œuvre léger : 400 à 800 €/m² ; réhabilitation lourde : 1 000 à 1 500 €/m².</div></div>
-            <div class="field"><label for="f-caution">Dépôt de garantie</label><div class="ctl"><input id="f-caution" type="number" data-path="local.cautionMonths" min="0" step="1"><span class="unit">mois de loyer</span></div></div>
-          </div>
-          <div class="inline-total" id="localTotals"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Charges de fonctionnement</h2><p>Mensuelles sauf mention contraire</p></div>
-          <div class="fields">
-            <div class="field"><label for="f-telecom">Téléphone + internet</label><div class="ctl"><input id="f-telecom" type="number" data-path="charges.telecom" min="0" step="10"><span class="unit">€/mois</span></div></div>
-            <div class="field"><label for="f-soft">Logiciel métier</label><div class="ctl"><input id="f-soft" type="number" data-path="charges.software" min="0" step="5"><span class="unit">€/praticien/mois</span></div><div class="help">Abonnement, hébergement HDS, messagerie sécurisée, agenda en ligne.</div></div>
-            <div class="field"><label for="f-cmed">Consommables médicaux</label><div class="ctl"><input id="f-cmed" type="number" data-path="charges.medConsum" min="0" step="5"><span class="unit">€/praticien/mois</span></div></div>
-            <div class="field"><label for="f-coff">Consommables bureau</label><div class="ctl"><input id="f-coff" type="number" data-path="charges.officeConsum" min="0" step="5"><span class="unit">€/praticien/mois</span></div></div>
-            <div class="field"><label for="f-acc1">Comptabilité de la structure</label><div class="ctl"><input id="f-acc1" type="number" data-path="charges.accountingStructure" min="0" step="100"><span class="unit">€/an</span></div></div>
-            <div class="field"><label for="f-acc2">Gestion des paies</label><div class="ctl"><input id="f-acc2" type="number" data-path="charges.accountingPayroll" min="0" step="50"><span class="unit">€/an</span></div></div>
-            <div class="field"><label for="f-bank">Frais bancaires + assurances</label><div class="ctl"><input id="f-bank" type="number" data-path="charges.bankInsurance" min="0" step="10"><span class="unit">€/mois</span></div><div class="help">Multirisque locaux, RC de la structure, tenue de compte.</div></div>
-            <div class="field"><label for="f-reserve">Marge prudentielle</label><div class="ctl"><input id="f-reserve" type="number" data-path="charges.reserve" data-kind="pct" min="0" max="50" step="1"><span class="unit">%</span></div><div class="help">Majoration « au cas où » appliquée à toutes les charges.</div></div>
-          </div>
-
-          <div class="sub">
-            <div class="sub-h"><h4>Ménage</h4></div>
-            <div class="fields">
-              <div class="field"><label for="f-clh">Heures par semaine</label><div class="ctl"><input id="f-clh" type="number" data-path="charges.cleaningHours" min="0" step="1"><span class="unit">h</span></div></div>
-              <div class="field"><label for="f-clr">Coût horaire tout compris</label><div class="ctl"><input id="f-clr" type="number" data-path="charges.cleaningRate" min="0" step="1"><span class="unit">€/h</span></div></div>
-            </div>
-          </div>
-
-          <div class="sub">
-            <div class="sub-h"><h4>Secrétariat</h4></div>
-            <div class="fields">
-              <div class="field"><label for="f-secnet">Salaire net secrétaire</label><div class="ctl"><input id="f-secnet" type="number" data-path="charges.secretaryNet" min="0" step="50"><span class="unit">€/mois</span></div><div class="help">0 si pas de salarié.</div></div>
-              <div class="field"><label for="f-secrate">Charges sociales (salariales + patronales)</label><div class="ctl"><input id="f-secrate" type="number" data-path="charges.employerRate" data-kind="pct" min="0" max="150" step="5"><span class="unit">% du net</span></div><div class="help">Coût employeur ≈ net × (1 + taux). Un 13e mois est intégré.</div></div>
-              <div class="field"><label for="f-secstart">Prise de poste</label><div class="ctl"><input id="f-secstart" type="number" data-path="charges.secretaryStart" min="1" step="1"><span class="unit">mois n°</span></div></div>
-              <div class="field"><label for="f-sectel">Secrétariat externalisé / téléphonique</label><div class="ctl"><input id="f-sectel" type="number" data-path="charges.phoneSecretariat" min="0" step="10"><span class="unit">€/mois</span></div></div>
-            </div>
-          </div>
-
-          <div class="sub">
-            <div class="sub-h"><h4>Autres charges fixes</h4><button class="btn small" type="button" data-action="addOther">+ Ajouter une ligne</button></div>
-            <div class="tscroll"><table id="otherTable"></table></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel" id="tab-materiel" role="tabpanel" hidden>
-        <div class="card">
-          <div class="card-h"><h2>Matériel et ameublement</h2><p>Prix TTC indicatifs 2026, à ajuster sur devis</p></div>
-          <div class="fields" style="margin-bottom:12px">
-            <div class="field"><label for="f-boxes">Nombre de box de consultation</label><div class="ctl"><input id="f-boxes" type="number" data-path="invest.boxes" min="0" step="1" placeholder="auto"><span class="unit">box</span></div><div class="help" id="boxHint"></div></div>
-          </div>
-          <div class="kpis" id="equipTotals"></div>
-        </div>
-        <div id="equipGroups" style="display:grid;gap:18px"></div>
-      </div>
-
-      <div class="panel" id="tab-financement" role="tabpanel" hidden>
-        <div class="card">
-          <div class="card-h"><h2>Frais de départ</h2></div>
-          <div class="fields">
-            <div class="field"><label for="f-creation">Frais de création de la société</label><div class="ctl"><input id="f-creation" type="number" data-path="invest.creation" min="0" step="100"><span class="unit">€</span></div><div class="help">Statuts, annonces légales, greffe, conseil.</div></div>
-            <div class="field"><label for="f-capital">Capital initial (SCM / SISA)</label><div class="ctl"><input id="f-capital" type="number" data-path="invest.capital" min="0" step="100"><span class="unit">€</span></div></div>
-            <div class="field"><label for="f-bfr">Besoin en fonds de roulement</label><div class="ctl"><input id="f-bfr" type="number" data-path="invest.bfr" min="0" step="1000"><span class="unit">€</span></div><div class="help">Trésorerie d'avance pour payer les charges des premiers mois. Vérifiez-le avec la trésorerie prévisionnelle (onglet Résultats).</div></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Plan de financement</h2><p>Le crédit couvre ce que les apports et subventions ne couvrent pas</p></div>
-          <div class="tscroll"><table id="planTable"></table></div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Apports et emprunt</h2></div>
-          <div class="fields">
-            <div class="field"><label for="f-equity">Apports personnels</label><div class="ctl"><input id="f-equity" type="number" data-path="fin.equity" min="0" step="1000"><span class="unit">€</span></div></div>
-            <div class="field"><label for="f-grants">Subventions</label><div class="ctl"><input id="f-grants" type="number" data-path="fin.grants" min="0" step="1000"><span class="unit">€</span></div><div class="help">ARS (FIR), collectivités, Région, URPS…</div></div>
-            <div class="field"><label for="f-loanm">Durée de l'emprunt</label><div class="ctl"><input id="f-loanm" type="number" data-path="fin.loanMonths" min="1" step="12"><span class="unit">mois</span></div></div>
-            <div class="field"><label for="f-rate">Taux annuel (assurance comprise)</label><div class="ctl"><input id="f-rate" type="number" data-path="fin.rate" data-kind="pct" min="0" max="20" step="0.1"><span class="unit">%</span></div></div>
-            <div class="field"><label for="f-defer">Franchise de remboursement</label><div class="ctl"><input id="f-defer" type="number" data-path="fin.deferMonths" min="0" step="1"><span class="unit">mois</span></div><div class="help">Mois sans échéance au démarrage (simplification : sans intérêts intercalaires).</div></div>
-          </div>
-          <div class="inline-total" id="loanTotals"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Durées d'amortissement</h2><p>Information comptable, sans effet sur la trésorerie</p></div>
-          <div class="fields">
-            <div class="field"><label for="f-am1">Frais de création</label><div class="ctl"><input id="f-am1" type="number" data-path="amort.creation" min="1" step="1"><span class="unit">ans</span></div></div>
-            <div class="field"><label for="f-am2">Matériel et ameublement</label><div class="ctl"><input id="f-am2" type="number" data-path="amort.equipment" min="1" step="1"><span class="unit">ans</span></div></div>
-            <div class="field"><label for="f-am3">Travaux</label><div class="ctl"><input id="f-am3" type="number" data-path="amort.works" min="1" step="1"><span class="unit">ans</span></div></div>
-          </div>
-          <div class="inline-total" id="amortTotals"></div>
-        </div>
-      </div>
-
-      <div class="panel" id="tab-resultats" role="tabpanel" hidden>
-        <div class="notice">Ce sont des <b>prévisionnels</b> : relisez posément chaque chiffre saisi, comparez les revenus en vitesse de croisière aux statistiques de votre profession, puis finalisez avec un expert-comptable.</div>
-        <div class="kpis" id="resKpis"></div>
-
-        <div class="card">
-          <div class="card-h"><h2>Recettes mensuelles par profession et charges de la structure</h2><p>Recettes des associés (rétrocessions comprises) ; la ligne noire est le total des charges</p></div>
-          <div class="chart" id="chart1"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Revenu net mensuel par praticien</h2><p>Après quote-part des charges et cotisations sociales, par profession</p></div>
-          <div class="chart" id="chart2"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Résultat collectif mensuel</h2><p>Recettes des associés − charges de la structure, avant cotisations ; les mois négatifs sont financés par le fonds de roulement</p></div>
-          <div class="chart" id="chart3"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-h"><h2>Synthèse annuelle</h2></div>
-          <div class="tscroll"><table id="yearTable"></table></div>
-        </div>
-
-        <div class="card">
-          <details><summary>Détail mois par mois</summary>
-            <div class="tscroll" style="margin-top:10px"><table id="monthTable"></table></div>
-          </details>
-        </div>
-      </div>
-
-      <div class="panel" id="tab-apropos" role="tabpanel" hidden>
-        <div class="card about">
-          <h2>Méthode de calcul</h2>
-          <p class="lead" style="margin-top:8px">L'outil transpose un business-plan Excel conçu par un jeune médecin pour son propre projet de cabinet pluriprofessionnel (SCM/SISA), généralisé à toutes les professions d'une maison de santé. Les cases de saisie correspondent aux « cases bleues » de l'Excel d'origine ; tout le reste se recalcule instantanément.</p>
-          <h3 style="margin-top:16px">Recettes</h3>
-          <ol>
-            <li>Pour chaque profession, l'activité « pleine » d'un praticien = heures de consultation × actes par heure × tarif moyen, sur (52 − semaines de congés) / 12 semaines par mois.</li>
-            <li>Un taux d'activité part du taux du mois 1 et monte linéairement jusqu'au taux de croisière. Chaque nouvel associé suit la même courbe à partir de son arrivée.</li>
-            <li>Remplacements de congés : les créneaux laissés vides pendant les vacances sont assurés par un remplaçant qui conserve une part des honoraires (rétrocession) ; le reste revient au titulaire.</li>
-            <li>Collaborateur régulier : des heures supplémentaires chaque semaine (soirées, samedis) sur le même principe.</li>
-          </ol>
-          <h3 style="margin-top:16px">Charges et répartition</h3>
-          <ol>
-            <li>Les charges de la structure (loyer, charges, logiciel, consommables, comptabilité, personnel, emprunt…) sont totalisées puis majorées de la marge prudentielle. Elles correspondent aux apports mensuels des associés à la SCM/SISA.</li>
-            <li>Elles sont réparties entre praticiens présents selon leurs parts (ex. 1 part par médecin, 0,5 par infirmier qui exerce surtout au domicile).</li>
-            <li>Revenu net par praticien = (recettes propres + rétrocessions reçues − quote-part des charges) × (1 − taux de cotisations sociales de la profession). Les cotisations sont une approximation ; un expert-comptable affinera.</li>
-          </ol>
-          <h3 style="margin-top:16px">Investissements et financement</h3>
-          <ul>
-            <li>Besoins = travaux + dépôt de garantie + matériel (par box × nombre de box, plus le matériel commun) + frais de création + capital + fonds de roulement.</li>
-            <li>Emprunt = besoins − apports − subventions ; mensualité calculée à taux constant ; franchise de remboursement sans intérêts intercalaires (simplification).</li>
-            <li>La trésorerie prévisionnelle part du fonds de roulement et cumule recettes − charges ; si elle passe en négatif, le fonds de roulement est insuffisant.</li>
-          </ul>
-          <h3 style="margin-top:16px">Limites</h3>
-          <ul>
-            <li>Les valeurs pré-remplies sont des ordres de grandeur 2026, pas des références tarifaires officielles : tarifs conventionnels, loyers et prix du matériel varient fortement selon le lieu et le projet.</li>
-            <li>Pas de fiscalité (impôt sur le revenu, CFE), pas d'amortissements dans les résultats, pas de revalorisation annuelle.</li>
-            <li>Les infirmiers et autres professions exerçant surtout au domicile ne mobilisent pas de box ; leur quote-part est réglée via les parts.</li>
-          </ul>
-          <p class="lead" style="margin-top:14px">Vos saisies restent dans votre navigateur, sauf les prévisionnels que vous enregistrez dans votre compte 100 000 Médecins. Depuis votre compte, le bouton « Sauvegarder / partager » permet aussi de créer un lien de partage en lecture seule, pour un associé, votre expert-comptable ou votre banque.</p>
-        </div>
-      </div>
-    </section>
-
-    <aside class="aside">
-      <div class="syn" id="synthese"></div>
-    </aside>
-  </div>
-
-  <div class="card io" id="ioCard" hidden style="margin-top:18px">
-    <div class="card-h"><h2>Sauvegarder et partager</h2><button class="btn ghost small" type="button" id="btnCloseIo">Fermer</button></div>
-    <div id="acct"></div>
-  </div>
-
-  <p class="footer">Outil d'aide au montage de projet, sans valeur contractuelle. Les chiffres doivent être validés par un professionnel du chiffre.</p>
-</div>
-<div class="toast" id="toast" role="status"></div>
-
-<script>
+/* Outil « Prévisionnel Maison de Santé » : calcul, interface, compte, partage.
+   Monté sur le balisage de la page (#msp) par le composant OutilPrevisionnel, démonté quand on quitte
+   la page sans rechargement. Repris de la page autonome d'origine ; calcul inchangé. */
 (function(){
 'use strict';
+let pristine=null; // balisage d'origine, remis à chaque montage (éléments neufs, sans écouteurs)
+function monter(){
+const root=document.getElementById('msp'); if(!root) return ()=>{};
+if(pristine===null) pristine=root.innerHTML; else root.innerHTML=pristine;
+const ctrl=new AbortController(), sig={signal:ctrl.signal};
 
 /* ---------- Données par défaut ---------- */
 const TEMPLATES = {
@@ -540,8 +71,8 @@ const OWN_RAW=(()=>{ try{ return localStorage.getItem(KEY); }catch(e){ return nu
 let S = load() || defaultState();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const s=JSON.parse(raw); if(!s||!s.professions) return null; uid = 1 + s.professions.reduce((m,p)=>Math.max(m, parseInt(String(p.id).slice(1))||0),0); return s; }catch(e){ return null; } }
 // Prévisionnel partagé par lien (lecture seule) : jamais écrit dans le navigateur du visiteur.
-const SHARE_TOKEN=(()=>{ let h=''; try{ h=(window.top!==window.self?window.top.location.hash:location.hash)||''; }catch(e){} const m=/^#partage=([A-Za-z0-9_-]{24})$/.exec(h); return m?m[1]:null; })();
-if(SHARE_TOKEN) document.documentElement.setAttribute('data-shared','loading');
+const SHARE_TOKEN=(()=>{ let h=''; try{ h=location.hash||''; }catch(e){} const m=/^#partage=([A-Za-z0-9_-]{24})$/.exec(h); return m?m[1]:null; })();
+if(SHARE_TOKEN) root.setAttribute('data-shared','loading');
 let shared=null;
 function save(){ if(shared) return; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
@@ -660,7 +191,7 @@ function compute(){
 
 /* ---------- Rendu : formulaire ---------- */
 function fillStatic(){
-  document.querySelectorAll('[data-path]').forEach(el=>{
+  root.querySelectorAll('[data-path]').forEach(el=>{
     if(el.closest('#profList')||el.closest('#equipGroups')||el.closest('#otherTable')) return;
     const v=getPath(S, el.dataset.path);
     if(el.type==='checkbox'){ el.checked=!!v; return; }
@@ -767,8 +298,8 @@ function renderEquipTotals(){
     ['Mobilier', fmtEur0(R.equipByCat[1]), ''],['Matériel médical', fmtEur0(R.equipByCat[2]), ''],['Informatique', fmtEur0(R.equipByCat[3]), '']
   ].map(([k,v,d])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`).join('');
   const groupTotals={};
-  S.equipment.forEach((e,i)=>{ const t=(e.perBox?R.boxes:1)*(e.qty||0)*(e.price||0); groupTotals[e.group]=(groupTotals[e.group]||0)+t; const cell=document.querySelector(`[data-eqtotal="${i}"]`); if(cell) cell.textContent=fmtEur0(t); });
-  document.querySelectorAll('[data-grouptotal]').forEach(td=>{ td.textContent=fmtEur0(groupTotals[td.dataset.grouptotal]||0); });
+  S.equipment.forEach((e,i)=>{ const t=(e.perBox?R.boxes:1)*(e.qty||0)*(e.price||0); groupTotals[e.group]=(groupTotals[e.group]||0)+t; const cell=root.querySelector(`[data-eqtotal="${i}"]`); if(cell) cell.textContent=fmtEur0(t); });
+  root.querySelectorAll('[data-grouptotal]').forEach(td=>{ td.textContent=fmtEur0(groupTotals[td.dataset.grouptotal]||0); });
 }
 function renderPlan(){
   const n=R.needs;
@@ -902,12 +433,12 @@ function drawChart3(){
 const TABS=['equipe','local','materiel','financement','resultats','apropos'];
 function showTab(name){
   if(!TABS.includes(name)) name='equipe';
-  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===name?'true':'false'));
+  root.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===name?'true':'false'));
   TABS.forEach(t=>{ document.getElementById('tab-'+t).hidden = t!==name; });
   try{ if(!SHARE_TOKEN) history.replaceState(null,'','#'+name); }catch(e){}
   try{ localStorage.setItem(KEY+'-tab',name); }catch(e){}
 }
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+root.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 
 /* ---------- Événements ---------- */
 function readValue(el){
@@ -918,15 +449,15 @@ function readValue(el){
   const n=parseFloat(el.value); if(isNaN(n)) return 0;
   return el.dataset.kind==='pct' ? n/100 : n;
 }
-document.addEventListener('input',ev=>{
+root.addEventListener('input',ev=>{
   const el=ev.target; if(!el.dataset||!el.dataset.path) return;
   setPath(S, el.dataset.path, readValue(el));
   if(el.dataset.path==='horizon') S.horizon = parseInt(el.value,10)||48;
   if(el.dataset.path.startsWith('professions.')&&el.dataset.path.endsWith('.name')){ /* le nom se propage aux résultats */ }
   renderAll();
-});
+},sig);
 document.getElementById('scenarioName').addEventListener('input',ev=>{ S.name=ev.target.value; save(); });
-document.addEventListener('click',ev=>{
+root.addEventListener('click',ev=>{
   const b=ev.target.closest('[data-action]'); if(!b) return;
   const a=b.dataset.action;
   if(a==='delProf'){ S.professions.splice(+b.dataset.idx,1); renderProfs(); renderAll(); }
@@ -934,8 +465,8 @@ document.addEventListener('click',ev=>{
   else if(a==='delOther'){ S.charges.other.splice(+b.dataset.idx,1); renderOther(); renderAll(); }
   else if(a==='addEquip'){ S.equipment.push({group:b.dataset.group,name:'Nouvel élément',price:0,qty:1,cat:1,perBox:b.dataset.group===GROUPS[0]}); renderEquip(); renderAll(); }
   else if(a==='delEquip'){ S.equipment.splice(+b.dataset.idx,1); renderEquip(); renderAll(); }
-});
-document.getElementById('btnAddProf').addEventListener('click',()=>{ const k=document.getElementById('addProfSel').value; const p=mkProf(k); p.count0=1; p.extraCount=0; S.professions.push(p); renderProfs(); renderAll(); const cards=document.querySelectorAll('.prof'); const c=cards[cards.length-1]; if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); });
+},sig);
+document.getElementById('btnAddProf').addEventListener('click',()=>{ const k=document.getElementById('addProfSel').value; const p=mkProf(k); p.count0=1; p.extraCount=0; S.professions.push(p); renderProfs(); renderAll(); const cards=root.querySelectorAll('.prof'); const c=cards[cards.length-1]; if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); });
 document.getElementById('btnReset').addEventListener('click',()=>{
   const btn=document.getElementById('btnReset');
   if(btn.dataset.armed){ delete btn.dataset.armed; btn.textContent='Valeurs par défaut'; S=defaultState(); renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll(); acctUnlink(); toast('Scénario réinitialisé'); return; }
@@ -962,7 +493,7 @@ function setLink(l){ link=l; try{ if(l) localStorage.setItem(ACCT_KEY,JSON.strin
 function acctUnlink(){ setLink(null); renderAcct(); }
 const snapshot=()=>JSON.stringify(S);
 const fmtDate=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); };
-function loginHref(){ let p='/outils/previsionnel-maison-de-sante'; try{ if(window.top===window.self) p=location.pathname; }catch(e){} return '/connexion?redirect='+encodeURIComponent(p); }
+function loginHref(){ return '/connexion?redirect='+encodeURIComponent(location.pathname); }
 async function api(path,opts){ opts=opts||{}; const init={method:opts.method||'GET',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}; if(opts.body){ init.headers['Content-Type']='application/json'; init.body=opts.body; } const r=await fetch(API+path,init); let data=null; try{ data=await r.json(); }catch(e){} return {status:r.status, ok:r.ok, data}; }
 function acctRefresh(){
   acctReady=api('').then(res=>{
@@ -982,7 +513,7 @@ function renderAcct(){
   if(st==='loading'){ box.innerHTML=head()+'<p class="acct-status">Vérification de votre connexion…</p>'; return; }
   if(st==='error'){ box.innerHTML=head()+'<p class="acct-status">Vos prévisionnels enregistrés sont momentanément indisponibles.</p><div class="add-row" style="margin-top:8px"><button class="btn small" type="button" data-acct="retry">Réessayer</button></div>'; return; }
   if(st==='anon'){
-    box.innerHTML=head()+`${acct.notice?`<div class="alert warn" style="margin-bottom:10px"><span class="ic">!</span><div>${esc(acct.notice)}</div></div>`:''}<p class="lead">Connectez-vous à votre compte 100 000 Médecins pour enregistrer jusqu'à ${acct.max} prévisionnels nommés, les retrouver sur tous vos appareils et les exporter en Excel ou en PDF.</p><div class="add-row" style="margin-top:10px"><a class="btn primary" href="${esc(loginHref())}" target="_top">Se connecter</a><a class="btn" href="/inscription" target="_top">Créer un compte</a></div>`;
+    box.innerHTML=head()+`${acct.notice?`<div class="alert warn" style="margin-bottom:10px"><span class="ic">!</span><div>${esc(acct.notice)}</div></div>`:''}<p class="lead">Connectez-vous à votre compte 100 000 Médecins pour enregistrer jusqu'à ${acct.max} prévisionnels nommés, les retrouver sur tous vos appareils et les exporter en Excel ou en PDF.</p><div class="add-row" style="margin-top:10px"><a class="btn primary" href="${esc(loginHref())}">Se connecter</a><a class="btn" href="/inscription">Créer un compte</a></div>`;
     return;
   }
   const n=acct.items.length;
@@ -1035,7 +566,7 @@ async function acctOpen(id,btn){
       S.name=res.data.item.nom; fillStatic(); save();
       setLink({id, snap:snapshot()});
       toast(`« ${res.data.item.nom} » ouvert`);
-      window.scrollTo({top:0,behavior:'smooth'});
+      root.scrollIntoView({behavior:'smooth',block:'start'});
     } else if(res.status===404){ toast('Ce prévisionnel n\'existe plus'); }
     else toast('Ouverture impossible, réessayez');
   }catch(e){ toast('Ce prévisionnel est illisible'); }
@@ -1100,20 +631,19 @@ function copyText(input,msg){
 const sharedBanner=document.getElementById('sharedBanner');
 function leaveShared(){
   // Recharge la page sans le code de partage : le visiteur retrouve son propre scénario.
-  try{ const w=window.top; w.history.replaceState(null,'',w.location.pathname); w.location.reload(); }catch(e){ location.href=location.pathname; }
+  history.replaceState(null,'',location.pathname+location.search); location.reload();
 }
 function renderSharedBanner(){
   const s=shared;
   const copy=acct.state==='user'?'<button class="btn" type="button" data-shared="copy">Copier dans mon compte</button>'
-    :acct.state==='anon'?`<a class="btn" href="${esc(loginHref())}" target="_top">Se connecter pour le copier</a>`:'';
+    :acct.state==='anon'?`<a class="btn" href="${esc(loginHref())}">Se connecter pour le copier</a>`:'';
   sharedBanner.className='notice';
   sharedBanner.innerHTML=`<div><b>« ${esc(s.nom)} »</b>, partagé par ${esc(s.auteur||'un membre de 100 000 Médecins')} · lecture seule, version du ${esc(fmtDate(s.updated_at))}</div>
     <div class="add-row"><button class="btn primary" type="button" data-shared="pdf">Télécharger le PDF</button>${copy}<button class="btn ghost" type="button" data-shared="leave">Revenir à mon scénario</button></div>`;
   sharedBanner.hidden=false;
 }
-function lockForm(){ document.querySelectorAll('.main input, .main select, .main textarea, #scenarioName').forEach(el=>{ el.disabled=true; }); }
+function lockForm(){ root.querySelectorAll('.main input, .main select, .main textarea, #scenarioName').forEach(el=>{ el.disabled=true; }); }
 async function openShared(token){
-  const root=document.documentElement;
   root.setAttribute('data-shared','loading');
   let res={status:0};
   try{ const r=await fetch('/api/outils/partages/'+token,{cache:'no-store',headers:{Accept:'application/json'}}); res={status:r.status, data:await r.json().catch(()=>null)}; }catch(e){}
@@ -1156,13 +686,13 @@ sharedBanner.addEventListener('click',ev=>{
   else if(b.dataset.shared==='leave') leaveShared();
 });
 let statusT;
-document.addEventListener('input',ev=>{
+root.addEventListener('input',ev=>{
   const t=ev.target;
   if(t.id==='acctName'){ S.name=t.value; document.getElementById('scenarioName').value=t.value; save(); }
   else if(t.id==='scenarioName'){ const a=document.getElementById('acctName'); if(a) a.value=t.value; }
   if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); }
-});
-document.addEventListener('click',()=>{ if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); } });
+},sig);
+root.addEventListener('click',()=>{ if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); } },sig);
 
 /* ---------- « Changer » : ouvrir un autre prévisionnel du compte depuis l'en-tête ---------- */
 const switchWrap=document.getElementById('switchWrap'), switchBtn=document.getElementById('btnSwitch'), switchMenu=document.getElementById('switchMenu');
@@ -1185,8 +715,8 @@ switchMenu.addEventListener('click',ev=>{
   if(!saved&&!b.dataset.armed){ b.dataset.armed='1'; b.classList.add('armed'); b.querySelector('small').textContent=link?'Modifications non enregistrées : cliquez à nouveau pour ouvrir quand même':'Scénario affiché non enregistré : cliquez à nouveau pour le remplacer'; return; }
   closeSwitch(); acctOpen(b.dataset.id,switchBtn);
 });
-document.addEventListener('click',ev=>{ if(!switchMenu.hidden&&!ev.target.closest('#switchWrap')) closeSwitch(); });
-document.addEventListener('keydown',ev=>{ if(ev.key==='Escape'&&!switchMenu.hidden){ closeSwitch(); switchBtn.focus(); } });
+document.addEventListener('click',ev=>{ if(!switchMenu.hidden&&!ev.target.closest('#switchWrap')) closeSwitch(); },sig);
+document.addEventListener('keydown',ev=>{ if(ev.key==='Escape'&&!switchMenu.hidden){ closeSwitch(); switchBtn.focus(); } },sig);
 
 /* ---------- Exports Excel et PDF (membres connectés) ---------- */
 // Bibliothèques et code d'export chargés au premier clic seulement (vendor/ : exceljs, jsPDF, jspdf-autotable).
@@ -1206,12 +736,18 @@ async function runExport(kind){
     return;
   }
   btn.setAttribute('aria-busy','true');
-  try{ await loadScript('export.js'); await window.MSPExport[kind](); }
+  try{ await loadScript('/outils/previsionnel-msp/export.js'); await window.MSPExport[kind](); }
   catch(e){ console.error(e); toast('Export impossible, réessayez'); }
   finally{ btn.removeAttribute('aria-busy'); }
 }
 EXPORT_BTN.xlsx.addEventListener('click',()=>runExport('xlsx'));
 EXPORT_BTN.pdf.addEventListener('click',()=>runExport('pdf'));
+
+/* ---------- Bandeau collé sous la barre du site ---------- */
+// Sur grand écran, le logo du site déborde sous sa barre : collé, le bandeau lui laisse la place.
+const topBar=root.querySelector('.top');
+const collage=new IntersectionObserver(([e])=>topBar.classList.toggle('colle', e.intersectionRatio<1 && e.boundingClientRect.top<80),{threshold:[1],rootMargin:'-73px 0px 0px 0px'});
+collage.observe(topBar); ctrl.signal.addEventListener('abort',()=>collage.disconnect());
 
 /* ---------- Démarrage ---------- */
 renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll();
@@ -1220,8 +756,9 @@ showTab(startTab);
 renderAcct(); acctRefresh();
 if(SHARE_TOKEN) openShared(SHARE_TOKEN);
 // Lien de partage collé dans la barre d'adresse alors que la page est déjà ouverte : seul le « # » change.
-try{ if(window.top!==window.self) window.top.addEventListener('hashchange',()=>{ const m=/^#partage=([A-Za-z0-9_-]{24})$/.exec(window.top.location.hash||''); if((m?m[1]:null)!==SHARE_TOKEN) location.reload(); }); }catch(e){}
+window.addEventListener('hashchange',()=>{ const m=/^#partage=([A-Za-z0-9_-]{24})$/.exec(location.hash||''); if((m?m[1]:null)!==SHARE_TOKEN) location.reload(); },sig);
+
+return ()=>{ ctrl.abort(); delete window.MSP; };
+}
+window.MSPOutil={monter};
 })();
-</script>
-</body>
-</html>

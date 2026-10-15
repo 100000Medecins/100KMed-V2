@@ -1,9 +1,9 @@
 /* Exports Excel (.xlsx) et PDF du Prévisionnel Maison de Santé.
-   Chargé à la demande par index.html (membres connectés) ; lit le scénario et les résultats
-   déjà calculés par l'outil via window.MSP. Tout se fait dans le navigateur : rien n'est envoyé. */
+   Chargé à la demande par outil.js ; lit le scénario et les résultats déjà calculés par l'outil
+   via window.MSP (relu à chaque appel : l'outil peut avoir été remonté). Tout se fait dans le navigateur : rien n'est envoyé. */
 (function(){
 'use strict';
-const M = window.MSP;
+const M = new Proxy({}, { get: (_, k) => window.MSP[k] });
 
 // Palette claire de l'outil (les exports sont toujours en clair, quel que soit le thème affiché).
 const NAVY='#1B2A4A', NAVY_SOFT='#E3E8F2', INK='#16222B', INK2='#4E5E69', MUTED='#86949D', LINE='#D8E1E6', SURFACE2='#EAF0F3', GRID='#E3E9ED', AXIS='#B9C6CE';
@@ -85,7 +85,7 @@ function equipmentRows(S,R){
 
 /* ====================== Excel ====================== */
 async function xlsx(){
-  await M.loadScript('vendor/exceljs-4.4.0.min.js');
+  await M.loadScript('/outils/previsionnel-msp/vendor/exceljs-4.4.0.min.js');
   const S=M.state(), R=M.results();
   const wb=new window.ExcelJS.Workbook();
   wb.creator='100 000 Médecins'; wb.created=new Date();
@@ -229,8 +229,8 @@ async function imageData(url){
 }
 
 async function pdf(){
-  await M.loadScript('vendor/jspdf-4.2.1.umd.min.js');
-  await M.loadScript('vendor/jspdf-autotable-5.0.9.min.js');
+  await M.loadScript('/outils/previsionnel-msp/vendor/jspdf-4.2.1.umd.min.js');
+  await M.loadScript('/outils/previsionnel-msp/vendor/jspdf-autotable-5.0.9.min.js');
   const S=M.state(), R=M.results();
   const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
   if(typeof doc.autoTable!=='function') throw new Error('jspdf-autotable non chargé');

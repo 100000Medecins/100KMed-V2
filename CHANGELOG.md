@@ -5,6 +5,25 @@
 
 ---
 
+## [2026-10-15] — Prévisionnel : outil intégré dans la page (plus d'iframe), police Poppins
+
+Demande de David (« niveau navigation c'est pas top ») : double défilement, bandeau de l'outil caché sous la barre du site, lien « plein écran ». Choix validé : intégration directe en gardant le code de l'outil, police du site.
+
+### Ce qui change
+- [page.tsx](src/app/outils/previsionnel-maison-de-sante/page.tsx) rend le balisage de l'outil ([outil-html.ts](src/app/outils/previsionnel-maison-de-sante/outil-html.ts)) dans `#msp` ; [OutilPrevisionnel](src/components/outils/OutilPrevisionnel.tsx) charge [outil.js](public/outils/previsionnel-msp/outil.js) et le monte / démonte. Page toujours **statique** (○), contenu de l'outil présent dans le HTML servi (référencement).
+- [outil.css](src/app/outils/previsionnel-maison-de-sante/outil.css) : style d'origine limité à `.msp` (conversion par script, rien d'autre du site touché), Poppins (plus d'appel à Google Fonts), mode sombre retiré (le site n'en a pas), listes rétablies après la remise à zéro de Tailwind, onglets resserrés (Poppins plus large : les 6 tiennent dès 1 280 px ; ils défilaient déjà dans l'outil d'origine), boutons du bandeau plus compacts sur mobile.
+- Bandeau de l'outil collé sous la barre du site (72 px), synthèse collée dessous ; à partir de 1 150 px, une fois collé, il laisse la place au logo du site qui déborde de sa barre (même décalage que le fil d'Ariane).
+- [outil.js](public/outils/previsionnel-msp/outil.js) : code d'origine, calcul inchangé ; `monter()` remet le balisage d'origine et rend une fonction de démontage (écouteurs du document et de la page coupés) : pas de double exécution en mode développement (StrictMode) ni après une navigation sans rechargement.
+- Partage : le code `#partage=` est lu dans l'adresse de la page ; un lien collé alors que la page est ouverte recharge la page en lecture seule. L'onglet ouvert s'inscrit dans l'adresse (`#equipe`, `#resultats`…), sauf en lecture seule.
+- [export.js](public/outils/previsionnel-msp/export.js) : chemins absolus, état relu à chaque appel.
+- Retirés : `public/outils/previsionnel-msp/index.html` (page autonome, 404 désormais ; jamais en production) et le lien « plein écran ».
+
+### Vérif
+- `tsc`, build (page ○). Lint : 0 erreur ; 21 avertissements dans `outil.js`, tous hérités du code d'origine (variables non utilisées, `catch(e)`), que le lint ne voyait pas tant que le code était dans un fichier HTML.
+- Build local, deux comptes d'essai (créés puis supprimés, rien ne reste), essais adaptés à la page : non-régression **53 / 53** (dont : plus d'iframe, contenu dans le HTML servi, Poppins, aucune police Google, bandeau à 72 px, synthèse sans chevauchement), retouches **25 / 25** (dont ancienne page autonome en 404), partage **37 / 37** (dont lien collé page ouverte). Serveur de développement : ajout / retrait d'une profession et d'une ligne de charge exécutés une seule fois (6 / 6).
+
+---
+
 ## [2026-10-15] — Prévisionnel : partage par lien en lecture seule (le partage par fichier ou texte est retiré)
 
 Choix de David : lien en lecture seule (plutôt qu'un accès par compte désigné, qui exclut comptable et banque), PDF téléchargeable sans compte, nom du propriétaire affiché, partage par fichier JSON ou texte retiré.
