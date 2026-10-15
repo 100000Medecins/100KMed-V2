@@ -1650,6 +1650,44 @@ export type Database = {
         }
         Relationships: []
       }
+      previsionnels_msp: {
+        Row: {
+          created_at: string
+          donnees: Json
+          id: string
+          nom: string
+          partage_jeton: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          donnees: Json
+          id?: string
+          nom: string
+          partage_jeton?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          donnees?: Json
+          id?: string
+          nom?: string
+          partage_jeton?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "previsionnels_msp_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propositions_articles: {
         Row: {
           angle: string

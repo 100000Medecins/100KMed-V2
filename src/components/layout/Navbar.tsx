@@ -339,6 +339,9 @@ export default function Navbar({ minimal = false, annonces = [] }: NavbarProps) 
                 <a href="/glossaire" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                   📖 Glossaire e-Santé
                 </a>
+                <a href="/outils/previsionnel-maison-de-sante" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                  🧮 Prévisionnel maison de santé
+                </a>
                 {navLoaded && navConfig.irritants_visible && (
                   <a href="/irritants-esante" className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                     ⚡ Irritants de l'e-santé
@@ -534,6 +537,7 @@ export default function Navbar({ minimal = false, annonces = [] }: NavbarProps) 
                   <a href="/blog" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>📝 Blog</a>
                   <a href="/stories-tutos" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>🎬 Vidéos & tutoriels</a>
                   <a href="/glossaire" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>📖 Glossaire e-Santé</a>
+                  <a href="/outils/previsionnel-maison-de-sante" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>🧮 Prévisionnel maison de santé</a>
                   {navLoaded && navConfig.irritants_visible && (
                     <a href="/irritants-esante" className="block text-sm text-white/75 hover:text-white py-1" onClick={() => setIsMobileOpen(false)}>⚡ Irritants de l'e-santé</a>
                   )}
