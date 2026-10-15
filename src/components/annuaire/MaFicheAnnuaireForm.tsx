@@ -58,6 +58,12 @@ function VerificationFiche({ userId }: { userId: string }) {
 
 type Message = { type: 'ok' | 'info' | 'erreur'; texte: string }
 
+const CHOIX_NOUVEAUX_PATIENTS: { valeur: boolean | null; libelle: string }[] = [
+  { valeur: true, libelle: 'Oui' },
+  { valeur: false, libelle: 'Non' },
+  { valeur: null, libelle: 'Non renseigné' },
+]
+
 const COULEUR_MESSAGE: Record<Message['type'], string> = {
   ok: 'text-green-700',
   info: 'text-navy',
@@ -74,6 +80,8 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
   const [publiee, setPubliee] = useState(initial.publiee)
   const [publieeLe, setPublieeLe] = useState(initial.publieeLe)
   const [miseAJour, setMiseAJour] = useState(initial.miseAJour)
+  const [nouveauxPatients, setNouveauxPatients] = useState<boolean | null>(initial.nouveauxPatients)
+  const [nouveauxPatientsLe, setNouveauxPatientsLe] = useState(initial.nouveauxPatientsLe)
   const [selection, setSelection] = useState<string[]>(initial.competences)
   const [catalogue, setCatalogue] = useState<IntituleCatalogue[]>(initial.catalogue)
   const [recherche, setRecherche] = useState('')
@@ -195,6 +203,7 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
         commune,
         mssante,
         telephoneCabinet,
+        ...(initial.nouveauxPatientsPossible ? { nouveauxPatients } : {}),
       })
       if ('error' in res) {
         setErreur(res.error)
@@ -204,6 +213,8 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
       setMiseAJour(res.miseAJour)
       setPortable(res.portable)
       setTelephoneCabinet(res.telephoneCabinet)
+      setNouveauxPatients(res.nouveauxPatients)
+      setNouveauxPatientsLe(res.nouveauxPatientsLe)
       setEnregistre(true)
       // Comme ailleurs dans Mon compte : on remonte pour voir la confirmation « Fiche enregistrée »
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -247,6 +258,38 @@ function Formulaire({ initial }: { initial: MaFicheAnnuaire }) {
             </div>
           </fieldset>
         </Card>
+
+        {initial.nouveauxPatientsPossible && (
+          <Card padding="lg">
+            <fieldset>
+              <legend className="text-base font-bold text-navy">Nouveaux patients</legend>
+              <p className="text-sm text-gray-500 mt-1">Acceptez-vous de nouveaux patients comme médecin traitant ?</p>
+              <div className="mt-4 space-y-2">
+                {CHOIX_NOUVEAUX_PATIENTS.map((c) => (
+                  <label key={String(c.valeur)} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="nouveaux_patients"
+                      checked={nouveauxPatients === c.valeur}
+                      onChange={() => {
+                        modifie()
+                        setNouveauxPatients(c.valeur)
+                      }}
+                      className="w-4 h-4 accent-accent-blue"
+                    />
+                    {c.libelle}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-gray-400 max-w-xl">
+                {nouveauxPatientsLe ? `Réponse du ${formaterDate(nouveauxPatientsLe)}. ` : ''}
+                Déclaration de votre part, non vérifiée par l&apos;association, visible des confrères si votre fiche est
+                publiée. Elle est datée à chaque enregistrement de votre fiche : mettez-la à jour quand votre situation
+                change.
+              </p>
+            </fieldset>
+          </Card>
+        )}
 
         <Card padding="lg" overflow="visible">
           <h2 className="text-base font-bold text-navy">Coordonnées professionnelles</h2>

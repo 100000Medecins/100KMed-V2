@@ -5,6 +5,19 @@
 
 ---
 
+## [2026-10-15] — Annuaire : « accepte de nouveaux patients », étape 3 : la question dans Ma fiche annuaire
+
+- [MaFicheAnnuaireForm](src/components/annuaire/MaFicheAnnuaireForm.tsx) : bloc « Nouveaux patients » sous le moyen de contact, **pour les seuls généralistes** : « Acceptez-vous de nouveaux patients comme médecin traitant ? », Oui / Non / Non renseigné (coché par défaut), « Réponse du … » quand une réponse existe, mention « Déclaration de votre part, non vérifiée par l'association, visible des confrères si votre fiche est publiée. Elle est datée à chaque enregistrement de votre fiche : mettez-la à jour quand votre situation change. »
+- [annuaire.ts](src/lib/actions/annuaire.ts) : la page lit la **spécialité PSC** de la preuve (`identites_psc.specialite_code`, lisible par le médecin pour sa seule ligne : règle existante « Voit sa preuve PSC », aucun droit ajouté) et non le libellé du profil ; `enregistrerMaFiche` envoie la réponse (seulement pour un généraliste, le serveur l'ignore sinon) et rend la réponse enregistrée et sa date.
+- Rien à migrer vers le design system dans ce fichier (cases d'option sans composant commun, comme le bloc « Moyen de contact »).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` sans avertissement (`/mon-compte/annuaire` reste dynamique, page privée).
+- **Navigateur** (build local, Chrome piloté), deux comptes d'essai (`example.com`, API d'administration, aucun e-mail) reliés à des identités PSC fictives, **17 / 17** : connexion par le formulaire ; généraliste (SM53) : question posée, « Non renseigné » par défaut, pas de date ; « Oui » enregistré et daté (page et base) ; relu après rechargement ; réenregistrement sans changement → date remise au jour ; « Non » ; « Non renseigné » efface réponse et date ; à 400 px, pas de défilement horizontal ; psychiatre (SM42) : question absente, fiche enregistrée, réponse vide en base ; aucune erreur JavaScript. Captures du bloc relues (ordinateur, mobile).
+- Données d'essai effacées : 0 ligne restante dans les 49 tables liées à un compte, comptes d'authentification supprimés, fiche réelle identique avant et après.
+
+---
+
 ## [2026-10-15] — Annuaire : « accepte de nouveaux patients », étape 2 : serveur commun et application
 
 - Décision de David : une réponse envoyée pour un **non-généraliste est ignorée** (le reste de la fiche est enregistré), plutôt qu'un refus de tout l'enregistrement.
