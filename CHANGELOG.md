@@ -5,6 +5,19 @@
 
 ---
 
+## [2026-10-15] — Mise en production : outil Prévisionnel Maison de Santé et correctif de la redirection après connexion
+
+Ordre de David (« on passe en prod »). Report du **code seul** de `b7275b5` à `5f31f2e` sur `main`, dans un worktree séparé, sans les autres travaux en cours sur `dev` ni CHANGELOG :
+- `19396a9` fix(auth) (report de `5c9d356`) : `redirection.ts`, `/connexion`, `/api/auth/callback` ;
+- `667b70d` feat(previsionnel) : 17 fichiers. Sur `main`, les fichiers modifiés (Navbar, sitemap, connexion, callback) étaient identiques à leur état sur `dev` avant le chantier, sauf `database.ts` : seul le bloc `previsionnels_msp` y est ajouté (+38 lignes, rien de retiré, version PostgREST de `main` gardée).
+- Base : rien à faire (base commune ; table, règles et colonne de partage déjà en place).
+- Worktree : `npm ci`, `tsc` et build verts (page ○), essai rapide du build `main` (API 401 / 404, onglets 7 / 7), `.env.local` copié puis supprimé, worktree vidé et oublié.
+- Vercel « Production » `success`.
+- **Vérifié en production** (lecture seule, aucun compte, rien écrit) : page `200`, titre, canonical `www…`, pas de `noindex`, contenu de l'outil dans le HTML, pas d'iframe, texte « David Azérad » ; `outil.js`, `export.js`, bibliothèques `200` ; ancienne page autonome `404` ; `/api/outils/previsionnels` `401`, code de partage inconnu `404` ; page dans `/sitemap.xml`. Navigateur : lien sous « Glossaire » dans le menu Communauté, outil monté et calculé, invitation à se connecter, étape en cours en pastille, onglets sans barre, aucune erreur JavaScript (6 / 6).
+- **Non vérifié en production** : un enregistrement, un partage et les exports avec un vrai compte (aucun compte de production utilisé) ; le correctif de redirection en se connectant.
+
+---
+
 ## [2026-10-15] — Prévisionnel : outil intégré dans la page (plus d'iframe), police Poppins
 
 Demande de David (« niveau navigation c'est pas top ») : double défilement, bandeau de l'outil caché sous la barre du site, lien « plein écran ». Choix validé : intégration directe en gardant le code de l'outil, police du site.
