@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -1624,6 +1624,41 @@ export type Database = {
           libelle?: string | null
         }
         Relationships: []
+      }
+      previsionnels_msp: {
+        Row: {
+          created_at: string
+          donnees: Json
+          id: string
+          nom: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          donnees: Json
+          id?: string
+          nom: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          donnees?: Json
+          id?: string
+          nom?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "previsionnels_msp_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       propositions_articles: {
         Row: {

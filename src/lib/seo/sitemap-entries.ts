@@ -23,6 +23,7 @@ const STATIC_ROUTES: Array<{
   { path: '/stories-tutos', changeFrequency: 'weekly', priority: 0.5 },
   { path: '/videos', changeFrequency: 'weekly', priority: 0.5 },
   { path: '/glossaire', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/outils/previsionnel-maison-de-sante', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/qui-sommes-nous', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/irritants-esante', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/difficile-de-changer', changeFrequency: 'monthly', priority: 0.4 },
@@ -93,9 +94,8 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     const editeurs = editeursRes.data || []
 
     // Dédoublonnage des éditeurs (l'INNER JOIN peut renvoyer plusieurs lignes par éditeur)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const editeursUniques = Array.from(
-      new Map((editeurs as any[]).map((e) => [e.slug as string, e])).values()
+      new Map((editeurs as { slug: string; updated_at: string | null }[]).map((e) => [e.slug, e])).values()
     )
 
     // ─── Pages catégories ───

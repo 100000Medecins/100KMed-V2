@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Prévisionnel Maison de Santé</title>
+<!-- Encadré dans la page du site (claire, sans mode sombre) : l'outil s'y affiche toujours en clair. -->
+<script>try{if(window.self!==window.top)document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: en-tête fin, colonne de saisie par onglets à gauche, synthèse collante à droite (empilée sur mobile). */
+:root{
+  --bg:#F3F6F8; --surface:#FFFFFF; --surface-2:#EAF0F3;
+  --ink:#16222B; --ink-2:#4E5E69; --muted:#86949D; --line:#D8E1E6; --line-strong:#B9C6CE;
+  --accent:#1B2A4A; --accent-ink:#FFFFFF; --accent-soft:#E3E8F2; --accent-text:#2A3F66;
+  --good:#1B8A3A; --good-soft:#E3F3E7; --warn:#B07200; --warn-soft:#FBF0D6; --bad:#C23B3B; --bad-soft:#FBE3E3;
+  --input-bg:#FFFFFF; --input-ro:#F0F4F6;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --grid:#E3E9ED; --axis:#B9C6CE;
+  --shadow:0 1px 2px rgba(22,34,43,.06),0 6px 20px -8px rgba(22,34,43,.12);
+  --font-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --font-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1518; --surface:#171F24; --surface-2:#1E2A31;
+    --ink:#ECF1F3; --ink-2:#AEBBC3; --muted:#7F8D95; --line:#2A353C; --line-strong:#3B4851;
+    --accent:#9DB4E0; --accent-ink:#0B1A20; --accent-soft:#1E2A42; --accent-text:#B4C6EA;
+    --good:#4CC26B; --good-soft:#15301D; --warn:#E6B14A; --warn-soft:#3A2E12; --bad:#F07A7A; --bad-soft:#3C1C1C;
+    --input-bg:#121A1E; --input-ro:#1A242A;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --grid:#26323A; --axis:#3B4851;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1518; --surface:#171F24; --surface-2:#1E2A31;
+  --ink:#ECF1F3; --ink-2:#AEBBC3; --muted:#7F8D95; --line:#2A353C; --line-strong:#3B4851;
+  --accent:#9DB4E0; --accent-ink:#0B1A20; --accent-soft:#1E2A42; --accent-text:#B4C6EA;
+  --good:#4CC26B; --good-soft:#15301D; --warn:#E6B14A; --warn-soft:#3A2E12; --bad:#F07A7A; --bad-soft:#3C1C1C;
+  --input-bg:#121A1E; --input-ro:#1A242A;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --grid:#26323A; --axis:#3B4851;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;margin:0}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h1{font-size:1.45rem}
+h2{font-size:1.25rem}
+h3{font-size:1.02rem}
+p{margin:0}
+a{color:var(--accent-text)}
+button{font:inherit;color:inherit}
+input,select{font:inherit;color:var(--ink)}
+.num,.tnum{font-variant-numeric:tabular-nums}
+
+/* En-tête */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding:10px 16px}
+.top-in{max-width:1248px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:.85rem;flex:none}
+.brand small{display:block;color:var(--ink-2);font-size:.8rem;margin-top:-2px}
+.top-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.scenario{display:flex;align-items:center;gap:6px;color:var(--ink-2);font-size:.9rem}
+.scenario input{width:min(260px,60vw);background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 8px;font-weight:600;color:var(--ink)}
+.scenario input:hover,.scenario input:focus{border-color:var(--line-strong);background:var(--input-bg);outline:none}
+
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent);color:var(--accent-text)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08);color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.small{padding:4px 9px;font-size:.82rem}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+
+/* Grille principale */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;margin-top:18px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}.aside{position:static!important;order:-1}.syn .m-hide{display:none}}
+@media (max-width:700px){.top{position:static}.brand small{display:none}.brand h1{font-size:1.2rem}}
+.aside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 66px)}
+
+/* Onglets */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;cursor:pointer;color:var(--ink-2);font-weight:600;white-space:nowrap;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px}
+.tab .n{width:20px;height:20px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);font-size:.75rem;display:grid;place-items:center;font-family:var(--font-display)}
+.tab[aria-selected="true"]{color:var(--accent-text);border-bottom-color:var(--accent)}
+.tab[aria-selected="true"] .n{background:var(--accent);color:var(--accent-ink)}
+.panel{padding-top:18px;display:grid;gap:18px}
+
+/* Cartes et champs */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.main>section{min-width:0}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.card-h p{color:var(--ink-2);font-size:.9rem}
+.lead{color:var(--ink-2);max-width:68ch}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 16px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:.85rem;color:var(--ink-2);font-weight:600;line-height:1.25}
+.ctl{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:8px;background:var(--input-bg);overflow:hidden}
+.ctl:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ctl input,.ctl select{border:0;background:transparent;padding:7px 10px;width:100%;min-width:0;font-variant-numeric:tabular-nums}
+.ctl input:focus,.ctl select:focus{outline:none}
+.ctl input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.ctl .unit{padding:0 10px 0 4px;color:var(--muted);font-size:.85rem;white-space:nowrap}
+.ctl.ro{background:var(--input-ro)}
+.ctl.ro input{color:var(--ink-2)}
+.help{font-size:.8rem;color:var(--muted);line-height:1.3}
+.check{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem;cursor:pointer;color:var(--ink)}
+.check input{width:17px;height:17px;accent-color:var(--accent);margin:0}
+.sub{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.sub-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sub-h h4{font-size:.92rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:var(--font-body)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--surface-2);color:var(--ink-2)}
+.dot{width:10px;height:10px;border-radius:3px;flex:none}
+.inline-total{display:flex;justify-content:flex-end;gap:14px;flex-wrap:wrap;font-size:.9rem;color:var(--ink-2);margin-top:10px}
+.inline-total b{color:var(--ink)}
+
+/* Professions */
+.prof{border-left:4px solid var(--pc,var(--accent))}
+.prof .card-h{align-items:center}
+.prof-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.prof-title input.name{font-family:var(--font-display);font-weight:700;font-size:1.05rem;border:1px solid transparent;border-radius:6px;padding:3px 6px;background:transparent;min-width:0;width:min(260px,100%)}
+.prof-title input.name:hover,.prof-title input.name:focus{border-color:var(--line-strong);background:var(--input-bg);outline:none}
+.prof-sum{font-size:.85rem;color:var(--ink-2);flex-basis:100%}
+.add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.add-row select{border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;background:var(--input-bg)}
+
+/* Tableaux */
+.tscroll{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+th{color:var(--ink-2);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+tr.total td{font-weight:700;border-top:2px solid var(--line-strong)}
+tr.group td{background:var(--surface-2);font-weight:700;text-align:left;color:var(--ink-2);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+td .ctl{min-width:88px}
+td .ctl input{padding:4px 8px}
+td .ctl select{padding:4px 6px}
+td input.txt{border:1px solid transparent;border-radius:6px;padding:4px 6px;background:transparent;width:100%;min-width:160px}
+td input.txt:hover,td input.txt:focus{border-color:var(--line-strong);background:var(--input-bg);outline:none}
+.neg{color:var(--bad)}
+.pos{color:var(--good)}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1;padding:2px 6px;border-radius:6px}
+.x:hover{color:var(--bad);background:var(--bad-soft)}
+
+/* Synthèse */
+.syn{display:grid;gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.tile .k{font-size:.78rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.tile .v{font-family:var(--font-display);font-size:1.5rem;font-weight:700;line-height:1.15;margin-top:2px}
+.tile .d{font-size:.82rem;color:var(--muted);margin-top:2px}
+.tile.hero{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tile.hero .k,.tile.hero .d{color:var(--accent-ink);opacity:.85}
+.tile-list{display:grid;gap:6px;margin-top:8px}
+.tile-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.9rem}
+.tile-row .l{display:flex;align-items:center;gap:7px;color:var(--ink-2);min-width:0}
+.tile-row .l span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile-row b{font-variant-numeric:tabular-nums}
+.alert{border-radius:8px;padding:8px 11px;font-size:.86rem;display:flex;gap:8px;align-items:flex-start}
+.alert.warn{background:var(--warn-soft);color:var(--ink)}
+.alert.bad{background:var(--bad-soft);color:var(--ink)}
+.alert.good{background:var(--good-soft);color:var(--ink)}
+.alert .ic{font-weight:700;flex:none}
+@media (max-width:980px){
+  .syn{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .syn .tile.wide{grid-column:1/-1}
+}
+
+/* Résultats */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;max-width:100%}
+.chart text{font-family:var(--font-body);fill:var(--ink-2);font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--ink-2);margin:6px 0 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:.82rem;box-shadow:var(--shadow);min-width:160px;z-index:5;display:none}
+.tip .t{font-weight:700;margin-bottom:4px}
+.tip .r{display:flex;justify-content:space-between;gap:12px}
+.tip .r .l{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+details summary{cursor:pointer;font-weight:600;color:var(--accent-text);padding:4px 0}
+.notice{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--ink);font-size:.92rem}
+.notice b{color:var(--accent-text)}
+.io textarea{width:100%;min-height:120px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font:12px ui-monospace,Menlo,Consolas,monospace;background:var(--input-bg);color:var(--ink);resize:vertical}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:.88rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.about ol,.about ul{margin:6px 0 0 18px;padding:0;color:var(--ink-2)}
+.about li{margin:3px 0}
+.footer{margin-top:28px;color:var(--muted);font-size:.82rem;text-align:center}
+
+/* Compte et exports (ajouts de l'intégration au site) */
+a.btn{text-decoration:none;color:var(--ink)}
+a.btn.primary{color:var(--accent-ink)}
+.btn svg{width:15px;height:15px;flex:none}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn[aria-busy="true"]{opacity:.7;cursor:progress}
+.acct-status{font-size:.88rem;color:var(--ink-2);margin-top:8px}
+.acct-status.warn{color:var(--warn)}
+.acct-list td:last-child{text-align:right;white-space:nowrap}
+.acct-list td:last-child .btn{margin-left:6px}
+.acct-list td .help{margin-top:2px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-in">
+      <div class="brand">
+        <div class="mark">MSP</div>
+        <div><h1>Prévisionnel Maison de Santé</h1><small>Simulateur de business-plan pour cabinet de groupe / MSP</small></div>
+      </div>
+      <div class="scenario"><span>Scénario</span><input id="scenarioName" type="text" aria-label="Nom du scénario"></div>
+      <div class="top-actions">
+        <button class="btn ghost" id="btnReset" type="button">Valeurs par défaut</button>
+        <button class="btn" id="btnShare" type="button">Sauvegarder / partager</button>
+        <button class="btn" id="btnXlsx" type="button" title="Exporter en Excel (.xlsx)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13h10"/></svg>Excel</button>
+        <button class="btn" id="btnPdf" type="button" title="Exporter en PDF"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13h10"/></svg>PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+    <section>
+      <nav class="tabs" role="tablist" aria-label="Étapes">
+        <button class="tab" role="tab" data-tab="equipe" type="button"><span class="n">1</span>Équipe &amp; activité</button>
+        <button class="tab" role="tab" data-tab="local" type="button"><span class="n">2</span>Local &amp; charges</button>
+        <button class="tab" role="tab" data-tab="materiel" type="button"><span class="n">3</span>Matériel</button>
+        <button class="tab" role="tab" data-tab="financement" type="button"><span class="n">4</span>Investissement &amp; financement</button>
+        <button class="tab" role="tab" data-tab="resultats" type="button"><span class="n">5</span>Résultats</button>
+        <button class="tab" role="tab" data-tab="apropos" type="button"><span class="n">?</span>Méthode</button>
+      </nav>
+
+      <div class="panel" id="tab-equipe" role="tabpanel">
+        <div class="card">
+          <div class="card-h"><h2>Montée en charge et horizon</h2><p>Commun à toute l'équipe</p></div>
+          <div class="fields">
+            <div class="field"><label for="f-ramp-start">Taux d'activité au mois 1</label><div class="ctl"><input id="f-ramp-start" type="number" data-path="ramp.start" data-kind="pct" min="0" max="100" step="5"><span class="unit">%</span></div><div class="help">Part des créneaux réellement remplis à l'ouverture.</div></div>
+            <div class="field"><label for="f-ramp-end">Taux d'activité en vitesse de croisière</label><div class="ctl"><input id="f-ramp-end" type="number" data-path="ramp.end" data-kind="pct" min="0" max="100" step="5"><span class="unit">%</span></div><div class="help">95 % = agenda quasi plein, le reste étant les trous et absences.</div></div>
+            <div class="field"><label for="f-ramp-months">Durée de la montée en charge</label><div class="ctl"><input id="f-ramp-months" type="number" data-path="ramp.months" min="0" max="60" step="1"><span class="unit">mois</span></div><div class="help">Progression linéaire ; chaque nouvel arrivant suit la même courbe à partir de son arrivée.</div></div>
+            <div class="field"><label for="f-horizon">Horizon du prévisionnel</label><div class="ctl"><select id="f-horizon" data-path="horizon" data-kind="int"><option value="36">3 ans (36 mois)</option><option value="48">4 ans (48 mois)</option><option value="60">5 ans (60 mois)</option><option value="84">7 ans (84 mois)</option></select></div></div>
+          </div>
+        </div>
+
+        <div id="profList" style="display:grid;gap:18px"></div>
+
+        <div class="card">
+          <div class="card-h"><h3>Ajouter une profession</h3><p>Chaque profession a ses propres tarifs, horaires, congés et cotisations.</p></div>
+          <div class="add-row">
+            <select id="addProfSel" aria-label="Profession à ajouter"></select>
+            <button class="btn primary" id="btnAddProf" type="button">Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="tab-local" role="tabpanel" hidden>
+        <div class="card">
+          <div class="card-h"><h2>Local</h2><p>Loyer, charges locatives, travaux</p></div>
+          <div class="fields">
+            <div class="field"><label for="f-surface">Surface</label><div class="ctl"><input id="f-surface" type="number" data-path="local.surface" min="0" step="5"><span class="unit">m²</span></div><div class="help" id="surfaceHint"></div></div>
+            <div class="field"><label for="f-rent">Loyer HT hors charges</label><div class="ctl"><input id="f-rent" type="number" data-path="local.rentM2" min="0" step="5"><span class="unit">€/m²/an</span></div></div>
+            <div class="field"><label for="f-tva">TVA sur le loyer</label><div class="ctl"><select id="f-tva" data-path="local.tva" data-kind="num"><option value="0">Non assujetti (0 %)</option><option value="0.2">20 %</option></select></div><div class="help">Souvent non due si ni le bailleur ni les praticiens ne sont assujettis.</div></div>
+            <div class="field"><label for="f-chm2">Charges locatives</label><div class="ctl"><input id="f-chm2" type="number" data-path="local.chargesM2" min="0" step="1"><span class="unit">€/m²/an</span></div><div class="help">Eau, électricité, chauffage, entretien des communs.</div></div>
+            <div class="field"><label for="f-tf">Taxe foncière refacturée</label><div class="ctl"><input id="f-tf" type="number" data-path="local.taxeM2" min="0" step="1"><span class="unit">€/m²/an</span></div></div>
+            <div class="field"><label for="f-franchise">Franchise de loyer</label><div class="ctl"><input id="f-franchise" type="number" data-path="local.franchise" min="0" step="1"><span class="unit">mois</span></div><div class="help">Mois gratuits négociés avec le bailleur.</div></div>
+            <div class="field"><label for="f-works">Travaux d'aménagement</label><div class="ctl"><input id="f-works" type="number" data-path="local.worksM2" min="0" step="50"><span class="unit">€ TTC/m²</span></div><div class="help">Second œuvre léger : 400 à 800 €/m² ; réhabilitation lourde : 1 000 à 1 500 €/m².</div></div>
+            <div class="field"><label for="f-caution">Dépôt de garantie</label><div class="ctl"><input id="f-caution" type="number" data-path="local.cautionMonths" min="0" step="1"><span class="unit">mois de loyer</span></div></div>
+          </div>
+          <div class="inline-total" id="localTotals"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Charges de fonctionnement</h2><p>Mensuelles sauf mention contraire</p></div>
+          <div class="fields">
+            <div class="field"><label for="f-telecom">Téléphone + internet</label><div class="ctl"><input id="f-telecom" type="number" data-path="charges.telecom" min="0" step="10"><span class="unit">€/mois</span></div></div>
+            <div class="field"><label for="f-soft">Logiciel métier</label><div class="ctl"><input id="f-soft" type="number" data-path="charges.software" min="0" step="5"><span class="unit">€/praticien/mois</span></div><div class="help">Abonnement, hébergement HDS, messagerie sécurisée, agenda en ligne.</div></div>
+            <div class="field"><label for="f-cmed">Consommables médicaux</label><div class="ctl"><input id="f-cmed" type="number" data-path="charges.medConsum" min="0" step="5"><span class="unit">€/praticien/mois</span></div></div>
+            <div class="field"><label for="f-coff">Consommables bureau</label><div class="ctl"><input id="f-coff" type="number" data-path="charges.officeConsum" min="0" step="5"><span class="unit">€/praticien/mois</span></div></div>
+            <div class="field"><label for="f-acc1">Comptabilité de la structure</label><div class="ctl"><input id="f-acc1" type="number" data-path="charges.accountingStructure" min="0" step="100"><span class="unit">€/an</span></div></div>
+            <div class="field"><label for="f-acc2">Gestion des paies</label><div class="ctl"><input id="f-acc2" type="number" data-path="charges.accountingPayroll" min="0" step="50"><span class="unit">€/an</span></div></div>
+            <div class="field"><label for="f-bank">Frais bancaires + assurances</label><div class="ctl"><input id="f-bank" type="number" data-path="charges.bankInsurance" min="0" step="10"><span class="unit">€/mois</span></div><div class="help">Multirisque locaux, RC de la structure, tenue de compte.</div></div>
+            <div class="field"><label for="f-reserve">Marge prudentielle</label><div class="ctl"><input id="f-reserve" type="number" data-path="charges.reserve" data-kind="pct" min="0" max="50" step="1"><span class="unit">%</span></div><div class="help">Majoration « au cas où » appliquée à toutes les charges.</div></div>
+          </div>
+
+          <div class="sub">
+            <div class="sub-h"><h4>Ménage</h4></div>
+            <div class="fields">
+              <div class="field"><label for="f-clh">Heures par semaine</label><div class="ctl"><input id="f-clh" type="number" data-path="charges.cleaningHours" min="0" step="1"><span class="unit">h</span></div></div>
+              <div class="field"><label for="f-clr">Coût horaire tout compris</label><div class="ctl"><input id="f-clr" type="number" data-path="charges.cleaningRate" min="0" step="1"><span class="unit">€/h</span></div></div>
+            </div>
+          </div>
+
+          <div class="sub">
+            <div class="sub-h"><h4>Secrétariat</h4></div>
+            <div class="fields">
+              <div class="field"><label for="f-secnet">Salaire net secrétaire</label><div class="ctl"><input id="f-secnet" type="number" data-path="charges.secretaryNet" min="0" step="50"><span class="unit">€/mois</span></div><div class="help">0 si pas de salarié.</div></div>
+              <div class="field"><label for="f-secrate">Charges sociales (salariales + patronales)</label><div class="ctl"><input id="f-secrate" type="number" data-path="charges.employerRate" data-kind="pct" min="0" max="150" step="5"><span class="unit">% du net</span></div><div class="help">Coût employeur ≈ net × (1 + taux). Un 13e mois est intégré.</div></div>
+              <div class="field"><label for="f-secstart">Prise de poste</label><div class="ctl"><input id="f-secstart" type="number" data-path="charges.secretaryStart" min="1" step="1"><span class="unit">mois n°</span></div></div>
+              <div class="field"><label for="f-sectel">Secrétariat externalisé / téléphonique</label><div class="ctl"><input id="f-sectel" type="number" data-path="charges.phoneSecretariat" min="0" step="10"><span class="unit">€/mois</span></div></div>
+            </div>
+          </div>
+
+          <div class="sub">
+            <div class="sub-h"><h4>Autres charges fixes</h4><button class="btn small" type="button" data-action="addOther">+ Ajouter une ligne</button></div>
+            <div class="tscroll"><table id="otherTable"></table></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="tab-materiel" role="tabpanel" hidden>
+        <div class="card">
+          <div class="card-h"><h2>Matériel et ameublement</h2><p>Prix TTC indicatifs 2026, à ajuster sur devis</p></div>
+          <div class="fields" style="margin-bottom:12px">
+            <div class="field"><label for="f-boxes">Nombre de box de consultation</label><div class="ctl"><input id="f-boxes" type="number" data-path="invest.boxes" min="0" step="1" placeholder="auto"><span class="unit">box</span></div><div class="help" id="boxHint"></div></div>
+          </div>
+          <div class="kpis" id="equipTotals"></div>
+        </div>
+        <div id="equipGroups" style="display:grid;gap:18px"></div>
+      </div>
+
+      <div class="panel" id="tab-financement" role="tabpanel" hidden>
+        <div class="card">
+          <div class="card-h"><h2>Frais de départ</h2></div>
+          <div class="fields">
+            <div class="field"><label for="f-creation">Frais de création de la société</label><div class="ctl"><input id="f-creation" type="number" data-path="invest.creation" min="0" step="100"><span class="unit">€</span></div><div class="help">Statuts, annonces légales, greffe, conseil.</div></div>
+            <div class="field"><label for="f-capital">Capital initial (SCM / SISA)</label><div class="ctl"><input id="f-capital" type="number" data-path="invest.capital" min="0" step="100"><span class="unit">€</span></div></div>
+            <div class="field"><label for="f-bfr">Besoin en fonds de roulement</label><div class="ctl"><input id="f-bfr" type="number" data-path="invest.bfr" min="0" step="1000"><span class="unit">€</span></div><div class="help">Trésorerie d'avance pour payer les charges des premiers mois. Vérifiez-le avec la trésorerie prévisionnelle (onglet Résultats).</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Plan de financement</h2><p>Le crédit couvre ce que les apports et subventions ne couvrent pas</p></div>
+          <div class="tscroll"><table id="planTable"></table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Apports et emprunt</h2></div>
+          <div class="fields">
+            <div class="field"><label for="f-equity">Apports personnels</label><div class="ctl"><input id="f-equity" type="number" data-path="fin.equity" min="0" step="1000"><span class="unit">€</span></div></div>
+            <div class="field"><label for="f-grants">Subventions</label><div class="ctl"><input id="f-grants" type="number" data-path="fin.grants" min="0" step="1000"><span class="unit">€</span></div><div class="help">ARS (FIR), collectivités, Région, URPS…</div></div>
+            <div class="field"><label for="f-loanm">Durée de l'emprunt</label><div class="ctl"><input id="f-loanm" type="number" data-path="fin.loanMonths" min="1" step="12"><span class="unit">mois</span></div></div>
+            <div class="field"><label for="f-rate">Taux annuel (assurance comprise)</label><div class="ctl"><input id="f-rate" type="number" data-path="fin.rate" data-kind="pct" min="0" max="20" step="0.1"><span class="unit">%</span></div></div>
+            <div class="field"><label for="f-defer">Franchise de remboursement</label><div class="ctl"><input id="f-defer" type="number" data-path="fin.deferMonths" min="0" step="1"><span class="unit">mois</span></div><div class="help">Mois sans échéance au démarrage (simplification : sans intérêts intercalaires).</div></div>
+          </div>
+          <div class="inline-total" id="loanTotals"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Durées d'amortissement</h2><p>Information comptable, sans effet sur la trésorerie</p></div>
+          <div class="fields">
+            <div class="field"><label for="f-am1">Frais de création</label><div class="ctl"><input id="f-am1" type="number" data-path="amort.creation" min="1" step="1"><span class="unit">ans</span></div></div>
+            <div class="field"><label for="f-am2">Matériel et ameublement</label><div class="ctl"><input id="f-am2" type="number" data-path="amort.equipment" min="1" step="1"><span class="unit">ans</span></div></div>
+            <div class="field"><label for="f-am3">Travaux</label><div class="ctl"><input id="f-am3" type="number" data-path="amort.works" min="1" step="1"><span class="unit">ans</span></div></div>
+          </div>
+          <div class="inline-total" id="amortTotals"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="tab-resultats" role="tabpanel" hidden>
+        <div class="notice">Ce sont des <b>prévisionnels</b> : relisez posément chaque chiffre saisi, comparez les revenus en vitesse de croisière aux statistiques de votre profession, puis finalisez avec un expert-comptable.</div>
+        <div class="kpis" id="resKpis"></div>
+
+        <div class="card">
+          <div class="card-h"><h2>Recettes mensuelles par profession et charges de la structure</h2><p>Recettes des associés (rétrocessions comprises) ; la ligne noire est le total des charges</p></div>
+          <div class="chart" id="chart1"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Revenu net mensuel par praticien</h2><p>Après quote-part des charges et cotisations sociales, par profession</p></div>
+          <div class="chart" id="chart2"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Résultat collectif mensuel</h2><p>Recettes des associés − charges de la structure, avant cotisations ; les mois négatifs sont financés par le fonds de roulement</p></div>
+          <div class="chart" id="chart3"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Synthèse annuelle</h2></div>
+          <div class="tscroll"><table id="yearTable"></table></div>
+        </div>
+
+        <div class="card">
+          <details><summary>Détail mois par mois</summary>
+            <div class="tscroll" style="margin-top:10px"><table id="monthTable"></table></div>
+          </details>
+        </div>
+      </div>
+
+      <div class="panel" id="tab-apropos" role="tabpanel" hidden>
+        <div class="card about">
+          <h2>Méthode de calcul</h2>
+          <p class="lead" style="margin-top:8px">L'outil transpose un business-plan Excel conçu par un jeune médecin pour son propre projet de cabinet pluriprofessionnel (SCM/SISA), généralisé à toutes les professions d'une maison de santé. Les cases de saisie correspondent aux « cases bleues » de l'Excel d'origine ; tout le reste se recalcule instantanément.</p>
+          <h3 style="margin-top:16px">Recettes</h3>
+          <ol>
+            <li>Pour chaque profession, l'activité « pleine » d'un praticien = heures de consultation × actes par heure × tarif moyen, sur (52 − semaines de congés) / 12 semaines par mois.</li>
+            <li>Un taux d'activité part du taux du mois 1 et monte linéairement jusqu'au taux de croisière. Chaque nouvel associé suit la même courbe à partir de son arrivée.</li>
+            <li>Remplacements de congés : les créneaux laissés vides pendant les vacances sont assurés par un remplaçant qui conserve une part des honoraires (rétrocession) ; le reste revient au titulaire.</li>
+            <li>Collaborateur régulier : des heures supplémentaires chaque semaine (soirées, samedis) sur le même principe.</li>
+          </ol>
+          <h3 style="margin-top:16px">Charges et répartition</h3>
+          <ol>
+            <li>Les charges de la structure (loyer, charges, logiciel, consommables, comptabilité, personnel, emprunt…) sont totalisées puis majorées de la marge prudentielle. Elles correspondent aux apports mensuels des associés à la SCM/SISA.</li>
+            <li>Elles sont réparties entre praticiens présents selon leurs parts (ex. 1 part par médecin, 0,5 par infirmier qui exerce surtout au domicile).</li>
+            <li>Revenu net par praticien = (recettes propres + rétrocessions reçues − quote-part des charges) × (1 − taux de cotisations sociales de la profession). Les cotisations sont une approximation ; un expert-comptable affinera.</li>
+          </ol>
+          <h3 style="margin-top:16px">Investissements et financement</h3>
+          <ul>
+            <li>Besoins = travaux + dépôt de garantie + matériel (par box × nombre de box, plus le matériel commun) + frais de création + capital + fonds de roulement.</li>
+            <li>Emprunt = besoins − apports − subventions ; mensualité calculée à taux constant ; franchise de remboursement sans intérêts intercalaires (simplification).</li>
+            <li>La trésorerie prévisionnelle part du fonds de roulement et cumule recettes − charges ; si elle passe en négatif, le fonds de roulement est insuffisant.</li>
+          </ul>
+          <h3 style="margin-top:16px">Limites</h3>
+          <ul>
+            <li>Les valeurs pré-remplies sont des ordres de grandeur 2026, pas des références tarifaires officielles : tarifs conventionnels, loyers et prix du matériel varient fortement selon le lieu et le projet.</li>
+            <li>Pas de fiscalité (impôt sur le revenu, CFE), pas d'amortissements dans les résultats, pas de revalorisation annuelle.</li>
+            <li>Les infirmiers et autres professions exerçant surtout au domicile ne mobilisent pas de box ; leur quote-part est réglée via les parts.</li>
+          </ul>
+          <p class="lead" style="margin-top:14px">Vos saisies restent dans votre navigateur, sauf les prévisionnels que vous enregistrez dans votre compte 100 000 Médecins. Le bouton « Sauvegarder / partager » permet aussi de télécharger le scénario (fichier .json) ou de le copier sous forme de texte, pour le conserver ou l'envoyer à un associé ou à votre comptable.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="aside">
+      <div class="syn" id="synthese"></div>
+    </aside>
+  </div>
+
+  <div class="card io" id="ioCard" hidden style="margin-top:18px">
+    <div class="card-h"><h2>Sauvegarder ou charger un scénario</h2><button class="btn ghost small" type="button" id="btnCloseIo">Fermer</button></div>
+    <div id="acct"></div>
+    <div class="sub" id="ioFile">
+      <div class="sub-h"><h4>Fichier ou texte</h4></div>
+      <p class="lead">Téléchargez le scénario ou copiez ce texte pour le conserver ou l'envoyer (associé, comptable…). Pour en recharger un, choisissez le fichier, ou collez le texte ici puis cliquez sur « Charger le texte collé ».</p>
+      <textarea id="ioText" aria-label="Scénario au format JSON" style="margin-top:10px"></textarea>
+      <div class="add-row" style="margin-top:10px">
+        <button class="btn primary" type="button" id="btnCopy">Copier</button>
+        <button class="btn" type="button" id="btnDownload">Télécharger le scénario (.json)</button>
+        <button class="btn" type="button" id="btnLoad">Charger le texte collé</button>
+        <button class="btn" type="button" id="btnFile">Charger un fichier</button>
+        <input type="file" id="fileLoad" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">Outil d'aide au montage de projet, sans valeur contractuelle. Les chiffres doivent être validés par un professionnel du chiffre.</p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Données par défaut ---------- */
+const TEMPLATES = {
+  mg:   {name:'Médecin généraliste', tarif:30, tarifSoir:30, consultH:4, hoursDay:6.5, daysWeek:4.5, evenings:1, hoursEvening:3, vacations:6, social:0.30, parts:1, usesBox:true, count0:2, extraCount:1, extraMonth:13, remplaOn:true, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:6, collabStart:13, collabKeep:0.85},
+  sf:   {name:'Sage-femme', tarif:28, tarifSoir:28, consultH:2, hoursDay:7, daysWeek:4.5, evenings:0, hoursEvening:0, vacations:6, social:0.30, parts:1, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:true, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:4, collabStart:13, collabKeep:0.85},
+  ide:  {name:'Infirmier(ère)', tarif:11, tarifSoir:11, consultH:5, hoursDay:8, daysWeek:5, evenings:0, hoursEvening:0, vacations:5, social:0.30, parts:0.5, usesBox:false, count0:2, extraCount:0, extraMonth:13, remplaOn:true, remplaKeep:0.90, remplaStart:1, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.9},
+  kine: {name:'Masseur-kinésithérapeute', tarif:20, tarifSoir:20, consultH:3, hoursDay:8, daysWeek:5, evenings:0, hoursEvening:0, vacations:5, social:0.30, parts:1, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:false, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.85},
+  ortho:{name:'Orthophoniste', tarif:36, tarifSoir:36, consultH:2, hoursDay:7, daysWeek:4.5, evenings:0, hoursEvening:0, vacations:6, social:0.28, parts:1, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:false, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.85},
+  podo: {name:'Pédicure-podologue', tarif:32, tarifSoir:32, consultH:2, hoursDay:7, daysWeek:4.5, evenings:0, hoursEvening:0, vacations:5, social:0.28, parts:1, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:false, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.85},
+  psy:  {name:'Psychologue', tarif:55, tarifSoir:55, consultH:1, hoursDay:7, daysWeek:4.5, evenings:1, hoursEvening:3, vacations:6, social:0.25, parts:1, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:false, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.85},
+  diet: {name:'Diététicien(ne)', tarif:45, tarifSoir:45, consultH:1.5, hoursDay:7, daysWeek:4, evenings:0, hoursEvening:0, vacations:6, social:0.25, parts:0.5, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:false, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.85},
+  autre:{name:'Autre profession', tarif:30, tarifSoir:30, consultH:2, hoursDay:7, daysWeek:4.5, evenings:0, hoursEvening:0, vacations:6, social:0.28, parts:1, usesBox:true, count0:1, extraCount:0, extraMonth:13, remplaOn:false, remplaKeep:0.85, remplaStart:7, collabOn:false, collabHours:0, collabStart:13, collabKeep:0.85}
+};
+const TEMPLATE_ORDER = ['mg','sf','ide','kine','ortho','podo','psy','diet','autre'];
+const CAT = {1:'Mobilier',2:'Matériel médical',3:'Informatique'};
+const GROUPS = ['Par box de consultation','Matériel commun','Salle d\'attente','Secrétariat / accueil','Salle de repos','Sanitaires'];
+
+function defaultEquipment(){
+  const B = 'Par box de consultation', C='Matériel commun', A='Salle d\'attente', S='Secrétariat / accueil', R='Salle de repos', W='Sanitaires';
+  const rows = [
+    [B,'Divan d\'examen électrique',2500,1,2,true],[B,'Table à langer murale',350,1,2,true],[B,'Paravent',150,1,2,true],[B,'Lampe d\'examen sur pied',250,1,2,true],
+    [B,'Bureau',500,1,1,true],[B,'Fauteuil praticien',300,1,1,true],[B,'Sièges patients',120,2,1,true],[B,'Tabouret',80,1,1,true],[B,'Meuble de rangement',300,1,1,true],[B,'Étagères',150,1,1,true],[B,'Éclairage',150,1,1,true],
+    [B,'Thermomètre sans contact',60,1,2,true],[B,'Tensiomètre manuel + brassards',90,1,2,true],[B,'Saturomètre',60,1,2,true],[B,'Débitmètre de pointe',40,1,2,true],[B,'Échelles d\'acuité visuelle (adulte, enfant)',80,1,2,true],
+    [B,'Matériel de suture / petite chirurgie',300,1,2,true],[B,'Toise adulte',60,1,2,true],[B,'Toise bébé',60,1,2,true],[B,'Pèse-personne',150,1,2,true],[B,'Pèse-bébé',150,1,2,true],[B,'Lecteur de glycémie',40,1,2,true],
+    [B,'Collecteurs DASRI et poubelles',80,1,2,true],[B,'Matériel pédagogique',100,1,2,true],[B,'Ordinateur',900,1,3,true],[B,'Imprimante multifonction',250,1,3,true],[B,'Lecteur carte Vitale / CPS',300,1,3,true],
+    [C,'Dermatoscope',500,1,2,false],[C,'Électrocardiographe',1500,1,2,false],[C,'Doppler obstétrical',400,1,2,false],[C,'Autoclave',3000,1,2,false],[C,'Trousse d\'urgence',300,1,2,false],[C,'Défibrillateur semi-automatique',1500,1,2,false],
+    [C,'Masques de ventilation (adulte, enfant, nouveau-né)',300,1,2,false],[C,'Bouteille d\'oxygène 1 m³',300,1,2,false],[C,'Armoire à pharmacie sécurisée',600,1,1,false],[C,'Tests d\'optométrie (Parinaud, Ishihara)',150,1,2,false],
+    [C,'Otoscope / nettoyeur d\'oreilles',250,1,2,false],[C,'Tensiomètre électronique',100,1,2,false],[C,'Lecteur de bandelettes urinaires',500,1,2,false],[C,'Pied à perfusion',80,1,2,false],[C,'Planche à massage cardiaque',60,1,2,false],[C,'Ophtalmoscope',300,1,2,false],
+    [C,'Mise en service du logiciel métier, paramétrage',1500,1,3,false],[C,'Réseau informatique, NAS, Wi-Fi',1500,1,3,false],[C,'Standard téléphonique',500,1,3,false],[C,'Signalétique extérieure et intérieure',800,1,1,false],
+    [A,'Fauteuils et banquettes',1500,1,1,false],[A,'Éclairage',300,1,1,false],[A,'Décoration et affichage',500,1,1,false],[A,'Écran d\'information',400,1,3,false],
+    [S,'Comptoir d\'accueil',1500,1,1,false],[S,'Ordinateur',900,1,3,false],[S,'Imprimante',300,1,3,false],[S,'Scanner',200,1,3,false],[S,'Siège',250,1,1,false],[S,'Éclairage',150,1,1,false],
+    [R,'Table de réunion et chaises',600,1,1,false],[R,'Rangements',400,1,1,false],[R,'Canapé',600,1,1,false],[R,'Réfrigérateur',400,1,1,false],[R,'Machine à café, bouilloire',150,1,1,false],[R,'Éclairage',200,1,1,false],
+    [W,'Sèche-mains',300,1,1,false],[W,'Table à langer',300,1,1,false]
+  ];
+  return rows.map(r=>({group:r[0],name:r[1],price:r[2],qty:r[3],cat:r[4],perBox:r[5]}));
+}
+
+let uid = 1;
+function mkProf(key){ const t = Object.assign({}, TEMPLATES[key]); t.id = 'p'+(uid++); t.key=key; return t; }
+
+function defaultState(){
+  uid = 1;
+  return {
+    name:'Mon projet de maison de santé',
+    horizon:48,
+    ramp:{start:0.2,end:0.95,months:12},
+    professions:[mkProf('mg'),mkProf('sf'),mkProf('ide')],
+    local:{surface:220,rentM2:150,tva:0,chargesM2:20,taxeM2:15,franchise:3,worksM2:600,cautionMonths:3},
+    charges:{telecom:150,software:90,medConsum:60,officeConsum:30,accountingStructure:2400,accountingPayroll:600,bankInsurance:200,reserve:0.10,cleaningHours:8,cleaningRate:28,secretaryNet:1700,employerRate:0.75,secretaryStart:1,phoneSecretariat:0,
+      other:[{label:'Maintenance et entretien du matériel',monthly:100},{label:'Collecte des déchets de soins (DASRI)',monthly:60}]},
+    invest:{creation:2500,capital:1000,bfr:30000,boxes:null},
+    equipment:defaultEquipment(),
+    fin:{equity:10000,grants:0,loanMonths:84,rate:0.04,deferMonths:6},
+    amort:{creation:3,equipment:5,works:7}
+  };
+}
+
+/* ---------- État et persistance ---------- */
+const KEY='msp-previsionnel-v1';
+let S = load() || defaultState();
+function load(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const s=JSON.parse(raw); if(!s||!s.professions) return null; uid = 1 + s.professions.reduce((m,p)=>Math.max(m, parseInt(String(p.id).slice(1))||0),0); return s; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------- Utilitaires ---------- */
+const fmtEur = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const fmtEur0 = v => fmtEur.format(Math.round(v||0));
+const fmtK = v => { v=v||0; const a=Math.abs(v); if(a>=1e6) return (v/1e6).toLocaleString('fr-FR',{maximumFractionDigits:1})+' M€'; if(a>=1000) return Math.round(v/1000).toLocaleString('fr-FR')+' k€'; return Math.round(v).toLocaleString('fr-FR')+' €'; };
+const fmtN = (v,d=0) => (v||0).toLocaleString('fr-FR',{maximumFractionDigits:d});
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function getPath(obj,path){ return path.split('.').reduce((o,k)=> o==null?undefined:o[k], obj); }
+function setPath(obj,path,val){ const ks=path.split('.'); let o=obj; for(let i=0;i<ks.length-1;i++){ o=o[ks[i]]; } o[ks[ks.length-1]]=val; }
+const SERIES = ['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+const seriesVar = i => `var(${SERIES[i%SERIES.length]})`;
+function pmt(principal, annualRate, n){ if(n<=0||principal<=0) return 0; const r=annualRate/12; if(r===0) return principal/n; return principal*r/(1-Math.pow(1+r,-n)); }
+
+/* ---------- Moteur de calcul ---------- */
+function autoBoxes(){ return S.professions.filter(p=>p.usesBox).reduce((a,p)=>a+(p.count0||0)+(p.extraCount||0),0); }
+function compute(){
+  const H = S.horizon|0;
+  const boxes = (S.invest.boxes==null||S.invest.boxes==='') ? autoBoxes() : (S.invest.boxes|0);
+  // Matériel
+  const equipByCat = {1:0,2:0,3:0}; let equipTotal=0;
+  S.equipment.forEach(e=>{ const q=(e.perBox?boxes:1)*(e.qty||0); const t=q*(e.price||0); equipByCat[e.cat]=(equipByCat[e.cat]||0)+t; equipTotal+=t; });
+  // Investissements
+  const L=S.local, rentHT = L.rentM2*L.surface/12;
+  const works = L.worksM2*L.surface, caution = rentHT*L.cautionMonths;
+  const needs = {works, caution, equipMed:equipByCat[2], equipMob:equipByCat[1], equipIT:equipByCat[3], creation:S.invest.creation, capital:S.invest.capital, bfr:S.invest.bfr};
+  const needsTotal = Object.values(needs).reduce((a,b)=>a+b,0);
+  const loan = Math.max(0, needsTotal - S.fin.equity - S.fin.grants);
+  const surplus = Math.max(0, S.fin.equity + S.fin.grants - needsTotal);
+  const payment = pmt(loan, S.fin.rate, S.fin.loanMonths);
+  const loanTotalCost = payment*S.fin.loanMonths - loan;
+  // Amortissements annuels (info)
+  const amortYear = (S.invest.creation/S.amort.creation) + (equipTotal/S.amort.equipment) + (works/S.amort.works);
+
+  const ramp = S.ramp;
+  const occ = k => { if(k<1) return 0; if(ramp.months<=0) return ramp.end; return Math.min(ramp.start + (ramp.end-ramp.start)*(k-1)/ramp.months, ramp.end); };
+
+  const months=[];
+  let cash = S.invest.bfr + surplus;
+  let breakEven=null;
+  for(let m=1;m<=H;m++){
+    const row={m, prof:{}, rev:0, retro:0, charges:{}, chargesTotal:0, headcount:0, parts:0};
+    // Professions : effectif, taux, recettes
+    S.professions.forEach(p=>{
+      const n0=p.count0||0, nx=(m>=(p.extraMonth||1))?(p.extraCount||0):0;
+      const head=n0+nx;
+      const fte = n0*occ(m) + nx*occ(m-(p.extraMonth||1)+1);
+      const occAvg = head>0 ? fte/head : 0;
+      const wpm = Math.max(0,(52-(p.vacations||0)))/12;
+      const dayActs = (p.hoursDay||0)*(p.consultH||0)*(p.daysWeek||0)*wpm;
+      const eveActs = (p.evenings||0)*(p.hoursEvening||0)*(p.consultH||0)*wpm;
+      const fullRev = dayActs*(p.tarif||0) + eveActs*(p.tarifSoir||0);
+      const rev = fullRev*fte;
+      // remplaçants de congés
+      let remplaGross=0, remplaToAssoc=0;
+      if(p.remplaOn && m>=(p.remplaStart||1) && head>0){
+        const vacActsPerMonth = (p.hoursDay||0)*(p.consultH||0)*(p.daysWeek||0)*((p.vacations||0)/12);
+        remplaGross = vacActsPerMonth*(p.tarif||0)*head*occAvg;
+        remplaToAssoc = remplaGross*(1-(p.remplaKeep||0));
+      }
+      let collabGross=0, collabToAssoc=0;
+      if(p.collabOn && m>=(p.collabStart||1)){
+        collabGross = (p.collabHours||0)*(p.consultH||0)*(p.tarif||0)*(52/12)*occAvg;
+        collabToAssoc = collabGross*(1-(p.collabKeep||0));
+      }
+      const retro = remplaToAssoc+collabToAssoc;
+      row.prof[p.id]={head, fte, occ:occAvg, rev, retro, remplaGross, collabGross, fullRev};
+      row.rev += rev+retro; row.retro += retro; row.headcount += head; row.parts += head*(p.parts||0);
+    });
+    // Charges
+    const C=S.charges;
+    const ch = row.charges;
+    ch.rent = m>(L.franchise||0) ? rentHT*(1+(L.tva||0)) : 0;
+    ch.locatives = ((L.chargesM2||0)+(L.taxeM2||0))*L.surface/12;
+    ch.telecom = (C.telecom||0);
+    ch.software = (C.software||0)*row.headcount + (C.phoneSecretariat||0);
+    ch.consum = ((C.medConsum||0)+(C.officeConsum||0))*row.headcount;
+    ch.accounting = ((C.accountingStructure||0)+(C.accountingPayroll||0))/12;
+    ch.bank = (C.bankInsurance||0);
+    ch.cleaning = (C.cleaningHours||0)*(C.cleaningRate||0)*52/12;
+    ch.secretary = (m>=(C.secretaryStart||1)) ? (C.secretaryNet||0)*(1+(C.employerRate||0))*13/12 : 0;
+    ch.other = (C.other||[]).reduce((a,o)=>a+(o.monthly||0),0);
+    ch.loan = (m>(S.fin.deferMonths||0) && m<=(S.fin.deferMonths||0)+(S.fin.loanMonths||0)) ? payment : 0;
+    const sub = Object.values(ch).reduce((a,b)=>a+b,0);
+    ch.reserve = sub*(C.reserve||0);
+    row.chargesTotal = sub + ch.reserve;
+    // Répartition et revenu net
+    S.professions.forEach(p=>{
+      const r=row.prof[p.id];
+      const share = row.parts>0 ? row.chargesTotal*(p.parts||0)/row.parts : 0; // par praticien
+      r.chargeShare = share;
+      const gross = r.head>0 ? (r.rev+r.retro)/r.head - share : 0;
+      r.netBefore = gross;
+      r.net = Math.max(0, gross)*(1-(p.social||0));
+    });
+    row.result = row.rev - row.chargesTotal;
+    cash += row.result; row.cash = cash;
+    if(breakEven==null && row.result>0) breakEven=m;
+    months.push(row);
+  }
+  // Années
+  const years=[];
+  for(let y=0;y<Math.ceil(H/12);y++){
+    const slice=months.slice(y*12,(y+1)*12);
+    const yr={y:y+1, rev:0, charges:0, result:0, prof:{}};
+    slice.forEach(r=>{ yr.rev+=r.rev; yr.charges+=r.chargesTotal; yr.result+=r.result; });
+    S.professions.forEach(p=>{ const nets=slice.map(r=>r.prof[p.id].net); const heads=slice.map(r=>r.prof[p.id].head); yr.prof[p.id]={netAvg: nets.reduce((a,b)=>a+b,0)/slice.length, headEnd: heads[heads.length-1]}; });
+    yr.cashEnd = slice[slice.length-1].cash;
+    years.push(yr);
+  }
+  const last = months[months.length-1];
+  const minCash = Math.min(...months.map(r=>r.cash));
+  return {H, boxes, equipByCat, equipTotal, needs, needsTotal, loan, surplus, payment, loanTotalCost, amortYear, months, years, last, breakEven, minCash, rentHT};
+}
+
+/* ---------- Rendu : formulaire ---------- */
+function fillStatic(){
+  document.querySelectorAll('[data-path]').forEach(el=>{
+    if(el.closest('#profList')||el.closest('#equipGroups')||el.closest('#otherTable')) return;
+    const v=getPath(S, el.dataset.path);
+    if(el.type==='checkbox'){ el.checked=!!v; return; }
+    if(el.dataset.kind==='pct') el.value = v==null?'':Math.round(v*1000)/10;
+    else el.value = (v==null)?'':v;
+  });
+  document.getElementById('scenarioName').value = S.name||'';
+}
+
+function profCard(p, idx){
+  const col = seriesVar(idx);
+  const h = (path,label,unit,opts={}) => {
+    const id = `${p.id}-${path}`; const v=p[path];
+    const kind = opts.pct?'data-kind="pct"':'';
+    const val = opts.pct ? Math.round((v||0)*1000)/10 : (v==null?'':v);
+    return `<div class="field"><label for="${id}">${label}</label><div class="ctl"><input id="${id}" type="number" data-path="professions.${idx}.${path}" ${kind} value="${val}" min="${opts.min??0}" ${opts.max!=null?`max="${opts.max}"`:''} step="${opts.step??1}"><span class="unit">${unit}</span></div>${opts.help?`<div class="help">${opts.help}</div>`:''}</div>`;
+  };
+  const chk = (path,label) => `<label class="check"><input type="checkbox" data-path="professions.${idx}.${path}" ${p[path]?'checked':''}> ${label}</label>`;
+  return `<div class="card prof" style="--pc:${col}" data-prof="${idx}">
+    <div class="card-h">
+      <div class="prof-title"><span class="dot" style="background:${col}"></span><input class="name" type="text" data-path="professions.${idx}.name" data-kind="text" value="${esc(p.name)}" aria-label="Nom de la profession"><span class="prof-sum" id="sum-${p.id}"></span></div>
+      <button class="btn small danger" type="button" data-action="delProf" data-idx="${idx}">Retirer</button>
+    </div>
+    <div class="fields">
+      ${h('count0','Praticiens à l\'ouverture','',{step:1})}
+      ${h('extraCount','Arrivées supplémentaires','',{step:1})}
+      ${h('extraMonth','Mois d\'arrivée des suivants','mois n°',{min:1,step:1})}
+      ${h('parts','Parts de charges par praticien','part(s)',{step:0.25,help:'Quote-part des charges de la structure (1 = part entière).'})}
+      ${h('social','Cotisations sociales','% du revenu',{pct:true,step:1,max:100,help:'URSSAF + caisse de retraite, en % du bénéfice.'})}
+      <div class="field"><label>Occupe un box</label>${chk('usesBox','Mobilise un box de consultation')}<div class="help">Décochez pour une activité surtout à domicile.</div></div>
+    </div>
+    <div class="sub"><div class="sub-h"><h4>Activité d'un praticien</h4></div>
+    <div class="fields">
+      ${h('tarif','Tarif moyen d\'un acte en journée','€',{step:1})}
+      ${h('consultH','Actes par heure','',{step:0.5})}
+      ${h('hoursDay','Heures de consultation par jour','h',{step:0.5})}
+      ${h('daysWeek','Jours par semaine','j',{step:0.5,max:7})}
+      ${h('vacations','Semaines de congés par an','sem.',{step:1,max:52})}
+      ${h('evenings','Soirées par semaine','',{step:1,max:7})}
+      ${h('hoursEvening','Heures par soirée','h',{step:0.5})}
+      ${h('tarifSoir','Tarif moyen en soirée','€',{step:1})}
+    </div></div>
+    <div class="sub"><div class="sub-h"><h4>Remplacements</h4></div>
+    <div class="fields">
+      <div class="field"><label>Pendant les congés</label>${chk('remplaOn','Remplaçant pendant les congés')}<div class="help">Les créneaux de vacances restent assurés.</div></div>
+      ${h('remplaKeep','Part conservée par le remplaçant','%',{pct:true,step:5,max:100,help:'Le reste (rétrocession) revient au titulaire.'})}
+      ${h('remplaStart','Premier remplacement','mois n°',{min:1,step:1})}
+      <div class="field"><label>Collaborateur régulier</label>${chk('collabOn','Heures supplémentaires chaque semaine')}<div class="help">Soirées, samedis… assurés par un collaborateur ou remplaçant régulier.</div></div>
+      ${h('collabHours','Heures par semaine du collaborateur','h',{step:1})}
+      ${h('collabStart','Début de la collaboration','mois n°',{min:1,step:1})}
+      ${h('collabKeep','Part conservée par le collaborateur','%',{pct:true,step:5,max:100})}
+    </div></div>
+  </div>`;
+}
+function renderProfs(){
+  document.getElementById('profList').innerHTML = S.professions.map(profCard).join('');
+  const sel=document.getElementById('addProfSel');
+  sel.innerHTML = TEMPLATE_ORDER.map(k=>`<option value="${k}">${esc(TEMPLATES[k].name)}</option>`).join('');
+}
+function renderOther(){
+  const rows=(S.charges.other||[]).map((o,i)=>`<tr><td><input class="txt" type="text" data-path="charges.other.${i}.label" data-kind="text" value="${esc(o.label)}" aria-label="Libellé"></td><td><div class="ctl" style="display:inline-flex"><input type="number" data-path="charges.other.${i}.monthly" value="${o.monthly??''}" min="0" step="10" aria-label="Montant mensuel"><span class="unit">€/mois</span></div></td><td><button class="x" type="button" data-action="delOther" data-idx="${i}" aria-label="Supprimer">×</button></td></tr>`).join('');
+  document.getElementById('otherTable').innerHTML = `<thead><tr><th>Libellé</th><th>Montant</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="3" style="color:var(--muted);text-align:left">Aucune autre charge.</td></tr>'}</tbody>`;
+}
+function renderEquip(){
+  const html = GROUPS.map(g=>{
+    const items = S.equipment.map((e,i)=>({e,i})).filter(x=>x.e.group===g);
+    const rows = items.map(({e,i})=>`<tr>
+      <td><input class="txt" type="text" data-path="equipment.${i}.name" data-kind="text" value="${esc(e.name)}" aria-label="Désignation"></td>
+      <td><div class="ctl" style="display:inline-flex"><input type="number" data-path="equipment.${i}.price" value="${e.price??''}" min="0" step="10" aria-label="Prix unitaire TTC"><span class="unit">€</span></div></td>
+      <td><div class="ctl" style="display:inline-flex;min-width:70px"><input type="number" data-path="equipment.${i}.qty" value="${e.qty??''}" min="0" step="1" aria-label="Quantité"></div></td>
+      <td><label class="check" style="justify-content:center"><input type="checkbox" data-path="equipment.${i}.perBox" ${e.perBox?'checked':''} aria-label="Multiplié par le nombre de box"></label></td>
+      <td><div class="ctl" style="display:inline-flex"><select data-path="equipment.${i}.cat" data-kind="int" aria-label="Catégorie">${Object.keys(CAT).map(c=>`<option value="${c}" ${String(e.cat)===c?'selected':''}>${CAT[c]}</option>`).join('')}</select></div></td>
+      <td class="num" data-eqtotal="${i}"></td>
+      <td><button class="x" type="button" data-action="delEquip" data-idx="${i}" aria-label="Supprimer">×</button></td></tr>`).join('');
+    return `<div class="card"><div class="card-h"><h3>${esc(g)}</h3><button class="btn small" type="button" data-action="addEquip" data-group="${esc(g)}">+ Ajouter</button></div>
+      <div class="tscroll"><table><thead><tr><th>Désignation</th><th>Prix unitaire TTC</th><th>Qté</th><th title="Quantité multipliée par le nombre de box">× box</th><th>Catégorie</th><th>Total</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="7" style="color:var(--muted)">Aucun élément.</td></tr>'}</tbody><tfoot><tr class="total"><td colspan="5">Sous-total</td><td class="num" data-grouptotal="${esc(g)}"></td><td></td></tr></tfoot></table></div></div>`;
+  }).join('');
+  document.getElementById('equipGroups').innerHTML = html;
+}
+
+/* ---------- Rendu : résultats ---------- */
+let R=null;
+function renderAll(){
+  R = compute();
+  renderSynthese(); renderLocalHints(); renderEquipTotals(); renderPlan(); renderResults(); profSummaries();
+  save();
+}
+function profSummaries(){
+  S.professions.forEach(p=>{ const el=document.getElementById('sum-'+p.id); if(!el) return; const r=R.last.prof[p.id]; el.textContent=`${fmtEur0(r.fullRev)} de recettes mensuelles par praticien à 100 % · ${fmtEur0(r.net)} net en croisière`; });
+}
+function renderLocalHints(){
+  const L=S.local;
+  document.getElementById('surfaceHint').textContent = `Repère : environ 45 à 55 m² par box, communs compris (${R.boxes} box → ${fmtN(R.boxes*50)} m²).`;
+  const rentTTC = R.rentHT*(1+(L.tva||0)); const loc=((L.chargesM2||0)+(L.taxeM2||0))*L.surface/12;
+  document.getElementById('localTotals').innerHTML = `<span>Loyer mensuel : <b>${fmtEur0(rentTTC)}</b></span><span>Charges locatives : <b>${fmtEur0(loc)}</b></span><span>Travaux : <b>${fmtEur0(R.needs.works)}</b></span><span>Dépôt de garantie : <b>${fmtEur0(R.needs.caution)}</b></span>`;
+}
+function renderEquipTotals(){
+  const perBox = R.boxes>0 ? R.equipTotal/R.boxes : 0;
+  document.getElementById('boxHint').textContent = `Laissez vide pour le calcul automatique (${autoBoxes()} praticiens occupant un box à terme).`;
+  document.getElementById('equipTotals').innerHTML = [
+    ['Total matériel et ameublement', fmtEur0(R.equipTotal), `${R.boxes} box · ${fmtEur0(perBox)} par box`],
+    ['Mobilier', fmtEur0(R.equipByCat[1]), ''],['Matériel médical', fmtEur0(R.equipByCat[2]), ''],['Informatique', fmtEur0(R.equipByCat[3]), '']
+  ].map(([k,v,d])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`).join('');
+  const groupTotals={};
+  S.equipment.forEach((e,i)=>{ const t=(e.perBox?R.boxes:1)*(e.qty||0)*(e.price||0); groupTotals[e.group]=(groupTotals[e.group]||0)+t; const cell=document.querySelector(`[data-eqtotal="${i}"]`); if(cell) cell.textContent=fmtEur0(t); });
+  document.querySelectorAll('[data-grouptotal]').forEach(td=>{ td.textContent=fmtEur0(groupTotals[td.dataset.grouptotal]||0); });
+}
+function renderPlan(){
+  const n=R.needs;
+  const lines=[['Travaux d\'aménagement',n.works],['Dépôt de garantie',n.caution],['Matériel médical',n.equipMed],['Mobilier',n.equipMob],['Informatique',n.equipIT],['Frais de création',n.creation],['Capital initial',n.capital],['Besoin en fonds de roulement',n.bfr]];
+  const fin=[['Apports personnels',S.fin.equity],['Subventions',S.fin.grants],['Emprunt bancaire',R.loan]];
+  const rows=Math.max(lines.length,fin.length);
+  let body='';
+  for(let i=0;i<rows;i++){ const a=lines[i], b=fin[i]; body+=`<tr><td>${a?a[0]:''}</td><td class="num">${a?fmtEur0(a[1]):''}</td><td style="text-align:left;border-left:1px solid var(--line)">${b?b[0]:''}</td><td class="num">${b?fmtEur0(b[1]):''}</td></tr>`; }
+  const finTotal=S.fin.equity+S.fin.grants+R.loan;
+  document.getElementById('planTable').innerHTML=`<thead><tr><th>Besoins</th><th></th><th style="text-align:left;border-left:1px solid var(--line)">Ressources</th><th></th></tr></thead><tbody>${body}</tbody><tfoot><tr class="total"><td>Total des besoins</td><td class="num">${fmtEur0(R.needsTotal)}</td><td style="text-align:left;border-left:1px solid var(--line)">Total des ressources</td><td class="num">${fmtEur0(finTotal)}</td></tr></tfoot>`;
+  document.getElementById('loanTotals').innerHTML = R.loan>0
+    ? `<span>Emprunt : <b>${fmtEur0(R.loan)}</b></span><span>Mensualité : <b>${fmtEur0(R.payment)}</b></span><span>Coût total du crédit : <b>${fmtEur0(R.loanTotalCost)}</b></span>`
+    : `<span>Aucun emprunt nécessaire${R.surplus>0?` · excédent d'apports ${fmtEur0(R.surplus)} ajouté à la trésorerie`:''}</span>`;
+  document.getElementById('amortTotals').innerHTML = `<span>Dotation annuelle aux amortissements : <b>${fmtEur0(R.amortYear)}</b> (${fmtEur0(R.amortYear/12)}/mois)</span>`;
+}
+function cruiseProfRows(){
+  const last=R.last;
+  return S.professions.map((p,i)=>{ const r=last.prof[p.id]; return {p,i,net:r.net,head:r.head,share:r.chargeShare,gross:r.netBefore}; });
+}
+function renderSynthese(){
+  const last=R.last;
+  const profRows=cruiseProfRows();
+  const alerts=[];
+  if(R.minCash<0) alerts.push(['bad','Trésorerie négative',`Le fonds de roulement est insuffisant : creux à ${fmtK(R.minCash)}. Augmentez le BFR d'au moins ${fmtK(-R.minCash)} ou réduisez les charges de départ.`]);
+  else if(R.breakEven==null) alerts.push(['bad','Jamais à l\'équilibre','Les recettes ne couvrent pas les charges sur l\'horizon choisi.']);
+  else if(R.breakEven>1) alerts.push(['warn',`Équilibre au mois ${R.breakEven}`,`Les ${R.breakEven-1} premiers mois sont déficitaires, financés par le fonds de roulement.`]);
+  else alerts.push(['good','Équilibre dès le mois 1','Les recettes couvrent les charges dès l\'ouverture.']);
+  profRows.forEach(({p,gross})=>{ if(gross<0) alerts.push(['warn',esc(p.name),'La quote-part des charges dépasse les recettes en croisière : revoyez les parts ou l\'activité.']); });
+  document.getElementById('synthese').innerHTML = `
+    <div class="tile hero wide"><div class="k">Charges mensuelles en croisière</div><div class="v">${fmtEur0(last.chargesTotal)}</div><div class="d">mois ${R.H} · dont emprunt ${fmtEur0(last.charges.loan)} · marge ${Math.round((S.charges.reserve||0)*100)} %</div></div>
+    <div class="tile wide"><div class="k">Revenu net mensuel par praticien</div>
+      <div class="tile-list">${profRows.map(({p,i,net,head})=>`<div class="tile-row"><div class="l"><span class="dot" style="background:${seriesVar(i)}"></span><span>${esc(p.name)}${head>1?` <small>(×${fmtN(head)})</small>`:''}</span></div><b>${fmtEur0(net)}</b></div>`).join('')}</div>
+      <div class="d" style="margin-top:6px">en croisière, après charges et cotisations</div></div>
+    <div class="tile"><div class="k">Investissement total</div><div class="v">${fmtK(R.needsTotal)}</div><div class="d">dont matériel ${fmtK(R.equipTotal)}, travaux ${fmtK(R.needs.works)}</div></div>
+    <div class="tile"><div class="k">Emprunt</div><div class="v">${fmtK(R.loan)}</div><div class="d">${R.loan>0?`${fmtEur0(R.payment)}/mois sur ${S.fin.loanMonths} mois`:'aucun'}</div></div>
+    <div class="tile m-hide"><div class="k">Quote-part mensuelle des charges</div><div class="tile-list">${profRows.map(({p,i,share})=>`<div class="tile-row"><div class="l"><span class="dot" style="background:${seriesVar(i)}"></span><span>${esc(p.name)}</span></div><b>${fmtEur0(share)}</b></div>`).join('')}</div><div class="d" style="margin-top:6px">par praticien, en croisière</div></div>
+    ${alerts.map(([t,h,b])=>`<div class="alert ${t} wide"><span class="ic">${t==='good'?'✓':t==='warn'?'!':'✕'}</span><div><b>${h}</b> — ${b}</div></div>`).join('')}
+    <button class="btn wide m-hide" type="button" id="goResults" style="justify-content:center">Voir les résultats détaillés →</button>`;
+  document.getElementById('goResults').addEventListener('click',()=>showTab('resultats'));
+}
+
+function renderResults(){
+  const last=R.last, profRows=cruiseProfRows();
+  const y1=R.years[0];
+  document.getElementById('resKpis').innerHTML = [
+    ['Recettes annuelles en croisière', fmtK(last.rev*12), `${fmtEur0(last.rev)} / mois`],
+    ['Charges annuelles en croisière', fmtK(last.chargesTotal*12), `${fmtEur0(last.chargesTotal)} / mois`],
+    ['Première année', fmtK(y1.result), `résultat collectif avant cotisations`],
+    ['Point d\'équilibre', R.breakEven?`Mois ${R.breakEven}`:'—', R.breakEven?'premier mois où recettes > charges':'non atteint sur l\'horizon'],
+    ['Creux de trésorerie', fmtK(R.minCash), R.minCash<0?'fonds de roulement insuffisant':`fonds de roulement initial ${fmtK(S.invest.bfr)} jamais entamé`]
+  ].map(([k,v,d])=>`<div class="tile"><div class="k">${k}</div><div class="v ${/^-/.test(v)?'neg':''}">${v}</div><div class="d">${d}</div></div>`).join('');
+
+  drawChart1(); drawChart2(); drawChart3();
+
+  // Tableau annuel
+  const yrs=R.years;
+  let thead=`<tr><th></th>${yrs.map(y=>`<th>Année ${y.y}</th>`).join('')}</tr>`;
+  let body=`<tr><td>Recettes des associés</td>${yrs.map(y=>`<td class="num">${fmtEur0(y.rev)}</td>`).join('')}</tr>
+    <tr><td>Charges de la structure</td>${yrs.map(y=>`<td class="num">${fmtEur0(-y.charges)}</td>`).join('')}</tr>
+    <tr class="total"><td>Résultat collectif avant cotisations</td>${yrs.map(y=>`<td class="num ${y.result<0?'neg':''}">${fmtEur0(y.result)}</td>`).join('')}</tr>
+    <tr><td>Cumul du résultat, fonds de roulement compris</td>${yrs.map(y=>`<td class="num ${y.cashEnd<0?'neg':''}">${fmtEur0(y.cashEnd)}</td>`).join('')}</tr>
+    <tr class="group"><td colspan="${yrs.length+1}">Revenu net mensuel moyen par praticien</td></tr>
+    ${S.professions.map((p,i)=>`<tr><td><span class="dot" style="background:${seriesVar(i)};display:inline-block;vertical-align:middle;margin-right:6px"></span>${esc(p.name)}</td>${yrs.map(y=>`<td class="num">${fmtEur0(y.prof[p.id].netAvg)}</td>`).join('')}</tr>`).join('')}`;
+  document.getElementById('yearTable').innerHTML=`<thead>${thead}</thead><tbody>${body}</tbody>`;
+
+  // Tableau mensuel
+  const ms=R.months;
+  const chLabels={rent:'Loyer',locatives:'Charges locatives et taxe foncière',telecom:'Téléphone + internet',software:'Logiciel et secrétariat externalisé',consum:'Consommables',accounting:'Comptabilité et paies',bank:'Banque et assurances',cleaning:'Ménage',secretary:'Secrétariat salarié',other:'Autres charges fixes',loan:'Remboursement de l\'emprunt',reserve:'Marge prudentielle'};
+  let mh=`<tr><th>Mois</th>${ms.map(r=>`<th>${r.m}</th>`).join('')}</tr>`;
+  let mb=`<tr class="group"><td colspan="${ms.length+1}">Effectifs et activité</td></tr>`;
+  S.professions.forEach(p=>{ mb+=`<tr><td>${esc(p.name)} — praticiens</td>${ms.map(r=>`<td class="num">${fmtN(r.prof[p.id].head,1)}</td>`).join('')}</tr><tr><td>${esc(p.name)} — taux d'activité</td>${ms.map(r=>`<td class="num">${Math.round(r.prof[p.id].occ*100)} %</td>`).join('')}</tr>`; });
+  mb+=`<tr class="group"><td colspan="${ms.length+1}">Recettes des associés</td></tr>`;
+  S.professions.forEach(p=>{ mb+=`<tr><td>${esc(p.name)}</td>${ms.map(r=>`<td class="num">${fmtEur0(r.prof[p.id].rev+r.prof[p.id].retro)}</td>`).join('')}</tr>`; });
+  mb+=`<tr class="total"><td>Total recettes</td>${ms.map(r=>`<td class="num">${fmtEur0(r.rev)}</td>`).join('')}</tr>`;
+  mb+=`<tr class="group"><td colspan="${ms.length+1}">Charges de la structure</td></tr>`;
+  Object.keys(chLabels).forEach(k=>{ mb+=`<tr><td>${chLabels[k]}</td>${ms.map(r=>`<td class="num">${fmtEur0(-r.charges[k])}</td>`).join('')}</tr>`; });
+  mb+=`<tr class="total"><td>Total charges</td>${ms.map(r=>`<td class="num">${fmtEur0(-r.chargesTotal)}</td>`).join('')}</tr>`;
+  mb+=`<tr class="total"><td>Résultat collectif</td>${ms.map(r=>`<td class="num ${r.result<0?'neg':''}">${fmtEur0(r.result)}</td>`).join('')}</tr>`;
+  mb+=`<tr><td>Cumul du résultat, fonds de roulement compris</td>${ms.map(r=>`<td class="num ${r.cash<0?'neg':''}">${fmtEur0(r.cash)}</td>`).join('')}</tr>`;
+  mb+=`<tr class="group"><td colspan="${ms.length+1}">Revenu net mensuel par praticien</td></tr>`;
+  S.professions.forEach(p=>{ mb+=`<tr><td>${esc(p.name)}</td>${ms.map(r=>`<td class="num">${fmtEur0(r.prof[p.id].net)}</td>`).join('')}</tr>`; });
+  document.getElementById('monthTable').innerHTML=`<thead>${mh}</thead><tbody>${mb}</tbody>`;
+}
+
+/* ---------- Graphiques SVG ---------- */
+const CW=820, CHH=300, PAD={l:56,r:16,t:14,b:30};
+function yScale(max,min=0){ const span=(max-min)||1; return v => PAD.t + (CHH-PAD.t-PAD.b)*(1-(v-min)/span); }
+function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; const m=[1,1.2,1.5,2,2.5,3,4,5,6,8,10].find(k=>n<=k); return m*p; }
+function gridLines(y,max,min=0){ const steps=5; let s=''; for(let i=0;i<=steps;i++){ const v=min+(max-min)*i/steps; const yy=y(v); s+=`<line x1="${PAD.l}" x2="${CW-PAD.r}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${PAD.l-8}" y="${(yy+4).toFixed(1)}" text-anchor="end" fill="var(--muted)">${fmtK(v)}</text>`; } return s; }
+function xAxis(H,x,w){ let s=''; const n=Math.ceil(H/12); for(let y=0;y<n;y++){ const x0=x(y*12); s+=`<line x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${PAD.t}" y2="${CHH-PAD.b}" stroke="var(--axis)" stroke-dasharray="2 3"/>`; const xm=x(Math.min(y*12+6,H)); s+=`<text x="${xm.toFixed(1)}" y="${CHH-PAD.b+18}" text-anchor="middle">Année ${y+1}</text>`; } s+=`<line x1="${PAD.l}" x2="${CW-PAD.r}" y1="${CHH-PAD.b}" y2="${CHH-PAD.b}" stroke="var(--axis)"/>`; return s; }
+function attachTip(container, H, x, w, tipFn){
+  const svg=container.querySelector('svg'), tip=container.querySelector('.tip');
+  let hits=''; for(let m=0;m<H;m++){ hits+=`<rect data-m="${m}" x="${x(m).toFixed(1)}" y="${PAD.t}" width="${w.toFixed(1)}" height="${CHH-PAD.t-PAD.b}" fill="transparent"/>`; }
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.innerHTML=hits; svg.appendChild(g);
+  let hl=document.createElementNS('http://www.w3.org/2000/svg','rect'); hl.setAttribute('fill','var(--ink)'); hl.setAttribute('opacity','0.06'); hl.setAttribute('y',PAD.t); hl.setAttribute('height',CHH-PAD.t-PAD.b); hl.setAttribute('width',w); hl.style.display='none'; hl.setAttribute('pointer-events','none'); svg.insertBefore(hl,g);
+  g.addEventListener('pointermove',ev=>{ const t=ev.target; if(!t.dataset||t.dataset.m==null) return; const m=+t.dataset.m; hl.setAttribute('x',x(m)); hl.style.display='';
+    tip.innerHTML=tipFn(m); tip.style.display='block'; const rect=container.getBoundingClientRect(); let lx=ev.clientX-rect.left+14, ly=ev.clientY-rect.top-10; if(lx+tip.offsetWidth>rect.width) lx=ev.clientX-rect.left-tip.offsetWidth-14; tip.style.left=Math.max(0,lx)+'px'; tip.style.top=Math.max(0,ly)+'px'; });
+  g.addEventListener('pointerleave',()=>{ tip.style.display='none'; hl.style.display='none'; });
+}
+function legendHtml(items){ return `<div class="legend">${items.map(([c,l])=>`<span><span class="dot" style="background:${c}"></span>${l}</span>`).join('')}</div>`; }
+
+function drawChart1(){
+  const H=R.H, ms=R.months; const plotW=CW-PAD.l-PAD.r; const bw=plotW/H; const x=m=>PAD.l+m*bw;
+  const maxV=niceMax(Math.max(...ms.map(r=>Math.max(r.rev,r.chargesTotal)))*1.05); const y=yScale(maxV);
+  let bars=''; ms.forEach((r,m)=>{ let acc=0; S.professions.forEach((p,i)=>{ const v=r.prof[p.id].rev+r.prof[p.id].retro; if(v<=0) return; const y1=y(acc+v), y0=y(acc); bars+=`<rect x="${(x(m)+1).toFixed(1)}" y="${y1.toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${Math.max(0,y0-y1).toFixed(1)}" fill="${seriesVar(i)}" stroke="var(--surface)" stroke-width="1"/>`; acc+=v; }); });
+  const line=ms.map((r,m)=>`${m===0?'M':'L'}${(x(m)+bw/2).toFixed(1)},${y(r.chargesTotal).toFixed(1)}`).join('');
+  const lastPt={x:x(H-1)+bw/2,y:y(ms[H-1].chargesTotal)};
+  const svg=`<svg viewBox="0 0 ${CW} ${CHH}" role="img" aria-label="Recettes mensuelles par profession et charges">${gridLines(y,maxV)}${xAxis(H,x,bw)}${bars}<path d="${line}" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/></svg><div class="tip"></div>`;
+  const el=document.getElementById('chart1'); el.innerHTML=legendHtml([...S.professions.map((p,i)=>[seriesVar(i),esc(p.name)]),['var(--ink)','Charges totales']])+svg;
+  attachTip(el,H,x,bw,m=>{ const r=ms[m]; return `<div class="t">Mois ${r.m}</div>${S.professions.map((p,i)=>`<div class="r"><span class="l"><span class="dot" style="background:${seriesVar(i)}"></span>${esc(p.name)}</span><b>${fmtEur0(r.prof[p.id].rev+r.prof[p.id].retro)}</b></div>`).join('')}<div class="r"><span class="l">Recettes</span><b>${fmtEur0(r.rev)}</b></div><div class="r"><span class="l">Charges</span><b>${fmtEur0(r.chargesTotal)}</b></div><div class="r"><span class="l">Résultat</span><b class="${r.result<0?'neg':''}">${fmtEur0(r.result)}</b></div>`; });
+}
+function drawChart2(){
+  const H=R.H, ms=R.months; const plotW=CW-PAD.l-PAD.r; const bw=plotW/H; const x=m=>PAD.l+m*bw;
+  const maxV=niceMax(Math.max(1,...ms.flatMap(r=>S.professions.map(p=>r.prof[p.id].net)))*1.1); const y=yScale(maxV);
+  let paths='', labels='';
+  S.professions.forEach((p,i)=>{ const d=ms.map((r,m)=>`${m===0?'M':'L'}${(x(m)+bw/2).toFixed(1)},${y(r.prof[p.id].net).toFixed(1)}`).join(''); paths+=`<path d="${d}" fill="none" stroke="${seriesVar(i)}" stroke-width="2" stroke-linejoin="round"/>`; const lx=x(H-1)+bw/2, ly=y(ms[H-1].prof[p.id].net); paths+=`<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4" fill="${seriesVar(i)}" stroke="var(--surface)" stroke-width="2"/>`; });
+  const svg=`<svg viewBox="0 0 ${CW} ${CHH}" role="img" aria-label="Revenu net mensuel par praticien">${gridLines(y,maxV)}${xAxis(H,x,bw)}${paths}${labels}</svg><div class="tip"></div>`;
+  const el=document.getElementById('chart2'); el.innerHTML=legendHtml(S.professions.map((p,i)=>[seriesVar(i),esc(p.name)]))+svg;
+  attachTip(el,H,x,bw,m=>{ const r=ms[m]; return `<div class="t">Mois ${r.m}</div>${S.professions.map((p,i)=>`<div class="r"><span class="l"><span class="dot" style="background:${seriesVar(i)}"></span>${esc(p.name)}</span><b>${fmtEur0(r.prof[p.id].net)}</b></div>`).join('')}`; });
+}
+function drawChart3(){
+  const H=R.H, ms=R.months; const plotW=CW-PAD.l-PAD.r; const bw=plotW/H; const x=m=>PAD.l+m*bw;
+  const vals=ms.map(r=>r.result); const maxV=niceMax(Math.max(1,...vals)*1.05); const minRaw=Math.min(0,...vals); const minV=minRaw<0?-niceMax(-minRaw*1.05):0; const y=yScale(maxV,minV);
+  let bars=''; ms.forEach((r,m)=>{ const v=r.result; const y0=y(0), y1=y(v); bars+=`<rect x="${(x(m)+1).toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${Math.max(0.5,Math.abs(y0-y1)).toFixed(1)}" fill="${v<0?'var(--bad)':'var(--accent)'}" stroke="var(--surface)" stroke-width="1"/>`; });
+  const svg=`<svg viewBox="0 0 ${CW} ${CHH}" role="img" aria-label="Résultat collectif mensuel">${gridLines(y,maxV,minV)}${xAxis(H,x,bw)}${bars}<line x1="${PAD.l}" x2="${CW-PAD.r}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--axis)"/></svg><div class="tip"></div>`;
+  const el=document.getElementById('chart3'); el.innerHTML=legendHtml([['var(--accent)','Mois excédentaire'],['var(--bad)','Mois déficitaire']])+svg;
+  attachTip(el,H,x,bw,m=>{ const r=ms[m]; return `<div class="t">Mois ${r.m}</div><div class="r"><span class="l">Recettes</span><b>${fmtEur0(r.rev)}</b></div><div class="r"><span class="l">Charges</span><b>${fmtEur0(r.chargesTotal)}</b></div><div class="r"><span class="l">Résultat</span><b class="${r.result<0?'neg':''}">${fmtEur0(r.result)}</b></div><div class="r"><span class="l">Cumul avec fonds de roulement</span><b class="${r.cash<0?'neg':''}">${fmtEur0(r.cash)}</b></div>`; });
+}
+
+/* ---------- Onglets ---------- */
+const TABS=['equipe','local','materiel','financement','resultats','apropos'];
+function showTab(name){
+  if(!TABS.includes(name)) name='equipe';
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===name?'true':'false'));
+  TABS.forEach(t=>{ document.getElementById('tab-'+t).hidden = t!==name; });
+  try{ history.replaceState(null,'','#'+name); }catch(e){}
+  try{ localStorage.setItem(KEY+'-tab',name); }catch(e){}
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+
+/* ---------- Événements ---------- */
+function readValue(el){
+  if(el.type==='checkbox') return el.checked;
+  if(el.dataset.kind==='text') return el.value;
+  if(el.dataset.kind==='int') return el.value===''?null:parseInt(el.value,10);
+  if(el.value==='') return (el.dataset.path==='invest.boxes')?null:0;
+  const n=parseFloat(el.value); if(isNaN(n)) return 0;
+  return el.dataset.kind==='pct' ? n/100 : n;
+}
+document.addEventListener('input',ev=>{
+  const el=ev.target; if(!el.dataset||!el.dataset.path) return;
+  setPath(S, el.dataset.path, readValue(el));
+  if(el.dataset.path==='horizon') S.horizon = parseInt(el.value,10)||48;
+  if(el.dataset.path.startsWith('professions.')&&el.dataset.path.endsWith('.name')){ /* le nom se propage aux résultats */ }
+  renderAll();
+});
+document.getElementById('scenarioName').addEventListener('input',ev=>{ S.name=ev.target.value; save(); });
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-action]'); if(!b) return;
+  const a=b.dataset.action;
+  if(a==='delProf'){ S.professions.splice(+b.dataset.idx,1); renderProfs(); renderAll(); }
+  else if(a==='addOther'){ S.charges.other.push({label:'Nouvelle charge',monthly:0}); renderOther(); renderAll(); }
+  else if(a==='delOther'){ S.charges.other.splice(+b.dataset.idx,1); renderOther(); renderAll(); }
+  else if(a==='addEquip'){ S.equipment.push({group:b.dataset.group,name:'Nouvel élément',price:0,qty:1,cat:1,perBox:b.dataset.group===GROUPS[0]}); renderEquip(); renderAll(); }
+  else if(a==='delEquip'){ S.equipment.splice(+b.dataset.idx,1); renderEquip(); renderAll(); }
+});
+document.getElementById('btnAddProf').addEventListener('click',()=>{ const k=document.getElementById('addProfSel').value; const p=mkProf(k); p.count0=1; p.extraCount=0; S.professions.push(p); renderProfs(); renderAll(); const cards=document.querySelectorAll('.prof'); const c=cards[cards.length-1]; if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); });
+document.getElementById('btnReset').addEventListener('click',()=>{
+  const btn=document.getElementById('btnReset');
+  if(btn.dataset.armed){ delete btn.dataset.armed; btn.textContent='Valeurs par défaut'; S=defaultState(); renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll(); acctUnlink(); toast('Scénario réinitialisé'); return; }
+  btn.dataset.armed='1'; btn.textContent='Confirmer la réinitialisation ?'; setTimeout(()=>{ if(btn.dataset.armed){ delete btn.dataset.armed; btn.textContent='Valeurs par défaut'; } },4000);
+});
+function openIo(){ const c=document.getElementById('ioCard'); c.hidden=false; document.getElementById('ioText').value=JSON.stringify(S,null,1); renderAcct(); c.scrollIntoView({behavior:'smooth',block:'start'}); }
+document.getElementById('btnShare').addEventListener('click',()=>{ acct.notice=''; openIo(); });
+document.getElementById('btnCloseIo').addEventListener('click',()=>{ acct.notice=''; document.getElementById('ioCard').hidden=true; });
+document.getElementById('btnCopy').addEventListener('click',()=>{ const ta=document.getElementById('ioText'); ta.value=JSON.stringify(S,null,1); const txt=ta.value; const ok=()=>toast('Scénario copié'); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(ok).catch(()=>{ ta.focus(); ta.select(); toast('Sélectionné : copiez avec Ctrl+C'); }); } else { ta.focus(); ta.select(); toast('Sélectionné : copiez avec Ctrl+C'); } });
+// Charge un scénario exporté (texte collé, fichier .json ou prévisionnel du compte) ; lève une erreur s'il est illisible.
+function loadScenario(jsonString){ const s=JSON.parse(jsonString); if(!s||!Array.isArray(s.professions)||!s.local||!s.charges) throw new Error('format'); const d=defaultState(); S=Object.assign(d,s); S.ramp=Object.assign(d.ramp,s.ramp||{}); S.local=Object.assign(d.local,s.local||{}); S.charges=Object.assign(d.charges,s.charges||{}); S.invest=Object.assign(d.invest,s.invest||{}); S.fin=Object.assign(d.fin,s.fin||{}); S.amort=Object.assign(d.amort,s.amort||{}); if(!Array.isArray(S.charges.other)) S.charges.other=[]; if(!Array.isArray(S.equipment)) S.equipment=defaultEquipment(); uid=1+S.professions.reduce((m,p)=>Math.max(m,parseInt(String(p.id).slice(1))||0),0); S.professions.forEach((p,i)=>{ if(!p.id) p.id='p'+(uid++); }); renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll(); }
+document.getElementById('btnLoad').addEventListener('click',()=>{ try{ loadScenario(document.getElementById('ioText').value); acctUnlink(); toast('Scénario chargé'); }catch(e){ toast('Texte illisible : collez un scénario exporté par cet outil'); } });
+function fileSlug(){ const s=String(S.name||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+/,'').slice(0,60).replace(/-+$/,''); return 'previsionnel-msp-'+(s||'scenario'); }
+function downloadBlob(blob,filename){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),10000); }
+document.getElementById('btnDownload').addEventListener('click',()=>{ downloadBlob(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}), fileSlug()+'.json'); toast('Scénario téléchargé'); });
+document.getElementById('btnFile').addEventListener('click',()=>document.getElementById('fileLoad').click());
+document.getElementById('fileLoad').addEventListener('change',ev=>{ const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f) return; if(f.size>1000000){ toast('Fichier trop volumineux pour un scénario'); return; } f.text().then(txt=>{ loadScenario(txt); acctUnlink(); document.getElementById('ioText').value=JSON.stringify(S,null,1); toast('Scénario chargé depuis le fichier'); }).catch(()=>toast('Fichier illisible : choisissez un scénario exporté par cet outil')); });
+let toastT; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---------- Compte 100 000 Médecins : prévisionnels enregistrés (5 au plus) ---------- */
+// L'outil est servi par le site : l'API est sur le même domaine et reçoit la session de l'utilisateur.
+// États : loading, user (connecté), anon (non connecté), error (API injoignable), off (outil hors du site).
+const API='/api/outils/previsionnels', ACCT_KEY=KEY+'-compte';
+const acct={state:'loading', items:[], max:5, notice:'', busy:false};
+let acctReady=null;
+// Lien entre le scénario affiché et un prévisionnel du compte : {id, snap} (snap = état au dernier enregistrement).
+let link=(()=>{ try{ const l=JSON.parse(localStorage.getItem(ACCT_KEY)||'null'); return l&&l.id?l:null; }catch(e){ return null; } })();
+function setLink(l){ link=l; try{ if(l) localStorage.setItem(ACCT_KEY,JSON.stringify(l)); else localStorage.removeItem(ACCT_KEY); }catch(e){} }
+function acctUnlink(){ setLink(null); renderAcct(); }
+const snapshot=()=>JSON.stringify(S);
+const fmtDate=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); };
+function loginHref(){ let p='/outils/previsionnel-maison-de-sante'; try{ if(window.top===window.self) p=location.pathname; }catch(e){} return '/connexion?redirect='+encodeURIComponent(p); }
+async function api(path,opts){ opts=opts||{}; const init={method:opts.method||'GET',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}; if(opts.body){ init.headers['Content-Type']='application/json'; init.body=opts.body; } const r=await fetch(API+path,init); let data=null; try{ data=await r.json(); }catch(e){} return {status:r.status, ok:r.ok, data}; }
+function acctRefresh(){
+  acctReady=api('').then(res=>{
+    if(res.status===401){ acct.state='anon'; acct.items=[]; }
+    else if(res.ok&&res.data&&Array.isArray(res.data.items)){ acct.state='user'; acct.items=res.data.items; acct.max=res.data.max||acct.max; acct.notice=''; if(link&&!acct.items.some(i=>i.id===link.id)) setLink(null); }
+    else acct.state=res.status===404?'off':'error';
+  }).catch(()=>{ acct.state=location.protocol==='file:'?'off':'error'; }).finally(renderAcct);
+  return acctReady;
+}
+function renderAcct(){
+  const box=document.getElementById('acct'); if(!box) return;
+  const st=acct.state;
+  document.getElementById('ioFile').classList.toggle('sub', st!=='off');
+  if(st==='off'){ box.innerHTML=''; return; }
+  const head=extra=>`<div class="sub-h"><h4>Dans mon compte</h4>${extra||''}</div>`;
+  if(st==='loading'){ box.innerHTML=head()+'<p class="acct-status">Vérification de votre connexion…</p>'; return; }
+  if(st==='error'){ box.innerHTML=head()+'<p class="acct-status">Vos prévisionnels enregistrés sont momentanément indisponibles.</p><div class="add-row" style="margin-top:8px"><button class="btn small" type="button" data-acct="retry">Réessayer</button></div>'; return; }
+  if(st==='anon'){
+    box.innerHTML=head()+`${acct.notice?`<div class="alert warn" style="margin-bottom:10px"><span class="ic">!</span><div>${esc(acct.notice)}</div></div>`:''}<p class="lead">Connectez-vous à votre compte 100 000 Médecins pour enregistrer jusqu'à ${acct.max} prévisionnels nommés, les retrouver sur tous vos appareils et les exporter en Excel ou en PDF.</p><div class="add-row" style="margin-top:10px"><a class="btn primary" href="${esc(loginHref())}" target="_top">Se connecter</a><a class="btn" href="/inscription" target="_top">Créer un compte</a></div>`;
+    return;
+  }
+  const n=acct.items.length;
+  const rows=acct.items.map(it=>{ const cur=link&&link.id===it.id; return `<tr><td>${esc(it.nom)}${cur?' <span class="chip">ouvert</span>':''}<div class="help">modifié le ${esc(fmtDate(it.updated_at))}</div></td><td><button class="btn small" type="button" data-acct="open" data-id="${esc(it.id)}">Ouvrir</button><button class="btn small danger" type="button" data-acct="del" data-id="${esc(it.id)}">Supprimer</button></td></tr>`; }).join('');
+  box.innerHTML=head(`<span class="chip">${n} / ${acct.max}</span>`)+`
+    <div class="field" style="max-width:520px"><label for="acctName">Nom du prévisionnel</label><div class="ctl"><input id="acctName" type="text" maxlength="120" value="${esc(S.name)}"></div><div class="help">Un nom parlant pour le retrouver, par exemple « MSP centre-ville, hypothèse prudente ».</div></div>
+    <p class="acct-status" id="acctStatus"></p>
+    <div class="add-row" style="margin-top:10px"><button class="btn primary" type="button" data-acct="save" id="acctSave">Enregistrer</button><button class="btn" type="button" data-acct="saveNew" id="acctSaveNew">Enregistrer comme nouveau</button></div>
+    ${n?`<div class="tscroll" style="margin-top:14px"><table class="acct-list"><thead><tr><th>Prévisionnels enregistrés</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="acct-status">Aucun prévisionnel enregistré pour l\'instant.</p>'}`;
+  acctStatus();
+}
+function acctStatus(){
+  const el=document.getElementById('acctStatus'); if(!el) return;
+  const full=acct.items.length>=acct.max, dirty=!!link&&link.snap!==snapshot();
+  let msg, warn=false;
+  if(dirty){ msg='Modifications non enregistrées : « Enregistrer » met à jour ce prévisionnel dans votre compte.'; warn=true; }
+  else if(link) msg='Ce prévisionnel est à jour dans votre compte.';
+  else if(full){ msg=`Limite de ${acct.max} prévisionnels atteinte : ouvrez-en un pour le remplacer, ou supprimez-en un.`; warn=true; }
+  else msg='Ce prévisionnel n\'est pas encore enregistré dans votre compte.';
+  el.textContent=msg; el.classList.toggle('warn',warn);
+  const sv=document.getElementById('acctSave'), sn=document.getElementById('acctSaveNew');
+  if(sv) sv.disabled=!link&&full;
+  if(sn){ sn.hidden=!link; sn.disabled=full; }
+}
+function arm(btn,label){ if(btn.dataset.armed) return true; const old=btn.textContent; btn.dataset.armed='1'; btn.textContent=label; setTimeout(()=>{ if(btn.isConnected&&btn.dataset.armed){ delete btn.dataset.armed; btn.textContent=old; } },4000); return false; }
+function busy(btn,on){ acct.busy=on; if(on) btn.setAttribute('aria-busy','true'); else btn.removeAttribute('aria-busy'); }
+async function acctSave(asNew,btn){
+  const nom=String(S.name||'').trim().slice(0,120);
+  if(!nom){ toast('Donnez un nom au prévisionnel avant de l\'enregistrer'); const f=document.getElementById('acctName'); if(f) f.focus(); return; }
+  const updating=!!link&&!asNew;
+  busy(btn,true);
+  try{
+    const body=JSON.stringify({nom, donnees:S});
+    const res=updating?await api('/'+encodeURIComponent(link.id),{method:'PUT',body}):await api('',{method:'POST',body});
+    if(res.ok&&res.data&&res.data.item){ setLink({id:res.data.item.id, snap:snapshot()}); toast(updating?'Prévisionnel mis à jour dans votre compte':'Prévisionnel enregistré dans votre compte'); }
+    else if(res.status===401){ toast('Votre session a expiré : reconnectez-vous pour enregistrer'); }
+    else if(res.status===409){ toast(`Limite de ${acct.max} prévisionnels atteinte`); }
+    else if(res.status===404&&updating){ setLink(null); toast('Ce prévisionnel n\'existe plus dans votre compte : enregistrez-le à nouveau'); }
+    else toast('Enregistrement impossible, réessayez');
+  }catch(e){ toast('Enregistrement impossible, réessayez'); }
+  finally{ busy(btn,false); await acctRefresh(); }
+}
+async function acctOpen(id,btn){
+  busy(btn,true);
+  try{
+    const res=await api('/'+encodeURIComponent(id));
+    if(res.ok&&res.data&&res.data.item){
+      loadScenario(JSON.stringify(res.data.item.donnees));
+      S.name=res.data.item.nom; fillStatic(); save();
+      setLink({id, snap:snapshot()});
+      document.getElementById('ioText').value=JSON.stringify(S,null,1);
+      toast(`« ${res.data.item.nom} » ouvert`);
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else if(res.status===404){ toast('Ce prévisionnel n\'existe plus'); }
+    else toast('Ouverture impossible, réessayez');
+  }catch(e){ toast('Ce prévisionnel est illisible'); }
+  finally{ busy(btn,false); await acctRefresh(); }
+}
+async function acctDelete(id,btn){
+  busy(btn,true);
+  try{
+    const res=await api('/'+encodeURIComponent(id),{method:'DELETE'});
+    if(res.ok||res.status===404){ if(link&&link.id===id) setLink(null); toast('Prévisionnel supprimé de votre compte'); }
+    else toast('Suppression impossible, réessayez');
+  }catch(e){ toast('Suppression impossible, réessayez'); }
+  finally{ busy(btn,false); await acctRefresh(); }
+}
+document.getElementById('acct').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-acct]'); if(!b||b.disabled||acct.busy) return;
+  const a=b.dataset.acct, id=b.dataset.id;
+  if(a==='retry'){ acct.state='loading'; renderAcct(); acctRefresh(); }
+  else if(a==='save') acctSave(false,b);
+  else if(a==='saveNew') acctSave(true,b);
+  else if(a==='open'){
+    // Sans confirmation seulement si le scénario affiché est déjà à jour dans le compte (rien à perdre).
+    const saved=!!link&&link.snap===snapshot();
+    if(saved&&link.id===id){ toast('Ce prévisionnel est déjà ouvert'); return; }
+    if(!saved&&!arm(b,'Remplacer ?')){ toast('Le scénario affiché sera remplacé : cliquez à nouveau pour confirmer'); return; }
+    acctOpen(id,b);
+  }
+  else if(a==='del'){ if(!arm(b,'Confirmer ?')) return; acctDelete(id,b); }
+});
+let statusT;
+document.addEventListener('input',ev=>{
+  const t=ev.target;
+  if(t.id==='acctName'){ S.name=t.value; document.getElementById('scenarioName').value=t.value; save(); }
+  else if(t.id==='scenarioName'){ const a=document.getElementById('acctName'); if(a) a.value=t.value; }
+  if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); }
+});
+document.addEventListener('click',()=>{ if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); } });
+
+/* ---------- Exports Excel et PDF (membres connectés) ---------- */
+// Bibliothèques et code d'export chargés au premier clic seulement (vendor/ : exceljs, jsPDF, jspdf-autotable).
+const scripts={};
+function loadScript(src){ if(!scripts[src]) scripts[src]=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>{ delete scripts[src]; rej(new Error(src)); }; document.head.appendChild(s); }); return scripts[src]; }
+window.MSP={ state:()=>S, results:()=>R, CAT, GROUPS, autoBoxes, fmtEur0, fmtK, fmtN, fileSlug, downloadBlob, loadScript, toast };
+const EXPORT_BTN={xlsx:document.getElementById('btnXlsx'), pdf:document.getElementById('btnPdf')};
+async function runExport(kind){
+  const btn=EXPORT_BTN[kind]; if(btn.getAttribute('aria-busy')==='true') return;
+  if(acct.state==='error') acctRefresh();
+  if(acctReady) await acctReady;
+  if(acct.state!=='user'){
+    if(acct.state==='anon'){ acct.notice='Les exports Excel et PDF sont réservés aux membres connectés.'; openIo(); }
+    else toast(acct.state==='off'?'Exports disponibles sur 100000medecins.org, une fois connecté':'Export momentanément indisponible, réessayez');
+    return;
+  }
+  btn.setAttribute('aria-busy','true');
+  try{ await loadScript('export.js'); await window.MSPExport[kind](); }
+  catch(e){ console.error(e); toast('Export impossible, réessayez'); }
+  finally{ btn.removeAttribute('aria-busy'); }
+}
+EXPORT_BTN.xlsx.addEventListener('click',()=>runExport('xlsx'));
+EXPORT_BTN.pdf.addEventListener('click',()=>runExport('pdf'));
+
+/* ---------- Démarrage ---------- */
+renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll();
+let startTab = (location.hash||'').slice(1); if(!TABS.includes(startTab)){ try{ startTab=localStorage.getItem(KEY+'-tab')||'equipe'; }catch(e){ startTab='equipe'; } }
+showTab(startTab);
+renderAcct(); acctRefresh();
+})();
+</script>
+</body>
+</html>

@@ -5,6 +5,47 @@
 
 ---
 
+## [2026-10-15] — Outil « Prévisionnel Maison de Santé » : page, enregistrement dans le compte, exports Excel et PDF
+
+Outil de business-plan pour cabinet de groupe / MSP (page HTML autonome fournie par David, transposition de l'Excel « business-plan pour les nuls »), publié dans le site. Sur `dev` seulement ; aucun lien dans la navigation (en attente de la décision de David).
+
+### Feature — Page `/outils/previsionnel-maison-de-sante`
+- [page.tsx](src/app/outils/previsionnel-maison-de-sante/page.tsx) : Navbar, H1, introduction, outil en iframe (`calc(100vh - 72px)`, 800 px mini, arrondi 16 px, `loading="lazy"`), lien « plein écran » et mention sur les données. Aucune lecture de session : page **statique** (○ au build). Metadata : titre, description, canonical, OpenGraph avec l'image racine redonnée.
+- Ajoutée au [sitemap](src/lib/seo/sitemap-entries.ts) (au passage : `as any` du dédoublonnage des éditeurs typé, erreur de lint préexistante).
+- [next.config.mjs](next.config.mjs) n'a ni CSP ni X-Frame-Options : rien à ajouter pour l'iframe.
+
+### Outil — `public/outils/previsionnel-msp/`
+- [index.html](public/outils/previsionnel-msp/index.html) : moteur de calcul et interface d'origine inchangés. Ajouts : squelette HTML (`noindex`), couleurs `--accent*` alignées sur le navy (clair et sombre), boutons Excel / PDF, téléchargement et chargement d'un fichier `.json` (logique de chargement regroupée dans `loadScenario`), bloc « Dans mon compte ».
+- Encadré dans le site, l'outil s'affiche toujours en clair (le site n'a pas de mode sombre) ; en plein écran il suit le thème de l'appareil. Choix de Claude.
+- Bloc « Dans mon compte » : nom du prévisionnel (lié au nom du scénario), Enregistrer (met à jour le prévisionnel ouvert), Enregistrer comme nouveau, liste Ouvrir / Supprimer (confirmation en deux clics), compteur sur 5, état « à jour / modifications non enregistrées ». Visiteur non connecté : invitation et lien `/connexion?redirect=…` (`target=_top`).
+- [export.js](public/outils/previsionnel-msp/export.js), chargé au premier clic d'un membre connecté, tout dans le navigateur :
+  - **Excel** (exceljs 4.4.0) : 6 onglets (Synthèse, Hypothèses, Matériel, Financement, Synthèse annuelle, Détail mensuel), formats €, %, en-têtes navy, détail mensuel figé. **Valeurs, pas de formules.**
+  - **PDF** (jsPDF 4.2.1 + jspdf-autotable 5.0.9, choix de David contre l'impression navigateur) : logo, 8 chiffres clés, revenu net par profession, points d'attention, plan de financement, 3 graphiques vectoriels, synthèse annuelle, hypothèses, annexes (détail mensuel, matériel), pieds de page avec la mention « sans valeur contractuelle ».
+- Exports **réservés aux membres connectés** (décision de David) : barrière d'usage dans l'outil, pas une protection (les données sont celles de l'utilisateur).
+- Bibliothèques dans `vendor/` (copiées de npm, versions dans le nom) : aucun appel à un CDN.
+
+### Base — table `previsionnels_msp` (SQL lancé par David)
+- `id`, `user_id` (défaut `auth.uid()`, FK `users` en cascade), `nom` (1 à 120 car.), `donnees` jsonb (objet, 200 000 octets au plus), dates.
+- Déclencheur `previsionnels_msp_avant_ecriture` : **5 au plus par compte** (verrou par utilisateur), `user_id` et `created_at` figés, `updated_at` tenu par la base.
+- RLS « les siens » sur les 4 opérations ; `authenticated` : SELECT, DELETE, INSERT et UPDATE **sur `nom` et `donnees` seulement** ; `anon` : rien ; `claude_readonly` : SELECT. Types régénérés (+36 lignes ; la version PostgREST lue passe de 14.5 à 14.1).
+
+### API — `/api/outils/previsionnels`
+- [route.ts](src/app/api/outils/previsionnels/route.ts) (liste, création ; 401 sans session, ce qui renseigne l'outil), [`[id]/route.ts`](src/app/api/outils/previsionnels/%5Bid%5D/route.ts) (lecture, mise à jour, suppression ; 404 pour un prévisionnel d'un autre compte). Session de l'utilisateur et RLS (`createServerClient`), pas de service_role.
+- [previsionnels.ts](src/lib/outils/previsionnels.ts) : écritures acceptées en JSON et depuis le site seulement (Origin), validation du scénario, 150 000 octets au plus.
+
+### Vérif
+- `tsc`, lint des fichiers touchés et `npm run build` sans avertissement (page ○, API ƒ).
+- Outil seul dans Chrome : JSON téléchargé puis rechargé, fichier illisible refusé, pas de débordement à 400 px, mode sombre ; Excel relu (montants identiques à l'écran) ; PDF rendu page par page, y compris 8 professions sur 7 ans et aucune profession.
+- **Build local, deux comptes d'essai temporaires** (`example.com`, créés par l'API d'administration, aucun e-mail), **50 / 50** : page (titre, canonical, OG, iframe), outil en clair, non connecté (401, invitation, aucun export), connexion par le formulaire et retour sur l'outil, enregistrement / mise à jour / 5 / 6e refusé (409) / ouverture / suppression, exports connectés, rechargement, refus de l'API (text/plain, autre origine, données invalides, nom vide), isolement entre comptes (404), **base en direct** avec la clé publique : 6e refusé par le déclencheur, changement de propriétaire et création pour un autre refusés, données trop grosses refusées, anonyme sans accès.
+- Comptes d'essai supprimés : 0 compte, 0 prévisionnel, 0 préférence restants.
+- **Non testé** : la connexion par Pro Santé Connect depuis l'outil (elle ignore `redirect` : retour sur le profil, pas sur l'outil), Safari / iPhone, la preview Vercel.
+
+### Points relevés, non traités
+- `/connexion` suit `?redirect=` sans contrôle (redirection vers un autre site, voire `javascript:`) : correctif proposé à David.
+- Quand la page du site défile trop bas, le haut de l'iframe (bandeau de l'outil avec Excel / PDF) passe sous la barre fixe du site.
+
+---
+
 ## [2026-10-12] — Vidéo native : essai réel validé sur Instagram et Facebook
 
 - **Essai de David depuis `dev`** (vidéo « Introduction ») : fichiers réels de 141 Mo (vertical) et 152 Mo (horizontal), en MP4, déposés par le panneau ; Reel Instagram transmis à 23 h 13 et vidéo Facebook à 23 h 16 (heure de Paris). Retour de David : « ça fonctionne parfaitement sur Facebook et Instagram ». En base : les deux posts sont `envoye`, `media = video`, sans erreur ; le post LinkedIn est resté en brouillon (non envoyé).
