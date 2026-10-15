@@ -51,7 +51,7 @@ _(rien en cours)_
 - [x] ~~**David** : `PUT /ma-fiche` d'un non-généraliste qui envoie la réponse → ignoré ou refusé ?~~ ✅ 15/10 : ignoré.
 - [x] ~~Étape 2 : serveur commun et adresses de l'application, contrat dans `docs/2026-10-10-annuaire-tranche-3.md`~~ ✅ 15/10 (essai local 28 / 28).
 - [x] ~~Étape 3 : la question dans Ma fiche (site)~~ ✅ 15/10 (navigateur 17 / 17).
-- [ ] Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche` (filtre, deux colonnes rendues).
+- [x] ~~Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche`~~ ✅ 16/10 (lancée par David, constat fait, essai 27 / 27, types régénérés).
 - [ ] Étape 5 : mention sur la fiche d'un confrère et filtre dans la recherche (site).
 - [ ] **Jour J, CGU et charte** (textes préparés dans le dépôt messagerie) : remplacer « vos disponibilités » (champ qui n'existe pas) par la réponse sur les nouveaux patients dans CGU art. 4 bis « Votre fiche », charte « Données traitées » et « Ce qui est visible » ; l'ajouter aux déclarations non vérifiées (CGU art. 5).
 - [ ] **Messagerie** : poser la question dans « Ma fiche » si `nouveaux_patients_possible`, l'afficher sur la fiche d'un confrère, filtre — selon le contrat.

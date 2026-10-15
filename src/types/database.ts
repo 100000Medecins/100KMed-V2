@@ -2805,6 +2805,7 @@ export type Database = {
           p_intitule?: string
           p_lat?: number
           p_lon?: number
+          p_nouveaux_patients?: boolean
           p_rayon_km?: number
           p_specialites?: string[]
           p_specialites_equivalentes?: string[]
@@ -2826,6 +2827,8 @@ export type Database = {
           mssante: string
           mssante_ans: string[]
           nom: string
+          nouveaux_patients: boolean
+          nouveaux_patients_le: string
           portable_disponible: boolean
           prenom: string
           rpps: string
@@ -2839,6 +2842,7 @@ export type Database = {
       annuaire_filtres: {
         Args: {
           p_intitule: string
+          p_nouveaux_patients: boolean
           p_specialites: string[]
           p_specialites_equivalentes: string[]
           p_texte: string
@@ -2859,6 +2863,7 @@ export type Database = {
           p_lat?: number
           p_limite?: number
           p_lon?: number
+          p_nouveaux_patients?: boolean
           p_rayon_km?: number
           p_specialites?: string[]
           p_specialites_equivalentes?: string[]

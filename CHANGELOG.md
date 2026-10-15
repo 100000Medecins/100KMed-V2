@@ -5,6 +5,21 @@
 
 ---
 
+## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 4 : fonctions de recherche et de fiche
+
+### Base — migration B lancée par David (vérifiée)
+- Écrite à partir des définitions relues en base (`pg_get_functiondef`), changements limités : `annuaire_filtres` prend `p_nouveaux_patients` et ajoute, s'il vaut `true`, le filtre « fiche publiée qui a répondu oui » (morceau de requête fixe, aucune valeur concaténée) ; `annuaire_compter` et `annuaire_rechercher` prennent le même paramètre (vide par défaut) et le transmettent ; `annuaire_fiche` rend `nouveaux_patients` et `nouveaux_patients_le`. Signatures changées, donc `drop` puis `create` dans une transaction ; aucune dépendance en base (vérifié avant).
+- **Constat** : nouvelles signatures seules en place, `security definer`, `search_path` et `work_mem` inchangés ; droits identiques à avant (`annuaire_filtres` : `service_role` ; les trois autres : `authenticated` et `service_role` ; `anon` rien) ; corps des quatre fonctions relus en base, identiques au texte de la migration.
+- Types régénérés (+6 lignes), `tsc` passe. Le code en production appelle ces fonctions sans le nouveau paramètre (et l'annuaire y est éteint) : rien à changer côté `main`.
+- Retour arrière : définitions d'avant archivées en fin de [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+### Vérif — fonctions appelées comme le site
+- Session d'un médecin d'essai (compte `example.com`, clé publique), deux fiches fictives publiées à Lyon (généraliste « oui », psychiatre non renseigné), **27 / 27** : sans filtre, total identique à un comptage indépendant (199 580) et `p_nouveaux_patients` à `false` ou vide sans effet ; recherche sans filtre (50 résultats) ; avec filtre : 1 en France, 1 à 10 km de Lyon (contre plus de 1 000 sans filtre), combiné à la spécialité (généraliste 1, psychiatrie 0) et au nom ; fiche « oui » avec sa date, fiche non renseignée vide, vraie fiche lue avec les deux champs ; fiche dépubliée ni trouvée ni lue ; visiteur non connecté refusé ; `annuaire_filtres` refusée à un médecin connecté.
+- Une attente de l'essai était fausse au premier passage (« essai » trouve aussi 37 vrais médecins, Bessaï, Dessaint…, relevé par requête) ; corrigée, second passage complet.
+- Données d'essai effacées (fiches, identités, comptes), fiche réelle identique avant et après.
+
+---
+
 ## [2026-10-15] — Annuaire : « accepte de nouveaux patients », étape 3 : la question dans Ma fiche annuaire
 
 - [MaFicheAnnuaireForm](src/components/annuaire/MaFicheAnnuaireForm.tsx) : bloc « Nouveaux patients » sous le moyen de contact, **pour les seuls généralistes** : « Acceptez-vous de nouveaux patients comme médecin traitant ? », Oui / Non / Non renseigné (coché par défaut), « Réponse du … » quand une réponse existe, mention « Déclaration de votre part, non vérifiée par l'association, visible des confrères si votre fiche est publiée. Elle est datée à chaque enregistrement de votre fiche : mettez-la à jour quand votre situation change. »

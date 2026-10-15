@@ -190,6 +190,12 @@ continue de fonctionner sans changement.
 - Base (migration du 15/10, lancée par David) : `fiches_annuaire.nouveaux_patients` (booléen) et
   `nouveaux_patients_le` (date et heure), contrainte « les deux vides ou les deux remplis ». Droits inchangés
   (seul le serveur écrit les fiches).
+- Fonctions du site (migration B du 16/10, lancée par David) : `annuaire_filtres`, `annuaire_compter` et
+  `annuaire_rechercher` prennent `p_nouveaux_patients` (filtre seulement si `true` : fiches publiées qui ont
+  répondu « oui ») ; `annuaire_fiche` rend `nouveaux_patients` et `nouveaux_patients_le`. Mêmes droits qu'avant
+  (`annuaire_filtres` : serveur seulement ; les trois autres : `authenticated` et `service_role`). Retour arrière :
+  `drop` des quatre fonctions (signatures avec `boolean`), puis recréer celles de l'archive en fin de document et
+  reposer les mêmes droits sur les anciennes signatures.
 
 ## Contrat d'échange avec l'application (pour la session messagerie)
 
@@ -346,3 +352,327 @@ attente, fiche à 20 compétences, longueur 2 à 120).
   `PUT` ; sur la fiche d'un confrère, mention « Accepte » / « N'accepte pas de nouveaux patients comme médecin
   traitant (déclaré le …) » ; filtre « accepte de nouveaux patients » dans la recherche.
 - Exclure `annuaire_oppositions` de `annuaire.db` (déjà dans la TODO).
+
+## Archive : fonctions de l’annuaire avant la migration B du 16/10 (retour arrière)
+
+Définitions relues en base le 15/10 (`pg_get_functiondef`), avant l’ajout de `p_nouveaux_patients`. Pour revenir en
+arrière : supprimer les quatre fonctions actuelles, exécuter ce texte, puis reposer les droits
+(`annuaire_filtres` : `service_role` seulement ; les trois autres : `authenticated` et `service_role` ; rien pour
+`anon` ni `public`).
+
+```sql
+CREATE OR REPLACE FUNCTION public.annuaire_compter(p_texte text DEFAULT NULL::text, p_specialites text[] DEFAULT NULL::text[], p_intitule uuid DEFAULT NULL::uuid, p_specialites_equivalentes text[] DEFAULT NULL::text[], p_lat double precision DEFAULT NULL::double precision, p_lon double precision DEFAULT NULL::double precision, p_rayon_km double precision DEFAULT NULL::double precision)
+ RETURNS bigint
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+ SET work_mem TO '8MB'
+AS $function$
+declare
+  v_lot integer := (select v.lot from public.ans_version v where v.cle = 'courante');
+  v_f record;
+  v_total bigint;
+begin
+  if not public.annuaire_lecteur_autorise() then
+    raise exception 'Annuaire réservé aux médecins connectés par Pro Santé Connect' using errcode = '42501';
+  end if;
+  select * into v_f from public.annuaire_filtres(p_texte, p_specialites, p_intitule, p_specialites_equivalentes);
+
+  if p_lat is not null and p_lon is not null and p_rayon_km is not null then
+    execute 'with ' || v_f.ctes || $q$,
+  positions as (
+    select e.rpps,
+           2 * 6371 * asin(sqrt(power(sin(radians(s.lat - $2) / 2), 2)
+             + cos(radians($2)) * cos(radians(s.lat)) * power(sin(radians(s.lon - $3) / 2), 2))) as d
+    from public.ans_sites s
+    join public.ans_exerce e on e.lot = s.lot and e.site_id = s.id
+    where s.lot = $1
+      and s.lat between $2 - $5 and $2 + $5
+      and s.lon between $3 - $6 and $3 + $6
+      and not exists (select 1 from public.annuaire_oppositions o where o.rpps = e.rpps)
+    union all
+    select fi.rpps,
+           2 * 6371 * asin(sqrt(power(sin(radians(fi.lat - $2) / 2), 2)
+             + cos(radians($2)) * cos(radians(fi.lat)) * power(sin(radians(fi.lon - $3) / 2), 2)))
+    from fiches fi
+    where fi.lat between $2 - $5 and $2 + $5
+      and fi.lon between $3 - $6 and $3 + $6
+  )
+select count(*) from (
+  select x.rpps collate "C" from positions x
+  where x.d <= $4 $q$ || v_f.filtres || $q$
+  group by 1
+) t$q$
+      into v_total
+      using v_lot, p_lat, p_lon, p_rayon_km, p_rayon_km / 111.0, p_rayon_km / (111.0 * greatest(cos(radians(p_lat)), 0.01)),
+            p_specialites, v_f.motifs, p_intitule, p_specialites_equivalentes;
+  else
+    execute 'with ' || v_f.ctes || $q$,
+  candidats as (
+    select m.rpps from public.ans_medecins m
+    where m.lot = $1 and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+    union all
+    select fi.rpps from fiches fi
+    where not exists (select 1 from public.ans_medecins m where m.lot = $1 and m.rpps = fi.rpps
+                        and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps))
+  )
+select count(*) from candidats x where true $q$ || v_f.filtres
+      into v_total
+      using v_lot, p_lat, p_lon, null::double precision, null::double precision, null::double precision,
+            p_specialites, v_f.motifs, p_intitule, p_specialites_equivalentes;
+  end if;
+  return v_total;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.annuaire_fiche(p_rpps text)
+ RETURNS TABLE(rpps text, nom text, prenom text, specialite text, specialite_code text, a_une_fiche boolean, moyen_contact text, ville text, code_postal text, lat double precision, lon double precision, mssante text, telephone_cabinet text, portable_disponible boolean, competences text[], mise_a_jour timestamp with time zone, lieux jsonb, mssante_ans text[], source_version date)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+#variable_conflict use_column
+declare
+  v_lot integer := (select v.lot from public.ans_version v where v.cle = 'courante');
+  v_oppose boolean := exists (select 1 from public.annuaire_oppositions o where o.rpps = p_rpps);
+begin
+  if not public.annuaire_lecteur_autorise() then
+    raise exception 'Annuaire réservé aux médecins connectés par Pro Santé Connect' using errcode = '42501';
+  end if;
+  return query
+  with fi as (
+    select f.rpps, coalesce(i.nom, u.nom) as nom, coalesce(i.prenom, u.prenom) as prenom,
+           u.specialite, i.specialite_code,
+           f.moyen_contact, f.ville, f.code_postal, f.lat, f.lon, f.mssante, f.telephone_cabinet, f.mise_a_jour,
+           exists (select 1 from public.fiches_annuaire_portables p where p.rpps = f.rpps and p.visible) as portable_disponible,
+           coalesce((select array_agg(it.libelle order by it.libelle) from public.fiches_intitules x
+                     join public.intitules it on it.id = x.intitule_id
+                     where x.rpps = f.rpps and it.statut = 'valide'), '{}'::text[]) as competences
+    from public.fiches_annuaire f
+    join public.identites_psc i on i.rpps = f.rpps
+    left join public.users u on u.id = i.user_id
+    where f.rpps = p_rpps and f.publiee
+  ),
+  ans as (
+    select m.rpps, m.nom, m.prenom, m.specialite_libelle, m.specialite_code
+    from public.ans_medecins m
+    where m.lot = v_lot and m.rpps = p_rpps and not v_oppose
+  )
+  select coalesce(ans.rpps, fi.rpps), coalesce(ans.nom, fi.nom), coalesce(ans.prenom, fi.prenom),
+         coalesce(ans.specialite_libelle, fi.specialite), coalesce(ans.specialite_code, fi.specialite_code),
+         fi.rpps is not null, fi.moyen_contact, fi.ville, fi.code_postal, fi.lat, fi.lon,
+         fi.mssante, fi.telephone_cabinet, coalesce(fi.portable_disponible, false),
+         coalesce(fi.competences, '{}'::text[]), fi.mise_a_jour,
+         case when ans.rpps is null then '[]'::jsonb else coalesce((
+           select jsonb_agg(jsonb_build_object('nom', s.nom, 'voie', s.voie, 'code_postal', s.code_postal,
+             'commune', s.commune, 'telephones', s.telephones, 'lat', s.lat, 'lon', s.lon) order by s.id)
+           from public.ans_exerce e join public.ans_sites s on s.lot = e.lot and s.id = e.site_id
+           where e.lot = v_lot and e.rpps = ans.rpps), '[]'::jsonb) end,
+         case when ans.rpps is null then '{}'::text[] else coalesce((
+           select array_agg(b.adresse order by b.adresse) from public.ans_mssante b
+           where b.lot = v_lot and b.rpps = ans.rpps), '{}'::text[]) end,
+         (select v.version from public.ans_version v where v.cle = 'courante')
+  from ans full join fi on fi.rpps = ans.rpps;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.annuaire_filtres(p_texte text, p_specialites text[], p_intitule uuid, p_specialites_equivalentes text[], OUT ctes text, OUT filtres text, OUT motifs text[])
+ RETURNS record
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO ''
+AS $function$
+begin
+  -- Morceaux de requête fixes ; les valeurs passent par USING : $1 lot, $7 spécialités,
+  -- $8 motifs du nom, $9 compétence, $10 spécialités équivalentes. Jamais de concaténation de valeurs.
+  ctes := $q$
+  fiches as (
+    select f.rpps, f.moyen_contact, f.mise_a_jour, f.ville, f.code_postal, f.lat, f.lon,
+           coalesce(i.nom, u.nom) as nom, coalesce(i.prenom, u.prenom) as prenom,
+           u.specialite, i.specialite_code
+    from public.fiches_annuaire f
+    join public.identites_psc i on i.rpps = f.rpps
+    left join public.users u on u.id = i.user_id
+    where f.publiee
+  )$q$;
+  filtres := '';
+  motifs := case when nullif(btrim(p_texte), '') is null then null else (
+    select array_agg('%' || replace(replace(replace(w.mot, '\', '\\'), '%', '\%'), '_', '\_') || '%')
+    from unnest(string_to_array(public.annuaire_normaliser(p_texte), ' ')) as w(mot)
+    where w.mot <> '') end;
+
+  if p_specialites is not null then
+    ctes := ctes || $q$,
+  f_specialites as materialized (
+    select m.rpps from public.ans_medecins m
+    where m.lot = $1 and m.specialite_code = any($7)
+      and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+    union all
+    select fi.rpps from fiches fi where fi.specialite_code = any($7)
+  )$q$;
+    filtres := filtres || ' and x.rpps in (select rpps from f_specialites)';
+  end if;
+
+  if motifs is not null then
+    ctes := ctes || $q$,
+  f_texte as materialized (
+    select m.rpps from public.ans_medecins m
+    where m.lot = $1 and m.nom_recherche like all ($8)
+      and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+    union all
+    select fi.rpps from fiches fi
+    where public.annuaire_normaliser(coalesce(fi.nom, '') || ' ' || coalesce(fi.prenom, '')) like all ($8)
+  )$q$;
+    filtres := filtres || ' and x.rpps in (select rpps from f_texte)';
+  end if;
+
+  if p_intitule is not null then
+    ctes := ctes || $q$,
+  f_intitule as materialized (
+    select fi.rpps from fiches fi
+    join public.fiches_intitules fx on fx.rpps = fi.rpps
+    where fx.intitule_id = $9 $q$
+      || case when p_specialites_equivalentes is null then '' else $q$
+    union all
+    select m.rpps from public.ans_medecins m
+    where m.lot = $1 and m.specialite_code = any($10)
+      and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps) $q$ end
+      || $q$
+  )$q$;
+    filtres := filtres || ' and x.rpps in (select rpps from f_intitule)';
+  end if;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.annuaire_rechercher(p_texte text DEFAULT NULL::text, p_specialites text[] DEFAULT NULL::text[], p_intitule uuid DEFAULT NULL::uuid, p_specialites_equivalentes text[] DEFAULT NULL::text[], p_lat double precision DEFAULT NULL::double precision, p_lon double precision DEFAULT NULL::double precision, p_rayon_km double precision DEFAULT NULL::double precision, p_limite integer DEFAULT 50, p_decalage integer DEFAULT 0)
+ RETURNS TABLE(rpps text, nom text, prenom text, specialite text, specialite_code text, ville text, code_postal text, lat double precision, lon double precision, distance_km double precision, a_une_fiche boolean, moyen_contact text, competences text[], mise_a_jour timestamp with time zone)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+ SET work_mem TO '8MB'
+AS $function$
+#variable_conflict use_column
+declare
+  v_lot integer := (select v.lot from public.ans_version v where v.cle = 'courante');
+  v_f record;
+  v_rayon double precision := case when p_lat is null or p_lon is null then null else coalesce(p_rayon_km, 2000) end;
+  v_r double precision;
+  -- Jusqu'à 2 000 par appel : la carte affiche tout le rayon d'un coup
+  v_limite int := least(greatest(coalesce(p_limite, 50), 1), 2000);
+  v_decalage int := greatest(coalesce(p_decalage, 0), 0);
+  v_top jsonb;
+begin
+  if not public.annuaire_lecteur_autorise() then
+    raise exception 'Annuaire réservé aux médecins connectés par Pro Santé Connect' using errcode = '42501';
+  end if;
+  select * into v_f from public.annuaire_filtres(p_texte, p_specialites, p_intitule, p_specialites_equivalentes);
+
+  if v_rayon is not null then
+    -- Avec une position : le lieu le plus proche par médecin, tri par distance.
+    -- On cherche d'abord dans 10 km et on élargit (×4) tant que la page n'est pas pleine.
+    v_r := least(v_rayon, 10);
+    loop
+      execute 'with ' || v_f.ctes || $q$,
+  positions as (
+    select e.rpps, s.commune as ville, s.code_postal, s.lat, s.lon,
+           2 * 6371 * asin(sqrt(power(sin(radians(s.lat - $2) / 2), 2)
+             + cos(radians($2)) * cos(radians(s.lat)) * power(sin(radians(s.lon - $3) / 2), 2))) as d
+    from public.ans_sites s
+    join public.ans_exerce e on e.lot = s.lot and e.site_id = s.id
+    where s.lot = $1
+      and s.lat between $2 - $5 and $2 + $5
+      and s.lon between $3 - $6 and $3 + $6
+      and not exists (select 1 from public.annuaire_oppositions o where o.rpps = e.rpps)
+    union all
+    select fi.rpps, fi.ville, fi.code_postal, fi.lat, fi.lon,
+           2 * 6371 * asin(sqrt(power(sin(radians(fi.lat - $2) / 2), 2)
+             + cos(radians($2)) * cos(radians(fi.lat)) * power(sin(radians(fi.lon - $3) / 2), 2)))
+    from fiches fi
+    where fi.lat between $2 - $5 and $2 + $5
+      and fi.lon between $3 - $6 and $3 + $6
+  ),
+  plus_proches as (
+    select distinct on (x.rpps collate "C") x.rpps, x.ville, x.code_postal, x.lat, x.lon, x.d
+    from positions x
+    where x.d <= $4 $q$ || v_f.filtres || $q$
+    order by x.rpps collate "C", x.d
+  )
+select coalesce(jsonb_agg(t), '[]'::jsonb) from (
+  select * from plus_proches order by d, rpps collate "C" limit $11 offset $12
+) t$q$
+        into v_top
+        using v_lot, p_lat, p_lon, v_r, v_r / 111.0, v_r / (111.0 * greatest(cos(radians(p_lat)), 0.01)),
+              p_specialites, v_f.motifs, p_intitule, p_specialites_equivalentes, v_limite, v_decalage;
+      exit when jsonb_array_length(v_top) >= v_limite or v_r >= v_rayon;
+      v_r := least(v_r * 4, v_rayon);
+    end loop;
+
+    return query
+    with fiches as (
+      select f.rpps, f.moyen_contact, f.mise_a_jour,
+             coalesce(i.nom, u.nom) as nom, coalesce(i.prenom, u.prenom) as prenom,
+             u.specialite, i.specialite_code
+      from public.fiches_annuaire f
+      join public.identites_psc i on i.rpps = f.rpps
+      left join public.users u on u.id = i.user_id
+      where f.publiee
+    )
+    select t.rpps,
+           case when m.rpps is not null then m.nom else fi.nom end,
+           case when m.rpps is not null then m.prenom else fi.prenom end,
+           case when m.rpps is not null then m.specialite_libelle else fi.specialite end,
+           coalesce(m.specialite_code, fi.specialite_code),
+           t.ville, t.code_postal, t.lat, t.lon, t.d,
+           fi.rpps is not null, fi.moyen_contact,
+           case when fi.rpps is null then '{}'::text[] else coalesce((
+             select array_agg(it.libelle order by it.libelle) from public.fiches_intitules fx
+             join public.intitules it on it.id = fx.intitule_id
+             where fx.rpps = fi.rpps and it.statut = 'valide'), '{}'::text[]) end,
+           fi.mise_a_jour
+    from jsonb_to_recordset(v_top) as t(rpps text, ville text, code_postal text, lat double precision, lon double precision, d double precision)
+    left join public.ans_medecins m on m.lot = v_lot and m.rpps = t.rpps
+      and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+    left join fiches fi on fi.rpps = t.rpps
+    order by t.d, t.rpps collate "C";
+  else
+    -- Sans position : ordre alphabétique ; lieu affiché = premier lieu de l'ANS, à défaut la fiche
+    return query execute 'with ' || v_f.ctes || $q$,
+  candidats as (
+    select m.rpps, m.nom, m.prenom, m.specialite_libelle as specialite, m.specialite_code
+    from public.ans_medecins m
+    where m.lot = $1 and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps)
+    union all
+    select fi.rpps, fi.nom, fi.prenom, fi.specialite, fi.specialite_code
+    from fiches fi
+    where not exists (select 1 from public.ans_medecins m where m.lot = $1 and m.rpps = fi.rpps
+                        and not exists (select 1 from public.annuaire_oppositions o where o.rpps = m.rpps))
+  ),
+  page as (
+    select x.rpps, x.nom, x.prenom, x.specialite, x.specialite_code
+    from candidats x
+    where true $q$ || v_f.filtres || $q$
+    order by x.nom, x.prenom, x.rpps
+    limit $11 offset $12
+  )
+select p.rpps, p.nom, p.prenom, p.specialite, p.specialite_code,
+       coalesce(pos.ville, fi.ville), coalesce(pos.code_postal, fi.code_postal),
+       coalesce(pos.lat, fi.lat), coalesce(pos.lon, fi.lon), null::double precision,
+       fi.rpps is not null, fi.moyen_contact,
+       case when fi.rpps is null then '{}'::text[] else coalesce((
+         select array_agg(it.libelle order by it.libelle) from public.fiches_intitules fx
+         join public.intitules it on it.id = fx.intitule_id
+         where fx.rpps = fi.rpps and it.statut = 'valide'), '{}'::text[]) end,
+       fi.mise_a_jour
+from page p
+left join fiches fi on fi.rpps = p.rpps
+left join lateral (
+  select s.commune as ville, s.code_postal, s.lat, s.lon
+  from public.ans_exerce e
+  join public.ans_sites s on s.lot = e.lot and s.id = e.site_id
+  where e.lot = $1 and e.rpps = p.rpps and s.lat is not null
+    and not exists (select 1 from public.annuaire_oppositions o where o.rpps = p.rpps)
+  order by s.id limit 1
+) pos on true
+order by p.nom, p.prenom, p.rpps$q$
+      using v_lot, p_lat, p_lon, v_r, null::double precision, null::double precision,
+            p_specialites, v_f.motifs, p_intitule, p_specialites_equivalentes, v_limite, v_decalage;
+  end if;
+end $function$;
+```
