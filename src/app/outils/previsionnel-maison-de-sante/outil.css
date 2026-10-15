@@ -205,10 +205,14 @@
    débordement d'un pixel sous les onglets) ; resserrés pour Poppins, plus large que la police
    d'origine. Sur ordinateur, ils passent à la ligne s'ils ne tiennent pas (rendu des polices
    variable selon les écrans) ; sur mobile, ils défilent au doigt. */
-.msp .tabs{gap:2px;border-bottom:0;box-shadow:inset 0 -1px 0 var(--line);overflow-y:hidden;scrollbar-width:none}
+.msp .tabs{gap:2px;border-bottom:0;box-shadow:inset 0 -1px 0 var(--line);overflow-y:hidden;scrollbar-width:none;padding-bottom:8px}
 .msp .tabs::-webkit-scrollbar{display:none}
-.msp .tab{padding:10px 6px;gap:5px;font-size:.87rem;margin-bottom:0}
+.msp .tab{padding:7px 8px;gap:5px;font-size:.87rem;margin-bottom:0;border-bottom:0;border-radius:8px}
 .msp .tab .n{width:18px;height:18px}
+/* Étape en cours : pastille bleu marine, texte blanc ; les autres prennent un fond léger au survol. */
+.msp .tab:hover{background:var(--surface-2)}
+.msp .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.msp .tab[aria-selected="true"] .n{background:var(--accent-ink);color:var(--accent)}
 @media (min-width:981px){.msp .tabs{flex-wrap:wrap;overflow:visible}}
 /* Le logo du site déborde sous sa barre à partir de 1 150 px (comme le fil d'Ariane de la page). */
 @media (min-width:1150px){.msp .top.colle .top-in{padding-left:172px}}

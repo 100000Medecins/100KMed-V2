@@ -192,7 +192,7 @@ export const OUTIL_HTML = String.raw`
       <div class="panel" id="tab-apropos" role="tabpanel" hidden>
         <div class="card about">
           <h2>Méthode de calcul</h2>
-          <p class="lead" style="margin-top:8px">L'outil transpose un business-plan Excel conçu par un jeune médecin pour son propre projet de cabinet pluriprofessionnel (SCM/SISA), généralisé à toutes les professions d'une maison de santé. Les cases de saisie correspondent aux « cases bleues » de l'Excel d'origine ; tout le reste se recalcule instantanément.</p>
+          <p class="lead" style="margin-top:8px">L'outil transpose le business-plan Excel que le jeune David Azérad avait conçu pour son propre projet de cabinet pluriprofessionnel (SCM/SISA) sur Paris 20e, généralisé à toutes les professions d'une maison de santé. Les cases de saisie correspondent aux « cases bleues » de l'Excel d'origine ; tout le reste se recalcule instantanément.</p>
           <h3 style="margin-top:16px">Recettes</h3>
           <ol>
             <li>Pour chaque profession, l'activité « pleine » d'un praticien = heures de consultation × actes par heure × tarif moyen, sur (52 − semaines de congés) / 12 semaines par mois.</li>
