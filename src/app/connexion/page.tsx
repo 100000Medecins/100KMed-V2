@@ -8,12 +8,13 @@ import Button from '@/components/ui/Button'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ShieldCheck, Mail } from 'lucide-react'
 import PasswordInput from '@/components/ui/PasswordInput'
+import { cheminInterne } from '@/lib/auth/redirection'
 
 function ConnexionContent() {
   const { signInWithPSC, signInWithEmail, resetPassword } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const redirect = searchParams.get('redirect')
+  const redirect = cheminInterne(searchParams.get('redirect'), '/mon-compte/profil')
   const errorParam = searchParams.get('error')
   const modeParam = searchParams.get('mode')
   const emailParam = searchParams.get('email')
@@ -76,7 +77,7 @@ function ConnexionContent() {
       setError(result.error)
       setSubmitting(false)
     } else {
-      window.location.href = redirect || '/mon-compte/profil'
+      window.location.href = redirect
     }
   }
 
