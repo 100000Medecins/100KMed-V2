@@ -17,6 +17,7 @@ Demande de David (« niveau navigation c'est pas top ») : double défilement, b
 - Partage : le code `#partage=` est lu dans l'adresse de la page ; un lien collé alors que la page est ouverte recharge la page en lecture seule. L'onglet ouvert s'inscrit dans l'adresse (`#equipe`, `#resultats`…), sauf en lecture seule.
 - [export.js](public/outils/previsionnel-msp/export.js) : chemins absolus, état relu à chaque appel.
 - Retirés : `public/outils/previsionnel-msp/index.html` (page autonome, 404 désormais ; jamais en production) et le lien « plein écran ».
+- Retouches demandées par David (capture : barres de défilement sur les onglets, son écran rendant le texte plus large) : onglets sans aucune barre (ligne de séparation en ombre interne, plus de débordement d'un pixel ; resserrés ; à la ligne sur ordinateur s'ils ne tiennent pas ; au doigt sur mobile, barre masquée). Vérifié de 1 920 à 400 px et avec une police forcée plus large (7 / 7). Introduction : plus d'espace sous le titre, « que le jeune David Azérad avait conçu pour son propre projet de cabinet pluriprofessionnel sur Paris 20e ».
 
 ### Vérif
 - `tsc`, build (page ○). Lint : 0 erreur ; 21 avertissements dans `outil.js`, tous hérités du code d'origine (variables non utilisées, `catch(e)`), que le lint ne voyait pas tant que le code était dans un fichier HTML.

@@ -41,10 +41,10 @@ export default function PrevisionnelMaisonDeSantePage() {
             <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Prévisionnel maison de santé' }]} variant="light" />
           </div>
           <div className="max-w-4xl mx-auto px-6 text-center mt-8">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">Prévisionnel Maison de Santé</h1>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-7">Prévisionnel Maison de Santé</h1>
             <p className="text-white/80 text-base md:text-lg">
-              Cet outil reprend le business-plan Excel qu&apos;un jeune médecin avait conçu pour son propre projet de
-              cabinet pluriprofessionnel, généralisé à toutes les professions d&apos;une maison de santé. Il simule les
+              Cet outil reprend le business-plan Excel que le jeune David Azérad avait conçu pour son propre projet de
+              cabinet pluriprofessionnel sur Paris 20e, généralisé à toutes les professions d&apos;une maison de santé. Il simule les
               charges mensuelles, le revenu net par praticien, l&apos;investissement et le plan de financement de votre
               projet. Les valeurs pré-remplies sont des ordres de grandeur 2026, à adapter et à finaliser avec un
               expert-comptable.

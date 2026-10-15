@@ -200,9 +200,15 @@
 .msp #ioCard,.msp .prof{scroll-margin-top:146px}
 .msp .about ol{list-style:decimal}
 .msp .about ul{list-style:disc}
-/* Poppins est plus large que la police d'origine : onglets resserrés pour tenir sur une ligne. */
 @media (max-width:700px){.msp .top-actions{gap:6px}.msp .top-actions .btn{padding:6px 9px;font-size:.82rem}}
-.msp .tabs{gap:2px}
-.msp .tab{padding:10px 7px;gap:6px;font-size:.87rem}
+/* Onglets : jamais de barre de défilement. Ligne de séparation dessinée en ombre interne (plus de
+   débordement d'un pixel sous les onglets) ; resserrés pour Poppins, plus large que la police
+   d'origine. Sur ordinateur, ils passent à la ligne s'ils ne tiennent pas (rendu des polices
+   variable selon les écrans) ; sur mobile, ils défilent au doigt. */
+.msp .tabs{gap:2px;border-bottom:0;box-shadow:inset 0 -1px 0 var(--line);overflow-y:hidden;scrollbar-width:none}
+.msp .tabs::-webkit-scrollbar{display:none}
+.msp .tab{padding:10px 6px;gap:5px;font-size:.87rem;margin-bottom:0}
+.msp .tab .n{width:18px;height:18px}
+@media (min-width:981px){.msp .tabs{flex-wrap:wrap;overflow:visible}}
 /* Le logo du site déborde sous sa barre à partir de 1 150 px (comme le fil d'Ariane de la page). */
 @media (min-width:1150px){.msp .top.colle .top-in{padding-left:172px}}
