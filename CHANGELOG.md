@@ -5,6 +5,21 @@
 
 ---
 
+## [2026-10-15] — Annuaire : « accepte de nouveaux patients », étape 2 : serveur commun et application
+
+- Décision de David : une réponse envoyée pour un **non-généraliste est ignorée** (le reste de la fiche est enregistré), plutôt qu'un refus de tout l'enregistrement.
+- [constants/annuaire.ts](src/lib/constants/annuaire.ts) : `SPECIALITES_MEDECINE_GENERALE` (SM26, SM53, SM54) et `nouveauxPatientsPossible`.
+- [fiche-serveur.ts](src/lib/annuaire/fiche-serveur.ts), commun au site et à l'application : `lireFiche` rend la réponse et sa date ; `enregistrerFiche` accepte `nouveauxPatients` facultatif (absent = inchangé, `null` = non renseigné, oui / non datés du jour même si identiques), gardé seulement si la spécialité PSC relue dans `identites_psc` est de médecine générale ; il rend la réponse telle qu'enregistrée. « Ma fiche » du site n'envoie pas encore le champ : rien ne change pour lui.
+- Application ([ma-fiche](src/app/api/annuaire/app/ma-fiche/route.ts), [fiches](src/app/api/annuaire/app/fiches/route.ts)) : `GET /ma-fiche` rend `nouveaux_patients_possible` et, dans `fiche`, `nouveaux_patients` / `nouveaux_patients_le` ; `PUT /ma-fiche` accepte le champ facultatif (autre type que booléen ou `null` → `400 corps_invalide`) et rend la réponse enregistrée ; `GET /fiches` rend les deux champs pour chaque fiche publiée. Ajouts seuls : l'application actuelle fonctionne sans changement.
+- Contrat écrit dans [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md) (section « Ajout du 15/10 » et mentions « ajouté le 15/10 » dans le contrat), pour la session messagerie.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` sans avertissement.
+- **Essai local** (build de production, faux PSC, médecins fictifs A = 99900000001 en SM53 et B = 99900000002 en SM42), **28 / 28** : sessions ; `nouveaux_patients_possible` vrai pour A, faux pour B ; corps de l'application actuelle (sans le champ) accepté, réponse non renseignée puis **conservée** après un « oui » ; « oui » daté, confirmation qui remet la date au jour, « non », `null` qui efface la date ; texte et nombre refusés (`400`) ; B qui envoie « oui » : `200`, réponse ignorée, reste de la fiche enregistré ; `GET /fiches` avec les deux champs pour toutes les fiches ; fiche dépubliée absente de `/fiches` mais réponse gardée ; base relue directement ; contrainte « réponse sans date » refusée par la base ; suppression par l'application.
+- Données d'essai effacées (0 fiche, 0 identité d'essai) ; la fiche réelle relue avant et après, identique.
+
+---
+
 ## [2026-10-15] — Annuaire : « accepte de nouveaux patients » (généralistes), étape 1 : colonnes en base
 
 Demande de David : sur la fiche d'un médecin généraliste, lui demander s'il accepte de nouveaux patients comme médecin traitant, le montrer aux confrères (fiche et filtre de l'annuaire) et à l'application. Travail sur `dev` (annuaire derrière l'interrupteur).

@@ -169,6 +169,28 @@ commit;
   profession présente et différente de `10` l'est). PSC la rend aujourd'hui ; si un jour il ne la rendait plus,
   la règle « médecins seulement » ne s'appliquerait plus à l'application.
 
+## Ajout du 15/10 : « accepte de nouveaux patients » (généralistes)
+
+Demande de David : demander au médecin généraliste s'il accepte de nouveaux patients comme médecin traitant, et
+le montrer aux confrères (site et application). Ajout **rétrocompatible** au contrat : l'application actuelle
+continue de fonctionner sans changement.
+
+- **Généralistes** = spécialité PSC (`identites_psc.specialite_code`, donnée par PSC à la dernière ouverture de
+  session) **SM26** « Qualifié en Médecine générale », **SM53** « Spécialiste en Médecine générale », **SM54**
+  « Médecine générale » : les trois codes de médecine générale de la nomenclature des spécialités ordinales (ANS,
+  TRE-R38). Liste dans [constants/annuaire.ts](../src/lib/constants/annuaire.ts)
+  (`SPECIALITES_MEDECINE_GENERALE`).
+- Trois états : oui (`true`), non (`false`), non renseigné (`null`, par défaut). Déclaration du médecin, non
+  vérifiée, comme le reste de la fiche.
+- **Date de la dernière réponse** : remise au jour à chaque enregistrement qui contient la réponse, même identique
+  (une confirmation date aussi) ; effacée avec « non renseigné ».
+- Visible comme le reste de la fiche : seulement si elle est publiée, des seuls médecins connectés par PSC.
+- Réponse envoyée pour un non-généraliste : **ignorée** (le reste de la fiche est enregistré, la réponse reste
+  inchangée). Décision de David du 15/10, plutôt qu'un refus de tout l'enregistrement.
+- Base (migration du 15/10, lancée par David) : `fiches_annuaire.nouveaux_patients` (booléen) et
+  `nouveaux_patients_le` (date et heure), contrainte « les deux vides ou les deux remplis ». Droits inchangés
+  (seul le serveur écrit les fiches).
+
 ## Contrat d'échange avec l'application (pour la session messagerie)
 
 ### Principes
@@ -228,9 +250,16 @@ Toutes les autres adresses : `Authorization: Bearer <jeton du site>`. Erreurs co
                 "moyen_contact": "messagerie | mssante | telephone | null",
                 "ville": "…", "code_postal": "…", "lat": 45.75, "lon": 4.84,
                 "mssante": "…@….mssante.fr", "telephone_cabinet": "+33478000000",
-                "portable_disponible": true, "competences": ["<id intitulé>"], "mise_a_jour": "…" } ],
+                "portable_disponible": true, "competences": ["<id intitulé>"], "mise_a_jour": "…",
+                "nouveaux_patients": true | false | null, "nouveaux_patients_le": "2026-10-15T09:12:00.000Z" | null } ],
   "competences": [ { "id": "…", "libelle": "…", "synonymes": ["…"], "groupe": "…", "specialites_sm": ["SM57"] } ] }
 ```
+
+`nouveaux_patients` et `nouveaux_patients_le` (ajoutés le 15/10) : le médecin accepte-t-il de nouveaux patients
+comme médecin traitant (`null` = non renseigné, toujours `null` pour un non-généraliste), et date de sa dernière
+réponse. À afficher sur la fiche d'un confrère : « Accepte de nouveaux patients comme médecin traitant (déclaré le
+JJ/MM/AAAA) » ou « N'accepte pas de nouveaux patients comme médecin traitant (déclaré le …) » ; rien si `null`.
+Filtre possible « accepte de nouveaux patients » = `nouveaux_patients === true`.
 
 `competences` d'une fiche : compétences validées seulement. `specialites_sm` d'une compétence : spécialités RPPS
 pour lesquelles elle fait redite (masquée à la saisie pour ces médecins ; une recherche par cette compétence doit
@@ -244,11 +273,12 @@ propre numéro ni plafond ni trace), `400 rpps_invalide`, `403 lecteur_non_admis
 **`GET /ma-fiche`** — la fiche du médecin connecté :
 
 ```json
-{ "rpps": "…", "specialite_code": "SM53" | null,
+{ "rpps": "…", "specialite_code": "SM53" | null, "nouveaux_patients_possible": true,
   "fiche": null | { "moyen_contact": "…", "publiee": true, "publiee_le": "…", "mise_a_jour": "…",
                     "portable": "+336…" | null, "portable_visible": false,
                     "commune": null | { "ville": "…", "code_postal": "…", "commune_insee": "…", "lat": 0, "lon": 0 },
-                    "mssante": "…" | null, "telephone_cabinet": "+33…" | null, "competences": ["<id>"] },
+                    "mssante": "…" | null, "telephone_cabinet": "+33…" | null, "competences": ["<id>"],
+                    "nouveaux_patients": true | false | null, "nouveaux_patients_le": "…" | null },
   "catalogue": [ { "id": "…", "libelle": "…", "synonymes": [], "groupe": "…", "specialites_sm": [], "statut": "valide | propose" } ],
   "accord": { "version": "…", "publication": "…", "portable": "…" },
   "moyens_contact": [ { "valeur": "messagerie", "libelle": "…" } ],
@@ -263,19 +293,35 @@ ouverture de session (code SM, `null` si PSC n'en donne pas). Elle sert à masqu
 dont `specialites_sm` la contient. `catalogue` : compétences validées + propositions en attente de ce médecin.
 `annuaire_sante` : ce que l'ANS connaît pour lui, à proposer en un geste (« Utiliser ce lieu ») comme sur le site.
 
+`nouveaux_patients_possible` (ajouté le 15/10) : `true` si `specialite_code` est SM26, SM53 ou SM54 ; ne poser la
+question qu'à ces médecins. Libellé du site : « Acceptez-vous de nouveaux patients comme médecin traitant ? », avec
+Oui / Non / Non renseigné, la date de la dernière réponse, et la mention « déclaration non vérifiée, visible des
+confrères si votre fiche est publiée ; mettez-la à jour quand votre situation change ». `fiche.nouveaux_patients` /
+`nouveaux_patients_le` : sa réponse enregistrée et sa date (gardées même fiche dépubliée).
+
 **`PUT /ma-fiche`** — corps :
 
 ```json
 { "moyen_contact": "mssante", "publiee": true, "portable": "06 12 34 56 78", "portable_visible": false,
   "commune": { "ville": "…", "code_postal": "69003", "commune_insee": "69383", "lat": 45.7597, "lon": 4.8422 },
   "mssante": "prenom.nom@medecin.mssante.fr", "telephone_cabinet": "04 78 00 00 00",
-  "competences": ["<id>"], "accord_version": "2026-10-07" }
+  "competences": ["<id>"], "accord_version": "2026-10-07",
+  "nouveaux_patients": true }
 ```
+
+`nouveaux_patients` (ajouté le 15/10), **facultatif** :
+- absent : réponse inchangée (c'est ce qu'envoie l'application d'avant le 15/10 : rien n'est effacé) ;
+- `true` / `false` : réponse enregistrée, datée du jour, même identique à la précédente (confirmation) ;
+- `null` : non renseigné, date effacée ;
+- autre type : `400 corps_invalide` ;
+- médecin non généraliste (`nouveaux_patients_possible` faux) : **ignoré**, le reste de la fiche est enregistré.
 
 Chaînes vides = effacer. Téléphones acceptés en saisie libre (normalisés en `+33…`, outre-mer compris).
 `commune` : choisie dans le géocodeur IGN (`data.geopf.fr/geocodage`, type `municipality`) ou un lieu de
 `annuaire_sante` ; `null` = aucune. `competences` : identifiants du catalogue (au plus 20). Réponse `200` :
-`{ "publiee_le", "mise_a_jour", "portable", "telephone_cabinet" }` (formats normalisés). Erreurs :
+`{ "publiee_le", "mise_a_jour", "portable", "telephone_cabinet", "nouveaux_patients", "nouveaux_patients_le" }`
+(formats normalisés ; les deux derniers, ajoutés le 15/10, tels qu'enregistrés : `null` / `null` pour un
+non-généraliste). Erreurs :
 `400 corps_invalide`, `409 accord_perime`, `422 saisie_refusee` (`detail` à afficher tel quel : portable,
 téléphone ou MSSanté non reconnus, commune invalide, compétence inconnue, plus de 20).
 
@@ -296,4 +342,7 @@ attente, fiche à 20 compétences, longueur 2 à 120).
   affichage est enregistré).
 - Recherche par compétence (libellé + synonymes, sans accents ; spécialités équivalentes `specialites_sm`).
 - Écran « Ma fiche » : mêmes champs, accords et mentions que le site (« informations déclarées, non vérifiées »).
+- Nouveaux patients (15/10) : question dans « Ma fiche » si `nouveaux_patients_possible`, champ envoyé dans le
+  `PUT` ; sur la fiche d'un confrère, mention « Accepte » / « N'accepte pas de nouveaux patients comme médecin
+  traitant (déclaré le …) » ; filtre « accepte de nouveaux patients » dans la recherche.
 - Exclure `annuaire_oppositions` de `annuaire.db` (déjà dans la TODO).

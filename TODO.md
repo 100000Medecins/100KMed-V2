@@ -48,8 +48,8 @@ _(rien en cours)_
 
 **« Accepte de nouveaux patients » — généralistes (demande du 15/10)** : question dans Ma fiche (comme médecin traitant ; oui / non / non renseigné ; date remise au jour à chaque enregistrement qui contient la réponse), mention sur la fiche d'un confrère (« oui » et « non », avec la date), filtre dans la recherche, deux champs de plus dans le contrat de l'application (ajout rétrocompatible). Généralistes = spécialité PSC SM26, SM53, SM54. Voir CHANGELOG du 15/10.
 - [x] ~~Étape 1 : colonnes `fiches_annuaire.nouveaux_patients` / `nouveaux_patients_le`~~ ✅ 15/10 (migration lancée par David, constat fait, types régénérés).
-- [ ] **David** : `PUT /ma-fiche` d'un non-généraliste qui envoie la réponse → ignoré (proposé) ou refusé (`422`) ?
-- [ ] Étape 2 : serveur commun et adresses de l'application (`GET /fiches`, `GET` / `PUT /ma-fiche`, `nouveaux_patients_possible`), contrat dans `docs/2026-10-10-annuaire-tranche-3.md`.
+- [x] ~~**David** : `PUT /ma-fiche` d'un non-généraliste qui envoie la réponse → ignoré ou refusé ?~~ ✅ 15/10 : ignoré.
+- [x] ~~Étape 2 : serveur commun et adresses de l'application, contrat dans `docs/2026-10-10-annuaire-tranche-3.md`~~ ✅ 15/10 (essai local 28 / 28).
 - [ ] Étape 3 : la question dans Ma fiche (site).
 - [ ] Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche` (filtre, deux colonnes rendues).
 - [ ] Étape 5 : mention sur la fiche d'un confrère et filtre dans la recherche (site).

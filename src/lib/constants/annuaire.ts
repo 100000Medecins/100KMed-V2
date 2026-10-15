@@ -25,6 +25,18 @@ export const MOYENS_CONTACT = [
 
 export type MoyenContact = (typeof MOYENS_CONTACT)[number]['valeur']
 
+/**
+ * Spécialités PSC de médecine générale (nomenclature des spécialités ordinales TRE-R38) :
+ * qualifié, spécialiste, médecine générale. Seuls ces médecins se voient demander s'ils
+ * acceptent de nouveaux patients comme médecin traitant.
+ */
+export const SPECIALITES_MEDECINE_GENERALE: readonly string[] = ['SM26', 'SM53', 'SM54']
+
+/** La question « nouveaux patients » s'applique-t-elle à cette spécialité PSC ? */
+export function nouveauxPatientsPossible(specialiteCode: string | null | undefined): boolean {
+  return !!specialiteCode && SPECIALITES_MEDECINE_GENERALE.includes(specialiteCode)
+}
+
 /** Plafond aussi imposé en base (déclencheur `fiches_intitules_limiter`). */
 export const MAX_COMPETENCES = 20
 

@@ -23,6 +23,7 @@ import {
   MOYENS_CONTACT,
   TEXTE_ACCORD_PORTABLE,
   TEXTE_ACCORD_PUBLICATION,
+  nouveauxPatientsPossible,
 } from '@/lib/constants/annuaire'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
   return reponse({
     rpps: auth.rpps,
     specialite_code: auth.specialiteCode,
+    nouveaux_patients_possible: nouveauxPatientsPossible(auth.specialiteCode),
     fiche: fiche && {
       moyen_contact: fiche.moyenContact,
       publiee: fiche.publiee,
@@ -52,6 +54,8 @@ export async function GET(request: Request) {
       mssante: fiche.mssante,
       telephone_cabinet: fiche.telephoneCabinet,
       competences: fiche.competences,
+      nouveaux_patients: fiche.nouveauxPatients,
+      nouveaux_patients_le: fiche.nouveauxPatientsLe,
     },
     catalogue,
     accord: { version: ANNUAIRE_VERSION_ACCORD, publication: TEXTE_ACCORD_PUBLICATION, portable: TEXTE_ACCORD_PORTABLE },
@@ -74,6 +78,12 @@ function lireSaisie(corps: Record<string, unknown>): SaisieFiche | null {
     if (typeof c.ville !== 'string' || typeof c.lat !== 'number' || typeof c.lon !== 'number') return null
     commune = { ville: c.ville, codePostal: texte(c.code_postal), communeInsee: texte(c.commune_insee), lat: c.lat, lon: c.lon }
   }
+  // Facultatif (ajouté le 15/10) : absent = inchangé, ce que l'application d'avant n'envoie pas
+  let nouveauxPatients: SaisieFiche['nouveauxPatients']
+  if ('nouveaux_patients' in corps) {
+    if (corps.nouveaux_patients !== null && typeof corps.nouveaux_patients !== 'boolean') return null
+    nouveauxPatients = corps.nouveaux_patients
+  }
   return {
     moyenContact: typeof corps.moyen_contact === 'string' ? corps.moyen_contact : null,
     portable: texte(corps.portable),
@@ -83,6 +93,7 @@ function lireSaisie(corps: Record<string, unknown>): SaisieFiche | null {
     commune,
     mssante: texte(corps.mssante),
     telephoneCabinet: texte(corps.telephone_cabinet),
+    nouveauxPatients,
   }
 }
 
@@ -106,6 +117,8 @@ export async function PUT(request: Request) {
     mise_a_jour: res.miseAJour,
     portable: res.portable,
     telephone_cabinet: res.telephoneCabinet,
+    nouveaux_patients: res.nouveauxPatients,
+    nouveaux_patients_le: res.nouveauxPatientsLe,
   })
 }
 
