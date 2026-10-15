@@ -5,6 +5,20 @@
 
 ---
 
+## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 5 : fiche d'un confrère et filtre de la recherche
+
+- [FicheConfrere](src/components/annuaire/FicheConfrere.tsx), bloc « Sa fiche », sous le moyen de contact préféré : « **Accepte** de nouveaux patients comme médecin traitant (déclaré le JJ/MM/AAAA) » ou « **N'accepte pas** … », rien si la question n'est pas renseignée. La mention « Informations déclarées par le médecin, non vérifiées par l'association » existante couvre la réponse.
+- [AnnuaireRecherche](src/components/annuaire/AnnuaireRecherche.tsx) : case « Accepte de nouveaux patients comme médecin traitant » sous « Près de / Rayon », avec l'aide « Médecins généralistes qui l'ont déclaré sur leur fiche, sans vérification par l'association. » Elle relance la recherche comme les listes ; le filtre part avec la liste, le compteur et la carte ; résumé « N confrères acceptant de nouveaux patients à moins de … » ; gardée au retour d'une fiche, comme les autres critères. Pas de pastille dans la liste des résultats (non demandée).
+- Comme pour le rayon, le résumé change dès le clic et le nombre suit à l'arrivée des résultats (fraction de seconde) : comportement existant de la page, non modifié.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` sans avertissement.
+- **Navigateur** (build local, Chrome piloté), un médecin lecteur (compte d'essai `example.com`, fiche non publiée à Lyon : la recherche part de Lyon, 10 km) et quatre fiches fictives à Lyon 3e (généraliste « oui », « non », non renseignée, et « oui » non publiée), **18 / 18** : case présente et décochée ; cochée → « 1 confrère acceptant de nouveaux patients à moins de 10 km de Lyon 3e », liste réduite à la fiche « oui » ; carte : requête avec le filtre, une seule fiche ; fiche « oui » avec « (déclaré le 16/10/2026) » ; retour de la fiche : case toujours cochée, recherche filtrée retrouvée ; décochée → même résumé qu'au départ (7 952 confrères) ; fiche « non » : « N'accepte pas … (déclaré le …) » ; fiche non renseignée : aucune mention ; fiche non publiée : page « 404 » identique à celle d'un RPPS inconnu, rien de la fiche ; 400 px sans défilement horizontal ; aucune erreur JavaScript. Captures relues (formulaire, fiche, mobile).
+- Au premier passage, 4 écarts venaient de l'essai lui-même (lecture du résumé avant l'arrivée des résultats ; attente d'un statut 404 alors qu'une fiche introuvable répond 200 avec la page « 404 », comme un RPPS inconnu, comportement existant) ; essai corrigé, second passage complet.
+- Données d'essai effacées : 0 ligne restante dans les 49 tables liées à un compte, 0 fiche et 0 identité fictives, compte d'authentification supprimé, fiche réelle identique avant et après.
+
+---
+
 ## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 4 : fonctions de recherche et de fiche
 
 ### Base — migration B lancée par David (vérifiée)
