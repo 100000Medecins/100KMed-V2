@@ -48,7 +48,8 @@ export default function PrevisionnelMaisonDeSantePage() {
               expert-comptable.
             </p>
             <p className="text-white/70 text-sm mt-3">
-              Connecté à votre compte, vous pouvez enregistrer jusqu&apos;à 5 prévisionnels et les exporter en Excel ou en PDF.
+              Connecté à votre compte, vous pouvez enregistrer jusqu&apos;à 5 prévisionnels, les partager par un lien en
+              lecture seule et les exporter en Excel ou en PDF.
             </p>
           </div>
         </section>

@@ -1631,6 +1631,7 @@ export type Database = {
           donnees: Json
           id: string
           nom: string
+          partage_jeton: string | null
           updated_at: string
           user_id: string
         }
@@ -1639,6 +1640,7 @@ export type Database = {
           donnees: Json
           id?: string
           nom: string
+          partage_jeton?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1647,6 +1649,7 @@ export type Database = {
           donnees?: Json
           id?: string
           nom?: string
+          partage_jeton?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-10-15] — Prévisionnel : partage par lien en lecture seule (le partage par fichier ou texte est retiré)
+
+Choix de David : lien en lecture seule (plutôt qu'un accès par compte désigné, qui exclut comptable et banque), PDF téléchargeable sans compte, nom du propriétaire affiché, partage par fichier JSON ou texte retiré.
+
+### Base (SQL lancé par David)
+- `previsionnels_msp.partage_jeton` : texte de 24 caractères (`[A-Za-z0-9_-]`, contrainte), index unique partiel. Aucun droit d'écriture pour `authenticated` : le code est tiré et écrit par le serveur.
+- Déclencheur : « modifié le » n'avance plus si seuls le lien (ou rien) changent.
+- Types régénérés (+3 lignes).
+
+### API
+- [`[id]/partage`](src/app/api/outils/previsionnels/%5Bid%5D/partage/route.ts) : POST crée le lien (remplace l'ancien), DELETE le coupe. Propriété vérifiée sous la RLS, code (`randomBytes(18)`, 144 bits) écrit en service_role.
+- [`partages/[jeton]`](src/app/api/outils/partages/%5Bjeton%5D/route.ts) : lecture publique par le code (service_role), renvoie nom, contenu, date et nom du propriétaire (`prenom nom`), ni identifiant du prévisionnel ni du propriétaire ; jamais en cache.
+- La liste renvoie `partage_jeton` au propriétaire.
+
+### Outil
+- Propriétaire : bloc « Partager ce prévisionnel » sur le prévisionnel ouvert (créer, copier, désactiver avec confirmation), étiquette « partagé » dans la liste.
+- Lien `…/outils/previsionnel-maison-de-sante#partage=<code>` : le code est après « # », donc jamais transmis au serveur avec l'adresse de la page ni gardé dans les statistiques.
+- Visiteur : bandeau (nom, propriétaire, « lecture seule », date de version), champs verrouillés, boutons d'édition masqués ; « Télécharger le PDF » (sans compte ; l'Excel reste réservé aux membres connectés), « Copier dans mon compte » (connecté ; confirmation si son scénario en cours n'est pas enregistré) ou « Se connecter pour le copier », « Revenir à mon scénario ». Le scénario du visiteur n'est jamais écrit pendant la consultation.
+- Retiré : textarea, Copier, Charger le texte collé, Télécharger le scénario (.json), Charger un fichier.
+
+### Vérif
+- `tsc`, lint, build (page ○).
+- Build local, deux comptes d'essai (créés puis supprimés, rien ne reste) : partage **37 / 37** (création, format, « modifié le » inchangé, bandeau et verrouillage, PDF anonyme, Excel refusé, retour, dernière version visible, copie par un autre membre, 404 pour un autre compte sur créer / couper, code non modifiable en direct avec la clé publique, lecture directe anonyme refusée, API publique sans identifiants, lien coupé puis nouveau code, plein écran, mobile après correction du bandeau) ; non-régression **50 / 50** ; retouches **25 / 25**.
+
+---
+
 ## [2026-10-15] — Sécurité : retour après connexion limité au site ; Prévisionnel : lien dans le menu et retouches
 
 ### Fix sécurité — adresse de retour après connexion

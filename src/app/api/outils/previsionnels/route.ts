@@ -15,7 +15,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('previsionnels_msp')
-    .select('id, nom, updated_at')
+    .select('id, nom, updated_at, partage_jeton')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
   if (error) return repondre({ error: 'lecture_impossible' }, 500)

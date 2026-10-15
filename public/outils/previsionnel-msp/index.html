@@ -221,6 +221,16 @@ html[data-embedded] .brand{display:none}
 .switch-item small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}
 .switch-item.armed{background:var(--warn-soft)}
 .switch-item.armed small{color:var(--ink)}
+/* Lien de partage (propriétaire) et prévisionnel partagé en lecture seule (visiteur du lien) */
+.share-url{flex:1 1 280px}
+.share-url input{font-size:.85rem}
+#sharedBanner{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+#sharedBanner[hidden]{display:none!important}
+#sharedBanner .add-row{flex:0 1 auto;min-width:0}
+html[data-shared="loading"] .main{visibility:hidden}
+html[data-shared="on"] #btnReset,html[data-shared="on"] #btnShare,html[data-shared="on"] #switchWrap,html[data-shared="on"] #ioCard,
+html[data-shared="on"] #addProfCard,html[data-shared="on"] [data-action]{display:none!important}
+html[data-shared="on"] .ctl.ro,html[data-shared="on"] .ctl:has(:disabled){background:var(--input-ro)}
 </style>
 </head>
 <body>
@@ -247,6 +257,8 @@ html[data-embedded] .brand{display:none}
     </div>
   </header>
 
+  <div id="sharedBanner" hidden></div>
+
   <div class="main">
     <section>
       <nav class="tabs" role="tablist" aria-label="Étapes">
@@ -271,7 +283,7 @@ html[data-embedded] .brand{display:none}
 
         <div id="profList" style="display:grid;gap:18px"></div>
 
-        <div class="card">
+        <div class="card" id="addProfCard">
           <div class="card-h"><h3>Ajouter une profession</h3><p>Chaque profession a ses propres tarifs, horaires, congés et cotisations.</p></div>
           <div class="add-row">
             <select id="addProfSel" aria-label="Profession à ajouter"></select>
@@ -443,7 +455,7 @@ html[data-embedded] .brand{display:none}
             <li>Pas de fiscalité (impôt sur le revenu, CFE), pas d'amortissements dans les résultats, pas de revalorisation annuelle.</li>
             <li>Les infirmiers et autres professions exerçant surtout au domicile ne mobilisent pas de box ; leur quote-part est réglée via les parts.</li>
           </ul>
-          <p class="lead" style="margin-top:14px">Vos saisies restent dans votre navigateur, sauf les prévisionnels que vous enregistrez dans votre compte 100 000 Médecins. Le bouton « Sauvegarder / partager » permet aussi de télécharger le scénario (fichier .json) ou de le copier sous forme de texte, pour le conserver ou l'envoyer à un associé ou à votre comptable.</p>
+          <p class="lead" style="margin-top:14px">Vos saisies restent dans votre navigateur, sauf les prévisionnels que vous enregistrez dans votre compte 100 000 Médecins. Depuis votre compte, le bouton « Sauvegarder / partager » permet aussi de créer un lien de partage en lecture seule, pour un associé, votre expert-comptable ou votre banque.</p>
         </div>
       </div>
     </section>
@@ -454,20 +466,8 @@ html[data-embedded] .brand{display:none}
   </div>
 
   <div class="card io" id="ioCard" hidden style="margin-top:18px">
-    <div class="card-h"><h2>Sauvegarder ou charger un scénario</h2><button class="btn ghost small" type="button" id="btnCloseIo">Fermer</button></div>
+    <div class="card-h"><h2>Sauvegarder et partager</h2><button class="btn ghost small" type="button" id="btnCloseIo">Fermer</button></div>
     <div id="acct"></div>
-    <div class="sub" id="ioFile">
-      <div class="sub-h"><h4>Fichier ou texte</h4></div>
-      <p class="lead">Téléchargez le scénario ou copiez ce texte pour le conserver ou l'envoyer (associé, comptable…). Pour en recharger un, choisissez le fichier, ou collez le texte ici puis cliquez sur « Charger le texte collé ».</p>
-      <textarea id="ioText" aria-label="Scénario au format JSON" style="margin-top:10px"></textarea>
-      <div class="add-row" style="margin-top:10px">
-        <button class="btn primary" type="button" id="btnCopy">Copier</button>
-        <button class="btn" type="button" id="btnDownload">Télécharger le scénario (.json)</button>
-        <button class="btn" type="button" id="btnLoad">Charger le texte collé</button>
-        <button class="btn" type="button" id="btnFile">Charger un fichier</button>
-        <input type="file" id="fileLoad" accept=".json,application/json" hidden>
-      </div>
-    </div>
   </div>
 
   <p class="footer">Outil d'aide au montage de projet, sans valeur contractuelle. Les chiffres doivent être validés par un professionnel du chiffre.</p>
@@ -536,9 +536,14 @@ function defaultState(){
 
 /* ---------- État et persistance ---------- */
 const KEY='msp-previsionnel-v1';
+const OWN_RAW=(()=>{ try{ return localStorage.getItem(KEY); }catch(e){ return null; } })(); // scénario du visiteur à l'arrivée
 let S = load() || defaultState();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const s=JSON.parse(raw); if(!s||!s.professions) return null; uid = 1 + s.professions.reduce((m,p)=>Math.max(m, parseInt(String(p.id).slice(1))||0),0); return s; }catch(e){ return null; } }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+// Prévisionnel partagé par lien (lecture seule) : jamais écrit dans le navigateur du visiteur.
+const SHARE_TOKEN=(()=>{ let h=''; try{ h=(window.top!==window.self?window.top.location.hash:location.hash)||''; }catch(e){} const m=/^#partage=([A-Za-z0-9_-]{24})$/.exec(h); return m?m[1]:null; })();
+if(SHARE_TOKEN) document.documentElement.setAttribute('data-shared','loading');
+let shared=null;
+function save(){ if(shared) return; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
 /* ---------- Utilitaires ---------- */
 const fmtEur = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
@@ -899,7 +904,7 @@ function showTab(name){
   if(!TABS.includes(name)) name='equipe';
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===name?'true':'false'));
   TABS.forEach(t=>{ document.getElementById('tab-'+t).hidden = t!==name; });
-  try{ history.replaceState(null,'','#'+name); }catch(e){}
+  try{ if(!SHARE_TOKEN) history.replaceState(null,'','#'+name); }catch(e){}
   try{ localStorage.setItem(KEY+'-tab',name); }catch(e){}
 }
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
@@ -936,18 +941,13 @@ document.getElementById('btnReset').addEventListener('click',()=>{
   if(btn.dataset.armed){ delete btn.dataset.armed; btn.textContent='Valeurs par défaut'; S=defaultState(); renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll(); acctUnlink(); toast('Scénario réinitialisé'); return; }
   btn.dataset.armed='1'; btn.textContent='Confirmer la réinitialisation ?'; setTimeout(()=>{ if(btn.dataset.armed){ delete btn.dataset.armed; btn.textContent='Valeurs par défaut'; } },4000);
 });
-function openIo(){ const c=document.getElementById('ioCard'); c.hidden=false; document.getElementById('ioText').value=JSON.stringify(S,null,1); renderAcct(); c.scrollIntoView({behavior:'smooth',block:'start'}); }
+function openIo(){ const c=document.getElementById('ioCard'); c.hidden=false; renderAcct(); c.scrollIntoView({behavior:'smooth',block:'start'}); }
 document.getElementById('btnShare').addEventListener('click',()=>{ acct.notice=''; openIo(); });
 document.getElementById('btnCloseIo').addEventListener('click',()=>{ acct.notice=''; document.getElementById('ioCard').hidden=true; });
-document.getElementById('btnCopy').addEventListener('click',()=>{ const ta=document.getElementById('ioText'); ta.value=JSON.stringify(S,null,1); const txt=ta.value; const ok=()=>toast('Scénario copié'); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(ok).catch(()=>{ ta.focus(); ta.select(); toast('Sélectionné : copiez avec Ctrl+C'); }); } else { ta.focus(); ta.select(); toast('Sélectionné : copiez avec Ctrl+C'); } });
-// Charge un scénario exporté (texte collé, fichier .json ou prévisionnel du compte) ; lève une erreur s'il est illisible.
+// Charge un scénario (prévisionnel du compte ou partagé par lien) ; lève une erreur s'il est illisible.
 function loadScenario(jsonString){ const s=JSON.parse(jsonString); if(!s||!Array.isArray(s.professions)||!s.local||!s.charges) throw new Error('format'); const d=defaultState(); S=Object.assign(d,s); S.ramp=Object.assign(d.ramp,s.ramp||{}); S.local=Object.assign(d.local,s.local||{}); S.charges=Object.assign(d.charges,s.charges||{}); S.invest=Object.assign(d.invest,s.invest||{}); S.fin=Object.assign(d.fin,s.fin||{}); S.amort=Object.assign(d.amort,s.amort||{}); if(!Array.isArray(S.charges.other)) S.charges.other=[]; if(!Array.isArray(S.equipment)) S.equipment=defaultEquipment(); uid=1+S.professions.reduce((m,p)=>Math.max(m,parseInt(String(p.id).slice(1))||0),0); S.professions.forEach((p,i)=>{ if(!p.id) p.id='p'+(uid++); }); renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll(); }
-document.getElementById('btnLoad').addEventListener('click',()=>{ try{ loadScenario(document.getElementById('ioText').value); acctUnlink(); toast('Scénario chargé'); }catch(e){ toast('Texte illisible : collez un scénario exporté par cet outil'); } });
 function fileSlug(){ const s=String(S.name||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+/,'').slice(0,60).replace(/-+$/,''); return 'previsionnel-msp-'+(s||'scenario'); }
 function downloadBlob(blob,filename){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),10000); }
-document.getElementById('btnDownload').addEventListener('click',()=>{ downloadBlob(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}), fileSlug()+'.json'); toast('Scénario téléchargé'); });
-document.getElementById('btnFile').addEventListener('click',()=>document.getElementById('fileLoad').click());
-document.getElementById('fileLoad').addEventListener('change',ev=>{ const f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f) return; if(f.size>1000000){ toast('Fichier trop volumineux pour un scénario'); return; } f.text().then(txt=>{ loadScenario(txt); acctUnlink(); document.getElementById('ioText').value=JSON.stringify(S,null,1); toast('Scénario chargé depuis le fichier'); }).catch(()=>toast('Fichier illisible : choisissez un scénario exporté par cet outil')); });
 let toastT; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
 
 /* ---------- Compte 100 000 Médecins : prévisionnels enregistrés (5 au plus) ---------- */
@@ -974,10 +974,10 @@ function acctRefresh(){
 }
 function renderAcct(){
   renderSwitch();
+  if(shared) renderSharedBanner();
   const box=document.getElementById('acct'); if(!box) return;
   const st=acct.state;
-  document.getElementById('ioFile').classList.toggle('sub', st!=='off');
-  if(st==='off'){ box.innerHTML=''; return; }
+  if(st==='off'){ box.innerHTML='<p class="lead">L\'enregistrement et le partage sont disponibles sur 100000medecins.org, une fois connecté.</p>'; return; }
   const head=extra=>`<div class="sub-h"><h4>Dans mon compte</h4>${extra||''}</div>`;
   if(st==='loading'){ box.innerHTML=head()+'<p class="acct-status">Vérification de votre connexion…</p>'; return; }
   if(st==='error'){ box.innerHTML=head()+'<p class="acct-status">Vos prévisionnels enregistrés sont momentanément indisponibles.</p><div class="add-row" style="margin-top:8px"><button class="btn small" type="button" data-acct="retry">Réessayer</button></div>'; return; }
@@ -986,11 +986,12 @@ function renderAcct(){
     return;
   }
   const n=acct.items.length;
-  const rows=acct.items.map(it=>{ const cur=link&&link.id===it.id; return `<tr><td>${esc(it.nom)}${cur?' <span class="chip">ouvert</span>':''}<div class="help">modifié le ${esc(fmtDate(it.updated_at))}</div></td><td><button class="btn small" type="button" data-acct="open" data-id="${esc(it.id)}">Ouvrir</button><button class="btn small danger" type="button" data-acct="del" data-id="${esc(it.id)}">Supprimer</button></td></tr>`; }).join('');
+  const rows=acct.items.map(it=>{ const cur=link&&link.id===it.id; return `<tr><td>${esc(it.nom)}${cur?' <span class="chip">ouvert</span>':''}${it.partage_jeton?' <span class="chip">partagé</span>':''}<div class="help">modifié le ${esc(fmtDate(it.updated_at))}</div></td><td><button class="btn small" type="button" data-acct="open" data-id="${esc(it.id)}">Ouvrir</button><button class="btn small danger" type="button" data-acct="del" data-id="${esc(it.id)}">Supprimer</button></td></tr>`; }).join('');
   box.innerHTML=head(`<span class="chip">${n} / ${acct.max}</span>`)+`
     <div class="field" style="max-width:520px"><label for="acctName">Nom du prévisionnel</label><div class="ctl"><input id="acctName" type="text" maxlength="120" value="${esc(S.name)}"></div><div class="help">Un nom parlant pour le retrouver, par exemple « MSP centre-ville, hypothèse prudente ».</div></div>
     <p class="acct-status" id="acctStatus"></p>
     <div class="add-row" style="margin-top:10px"><button class="btn primary" type="button" data-acct="save" id="acctSave">Enregistrer</button><button class="btn" type="button" data-acct="saveNew" id="acctSaveNew">Enregistrer comme nouveau</button></div>
+    ${shareBox()}
     ${n?`<div class="tscroll" style="margin-top:14px"><table class="acct-list"><thead><tr><th>Prévisionnels enregistrés</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="acct-status">Aucun prévisionnel enregistré pour l\'instant.</p>'}`;
   acctStatus();
 }
@@ -1033,7 +1034,6 @@ async function acctOpen(id,btn){
       loadScenario(JSON.stringify(res.data.item.donnees));
       S.name=res.data.item.nom; fillStatic(); save();
       setLink({id, snap:snapshot()});
-      document.getElementById('ioText').value=JSON.stringify(S,null,1);
       toast(`« ${res.data.item.nom} » ouvert`);
       window.scrollTo({top:0,behavior:'smooth'});
     } else if(res.status===404){ toast('Ce prévisionnel n\'existe plus'); }
@@ -1064,6 +1064,96 @@ document.getElementById('acct').addEventListener('click',ev=>{
     acctOpen(id,b);
   }
   else if(a==='del'){ if(!arm(b,'Confirmer ?')) return; acctDelete(id,b); }
+  else if(a==='share') shareSet(true,b);
+  else if(a==='stopShare'){ if(!arm(b,'Confirmer ?')){ toast('Le lien déjà envoyé ne fonctionnera plus'); return; } shareSet(false,b); }
+  else if(a==='copyLink') copyText(document.getElementById('shareUrl'),'Lien copié');
+});
+
+/* ---------- Lien de partage du prévisionnel ouvert (propriétaire) ---------- */
+// Le lien porte le code après « # » : jamais transmis au serveur avec l'adresse de la page.
+const shareUrl=t=>location.origin+'/outils/previsionnel-maison-de-sante#partage='+t;
+function shareBox(){
+  const cur=link&&acct.items.find(i=>i.id===link.id);
+  const head='<div class="sub"><div class="sub-h"><h4>Partager ce prévisionnel</h4></div>';
+  if(!cur) return acct.items.length?head+'<p class="acct-status">Pour partager un prévisionnel, ouvrez-le ou enregistrez-le d\'abord.</p></div>':'';
+  if(!cur.partage_jeton) return head+`<p class="lead">Créez un lien pour montrer « ${esc(cur.nom)} » en lecture seule à un associé, à votre expert-comptable ou à votre banque, sans qu'ils aient besoin d'un compte. Ils pourront en télécharger le PDF. Vous pourrez désactiver le lien à tout moment.</p><div class="add-row" style="margin-top:10px"><button class="btn" type="button" data-acct="share">Créer un lien de partage</button></div></div>`;
+  return head+`<p class="lead">Toute personne qui a ce lien voit « ${esc(cur.nom)} » en lecture seule, dans sa dernière version enregistrée, avec votre nom, et peut en télécharger le PDF.</p>
+    <div class="add-row" style="margin-top:10px"><div class="ctl share-url"><input id="shareUrl" type="text" readonly value="${esc(shareUrl(cur.partage_jeton))}" aria-label="Lien de partage"></div><button class="btn primary" type="button" data-acct="copyLink">Copier le lien</button><button class="btn danger" type="button" data-acct="stopShare">Désactiver le lien</button></div></div>`;
+}
+async function shareSet(on,btn){
+  if(!link) return;
+  busy(btn,true);
+  try{
+    const res=await api('/'+encodeURIComponent(link.id)+'/partage',on?{method:'POST',body:'{}'}:{method:'DELETE'});
+    if(res.ok) toast(on?'Lien de partage créé':'Lien de partage désactivé');
+    else if(res.status===401) toast('Votre session a expiré : reconnectez-vous');
+    else toast('Opération impossible, réessayez');
+  }catch(e){ toast('Opération impossible, réessayez'); }
+  finally{ busy(btn,false); await acctRefresh(); }
+}
+function copyText(input,msg){
+  const done=()=>toast(msg), select=()=>{ input.focus(); input.select(); toast('Sélectionné : copiez avec Ctrl+C'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(input.value).then(done).catch(select); else select();
+}
+
+/* ---------- Prévisionnel partagé : lecture seule pour qui ouvre le lien ---------- */
+const sharedBanner=document.getElementById('sharedBanner');
+function leaveShared(){
+  // Recharge la page sans le code de partage : le visiteur retrouve son propre scénario.
+  try{ const w=window.top; w.history.replaceState(null,'',w.location.pathname); w.location.reload(); }catch(e){ location.href=location.pathname; }
+}
+function renderSharedBanner(){
+  const s=shared;
+  const copy=acct.state==='user'?'<button class="btn" type="button" data-shared="copy">Copier dans mon compte</button>'
+    :acct.state==='anon'?`<a class="btn" href="${esc(loginHref())}" target="_top">Se connecter pour le copier</a>`:'';
+  sharedBanner.className='notice';
+  sharedBanner.innerHTML=`<div><b>« ${esc(s.nom)} »</b>, partagé par ${esc(s.auteur||'un membre de 100 000 Médecins')} · lecture seule, version du ${esc(fmtDate(s.updated_at))}</div>
+    <div class="add-row"><button class="btn primary" type="button" data-shared="pdf">Télécharger le PDF</button>${copy}<button class="btn ghost" type="button" data-shared="leave">Revenir à mon scénario</button></div>`;
+  sharedBanner.hidden=false;
+}
+function lockForm(){ document.querySelectorAll('.main input, .main select, .main textarea, #scenarioName').forEach(el=>{ el.disabled=true; }); }
+async function openShared(token){
+  const root=document.documentElement;
+  root.setAttribute('data-shared','loading');
+  let res={status:0};
+  try{ const r=await fetch('/api/outils/partages/'+token,{cache:'no-store',headers:{Accept:'application/json'}}); res={status:r.status, data:await r.json().catch(()=>null)}; }catch(e){}
+  if(!(res.status===200&&res.data&&res.data.item)){
+    root.removeAttribute('data-shared');
+    sharedBanner.className='alert bad'; sharedBanner.hidden=false;
+    sharedBanner.innerHTML=`<div><b>Lien de partage</b> : ${res.status===404?'ce lien n\'est plus valable (son propriétaire l\'a peut-être désactivé).':'le prévisionnel partagé est momentanément indisponible.'} Voici votre propre scénario.</div>`;
+    return;
+  }
+  const it=res.data.item;
+  shared={nom:it.nom, auteur:it.auteur, updated_at:it.updated_at};
+  try{ loadScenario(JSON.stringify(it.donnees)); }catch(e){ shared=null; root.removeAttribute('data-shared'); toast('Prévisionnel partagé illisible'); return; }
+  S.name=it.nom; fillStatic(); lockForm();
+  root.setAttribute('data-shared','on');
+  renderSwitch(); renderSharedBanner();
+}
+// Copie dans le compte du visiteur, puis retour sur son outil avec la copie ouverte.
+async function copyShared(btn){
+  // Le scénario du visiteur, s'il n'est pas à jour dans son compte, serait remplacé : second clic demandé.
+  if(OWN_RAW&&!(link&&link.snap===OWN_RAW)&&!arm(btn,'Remplacer mon scénario en cours ?')){ toast('Votre scénario en cours, non enregistré, sera remplacé par la copie'); return; }
+  const nom=(shared.nom+' (copie)').slice(0,120);
+  busy(btn,true);
+  try{
+    S.name=nom;
+    const res=await api('',{method:'POST',body:JSON.stringify({nom, donnees:S})});
+    if(res.ok&&res.data&&res.data.item){
+      const snap=snapshot();
+      try{ localStorage.setItem(KEY,snap); localStorage.setItem(ACCT_KEY,JSON.stringify({id:res.data.item.id, snap})); }catch(e){}
+      toast('Copié dans votre compte'); setTimeout(leaveShared,700); return;
+    }
+    S.name=shared.nom;
+    toast(res.status===409?`Limite de ${acct.max} prévisionnels atteinte : supprimez-en un d'abord`:res.status===401?'Connectez-vous pour copier ce prévisionnel':'Copie impossible, réessayez');
+  }catch(e){ S.name=shared.nom; toast('Copie impossible, réessayez'); }
+  finally{ busy(btn,false); }
+}
+sharedBanner.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-shared]'); if(!b||acct.busy) return;
+  if(b.dataset.shared==='pdf') runExport('pdf');
+  else if(b.dataset.shared==='copy') copyShared(b);
+  else if(b.dataset.shared==='leave') leaveShared();
 });
 let statusT;
 document.addEventListener('input',ev=>{
@@ -1108,8 +1198,10 @@ async function runExport(kind){
   const btn=EXPORT_BTN[kind]; if(btn.getAttribute('aria-busy')==='true') return;
   if(acct.state==='error') acctRefresh();
   if(acctReady) await acctReady;
-  if(acct.state!=='user'){
-    if(acct.state==='anon'){ acct.notice='Les exports Excel et PDF sont réservés aux membres connectés.'; openIo(); }
+  // Sur un prévisionnel partagé, le PDF est ouvert à tous ; l'Excel reste réservé aux membres connectés.
+  if(acct.state!=='user'&&!(shared&&kind==='pdf')){
+    if(acct.state==='anon'&&shared){ toast('L\'export Excel est réservé aux membres connectés ; le PDF est disponible'); }
+    else if(acct.state==='anon'){ acct.notice='Les exports Excel et PDF sont réservés aux membres connectés.'; openIo(); }
     else toast(acct.state==='off'?'Exports disponibles sur 100000medecins.org, une fois connecté':'Export momentanément indisponible, réessayez');
     return;
   }
@@ -1126,6 +1218,9 @@ renderProfs(); renderOther(); renderEquip(); fillStatic(); renderAll();
 let startTab = (location.hash||'').slice(1); if(!TABS.includes(startTab)){ try{ startTab=localStorage.getItem(KEY+'-tab')||'equipe'; }catch(e){ startTab='equipe'; } }
 showTab(startTab);
 renderAcct(); acctRefresh();
+if(SHARE_TOKEN) openShared(SHARE_TOKEN);
+// Lien de partage collé dans la barre d'adresse alors que la page est déjà ouverte : seul le « # » change.
+try{ if(window.top!==window.self) window.top.addEventListener('hashchange',()=>{ const m=/^#partage=([A-Za-z0-9_-]{24})$/.exec(window.top.location.hash||''); if((m?m[1]:null)!==SHARE_TOKEN) location.reload(); }); }catch(e){}
 })();
 </script>
 </body>
