@@ -5,6 +5,27 @@
 
 ---
 
+## [2026-10-15] — Sécurité : retour après connexion limité au site ; Prévisionnel : lien dans le menu et retouches
+
+### Fix sécurité — adresse de retour après connexion
+- **Constat** (relevé pendant le chantier Prévisionnel) : [/connexion](src/app/connexion/page.tsx) envoyait l'utilisateur, une fois connecté, sur `?redirect=` sans contrôle : un lien piégé pouvait renvoyer vers un autre site, ou exécuter du code sur le site avec la session (`javascript:`). Même défaut dans [/api/auth/callback](src/app/api/auth/callback/route.ts) avec `?next=` (`next=.evil.example` donnait `https://www.100000medecins.org.evil.example`).
+- **Fix** : [redirection.ts](src/lib/auth/redirection.ts) `cheminInterne` n'accepte qu'un chemin du site (analyse par `URL`, refus de tout changement d'origine : `//`, `/\`, tabulations, `javascript:`, `data:`, adresse complète) ; sinon repli (`/mon-compte/profil` pour la connexion, `/` pour le callback). Appliqué aux deux.
+- Vérifié : 18 / 18 cas (piégés et légitimes) ; connexion réelle sur le build local avec `redirect=javascript:…`, `//autre-site`, `/\autre-site` → arrivée sur le profil, rien exécuté.
+- Effet possible : un modèle d'e-mail Supabase (tableau de bord, non visible dans le code) qui mettrait une adresse complète dans `next` mènerait désormais à l'accueil.
+- Non traité, signalé : `/confirmer-avis` et `/gerer-notifications` envoient vers `/connexion?next=…`, paramètre que `/connexion` ignore (retour sur le profil, comme avant).
+
+### Prévisionnel — lien et retouches demandées par David
+- Lien « 🧮 Prévisionnel maison de santé » dans le menu **Communauté**, sous « Glossaire e-Santé » (ordinateur et mobile, [Navbar.tsx](src/components/layout/Navbar.tsx)).
+- Outil ([index.html](public/outils/previsionnel-msp/index.html)) :
+  - le menu « Ajouter une profession » ne propose plus les professions déjà à l'écran (« Autre profession » toujours proposée) ;
+  - dans le site, titre, sous-titre et logo de l'outil masqués (redite avec la page) ; conservés en plein écran, où ils sont le seul titre ;
+  - le nom du scénario s'étire et les boutons restent sur sa ligne (vérifié à 1 280 et 1 050 px ; sur mobile, retour à la ligne) ;
+  - bouton **« Changer »** à côté du nom, affiché s'il existe un autre prévisionnel dans le compte : menu des autres prévisionnels, ouverture directe si le scénario affiché est à jour, sinon confirmation par un second clic ; Échap et clic à côté ferment ; menu gardé dans l'écran sur mobile.
+- Vérifié sur le build local avec deux comptes d'essai (créés puis supprimés, rien ne reste) : nouveautés **25 / 25**, non-régression **50 / 50**.
+- Partage (fichier / texte) : inchangé en attendant le choix de David (proposition faite).
+
+---
+
 ## [2026-10-15] — Outil « Prévisionnel Maison de Santé » : page, enregistrement dans le compte, exports Excel et PDF
 
 Outil de business-plan pour cabinet de groupe / MSP (page HTML autonome fournie par David, transposition de l'Excel « business-plan pour les nuls »), publié dans le site. Sur `dev` seulement ; aucun lien dans la navigation (en attente de la décision de David).

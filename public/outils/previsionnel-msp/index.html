@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Prévisionnel Maison de Santé</title>
-<!-- Encadré dans la page du site (claire, sans mode sombre) : l'outil s'y affiche toujours en clair. -->
-<script>try{if(window.self!==window.top)document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
+<!-- Encadré dans la page du site (claire, sans mode sombre) : l'outil s'y affiche toujours en clair,
+     et sans son titre, que la page porte déjà. -->
+<script>try{if(window.self!==window.top){var r=document.documentElement;r.setAttribute('data-theme','light');r.setAttribute('data-embedded','')}}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <style>
@@ -209,6 +210,17 @@ a.btn.primary{color:var(--accent-ink)}
 .acct-list td:last-child{text-align:right;white-space:nowrap}
 .acct-list td:last-child .btn{margin-left:6px}
 .acct-list td .help{margin-top:2px}
+/* En-tête : le nom du scénario s'étire, les actions restent sur la même ligne tant que la largeur le permet. */
+html[data-embedded] .brand{display:none}
+.scenario{flex:1 1 300px;min-width:0;flex-wrap:wrap}
+.scenario input{flex:1 1 160px;width:auto;max-width:340px;min-width:0}
+.switch{position:relative}
+.switch-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:260px;max-width:min(360px,90vw);background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:grid;gap:2px}
+.switch-item{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--ink);font-weight:600}
+.switch-item:hover,.switch-item:focus-visible{background:var(--surface-2);outline:none}
+.switch-item small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}
+.switch-item.armed{background:var(--warn-soft)}
+.switch-item.armed small{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -220,7 +232,12 @@ a.btn.primary{color:var(--accent-ink)}
         <div class="mark">MSP</div>
         <div><h1>Prévisionnel Maison de Santé</h1><small>Simulateur de business-plan pour cabinet de groupe / MSP</small></div>
       </div>
-      <div class="scenario"><span>Scénario</span><input id="scenarioName" type="text" aria-label="Nom du scénario"></div>
+      <div class="scenario"><span>Scénario</span><input id="scenarioName" type="text" aria-label="Nom du scénario">
+        <div class="switch" id="switchWrap" hidden>
+          <button class="btn small" id="btnSwitch" type="button" aria-haspopup="menu" aria-expanded="false" title="Ouvrir un autre prévisionnel enregistré">Changer<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button>
+          <div class="switch-menu" id="switchMenu" role="menu" hidden></div>
+        </div>
+      </div>
       <div class="top-actions">
         <button class="btn ghost" id="btnReset" type="button">Valeurs par défaut</button>
         <button class="btn" id="btnShare" type="button">Sauvegarder / partager</button>
@@ -696,7 +713,9 @@ function profCard(p, idx){
 function renderProfs(){
   document.getElementById('profList').innerHTML = S.professions.map(profCard).join('');
   const sel=document.getElementById('addProfSel');
-  sel.innerHTML = TEMPLATE_ORDER.map(k=>`<option value="${k}">${esc(TEMPLATES[k].name)}</option>`).join('');
+  // Seules les professions absentes de l'écran sont proposées ; « Autre profession » l'est toujours.
+  const used=new Set(S.professions.map(p=>p.key));
+  sel.innerHTML = TEMPLATE_ORDER.filter(k=>k==='autre'||!used.has(k)).map(k=>`<option value="${k}">${esc(TEMPLATES[k].name)}</option>`).join('');
 }
 function renderOther(){
   const rows=(S.charges.other||[]).map((o,i)=>`<tr><td><input class="txt" type="text" data-path="charges.other.${i}.label" data-kind="text" value="${esc(o.label)}" aria-label="Libellé"></td><td><div class="ctl" style="display:inline-flex"><input type="number" data-path="charges.other.${i}.monthly" value="${o.monthly??''}" min="0" step="10" aria-label="Montant mensuel"><span class="unit">€/mois</span></div></td><td><button class="x" type="button" data-action="delOther" data-idx="${i}" aria-label="Supprimer">×</button></td></tr>`).join('');
@@ -954,6 +973,7 @@ function acctRefresh(){
   return acctReady;
 }
 function renderAcct(){
+  renderSwitch();
   const box=document.getElementById('acct'); if(!box) return;
   const st=acct.state;
   document.getElementById('ioFile').classList.toggle('sub', st!=='off');
@@ -1053,6 +1073,30 @@ document.addEventListener('input',ev=>{
   if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); }
 });
 document.addEventListener('click',()=>{ if(link){ clearTimeout(statusT); statusT=setTimeout(acctStatus,150); } });
+
+/* ---------- « Changer » : ouvrir un autre prévisionnel du compte depuis l'en-tête ---------- */
+const switchWrap=document.getElementById('switchWrap'), switchBtn=document.getElementById('btnSwitch'), switchMenu=document.getElementById('switchMenu');
+const otherSaved=()=>acct.state==='user'?acct.items.filter(it=>!link||it.id!==link.id):[];
+function fillSwitch(){ switchMenu.innerHTML=otherSaved().map(it=>`<button class="switch-item" type="button" role="menuitem" data-id="${esc(it.id)}">${esc(it.nom)}<small>modifié le ${esc(fmtDate(it.updated_at))}</small></button>`).join(''); }
+function closeSwitch(){ switchMenu.hidden=true; switchBtn.setAttribute('aria-expanded','false'); }
+// Affiché seulement s'il existe un autre prévisionnel que celui à l'écran.
+function renderSwitch(){ switchWrap.hidden=!otherSaved().length; if(switchWrap.hidden) closeSwitch(); else if(!switchMenu.hidden) fillSwitch(); }
+switchBtn.addEventListener('click',()=>{
+  if(!switchMenu.hidden){ closeSwitch(); return; }
+  fillSwitch(); switchMenu.style.left='0px'; switchMenu.hidden=false; switchBtn.setAttribute('aria-expanded','true');
+  // Le menu reste dans la largeur visible (sur mobile, le bouton est souvent près du bord droit).
+  const r=switchWrap.getBoundingClientRect(), w=switchMenu.offsetWidth, vw=document.documentElement.clientWidth;
+  switchMenu.style.left=Math.max(8-r.left, Math.min(0, vw-8-w-r.left))+'px';
+});
+switchMenu.addEventListener('click',ev=>{
+  const b=ev.target.closest('.switch-item'); if(!b||acct.busy) return;
+  // Même règle que « Ouvrir » : confirmation par un second clic si le scénario affiché n'est pas à jour dans le compte.
+  const saved=!!link&&link.snap===snapshot();
+  if(!saved&&!b.dataset.armed){ b.dataset.armed='1'; b.classList.add('armed'); b.querySelector('small').textContent=link?'Modifications non enregistrées : cliquez à nouveau pour ouvrir quand même':'Scénario affiché non enregistré : cliquez à nouveau pour le remplacer'; return; }
+  closeSwitch(); acctOpen(b.dataset.id,switchBtn);
+});
+document.addEventListener('click',ev=>{ if(!switchMenu.hidden&&!ev.target.closest('#switchWrap')) closeSwitch(); });
+document.addEventListener('keydown',ev=>{ if(ev.key==='Escape'&&!switchMenu.hidden){ closeSwitch(); switchBtn.focus(); } });
 
 /* ---------- Exports Excel et PDF (membres connectés) ---------- */
 // Bibliothèques et code d'export chargés au premier clic seulement (vendor/ : exceljs, jsPDF, jspdf-autotable).
