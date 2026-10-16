@@ -53,7 +53,8 @@ _(rien en cours)_
 - [x] ~~Étape 3 : la question dans Ma fiche (site)~~ ✅ 15/10 (navigateur 17 / 17).
 - [x] ~~Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche`~~ ✅ 16/10 (lancée par David, constat fait, essai 27 / 27, types régénérés).
 - [x] ~~Étape 5 : mention sur la fiche d'un confrère et filtre dans la recherche (site)~~ ✅ 16/10 (navigateur 18 / 18).
-- [ ] **David** : essai sur dev.100000medecins.org — Ma fiche annuaire (question « nouveaux patients », Oui puis Non renseigné), `/annuaire` (case « Accepte de nouveaux patients », fiche d'un confrère). À emporter dans `main` au prochain report de l'annuaire (éteint en production ; base déjà migrée).
+- [x] ~~**David** : essai sur dev.100000medecins.org — Ma fiche annuaire, `/annuaire` (case, fiche d'un confrère)~~ ✅ 16/10 (« c'est bon »).
+- [ ] À emporter dans `main` au prochain report de l'annuaire (éteint en production ; base déjà migrée).
 - [ ] **Jour J, CGU et charte** (textes préparés dans le dépôt messagerie) : remplacer « vos disponibilités » (champ qui n'existe pas) par la réponse sur les nouveaux patients dans CGU art. 4 bis « Votre fiche », charte « Données traitées » et « Ce qui est visible » ; l'ajouter aux déclarations non vérifiées (CGU art. 5).
 - [x] ~~**Messagerie** : poser la question dans « Ma fiche » si `nouveaux_patients_possible`, l'afficher sur la fiche d'un confrère, filtre — selon le contrat~~ ✅ 16/10 : fait et essayé par David contre dev (rapporté par la session messagerie) ; en base, la vraie fiche enregistrée par l'application à 15 h 18, réponse finale « non renseigné ».
 
