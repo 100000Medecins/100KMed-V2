@@ -17,6 +17,11 @@
 - Au premier passage, 4 écarts venaient de l'essai lui-même (lecture du résumé avant l'arrivée des résultats ; attente d'un statut 404 alors qu'une fiche introuvable répond 200 avec la page « 404 », comme un RPPS inconnu, comportement existant) ; essai corrigé, second passage complet.
 - Données d'essai effacées : 0 ligne restante dans les 49 tables liées à un compte, 0 fiche et 0 identité fictives, compte d'authentification supprimé, fiche réelle identique avant et après.
 
+### Côté application (rapporté par la session messagerie, 16/10)
+- Question dans « Ma fiche », mention sur la fiche d'un confrère et case de la recherche avancée faites dans l'application et **essayées par David contre dev** : « vert ».
+- Constat en base (lecture seule) : la vraie fiche (SM53, publiée) a été enregistrée à 13:18 UTC, une minute après une ouverture de session de l'application ; réponse finale « non renseigné » (réponse et date vides, contrainte respectée). Les réponses intermédiaires de l'essai ne se voient pas : la base ne garde que la dernière.
+- Reste : le report en production avec l'annuaire.
+
 ---
 
 ## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 4 : fonctions de recherche et de fiche
