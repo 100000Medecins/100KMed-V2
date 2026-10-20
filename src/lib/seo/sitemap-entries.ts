@@ -24,6 +24,7 @@ const STATIC_ROUTES: Array<{
   { path: '/videos', changeFrequency: 'weekly', priority: 0.5 },
   { path: '/glossaire', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/outils/previsionnel-maison-de-sante', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/portabilite', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/qui-sommes-nous', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/irritants-esante', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/difficile-de-changer', changeFrequency: 'monthly', priority: 0.4 },

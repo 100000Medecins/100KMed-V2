@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-10-20] — Page « Portabilité des données : les éditeurs engagés » (première proposition, sur dev)
+
+Demande de David : célébrer la réponse des éditeurs à l'appel du 20/07 (communiqué commun du 19/10 de Doctolib, MadeForMed, Orisha Care, Semble et VIDAL Group : export gratuit, sous 30 jours, complet et documenté). Leur communiqué annonce que « la liste des éditeurs engagés est publiée par l'association sur son site » : c'est cette page.
+
+### Décisions de David
+- Logiciels affichés : ceux cités au communiqué (Doctolib Médecin, Odaiji, Desmos, Follow, Semble, Weda, DrSanté) ; MonEcho, sans fiche en base, en carte sans lien.
+- Liste tenue dans le code ([portabilite.ts](src/lib/data/portabilite.ts)), pas d'écran d'admin ni de migration.
+- Contenu : éditeurs, trois engagements avec un court historique, logiciels, les deux communiqués en PDF, encadré « Vous êtes éditeur ? » (courriel à contact@). Pas les logos des syndicats.
+- DrSanté : rattachement de Calimaps à Vidal demandé, **déjà en place en base** (Calimaps a Vidal pour maison-mère, comme Weda) : rien écrit.
+
+### Ce qui change
+- [/portabilite](src/app/portabilite/page.tsx), statique (○, revalidation 1 h) : en-tête, 5 cartes éditeurs vers `/editeur/<slug>` (logos officiels tirés de l'en-tête du communiqué, [public/images/portabilite/](public/images/portabilite/), repli sur le logo en base), 3 engagements, 8 cartes logiciels vers leur fiche, « Pourquoi c'est important » et frise (juillet 2026 → février 2027), 2 PDF ([public/documents/portabilite/](public/documents/portabilite/)), encadré éditeurs.
+- [db/portabilite.ts](src/lib/db/portabilite.ts) : logos, noms et liens lus par le client public (sans cookies) ; en cas d'erreur, la page s'affiche avec les noms de la liste.
+- Page ajoutée au plan du site ([sitemap-entries.ts](src/lib/seo/sitemap-entries.ts)). Pas de lien dans le menu (non demandé).
+- Bandeau d'accueil : l'annonce WONCA a expiré le 3 août (plus affichée). Rien créé en base : la base étant commune, une annonce active pointerait en production vers une page encore absente. Texte proposé à David, à créer dans Admin → Annonces le jour de la mise en production.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` (page ○).
+- Navigateur (build local, Chrome piloté, lecture seule), **30 / 30** : page 200, titre ; 5 éditeurs avec logo ; 8 logiciels dont 7 cliquables avec logo, MonEcho sans lien ; les 12 liens (éditeurs, fiches, PDF) répondent 200, PDF servis en `application/pdf` ; bouton courriel ; clic éditeur → `/editeur/semble`, clic logiciel → fiche Odaiji ; 390 px sans défilement horizontal ; images toutes chargées ; aucune erreur JavaScript (hors script de statistiques Vercel, absent en local sur toutes les pages). Captures relues (ordinateur, mobile).
+
+### Reste avant la production
+- Le PDF des éditeurs porte le filigrane « SOUS EMBARGO 19/10 » : demander une version sans.
+- La page de VIDAL Group affiche « Solutions (0) » : Weda et DrSanté sont rangés sous leurs propres éditeurs (filiales) et la page d'un groupe ne liste pas ses marques. Existant, non traité.
+
+---
+
 ## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 5 : fiche d'un confrère et filtre de la recherche
 
 - [FicheConfrere](src/components/annuaire/FicheConfrere.tsx), bloc « Sa fiche », sous le moyen de contact préféré : « **Accepte** de nouveaux patients comme médecin traitant (déclaré le JJ/MM/AAAA) » ou « **N'accepte pas** … », rien si la question n'est pas renseignée. La mention « Informations déclarées par le médecin, non vérifiées par l'association » existante couvre la réponse.
