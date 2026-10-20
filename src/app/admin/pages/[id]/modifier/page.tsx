@@ -1,12 +1,15 @@
 export const dynamic = 'force-dynamic'
 
+import type { ComponentProps } from 'react'
 import { notFound } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import BlogForm from '@/components/admin/BlogForm'
 import TooltipNoteGlobaleForm from '@/components/admin/TooltipNoteGlobaleForm'
 import PageHistoryButton from '@/components/admin/PageHistoryButton'
-import { updatePageStatique, updateNoteGlobaleTooltip } from '@/lib/actions/admin'
+import PortabiliteTextesForm from '@/components/admin/PortabiliteTextesForm'
+import { updatePageStatique, updateNoteGlobaleTooltip, updatePortabiliteTextes } from '@/lib/actions/admin'
 import { getPageStatiqueHistory } from '@/lib/db/pages'
+import { lireTextesPortabilite, SLUG_PAGE_PORTABILITE } from '@/lib/data/portabilite'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -62,6 +65,29 @@ export default async function AdminEditPagePage({ params }: PageProps) {
     )
   }
 
+  const historique = history.map((h) => ({
+    id: h.id,
+    saved_at: h.saved_at,
+    titre: h.titre,
+    contenu: h.contenu,
+    meta_description: h.meta_description,
+  }))
+
+  // Page /portabilite : formulaire dédié, textes rangés en JSON dans `contenu`.
+  if (page.slug === SLUG_PAGE_PORTABILITE) {
+    return (
+      <div>
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <h1 className="text-2xl font-bold text-navy">Modifier : Portabilité des données</h1>
+          <PageHistoryButton pageId={id} history={historique} />
+        </div>
+        <div className="bg-white rounded-card shadow-card p-6 md:p-8">
+          <PortabiliteTextesForm textes={lireTextesPortabilite(page)} action={updatePortabiliteTextes.bind(null, id)} />
+        </div>
+      </div>
+    )
+  }
+
   const boundAction = updatePageStatique.bind(null, id)
 
   return (
@@ -70,19 +96,11 @@ export default async function AdminEditPagePage({ params }: PageProps) {
         <h1 className="text-2xl font-bold text-navy">
           Modifier : {page.titre}
         </h1>
-        <PageHistoryButton
-          pageId={id}
-          history={history.map((h) => ({
-            id: h.id,
-            saved_at: h.saved_at,
-            titre: h.titre,
-            contenu: h.contenu,
-            meta_description: h.meta_description,
-          }))}
-        />
+        <PageHistoryButton pageId={id} history={historique} />
       </div>
       <div className="bg-white rounded-card shadow-card p-6 md:p-8">
-        <BlogForm page={page as any} action={boundAction} />
+        {/* metadata est un Json en base, typé en liste de syndicats dans BlogForm (qui-sommes-nous) */}
+        <BlogForm page={page as unknown as ComponentProps<typeof BlogForm>['page']} action={boundAction} />
       </div>
     </div>
   )

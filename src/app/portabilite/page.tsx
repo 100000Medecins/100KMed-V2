@@ -7,34 +7,38 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { CONTACT_EDITEURS, DOCUMENTS_PORTABILITE, EDITEURS_ENGAGES } from '@/lib/data/portabilite'
-import { getDonneesPortabilite } from '@/lib/db/portabilite'
+import { getDonneesPortabilite, getTextesPortabilite } from '@/lib/db/portabilite'
+import { sanitizeHtml } from '@/lib/sanitize'
 
-// Page publique statique (ISR) : la liste vient de src/lib/data/portabilite.ts, les logos et les
-// liens de la base par le client public, sans cookies.
+// Page publique statique (ISR) : la liste vient de src/lib/data/portabilite.ts, les textes libres
+// d'Admin → Pages (ligne `portabilite`, revalidée à l'enregistrement), les logos et les liens de la
+// base. Tout est lu par le client public, sans cookies.
 export const revalidate = 3600
 
 const CHEMIN = '/portabilite'
 const TITRE = 'Portabilité des données : les éditeurs engagés'
-const NOMS_EDITEURS = EDITEURS_ENGAGES.map((e) => e.nom)
-const DESCRIPTION =
-  `${NOMS_EDITEURS.slice(0, -1).join(', ')} et ${NOMS_EDITEURS[NOMS_EDITEURS.length - 1]} s'engagent sans attendre 2027 : ` +
-  "export des données du médecin gratuit, remis sous 30 jours, complet et documenté."
 
-export const metadata: Metadata = {
-  title: TITRE, // complété par « | 100 000 Médecins » (gabarit du layout racine)
-  description: DESCRIPTION,
-  alternates: { canonical: CHEMIN },
-  // Une route qui redéfinit openGraph ne reçoit plus l'image racine : on la redonne.
-  openGraph: {
-    type: 'website',
-    locale: 'fr_FR',
-    siteName: '100 000 Médecins',
-    title: `${TITRE} | 100 000 Médecins`,
-    description: DESCRIPTION,
-    url: CHEMIN,
-    images: ['/opengraph-image.png'],
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const { metaDescription } = await getTextesPortabilite()
+  return {
+    title: TITRE, // complété par « | 100 000 Médecins » (gabarit du layout racine)
+    description: metaDescription,
+    alternates: { canonical: CHEMIN },
+    // Une route qui redéfinit openGraph ne reçoit plus l'image racine : on la redonne.
+    openGraph: {
+      type: 'website',
+      locale: 'fr_FR',
+      siteName: '100 000 Médecins',
+      title: `${TITRE} | 100 000 Médecins`,
+      description: metaDescription,
+      url: CHEMIN,
+      images: ['/opengraph-image.png'],
+    },
+  }
 }
+
+/** Mise en forme du HTML saisi dans l'admin (paragraphes, listes, liens). */
+const PROSE = '[&>*+*]:mt-4 [&_a]:underline [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5'
 
 const ENGAGEMENTS = [
   {
@@ -126,10 +130,13 @@ function Titre({ children, sousTitre }: { children: React.ReactNode; sousTitre?:
 }
 
 export default async function PortabilitePage() {
-  const { editeurs, logiciels } = await getDonneesPortabilite(
-    EDITEURS_ENGAGES.map((e) => e.slug),
-    EDITEURS_ENGAGES.flatMap((e) => e.logiciels.flatMap((l) => (l.slug ? [l.slug] : []))),
-  )
+  const [textes, { editeurs, logiciels }] = await Promise.all([
+    getTextesPortabilite(),
+    getDonneesPortabilite(
+      EDITEURS_ENGAGES.map((e) => e.slug),
+      EDITEURS_ENGAGES.flatMap((e) => e.logiciels.flatMap((l) => (l.slug ? [l.slug] : []))),
+    ),
+  ])
 
   const cartesLogiciels = EDITEURS_ENGAGES.flatMap((e) =>
     e.logiciels.map((l) => {
@@ -154,21 +161,17 @@ export default async function PortabilitePage() {
             <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Portabilité des données' }]} variant="light" />
           </div>
           <div className="max-w-4xl mx-auto px-6 text-center mt-8">
-            <p className="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white mb-5">
-              19 octobre 2026
-            </p>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
-              Portabilité des données : cinq éditeurs répondent à notre appel
-            </h1>
-            <p className="text-white/85 text-base md:text-lg">
-              Le 20 juillet, l’association 100 000 Médecins et six syndicats de médecins appelaient les éditeurs de
-              logiciels médicaux à remettre ses données à tout médecin qui le demande, sans attendre 2027. Doctolib,
-              MadeForMed, Orisha Care, Semble et VIDAL Group ont confirmé publiquement qu’ils appliquent dès maintenant
-              les trois engagements issus du groupe de travail piloté par la Délégation au numérique en santé.
-            </p>
-            <p className="text-white font-semibold mt-4">
-              Merci à eux. Nous comptons sur les autres éditeurs pour les rejoindre.
-            </p>
+            {textes.pastille && (
+              <p className="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white mb-5">
+                {textes.pastille}
+              </p>
+            )}
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-6">{textes.titre}</h1>
+            <div
+              className={`text-white/85 text-base md:text-lg [&_ul]:text-left ${PROSE}`}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(textes.chapeau) }}
+            />
+            {textes.remerciement && <p className="text-white font-semibold mt-4">{textes.remerciement}</p>}
           </div>
         </section>
 
@@ -261,20 +264,12 @@ export default async function PortabilitePage() {
           <section aria-labelledby="contexte" className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             <div>
               <Titre>
-                <span id="contexte">Pourquoi c’est important</span>
+                <span id="contexte">{textes.pourquoiTitre}</span>
               </Titre>
-              <div className="space-y-4 text-gray-700 leading-relaxed">
-                <p>
-                  Un médecin qui hésite à changer de logiciel par crainte de perdre l’historique de ses patients reste
-                  avec un outil qui ne lui convient plus. Et quand la migration a lieu, un export incomplet ou mal
-                  documenté se paie en consultations sans antécédents ni comptes-rendus, et en jours de ressaisie pris
-                  sur le temps médical.
-                </p>
-                <p>
-                  Le référentiel de portabilité élaboré par le groupe de travail ne s’imposera à tous les éditeurs
-                  qu’en 2027. Les éditeurs engagés appliquent dès maintenant ce qui avait été décidé ensemble.
-                </p>
-              </div>
+              <div
+                className={`text-gray-700 leading-relaxed [&_a]:text-accent-blue ${PROSE}`}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(textes.pourquoiTexte) }}
+              />
             </div>
             <ol className="relative ml-2 border-l-2 border-navy/15 space-y-6 self-start">
               {ETAPES.map((etape) => (
@@ -337,11 +332,8 @@ export default async function PortabilitePage() {
           {/* Appel aux autres éditeurs */}
           <section className="bg-navy text-white rounded-card p-6 md:p-10 flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
-              <h2 className="text-xl md:text-2xl font-bold">Vous êtes éditeur de logiciel médical ?</h2>
-              <p className="mt-2 text-white/80 leading-relaxed">
-                Confirmez publiquement les mêmes engagements : export gratuit, remis sous 30 jours, complet et
-                documenté. Nous ajouterons votre nom et vos logiciels à cette page.
-              </p>
+              <h2 className="text-xl md:text-2xl font-bold">{textes.encadreTitre}</h2>
+              <p className="mt-2 text-white/80 leading-relaxed">{textes.encadreTexte}</p>
             </div>
             <Button
               href={`mailto:${CONTACT_EDITEURS}?subject=${encodeURIComponent('Engagement portabilité des données')}`}
@@ -350,7 +342,7 @@ export default async function PortabilitePage() {
               leftIcon={<Mail className="w-4 h-4" />}
               className="shrink-0 self-start md:self-auto"
             >
-              Nous écrire
+              {textes.encadreBouton}
             </Button>
           </section>
         </div>

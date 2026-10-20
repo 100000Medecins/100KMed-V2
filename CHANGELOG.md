@@ -5,6 +5,31 @@
 
 ---
 
+## [2026-10-21] — Portabilité : textes de la page modifiables dans Admin → Pages
+
+Demande de David (option « admin » plutôt que « demander à Claude ») : modifier lui-même les textes libres de `/portabilite`.
+
+### Ce qui change
+- **Admin → Pages, ligne `portabilite`** : formulaire dédié ([PortabiliteTextesForm](src/components/admin/PortabiliteTextesForm.tsx)), sur le modèle de l'infobulle des notes : en-tête (pastille, titre, introduction, phrase en gras), « Pourquoi c'est important » (titre, texte), encadré éditeurs (titre, texte, bouton), description pour Google. Éditeur de texte allégé (gras, italique, listes, lien) pour l'introduction et « Pourquoi ». Bouton « Historique » (trigger d'audit existant, restauration). Pastille et phrase en gras : vides → masquées.
+- Rangement : titre et description dans leurs colonnes, le reste en JSON dans `contenu` ; lecture, valeurs par défaut et contrôles dans [portabilite.ts](src/lib/data/portabilite.ts) ; action `updatePortabiliteTextes` ([admin.ts](src/lib/actions/admin.ts)) : admin vérifié, champs obligatoires et longueurs, revalide `/portabilite`.
+- [Page](src/app/portabilite/page.tsx) : textes lus en base par le client public (toujours ○) ; HTML nettoyé par `sanitizeHtml` ; ligne absente ou base en erreur → textes de départ, la page ne tombe pas.
+- Restent dans le code : liste des éditeurs et logiciels, trois engagements, frise, communiqués (dit dans le formulaire).
+- Au passage, dans la page d'édition des pages : `page as any` remplacé par un type (lint).
+
+### Base
+- Ligne `portabilite` créée par [scripts/portabilite-page-admin.ts](scripts/portabilite-page-admin.ts) (dry-run puis `--execute`, insertion seule) avec les textes de la première version ; relue identique.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` (page ○).
+- Navigateur (build local, Chrome piloté, connexion admin par le formulaire), **18 / 18** : ligne dans Admin → Pages, formulaire pré-rempli, 2 éditeurs de texte, bouton Historique ; introduction vidée refusée côté serveur, page inchangée ; modification (titre, phrase en gras vidée, bouton, description, texte « Pourquoi » avec du gras) → page publique à jour aussitôt (titre, phrase masquée, bouton, `<strong>`, balise description) ; 1 version archivée, restaurée → formulaire et page revenus au départ ; aucune erreur JavaScript. Page publique : **30 / 30** (même essai qu'au 20/10).
+- Corrigé pendant l'essai : une espace disparaissait au rendu dans l'aide du formulaire (« données dès ») ; espace forcée.
+- Données d'essai : la ligne est revenue aux textes de départ (contenu relu identique) ; les versions archivées pendant l'essai ont été supprimées (historique vide).
+
+### Attention tant que ce n'est pas en production
+- La base est commune : la ligne « Portabilité des données » apparaît aussi dans Admin → Pages en production, où le code actuel l'ouvre avec le formulaire générique, qui abîmerait le contenu. Modifier ces textes depuis l'admin de **dev** uniquement, jusqu'à la mise en production.
+
+---
+
 ## [2026-10-20] — Page « Portabilité des données : les éditeurs engagés » (première proposition, sur dev)
 
 Demande de David : célébrer la réponse des éditeurs à l'appel du 20/07 (communiqué commun du 19/10 de Doctolib, MadeForMed, Orisha Care, Semble et VIDAL Group : export gratuit, sous 30 jours, complet et documenté). Leur communiqué annonce que « la liste des éditeurs engagés est publiée par l'association sur son site » : c'est cette page.

@@ -1,4 +1,29 @@
+import { cache } from 'react'
 import { createPublicClient } from '@/lib/supabase/server'
+import {
+  lireTextesPortabilite,
+  SLUG_PAGE_PORTABILITE,
+  TEXTES_PORTABILITE_DEFAUT,
+  type TextesPortabilite,
+} from '@/lib/data/portabilite'
+
+/**
+ * Textes libres de la page (Admin → Pages, ligne `portabilite`). Partagé par la page et ses
+ * métadonnées (une seule lecture par rendu). Erreur ou ligne absente → textes par défaut : la
+ * page ne tombe jamais en erreur pour ça.
+ */
+export const getTextesPortabilite = cache(async (): Promise<TextesPortabilite> => {
+  const { data, error } = await createPublicClient()
+    .from('pages_statiques')
+    .select('titre, meta_description, contenu')
+    .eq('slug', SLUG_PAGE_PORTABILITE)
+    .maybeSingle()
+  if (error) {
+    console.error('[getTextesPortabilite]', error.message)
+    return { ...TEXTES_PORTABILITE_DEFAUT }
+  }
+  return lireTextesPortabilite(data)
+})
 
 export type EditeurPortabilite = {
   slug: string
