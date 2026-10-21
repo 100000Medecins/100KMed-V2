@@ -75,7 +75,6 @@ export const EDITEURS_ENGAGES: EditeurEngage[] = [
     logiciels: [
       { nom: 'Weda', slug: 'weda' },
       { nom: 'DrSanté', slug: 'drsante' },
-      { nom: 'MonEcho' },
     ],
   },
 ]
