@@ -5,6 +5,30 @@
 
 ---
 
+## [2026-10-21] — Mise en production de la page Portabilité, bandeau d'accueil
+
+Ordre de David (« on peut enlever MonEcho et pousser tout ça en prod »).
+
+### MonEcho retiré
+- `dc1f360` : MonEcho (sans fiche sur le site) retiré de la liste ; 7 logiciels, tous avec un lien.
+
+### Report sur `main`
+- `dev` avait 47 commits d'avance (dont l'annuaire « nouveaux patients », pas prêt) : **pas de merge complet**. Report du **code seul** de `a81d7ba`, `588e80c` et `dc1f360` dans un worktree séparé (cherry-pick sans le CHANGELOG) → `4bfeeb7` sur `main`. 15 fichiers : les 7 fichiers de code identiques à `dev` ; `admin.ts` ne reçoit que des ajouts ; PDF et logos.
+- Worktree : `npm ci`, `tsc` et build verts (page ○) ; essai du build `main` dans Chrome : page publique 30 / 30 (une réponse 304 du cache comptée en échec par l'essai) et formulaire dédié ouvert dans l'admin (lecture seule) ; `.env.local` copié puis supprimé ; worktree vidé et oublié.
+- Base : rien à faire (ligne `portabilite` déjà créée).
+- Vercel « Production » `success`. **Vérifié en production** : page 200, titre lu en base, canonical `www…/portabilite`, pas de `noindex`, 7 liens de fiches, pas de MonEcho, 2 PDF et logos 200, page dans `/sitemap.xml`.
+
+### Bandeau d'accueil
+- [scripts/annonce-portabilite.ts](scripts/annonce-portabilite.ts) (dry-run puis `--execute`) : annonce `56999842…`, style « Succès », du 21/10 au **18/11/2026 23 h 59**, bouton vers `/portabilite`. Annonce WONCA (expirée le 03/08) laissée telle quelle.
+- Première version trop longue sur mobile (titre sur 5 lignes à côté du bouton) : textes raccourcis par le même script (mise à jour des textes seuls) → titre « Portabilité : 5 éditeurs s'engagent », texte (ordinateur seulement) « Export gratuit, sous 30 jours, complet et documenté : Doctolib, MadeForMed, Orisha Care, Semble et VIDAL Group répondent à notre appel. », bouton « Voir la liste ». Rendu vérifié (serveur de développement) : 2 lignes sur ordinateur, 2 sur mobile.
+- En production, l'accueil s'est rafraîchi entre la création et la correction : il montre la première version jusqu'au prochain rafraîchissement (1 h au plus) ; « Mettre à jour » dans Admin → Annonces le force.
+
+### Reste
+- PDF des éditeurs avec le filigrane « SOUS EMBARGO 19/10 » (mis en ligne tel quel, embargo levé) : le remplacer quand ils fournissent une version sans.
+- Page VIDAL Group « Solutions (0) » (marques rangées sous leurs propres éditeurs).
+
+---
+
 ## [2026-10-21] — Portabilité : textes de la page modifiables dans Admin → Pages
 
 Demande de David (option « admin » plutôt que « demander à Claude ») : modifier lui-même les textes libres de `/portabilite`.
