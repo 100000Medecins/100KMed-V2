@@ -16,6 +16,12 @@ import { supprimerFichiersDeLaVideo } from '@/lib/reseaux/fichiers'
 import { jetonSession, roleDepuisJeton, roleDepuisMotDePasse } from '@/lib/auth/admin-session'
 import { ACCUEIL_PAR_ROLE, type RoleAdmin } from '@/lib/auth/admin-rubriques'
 import type { ContactLigne } from '@/types/models'
+import {
+  contenuPortabilite,
+  SLUG_PAGE_PORTABILITE,
+  verifierTextesPortabilite,
+  type TextesPortabilite,
+} from '@/lib/data/portabilite'
 
 // ────────────────────────────────────────────
 // Auth
@@ -736,6 +742,47 @@ export async function updateNoteGlobaleTooltip(id: string, formData: FormData) {
   // Revalider les listings de solutions (les fiches utilisent revalidate=300, donc max 5min de cache)
   revalidatePath('/solutions', 'layout')
 
+  redirect('/admin/pages')
+}
+
+/**
+ * Textes de la page /portabilite (ligne `portabilite` de pages_statiques) : titre et description
+ * dans leurs colonnes, le reste en JSON dans `contenu`. L'UPDATE est historisé par le trigger
+ * audit_pages_statiques (restaurable depuis le bouton « Historique »).
+ */
+export async function updatePortabiliteTextes(id: string, formData: FormData) {
+  await assertAdmin()
+
+  const champ = (nom: string) => (formData.get(nom) as string | null) ?? ''
+  const textes: TextesPortabilite = {
+    titre: champ('titre'),
+    metaDescription: champ('meta_description'),
+    pastille: champ('pastille'),
+    chapeau: champ('chapeau'),
+    remerciement: champ('remerciement'),
+    pourquoiTitre: champ('pourquoi_titre'),
+    pourquoiTexte: champ('pourquoi_texte'),
+    encadreTitre: champ('encadre_titre'),
+    encadreTexte: champ('encadre_texte'),
+    encadreBouton: champ('encadre_bouton'),
+  }
+  const erreur = verifierTextesPortabilite(textes)
+  if (erreur) return { error: erreur }
+
+  const supabase = createServiceRoleClient()
+  const { error } = await supabase
+    .from('pages_statiques')
+    .update({
+      titre: textes.titre,
+      meta_description: textes.metaDescription || null,
+      contenu: contenuPortabilite(textes),
+    })
+    .eq('id', id)
+    .eq('slug', SLUG_PAGE_PORTABILITE)
+  if (error) return { error: `Erreur lors de la mise à jour : ${error.message}` }
+
+  revalidatePath('/admin/pages')
+  revalidatePath(`/${SLUG_PAGE_PORTABILITE}`)
   redirect('/admin/pages')
 }
 
