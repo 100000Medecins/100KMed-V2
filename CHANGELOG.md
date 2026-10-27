@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-27] — Proposer : exemples sans Doctolib
+
+Demande de David : exemples de titre « Correction » et « Vidéo » de `/mon-compte/proposer` sans Doctolib.
+
+- `de4efe5` (`dev`) : « Faute de frappe sur la page de mon logiciel », « Comment configurer la téléconsultation sur mon logiciel ». Report du code seul sur `main` (worktree, cherry-pick) → `2ddba78`, poussé directement (accord de David) ; `dev` garde son avance (annuaire « nouveaux patients »).
+- Recherche de « Doctolib » ailleurs, pour David : dans le code, plus que la page Portabilité (normal). En base (lecture seule, rien modifié) : fiches Doctolib (normal) ; avis de la rédaction et descriptions d'autres agendas (Callibri, ClicRdv, Cmondoc, Divomed, GPS Santé, MadeForMed, Resalib, Ubiclic) et de logiciels médicaux (Weda, Premiocare, easy-care, TAMM, Follow) qui le citent en comparaison ou pour une intégration ; Heidi Health (avis et description de l'éditeur) : « AWS… tout comme un certain Doctolib… » ; 4 vidéos publiées qui le citent, dont un tutoriel pour patients (« Doctolib : prenez vos rendez-vous médicaux… ») ; bandeau et page Portabilité ; article brouillon MSSanté ; modèle d'email « lancement Nouveau site » ; 7 avis de médecins sur d'autres logiciels (Weda 5, Odaiji, éO Médecin).
+
+---
+
 ## [2026-10-21] — Mise en production de la page Portabilité, bandeau d'accueil
 
 Ordre de David (« on peut enlever MonEcho et pousser tout ça en prod »).
