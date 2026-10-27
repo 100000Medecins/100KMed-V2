@@ -29,7 +29,7 @@ const COPY = {
     icon: AlertTriangle,
     intro:
       "Vous avez repéré une coquille, un bug, une info erronée ? Signalez-le ici, on corrige au plus vite.",
-    titrePlaceholder: 'Ex: « Faute de frappe sur la page Doctolib »',
+    titrePlaceholder: 'Ex: « Faute de frappe sur la page de mon logiciel »',
     descriptionPlaceholder:
       "Décrivez ce qui ne va pas : ce que vous avez vu vs. ce qui devrait s'afficher, comment reproduire si c'est un bug.",
     urlLabel: 'URL concernée',

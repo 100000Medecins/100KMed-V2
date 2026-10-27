@@ -92,7 +92,7 @@ export default function ProposerVideoPage() {
               value={titre}
               onChange={(e) => setTitre(e.target.value)}
               className={inputClass}
-              placeholder="Ex: « Comment configurer la téléconsultation sur Doctolib »"
+              placeholder="Ex: « Comment configurer la téléconsultation sur mon logiciel »"
               required
               maxLength={200}
             />
