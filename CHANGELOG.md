@@ -134,6 +134,25 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
 
 ---
 
+## [2026-11-13] — Studio Instagram hors article, tutoriel de la community manager (sur dev)
+
+Ordre de David (« fais les deux à la suite maintenant ») : sa question du 12/11 (« accéder à l'outil d'incrustation en dehors d'un article… pour traiter juste une image ? ») puis l'étape 6 du chantier. Contexte donné par David : la community manager publie pour l'instant avec son propre outil ; ce dont elle a besoin, c'est de poser le gabarit sur une image.
+
+### Studio hors article (`6360872`)
+- Page **`/admin/blog/studio`** (rubrique Blog, donc ouverte au rôle contenu), bouton **« Studio Instagram »** à côté de « Nouvel article ». Le même [StudioVisuel](src/components/admin/StudioVisuel.tsx), affiché en page (`presentation="page"`, via [StudioLibre](src/components/admin/StudioLibre.tsx)) : photo importée de l'ordinateur ou du téléphone (invitation « Importer une photo » dans l'aperçu), texte libre, téléchargement du post et de la story (`visuel-instagram-post.jpg` / `-story.jpg`). **Rien n'est enregistré ni demandé à Claude** (sans article). Boutons du bas collés à l'écran ; sur téléphone, la note fixe est masquée (déjà dans l'en-tête de la page).
+- `StudioVisuel` : `articleId`, `photoUrl`, `titre`, `open`, `onClose` deviennent facultatifs ; sans article, pas de lecture des visuels enregistrés, pas d'« Enregistrer », pas d'accroche ; sans `onClose`, pas de « Fermer ». Le studio d'un article est inchangé.
+- [Liste du blog](src/app/admin/blog/page.tsx), au passage : boutons, pastilles de statut et carte passés aux composants du site ; requête typée (`as any` retiré, la relation vers `articles_categories` est dans les types).
+- `9029936` : message « Photo nette : … pour 1 080 px » avec espaces insécables (« 1 » / « 080 px » se coupaient sur téléphone).
+
+### Étape 6 — tutoriel de la community manager
+- Page publiée (privée, à partager par David) : **https://claude.ai/artifact/4AFMFGPNq9189TUcGstamg** — les deux entrées (image seule, article), le pas à pas (format, cadrage et zones sûres, texte, logo, tonalité, téléchargement), la lecture des pastilles, l'accroche de Claude, l'enregistrement avec un article, le téléphone, les soucis courants. Captures prises en local avec le rôle contenu (rien enregistré, une accroche demandée à Claude).
+- Le tutoriel décrit ce qui est sur `dev` : à partager une fois le studio en production.
+
+### Vérif
+- Build local, rôle contenu (mot de passe d'essai posé pour le serveur local seulement) : connexion → Admin → Blog → « Studio Instagram » → `/admin/blog/studio` ; invitation à importer, téléchargement grisé sans photo, ni « Enregistrer », ni accroche, ni « Fermer » ; photo importée (2 400 × 1 600) → « Photo nette », texte, tonalité, **2 JPEG 1080 × 1350 et 1080 × 1920** ; téléphone (390 px) sans défilement horizontal, « Télécharger le post » visible en faisant défiler ; **rien en base** (`visuels_reseaux` 0 → 0). Non-régression : studio d'un article en fenêtre (couverture, « Enregistrer », « Fermer ») ; essai complet de l'étape 3 rejoué (enregistrement, réouverture identique au pixel, réenregistrement, suppression de l'article par la liste du blog migrée) : tout bon. `tsc`, lint des fichiers touchés, `npm run build` (`/admin/blog/studio` en `ƒ`).
+
+---
+
 ## [2026-11-12] — Studio des visuels Instagram, étapes 1 à 5 (sur dev)
 
 Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan de l'étape 1 validé par David (« tu peux tout faire »), avec : travail sur `dev`, téléchargement des JPEG dès l'étape 1, taille de fenêtre plus large. Étapes 1 et 2 essayées et validées par David sur dev le 12/11.
