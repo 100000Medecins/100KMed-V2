@@ -5,6 +5,32 @@
 
 ---
 
+## [2026-11-12] — Studio des visuels Instagram, étapes 1 et 2 (sur dev)
+
+Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan de l'étape 1 validé par David (« tu peux tout faire »), avec : travail sur `dev`, téléchargement des JPEG dès l'étape 1, taille de fenêtre plus large.
+
+### Étape 1 — gabarit et studio sans enregistrement (`4ec6abb`)
+- [gabarit.ts](src/lib/reseaux/gabarit.ts) : port en TypeScript de `dessiner()` de la maquette et de ses aides, sans changer les nombres (formats, zones sûres, six tonalités, briques, voile, logo « petite taille » jusqu'à 250 px). Code pur, partagé par l'aperçu, les vignettes et le JPEG.
+- [StudioVisuel](src/components/admin/StudioVisuel.tsx) : post / story, recadrage à la souris ou au doigt, molette et curseur de zoom, zones sûres, texte (titre de l'article au départ), texte en haut / en bas, taille du logo, six vignettes, voile, import d'une autre photo, « Télécharger le post / la story (JPEG) ». Police Space Grotesk 700 par `next/font`, attendue avant le premier dessin. Chargé seulement à l'ouverture.
+- [ArticleForm](src/components/admin/ArticleForm.tsx) : bouton « Visuel Instagram » sous la couverture (grisé, avec la raison, sans article enregistré ou sans couverture), studio rendu hors du formulaire. Au passage, bloc couverture passé aux composants du site (boutons, champ de recherche, fenêtre d'aperçu) et une apostrophe du panneau « Générer » (lint).
+- [Modal](src/components/ui/Modal.tsx) : taille `2xl` (`max-w-6xl`).
+- Logos « petite taille » du graphiste copiés dans `public/logos/` ; les versions normales du site sont déjà celles de la charte 2026 (identiques hors fins de ligne).
+- Logos : leurs SVG n'ont pas de largeur ni de hauteur, ce que Firefox refuse sur un canvas → rechargés avec les dimensions du viewBox **seulement si** le navigateur ne sait pas les dessiner (ajouter la taille partout changeait légèrement le lissage des contours dans Chrome).
+
+### Étape 2 — couverture en grand (`8187c11`)
+- `adresseGrandFormat` : couverture Unsplash ou Pexels demandée en **3 840 px** de large (au lieu de 1 080 / 940) ; repli sur l'adresse enregistrée si elle ne se charge pas.
+- **Pas de route relais** (prévue par la spécification) : Unsplash, Pexels et le stockage Supabase répondent avec `Access-Control-Allow-Origin: *`, le canvas reste exportable (vérifié par requête).
+- 3 840 plutôt que les 2 400 de la spécification : la couverture IA (16:9) restait agrandie ×1,4 en story à 2 400 px ; à 3 840 elle est nette (fichiers de 0,6 à 2,4 Mo).
+
+### Vérif
+- **Au pixel** (Chrome sans fenêtre, script hors dépôt) : la fonction de la maquette et celle du site sur les mêmes entrées, **34 cas sur 34 identiques** (post et story × 6 tonalités × haut / bas, recadrages et zooms, logo de 160 à 360 px, voile 0 à 100 %, texte vide, retours à la ligne forcés, ponctuation).
+- **Dans le site** (build local, connexion admin, rien d'enregistré) : studio ouvert sur l'article IA, police chargée, JPEG du post à **10 pixels près sur 1,46 million** de celui de la maquette (bord de quelques lettres : fichier de police servi par Next au lieu de Google Fonts) ; molette, glisser, noir et blanc, texte en haut, texte trop long signalé, « Fermer » sans envoyer le formulaire, téléphone sans défilement horizontal. Étape 2 : Unsplash et Pexels chargées en 3 840 px, photo nette en post et en story, 4 JPEG aux bonnes dimensions (205 à 288 Ko), aucune erreur.
+- `tsc` (sur `src`), lint des fichiers touchés, `npm run build`.
+- **Non essayé** : Firefox (non installé sur le poste), glisser au doigt sur un vrai téléphone.
+- Au passage : `.next/dev/types/routes.d.ts`, laissé abîmé par un `next dev` du 21/10, fait échouer `npx tsc --noEmit` ; sans effet sur le build, régénéré au prochain `next dev`.
+
+---
+
 ## [2026-10-27] — Proposer : exemples sans Doctolib
 
 Demande de David : exemples de titre « Correction » et « Vidéo » de `/mon-compte/proposer` sans Doctolib.
