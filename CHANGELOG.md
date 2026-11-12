@@ -134,7 +134,7 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
 
 ---
 
-## [2026-11-12] — Studio des visuels Instagram, étapes 1 à 3 (sur dev)
+## [2026-11-12] — Studio des visuels Instagram, étapes 1 à 4 (sur dev)
 
 Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan de l'étape 1 validé par David (« tu peux tout faire »), avec : travail sur `dev`, téléchargement des JPEG dès l'étape 1, taille de fenêtre plus large. Étapes 1 et 2 essayées et validées par David sur dev le 12/11.
 
@@ -144,6 +144,11 @@ Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan d
 - [visuels.ts](src/lib/reseaux/visuels.ts) : réglages enregistrés (photo, cadrage, texte, position, tonalité, voile, taille du logo) relus et bornés côté serveur comme côté navigateur. **Cadrage en fractions de la photo** : il reste juste si la couverture se recharge un autre jour à une autre taille.
 - Studio : « **Enregistrer pour Instagram** » (post puis story) ; à la réouverture, il repart des réglages enregistrés ; statut en pied de fenêtre (« Pas encore enregistré », « Enregistré le… », « Modifications non enregistrées »). Si la couverture a changé depuis, ou si le visuel utilisait une photo importée, une note le dit (une photo importée n'est pas conservée : la réimporter, même nom de fichier, retrouve son cadrage). Boutons de téléchargement raccourcis en « Télécharger le post / la story » (JPEG et dimensions en infobulle) pour tenir sur une ligne.
 - [deleteArticle](src/lib/actions/admin.ts) : efface d'abord le dossier de l'article dans le bucket (les lignes partent en cascade, pas les fichiers).
+
+### Étape 4 — branchement de l'envoi (`5192d7d`, ordre de David)
+- [envoi.ts](src/lib/reseaux/envoi.ts) `lienEtImage` : pour **Instagram**, `image du post ?? visuel 4:5 de l'article ?? couverture`, lu au moment de l'envoi ; Facebook et LinkedIn gardent la couverture (posts avec lien). `imageDisponible` ([posts-reseaux.ts](src/lib/actions/posts-reseaux.ts)) suit le même ordre. **Make inchangé** (même champ `image_url`).
+- [SocialPanel](src/components/admin/SocialPanel.tsx) : la carte Instagram d'un article montre la vignette du visuel (« Instagram recevra ce visuel 4:5 ») ou dit que la couverture part telle quelle, avec « Créer / Modifier le visuel » qui ouvre le studio. La vignette suit aussi un enregistrement fait depuis le studio du formulaire (événement de fenêtre `visuel-instagram-enregistre`). Un article sans couverture mais avec un visuel n'est plus bloqué pour Instagram.
+- Page d'édition d'un article : vignette lue côté serveur ; carte du formulaire passée au composant `Card`.
 
 ### Étape 1 — gabarit et studio sans enregistrement (`4ec6abb`)
 - [gabarit.ts](src/lib/reseaux/gabarit.ts) : port en TypeScript de `dessiner()` de la maquette et de ses aides, sans changer les nombres (formats, zones sûres, six tonalités, briques, voile, logo « petite taille » jusqu'à 250 px). Code pur, partagé par l'aperçu, les vignettes et le JPEG.
@@ -163,6 +168,7 @@ Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan d
 - **Dans le site** (build local, connexion admin, rien d'enregistré) : studio ouvert sur l'article IA, police chargée, JPEG du post à **10 pixels près sur 1,46 million** de celui de la maquette (bord de quelques lettres : fichier de police servi par Next au lieu de Google Fonts) ; molette, glisser, noir et blanc, texte en haut, texte trop long signalé, « Fermer » sans envoyer le formulaire, téléphone sans défilement horizontal. Étape 2 : Unsplash et Pexels chargées en 3 840 px, photo nette en post et en story, 4 JPEG aux bonnes dimensions (205 à 288 Ko), aucune erreur.
 - `tsc` (sur `src`), lint des fichiers touchés, `npm run build`.
 - **Étape 3** (build local, base de production, article jetable en brouillon créé puis supprimé par l'essai) : table, droits et bucket conformes ; « Enregistrer » → 2 lignes, 2 fichiers, adresses publiques en `image/jpeg` aux bonnes dimensions (177 et 187 Ko), **post enregistré identique au pixel** au post téléchargé ; page rechargée et studio rouvert → texte, tonalité, voile, logo et zoom retrouvés pour chaque format, post redessiné identique au pixel à l'enregistré ; modifier → « Modifications non enregistrées », revenir au réglage → « Enregistré » ; réenregistrer → 2 fichiers neufs, anciens effacés, mêmes lignes (`created_at` gardé) ; suppression de l'article par Admin → Blog → dossier du bucket vide, lignes parties. Téléphone sans défilement horizontal, aucune erreur. Une adresse effacée reste servie un moment par le cache du CDN de Supabase (400 sans le cache). Bucket et table vides après l'essai.
+- **Étape 4** (build local, `MAKE_WEBHOOK_URL` pointé sur un faux Make local : rien n'est parti ; article jetable et 3 brouillons créés puis supprimés) : carte Instagram sans visuel → message et « Créer le visuel » ; studio ouvert depuis le panneau, enregistré → vignette affichée sans recharger ; réenregistré depuis le studio du formulaire → vignette du panneau mise à jour ; page rechargée → vignette lue côté serveur ; « Envoyer maintenant » Instagram → **`image_url` = adresse du visuel 4:5** ; Facebook → `image_url` = couverture ; posts « envoye », aucune erreur. **Reste l'essai réel par David** depuis dev (« Envoyer maintenant », pas « Programmer »).
 - **Non essayé** : Firefox (non installé sur le poste), glisser au doigt sur un vrai téléphone.
 - Au passage : `.next/dev/types/routes.d.ts`, laissé abîmé par un `next dev` du 21/10, fait échouer `npx tsc --noEmit` ; sans effet sur le build, régénéré au prochain `next dev`.
 
