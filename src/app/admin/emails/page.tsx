@@ -6,6 +6,7 @@ import type { Newsletter } from '@/app/admin/newsletters/page'
 import { getEmailsCampagnes } from '@/lib/actions/emails-campagnes'
 import { roleAdmin } from '@/lib/auth/admin-guard'
 import type { SyndicatLancement } from '@/components/admin/LancementSyndicatsManager'
+import { adressesDeComptesVerifies } from '@/lib/evaluations/en-attente-psc'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,18 +43,21 @@ async function getOptedInEmails(prefKey: 'etudes_cliniques' | 'questionnaires_th
 }
 
 // Évaluations déposées sans compte, toujours en attente de validation PSC et pas encore
-// relancées 4 fois : celles que la relance PSC du lundi peut encore viser.
+// relancées 4 fois : celles que la relance PSC du lundi peut encore viser. Comme la relance,
+// on écarte celles dont l'adresse est celle d'un compte déjà vérifié (RPPS).
 async function getEvaluationsPscRelancables(): Promise<number> {
   try {
     const supabase = createServiceRoleClient()
-    const { count } = await supabase
+    const { data, error } = await supabase
       .from('evaluations')
-      .select('id', { count: 'exact', head: true })
+      .select('email_temp')
       .eq('statut', 'en_attente_psc')
       .not('email_temp', 'is', null)
       .not('token_verification', 'is', null)
       .lt('relance_psc_count', 4)
-    return count ?? 0
+    if (error || !data || data.length === 0) return 0
+    const comptesVerifies = await adressesDeComptesVerifies(supabase)
+    return data.filter((ev) => !comptesVerifies.has((ev.email_temp ?? '').trim().toLowerCase())).length
   } catch {
     return 0
   }

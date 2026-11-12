@@ -6,9 +6,12 @@ import { generateFusionToken } from '@/lib/auth/fusionToken'
 import { retryTransientAuth } from '@/lib/supabase/retry'
 import { resolveSpecialite } from '@/lib/constants/profil'
 import { recalcResultatsPourSolution, ensureSolutionUtilisee } from '@/lib/actions/evaluation'
-import { datesUtilisationDeclarees } from '@/lib/duree-utilisation'
 import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { enregistrerIdentitePsc } from '@/lib/annuaire/identite-psc'
+import {
+  trouverEvaluationsEnAttente, rattacherEvaluationsEnAttente, estRattachee, assurerSuiviFinalise,
+  type EvaluationEnAttente,
+} from '@/lib/evaluations/en-attente-psc'
 
 function extractSpecialiteCode(userInfo: Record<string, unknown>): string | null {
   const ref = userInfo.SubjectRefPro as { exercices?: Array<{ codeSavoirFaire?: string; codeTypeSavoirFaire?: string }> } | undefined
@@ -426,96 +429,49 @@ export async function GET(request: Request) {
     // 6. La session est établie côté serveur à l'étape 8 (establishPscSession) :
     //    verifyOtp via le client SSR pose les cookies sur le NextResponse.redirect.
 
-    // 7. Lier les évaluations anonymes en attente
-    let evalsALier: Array<{ id: string; solution_id: string | null; scores?: unknown }> = []
-
-    // Par token de vérification (chemin direct depuis le lien email)
-    if (verificationToken) {
-      const { data } = await supabaseAdmin
-        .from('evaluations')
-        .select('id, solution_id, email_temp, scores')
-        .eq('token_verification', verificationToken)
-        .eq('statut', 'en_attente_psc')
-      if (data && data.length > 0) evalsALier = data
-    }
-
-    // Par email PSC (filet si le token n'est pas dans le state)
-    if (evalsALier.length === 0 && email) {
-      const { data } = await supabaseAdmin
-        .from('evaluations')
-        .select('id, solution_id, email_temp, scores')
-        .eq('email_temp', email.toLowerCase())
-        .eq('statut', 'en_attente_psc')
-      if (data && data.length > 0) evalsALier = data
-    }
-
-    // Par email ou contact_email enregistrés dans users
-    // (strategies 3+4 fusionnées : nécessaire car les comptes PSC ont un email synthétique
-    // @psc.sante.fr qui ne correspondra jamais à email_temp — contact_email contient le vrai email)
-    if (evalsALier.length === 0) {
-      const { data: userProfile } = await supabaseAdmin
-        .from('users').select('email, contact_email').eq('id', userId).single()
-      for (const lookupEmail of [userProfile?.email, userProfile?.contact_email]) {
-        if (!lookupEmail || evalsALier.length > 0) continue
-        const { data } = await supabaseAdmin
-          .from('evaluations')
-          .select('id, solution_id, email_temp, scores')
-          .eq('email_temp', lookupEmail.toLowerCase())
-          .eq('statut', 'en_attente_psc')
-        if (data && data.length > 0) evalsALier = data
+    // 7. Lier les évaluations anonymes en attente, toutes pistes réunies : jeton du lien,
+    //    email PSC, email et contact_email du compte (les comptes PSC ont souvent un email
+    //    synthétique @psc.sante.fr, le vrai est dans contact_email).
+    //    Avant le 2026-11-12 : première piste fructueuse seulement (les autres évaluations
+    //    à la même adresse restaient en attente), et échec silencieux quand le compte avait
+    //    déjà un avis sur le logiciel, tout en annonçant « évaluation publiée ».
+    const { data: userProfile } = userId
+      ? await supabaseAdmin.from('users').select('email, contact_email').eq('id', userId).single()
+      : { data: null }
+    let evalsALier: EvaluationEnAttente[] = []
+    if (userId) {
+      try {
+        evalsALier = await trouverEvaluationsEnAttente(supabaseAdmin, {
+          jeton: verificationToken,
+          adresses: [email, userProfile?.email, userProfile?.contact_email],
+        })
+      } catch (e) {
+        // Jamais bloquant pour la connexion : le rattachement sera retenté au chargement du profil.
+        console.error('[PSC] recherche des évaluations en attente :', e)
       }
     }
 
     // Sauvegarder l'email_temp comme contact_email avant de l'effacer
-    const emailTempTrouve = (evalsALier as Array<{ email_temp?: string | null }>)[0]?.email_temp
-    if (emailTempTrouve) {
-      const { data: existingProfile } = await supabaseAdmin
-        .from('users').select('contact_email').eq('id', userId).single()
-      if (!existingProfile?.contact_email) {
-        await supabaseAdmin.from('users')
-          .update({ contact_email: emailTempTrouve })
-          .eq('id', userId)
-      }
+    const emailTempTrouve = evalsALier.find((ev) => ev.email_temp)?.email_temp
+    if (userId && emailTempTrouve && !userProfile?.contact_email) {
+      await supabaseAdmin.from('users')
+        .update({ contact_email: emailTempTrouve })
+        .eq('id', userId)
     }
 
-    // Publier toutes les évaluations trouvées + créer solutions_utilisees
-    const evaluationLiee = evalsALier.length > 0
-    for (const ev of evalsALier) {
-      await supabaseAdmin
-        .from('evaluations')
-        .update({ statut: 'publiee', user_id: userId, email_temp: null, token_verification: null })
-        .eq('id', ev.id)
+    // Publier les évaluations trouvées (l'identité vient d'être vérifiée par PSC)
+    const rattachements = userId && evalsALier.length > 0
+      ? await rattacherEvaluationsEnAttente(supabaseAdmin, userId, evalsALier, { publier: true })
+      : []
+    const evalsRattachees = rattachements.filter(estRattachee)
+    // « Évaluation publiée » n'est annoncé que si une évaluation l'a réellement été.
+    const evaluationLiee = evalsRattachees.length > 0
 
-      // Créer ou mettre à jour solutions_utilisees (nécessaire pour l'affichage dans mon compte)
-      if (ev.solution_id) {
-        const { data: existingSU } = await supabaseAdmin
-          .from('solutions_utilisees')
-          .select('id, statut_evaluation')
-          .eq('solution_id', ev.solution_id)
-          .eq('user_id', userId)
-          .limit(1)
-
-        if (!existingSU || existingSU.length === 0) {
-          // Reprendre les dates déclarées dans le questionnaire — les poser à « aujourd'hui »
-          // faisait afficher l'âge de l'avis à la place de la durée d'usage (fix 2026-09-02).
-          const { dateDebut, dateFin } = datesUtilisationDeclarees(ev.scores)
-          const { error: suError } = await supabaseAdmin.from('solutions_utilisees').insert({
-            user_id: userId,
-            solution_id: ev.solution_id,
-            statut_evaluation: 'finalisee',
-            date_debut: dateDebut || new Date().toISOString().split('T')[0],
-            date_fin: dateFin,
-          })
-          if (suError) console.error('[PSC] solutions_utilisees insert error:', suError)
-        } else if ((existingSU[0] as { statut_evaluation?: string }).statut_evaluation === 'ancienne') {
-          // Réactiver si l'entrée avait été marquée ancienne
-          await supabaseAdmin
-            .from('solutions_utilisees')
-            .update({ statut_evaluation: 'finalisee' })
-            .eq('id', (existingSU[0] as { id: string }).id)
-        }
-
-        await recalcResultatsPourSolution(ev.solution_id)
+    // Créer ou mettre à jour solutions_utilisees (nécessaire pour l'affichage dans mon compte)
+    for (const ev of evalsRattachees) {
+      if (ev.solutionId && userId) {
+        await assurerSuiviFinalise(supabaseAdmin, userId, ev.solutionId, ev.scores)
+        await recalcResultatsPourSolution(ev.solutionId)
       }
     }
 

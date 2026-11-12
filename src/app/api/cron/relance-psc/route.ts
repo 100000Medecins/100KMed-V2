@@ -5,6 +5,7 @@ import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 import { estEmailFictif } from '@/lib/email/destinataire'
 import { getSiteConfig } from '@/lib/actions/siteConfig'
+import { adressesDeComptesVerifies } from '@/lib/evaluations/en-attente-psc'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,14 +74,29 @@ export async function GET(req: NextRequest) {
 
   const toProcess = [...(premieres ?? []), ...(suivantes ?? [])]
 
+  // Pas de « validez avec Pro Santé Connect » à l'adresse d'un compte déjà vérifié (RPPS) :
+  // le message est faux pour lui, et sa prochaine connexion rattache l'évaluation
+  // (constat du 2026-11-12 : 7 médecins vérifiés relancés). Sans cette liste, on n'envoie rien.
+  let comptesVerifies: Set<string>
+  try {
+    comptesVerifies = toProcess.length > 0 ? await adressesDeComptesVerifies(supabase) : new Set()
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: String(e) }, { status: 500 })
+  }
+
   sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
 
   let sentCount = 0
+  let comptesVerifiesIgnores = 0
   const errors: string[] = []
 
   for (const ev of toProcess) {
     const solution = ev.solution
     if (!ev.email_temp || estEmailFictif(ev.email_temp) || !ev.token_verification || !solution?.nom) continue
+    if (comptesVerifies.has(ev.email_temp.trim().toLowerCase())) {
+      comptesVerifiesIgnores++
+      continue
+    }
 
     const relanceNum = (ev.relance_psc_count ?? 0) + 1
     const pscLink = `${siteUrl}/api/auth/psc-initier?token=${ev.token_verification}`
@@ -121,6 +137,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     sent: sentCount,
+    comptesVerifiesIgnores,
     errors: errors.length > 0 ? errors : undefined,
   })
 }
