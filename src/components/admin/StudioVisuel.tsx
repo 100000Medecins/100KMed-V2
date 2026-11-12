@@ -5,8 +5,9 @@
  * avec l'habillage de la charte (texte en briques, logo, tonalité), puis télécharger les JPEG.
  *
  * Tout le dessin est dans `src/lib/reseaux/gabarit.ts` : l'aperçu, les six vignettes et le JPEG
- * final sortent de la même fonction. Rien n'est enregistré pour l'instant (étape 1 du chantier,
- * cf `docs/studio-instagram` du dépôt de la messagerie).
+ * final sortent de la même fonction. La couverture est chargée dans sa grande version (3 840 px)
+ * quand la banque d'images la donne. Rien n'est enregistré pour l'instant (étapes 1 et 2 du
+ * chantier, cf `docs/studio-instagram` du dépôt de la messagerie).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -24,6 +25,7 @@ import {
   LOGO_PAS,
   TONALITES,
   ZOOM_MAX,
+  adresseGrandFormat,
   cadrageInitial,
   chargerImage,
   chargerLogos,
@@ -110,8 +112,11 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
 
   useEffect(() => {
     let actif = true
-    // crossOrigin : Unsplash et Pexels répondent avec CORS ouvert, le canvas reste exportable.
-    chargerImage(photoUrl, true)
+    // Grande version (3 840 px) si la banque d'images la donne, sinon l'adresse enregistrée.
+    // crossOrigin : les hébergeurs répondent avec CORS ouvert, le canvas reste exportable.
+    const grande = adresseGrandFormat(photoUrl)
+    chargerImage(grande, true)
+      .catch((e) => (grande !== photoUrl ? chargerImage(photoUrl, true) : Promise.reject(e)))
       .then((img) => actif && setPhotos((p) => ({ ...p, couverture: photoDe(img, photoUrl) })))
       .catch(() => actif && setErreurPhoto("La couverture ne se charge pas. Importez la photo depuis l'ordinateur."))
     return () => {

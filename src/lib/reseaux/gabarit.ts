@@ -433,10 +433,39 @@ export function etatPhoto(g: Geometrie): { niveau: NiveauEtat; message: string }
     return { niveau: 'ok', message: `Photo nette : ${Math.round(g.vw).toLocaleString('fr-FR')} px de la photo pour 1 080 px.` }
   }
   if (g.s <= 1.3) return { niveau: 'ok', message: `Photo agrandie ×${nombre(g.s)} : encore nette.` }
-  return { niveau: 'alerte', message: `Photo agrandie ×${nombre(g.s)} : elle sera floue.` }
+  return {
+    niveau: 'alerte',
+    message: `Photo agrandie ×${nombre(g.s)} : elle sera floue. Dézoomez, ou importez une photo plus grande.`,
+  }
 }
 
 // ---- Chargement ----
+
+/**
+ * Largeur demandée aux banques d'images. Une couverture est souvent en paysage 16:9 : il faut
+ * 3 413 px de large pour qu'elle couvre les 1 920 px de haut de la story sans agrandissement
+ * (en 2 400 px, la photo est agrandie ×1,4 en story). Poids constaté : 0,6 à 2,4 Mo.
+ */
+export const LARGEUR_GRANDE_PHOTO = 3840
+
+/**
+ * Grande version d'une couverture Unsplash ou Pexels (les adresses enregistrées sont en 1 080 et
+ * 940 px de large) ; toute autre adresse est rendue telle quelle (couverture déposée
+ * sur le site : 1 600 px au plus, en WebP). Les trois hébergeurs répondent avec CORS ouvert :
+ * le canvas reste exportable sans passer par le serveur.
+ */
+export function adresseGrandFormat(adresse: string): string {
+  let u: URL
+  try {
+    u = new URL(adresse)
+  } catch {
+    return adresse
+  }
+  if (u.hostname !== 'images.unsplash.com' && u.hostname !== 'images.pexels.com') return adresse
+  u.searchParams.delete('h')
+  u.searchParams.set('w', String(LARGEUR_GRANDE_PHOTO))
+  return u.toString()
+}
 
 export function chargerImage(src: string, crossOrigin = false): Promise<HTMLImageElement> {
   return new Promise((ok, ko) => {
