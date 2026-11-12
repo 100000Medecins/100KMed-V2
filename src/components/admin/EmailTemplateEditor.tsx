@@ -2,8 +2,21 @@
 
 import { useState } from 'react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 import { saveEmailTemplate } from '@/lib/actions/emailTemplates'
 import { Eye, Check, AlertCircle, Code, Send } from 'lucide-react'
+
+/**
+ * Vrai si le HTML porte une mise en page que l'éditeur visuel (TipTap) ne sait pas garder :
+ * styles en ligne, tableaux, document complet, fragment `<tr>` destiné au master_layout.
+ * TipTap réécrit tout ce HTML à la première frappe (tableaux à lui, styles retirés) : c'est
+ * ainsi que le mail de lancement a été cassé le 23/05/2026.
+ */
+function estMisEnPage(html: string): boolean {
+  const debut = html.trim().toLowerCase()
+  return debut.startsWith('<!doctype') || debut.startsWith('<tr') || /<table\b|\sstyle\s*=/i.test(html)
+}
 
 const DEFAULT_TEST_EMAIL = 'david.azerad@100000medecins.org'
 
@@ -34,15 +47,30 @@ interface Props {
   initialHtml: string
   updatedAt: string | null
   masterLayoutHtml?: string
+  /** Étiquette du modèle (`email_templates.label`), affichée par le master_layout via `{{label}}`. */
+  label?: string | null
 }
 
-export default function EmailTemplateEditor({ templateId, initialSujet, initialHtml, updatedAt, masterLayoutHtml }: Props) {
+export default function EmailTemplateEditor({ templateId, initialSujet, initialHtml, updatedAt, masterLayoutHtml, label }: Props) {
   const [sujet, setSujet] = useState(initialSujet)
   const [contenuHtml, setContenuHtml] = useState(initialHtml)
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
-  const [rawMode, setRawMode] = useState(false)
+  // Un modèle mis en page s'ouvre en HTML brut : l'éditeur visuel le casserait.
+  const [rawMode, setRawMode] = useState(() => estMisEnPage(initialHtml))
+  const misEnPage = estMisEnPage(contenuHtml)
+
+  const basculerMode = () => {
+    if (rawMode && misEnPage) {
+      const ok = window.confirm(
+        "L'éditeur visuel réécrit le HTML de ce mail : à la première modification, il retire les styles et la mise en page " +
+        "(c'est ce qui avait cassé le mail de lancement).\n\nOuvrir quand même l'éditeur visuel ? Rien n'est enregistré tant que vous ne cliquez pas sur « Enregistrer »."
+      )
+      if (!ok) return
+    }
+    setRawMode(m => !m)
+  }
   const [testEmail, setTestEmail] = useState(DEFAULT_TEST_EMAIL)
   const [testSending, setTestSending] = useState(false)
   const [testResult, setTestResult] = useState<{ ok?: boolean; sentTo?: string; error?: string } | null>(null)
@@ -71,7 +99,9 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
       rendered = masterLayoutHtml.replace(/\{\{contenu\}\}/g, contenuHtml)
     }
 
+    // Comme buildEmail() : l'étiquette du modèle avant les autres variables.
     rendered = rendered
+      .replace(/\{\{label\}\}/g, label ?? '')
       .replace(/https?:\/\/(?:www\.)?100000medecins\.org/g, origin)
       .replace(/\{\{(\w+)\}\}/g, (_, key) => SAMPLE_VARS[key] ?? `{{${key}}}`)
 
@@ -103,11 +133,11 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
         <label className="block text-xs font-medium text-navy mb-1.5">
           Sujet de l&apos;email
         </label>
-        <input
+        <Input
+          size="sm"
           type="text"
           value={sujet}
           onChange={(e) => setSujet(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue"
         />
       </div>
 
@@ -119,7 +149,7 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
           </label>
           <button
             type="button"
-            onClick={() => setRawMode(m => !m)}
+            onClick={basculerMode}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors ${
               rawMode
                 ? 'bg-navy text-white border-navy'
@@ -149,6 +179,14 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
             onChange={setContenuHtml}
             minHeight={300}
           />
+        )}
+
+        {misEnPage && templateId !== 'master_layout' && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+            {rawMode
+              ? "Ce mail est mis en page en HTML : modifiez-le ici, en HTML brut. L'éditeur visuel en retirerait la mise en page."
+              : "Attention : toute modification dans l'éditeur visuel retire la mise en page de ce mail. Repassez en HTML brut, ou rechargez la page sans enregistrer."}
+          </p>
         )}
 
         {templateId === 'master_layout' && (
@@ -188,13 +226,9 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
               Erreur
             </span>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-navy text-white text-sm font-medium rounded-xl hover:bg-navy/90 transition-colors disabled:opacity-50"
-          >
+          <Button size="sm" onClick={handleSave} loading={saving}>
             {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -202,21 +236,23 @@ export default function EmailTemplateEditor({ templateId, initialSujet, initialH
       <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
         <p className="text-xs font-medium text-gray-500">Envoyer un test</p>
         <div className="flex items-center gap-2">
-          <input
+          <Input
+            size="sm"
             type="email"
             value={testEmail}
             onChange={(e) => setTestEmail(e.target.value)}
             placeholder={DEFAULT_TEST_EMAIL}
-            className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+            className="flex-1"
           />
-          <button
+          <Button
+            size="sm"
             onClick={handleTestSend}
-            disabled={testSending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy/80 transition-colors disabled:opacity-50 shrink-0"
+            loading={testSending}
+            leftIcon={<Send className="w-3.5 h-3.5" />}
+            className="shrink-0"
           >
-            <Send className="w-3.5 h-3.5" />
             {testSending ? 'Envoi…' : 'Tester'}
-          </button>
+          </Button>
         </div>
         {testResult && (
           <p className={`text-xs rounded-lg px-3 py-2 ${testResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
