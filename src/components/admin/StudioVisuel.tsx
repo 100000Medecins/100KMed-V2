@@ -6,13 +6,16 @@
  *
  * Tout le dessin est dans `src/lib/reseaux/gabarit.ts` : l'aperçu, les six vignettes et le JPEG
  * final sortent de la même fonction. La couverture est chargée dans sa grande version (3 840 px)
- * quand la banque d'images la donne. Rien n'est enregistré pour l'instant (étapes 1 et 2 du
- * chantier, cf `docs/studio-instagram` du dépôt de la messagerie).
+ * quand la banque d'images la donne.
+ *
+ * « Enregistrer pour Instagram » dépose les deux JPEG (post et story) dans le bucket public
+ * `visuels-reseaux` avec leurs réglages ; rouvrir le studio repart de ces réglages
+ * (cf `docs/studio-instagram` du dépôt de la messagerie).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Space_Grotesk } from 'next/font/google'
-import { Download, ImagePlus } from 'lucide-react'
+import { Download, ImagePlus, Save } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -47,6 +50,16 @@ import {
   type Reglages,
   type Ressources,
 } from '@/lib/reseaux/gabarit'
+import {
+  FORMATS_VISUEL,
+  dernierVisuel,
+  memePhoto,
+  nettoyerReglages,
+  type PhotoVisuel,
+  type ReglagesVisuel,
+  type VisuelsArticle,
+} from '@/lib/reseaux/visuels'
+import { confirmerDepotVisuel, lireVisuelsArticle, preparerDepotVisuel } from '@/lib/actions/visuels-reseaux'
 
 // Police secondaire de la charte (« supports déclinés », licence OFL). Space Mono est réservée au logo.
 const spaceGrotesk = Space_Grotesk({ weight: '700', subsets: ['latin'] })
@@ -54,20 +67,27 @@ const spaceGrotesk = Space_Grotesk({ weight: '700', subsets: ['latin'] })
 type SourcePhoto = 'couverture' | 'import'
 interface PhotoChargee extends Photo {
   apercu: string
+  /** Ce qui identifie la photo dans les réglages enregistrés. */
+  origine: PhotoVisuel
 }
 
 const dpr = () => Math.min(window.devicePixelRatio || 1, 2.5)
 const borne = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v))
 const DAMIER = { background: 'repeating-conic-gradient(#E5E7EB 0 25%, transparent 0 50%) 0 0 / 16px 16px' }
 const BADGE: Record<NiveauEtat, 'success' | 'warning' | 'neutral'> = { ok: 'success', alerte: 'warning', neutre: 'neutral' }
+const SUR_LE: Record<FormatId, string> = { post: 'le post', story: 'la story' }
 
-function photoDe(img: HTMLImageElement, apercu: string): PhotoChargee {
-  return { image: img, largeur: img.naturalWidth, hauteur: img.naturalHeight, apercu }
+function photoDe(img: HTMLImageElement, apercu: string, origine: PhotoVisuel): PhotoChargee {
+  return { image: img, largeur: img.naturalWidth, hauteur: img.naturalHeight, apercu, origine }
 }
+
+const date = (iso: string) => new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 
 export interface StudioVisuelProps {
   open: boolean
   onClose: () => void
+  /** Article déjà enregistré : les visuels lui sont rattachés. */
+  articleId: string
   /** Couverture de l'article. */
   photoUrl: string
   /** Texte de départ (titre de l'article). */
@@ -76,7 +96,7 @@ export interface StudioVisuelProps {
   nomFichier: string
 }
 
-export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichier }: StudioVisuelProps) {
+export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre, nomFichier }: StudioVisuelProps) {
   const police = spaceGrotesk.style.fontFamily
 
   // ---- Ressources ----
@@ -100,6 +120,38 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
   const [telechargement, setTelechargement] = useState<FormatId | null>(null)
   const [erreurJpeg, setErreurJpeg] = useState<string | null>(null)
 
+  // ---- Enregistrement ----
+  /** undefined tant que la lecture n'a pas répondu. */
+  const [enregistres, setEnregistres] = useState<VisuelsArticle | undefined>(undefined)
+  const [enregistrement, setEnregistrement] = useState(false)
+  const [erreurEnregistrement, setErreurEnregistrement] = useState<string | null>(null)
+
+  useEffect(() => {
+    let actif = true
+    lireVisuelsArticle(articleId)
+      .then((v) => {
+        if (!actif) return
+        setEnregistres(v)
+        // Rouvrir là où on l'avait laissé ; le cadrage est repris par cadrageDeDepart.
+        const d = dernierVisuel(v)
+        if (d) {
+          setTexte(d.reglages.texte)
+          setPosition(d.reglages.position)
+          setTonaliteId(d.reglages.tonalite)
+          setVoile(d.reglages.voile)
+        }
+        setLogoL({ post: v.post?.reglages.logoL ?? FORMATS.post.logoL, story: v.story?.reglages.logoL ?? FORMATS.story.logoL })
+      })
+      .catch(() => {
+        if (!actif) return
+        setEnregistres({})
+        setErreurEnregistrement('Le visuel enregistré ne se lit pas : le studio repart de zéro.')
+      })
+    return () => {
+      actif = false
+    }
+  }, [articleId])
+
   useEffect(() => {
     let actif = true
     chargerLogos()
@@ -117,7 +169,7 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
     const grande = adresseGrandFormat(photoUrl)
     chargerImage(grande, true)
       .catch((e) => (grande !== photoUrl ? chargerImage(photoUrl, true) : Promise.reject(e)))
-      .then((img) => actif && setPhotos((p) => ({ ...p, couverture: photoDe(img, photoUrl) })))
+      .then((img) => actif && setPhotos((p) => ({ ...p, couverture: photoDe(img, photoUrl, { source: 'couverture', url: photoUrl }) })))
       .catch(() => actif && setErreurPhoto("La couverture ne se charge pas. Importez la photo depuis l'ordinateur."))
     return () => {
       actif = false
@@ -141,31 +193,66 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
     () => (photo && logos ? { photo, logos, police } : null),
     [photo, logos, police],
   )
-  const pret = !!ressources && versionPolice > 0
+  const pret = !!ressources && versionPolice > 0 && enregistres !== undefined
   const F = FORMATS[format]
   const ton = tonaliteParId(tonaliteId)
+
+  /** Cadrage de départ d'un format : celui enregistré si le visuel utilisait cette photo, sinon centré. */
+  const cadrageDeDepart = useCallback(
+    (fmt: FormatId, p: PhotoChargee): Cadrage => {
+      const r = enregistres?.[fmt]?.reglages
+      if (r && memePhoto(r.photo, p.origine)) return { z: r.cadrage.z, cx: r.cadrage.cx * p.largeur, cy: r.cadrage.cy * p.hauteur }
+      return cadrageInitial(p)
+    },
+    [enregistres],
+  )
 
   const reglagesDe = useCallback(
     (fmt: FormatId): Reglages | null => {
       if (!photo) return null
-      const cadrage = cadrages[`${source}:${fmt}`] ?? cadrageInitial(photo)
+      const cadrage = cadrages[`${source}:${fmt}`] ?? cadrageDeDepart(fmt, photo)
       return { texte, position, voile, logoL: logoL[fmt], cadrage }
     },
-    [photo, cadrages, source, texte, position, voile, logoL],
+    [photo, cadrages, cadrageDeDepart, source, texte, position, voile, logoL],
   )
   const reglages = useMemo(() => reglagesDe(format), [reglagesDe, format])
 
   /** Modifie le cadrage d'un format, toujours ramené dans les limites de la photo. */
   const changerCadrage = useCallback(
     (fmt: FormatId, f: (c: Cadrage) => Cadrage) => {
-      if (!photo) return
+      // Pas de recadrage avant la lecture du visuel enregistré : elle fixe le cadrage de départ.
+      if (!photo || enregistres === undefined) return
       const cle = `${source}:${fmt}`
       setCadrages((prev) => {
-        const actuel = geometrie(fmt, photo, prev[cle] ?? cadrageInitial(photo)).cadrage
+        const actuel = geometrie(fmt, photo, prev[cle] ?? cadrageDeDepart(fmt, photo)).cadrage
         return { ...prev, [cle]: geometrie(fmt, photo, f(actuel)).cadrage }
       })
     },
-    [photo, source],
+    [photo, source, enregistres, cadrageDeDepart],
+  )
+
+  /** Réglages d'un format tels qu'ils seraient enregistrés (cadrage en fractions de la photo). */
+  const reglagesAEnregistrer = useCallback(
+    (fmt: FormatId): ReglagesVisuel | null => {
+      const r = reglagesDe(fmt)
+      if (!photo || !r) return null
+      const cad = geometrie(fmt, photo, r.cadrage).cadrage
+      return nettoyerReglages({
+        photo: photo.origine,
+        cadrage: { z: cad.z, cx: cad.cx / photo.largeur, cy: cad.cy / photo.hauteur },
+        texte: r.texte,
+        position: r.position,
+        tonalite: tonaliteId,
+        voile: r.voile,
+        logoL: r.logoL,
+      })
+    },
+    [reglagesDe, photo, tonaliteId],
+  )
+  const dernier = dernierVisuel(enregistres)
+  const modifie = useMemo(
+    () => FORMATS_VISUEL.some((fmt) => JSON.stringify(reglagesAEnregistrer(fmt)) !== JSON.stringify(enregistres?.[fmt]?.reglages ?? null)),
+    [reglagesAEnregistrer, enregistres],
   )
 
   // ---- Aperçu principal ----
@@ -261,7 +348,7 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
       const img = await chargerImage(url)
       const ancienne = photos.import
       if (ancienne) URL.revokeObjectURL(ancienne.apercu)
-      setPhotos((p) => ({ ...p, import: photoDe(img, url) }))
+      setPhotos((p) => ({ ...p, import: photoDe(img, url, { source: 'import', nom: fichier.name }) }))
       setCadrages((prev) => {
         const suite = { ...prev }
         delete suite['import:post']
@@ -299,6 +386,38 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
     }
   }
 
+  // ---- Enregistrement : post puis story, chacun dessiné, déposé, vérifié par le serveur ----
+  async function enregistrer() {
+    if (!ressources) return
+    setEnregistrement(true)
+    setErreurEnregistrement(null)
+    let suite: VisuelsArticle = { ...enregistres }
+    for (const fmt of FORMATS_VISUEL) {
+      try {
+        const r = reglagesDe(fmt)
+        const aGarder = reglagesAEnregistrer(fmt)
+        if (!r || !aGarder) throw new Error("la photo n'est pas chargée.")
+        const jpeg = await rendreJpeg(fmt, ton, ressources, r)
+        const depot = await preparerDepotVisuel(articleId, fmt)
+        if ('error' in depot) throw new Error(depot.error)
+        const reponse = await fetch(depot.adresse, {
+          method: 'PUT',
+          headers: { 'content-type': 'image/jpeg', 'x-upsert': 'false' },
+          body: jpeg,
+        })
+        if (!reponse.ok) throw new Error(`le stockage a refusé le fichier (${reponse.status}).`)
+        const res = await confirmerDepotVisuel(articleId, fmt, depot.chemin, aGarder)
+        if ('error' in res) throw new Error(res.error)
+        suite = { ...suite, [fmt]: res.visuel }
+        setEnregistres(suite)
+      } catch (e) {
+        setErreurEnregistrement(`Échec sur ${SUR_LE[fmt]} : ${e instanceof Error ? e.message : 'connexion interrompue.'}`)
+        break
+      }
+    }
+    setEnregistrement(false)
+  }
+
   // ---- États affichés ----
   const bloc = useMemo(
     () => (versionPolice > 0 ? composer(format, { texte, position, logoL: logoL[format] }, police) : null),
@@ -307,6 +426,29 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
   const etatT = bloc ? etatTexte(bloc, format) : null
   const etatP = photo && reglages ? etatPhoto(geometrie(format, photo, reglages.cadrage)) : null
   const petitLogo = versionLogo(logoL[format]) === 'petit'
+
+  const photoEnregistree = dernier?.reglages.photo
+  const notePhoto = !photoEnregistree
+    ? null
+    : photoEnregistree.source === 'import'
+      ? photos.import && memePhoto(photoEnregistree, photos.import.origine)
+        ? null
+        : `Le visuel enregistré utilise une photo importée (« ${photoEnregistree.nom} ») : importez-la de nouveau pour le retoucher.`
+      : photoEnregistree.url !== photoUrl
+        ? 'La couverture a changé depuis l’enregistrement : le cadrage repart du centre.'
+        : null
+
+  const occupe = telechargement !== null || enregistrement
+  const note =
+    erreurEnregistrement ??
+    erreurJpeg ??
+    (!pret
+      ? 'Chargement…'
+      : !dernier
+        ? 'Pas encore enregistré pour cet article.'
+        : modifie
+          ? `Modifications non enregistrées (dernier enregistrement le ${date(dernier.enregistreLe)}).`
+          : `Enregistré le ${date(dernier.enregistreLe)}.`)
 
   const choixFormat = (fmt: FormatId, libelle: string, taille: string) => (
     <Button
@@ -428,6 +570,7 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
                 </label>
               </div>
               {erreurPhoto && <p className="text-xs text-amber-700">{erreurPhoto}</p>}
+              {notePhoto && <p className="text-xs text-gray-500">{notePhoto}</p>}
             </fieldset>
 
             <fieldset className="space-y-3">
@@ -539,8 +682,8 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
         </div>
       </Modal.Body>
       <Modal.Footer className="flex-wrap">
-        <p className="mr-auto text-xs text-gray-400">
-          {erreurJpeg ?? 'Rien n’est enregistré : fermer le studio efface les réglages.'}
+        <p role="status" className={`min-w-0 flex-1 basis-60 text-xs ${erreurEnregistrement || erreurJpeg ? 'text-amber-700' : 'text-gray-500'}`}>
+          {note}
         </p>
         <Button type="button" variant="ghost" size="md" onClick={onClose}>
           Fermer
@@ -551,21 +694,34 @@ export default function StudioVisuel({ open, onClose, photoUrl, titre, nomFichie
           size="md"
           leftIcon={<Download className="h-4 w-4" />}
           loading={telechargement === 'story'}
-          disabled={!pret || telechargement !== null}
+          disabled={!pret || occupe}
           onClick={() => telecharger('story')}
+          title="JPEG 1080 × 1920"
         >
-          Télécharger la story (JPEG)
+          Télécharger la story
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="md"
+          leftIcon={<Download className="h-4 w-4" />}
+          loading={telechargement === 'post'}
+          disabled={!pret || occupe}
+          onClick={() => telecharger('post')}
+          title="JPEG 1080 × 1350"
+        >
+          Télécharger le post
         </Button>
         <Button
           type="button"
           variant="primary"
           size="md"
-          leftIcon={<Download className="h-4 w-4" />}
-          loading={telechargement === 'post'}
-          disabled={!pret || telechargement !== null}
-          onClick={() => telecharger('post')}
+          leftIcon={<Save className="h-4 w-4" />}
+          loading={enregistrement}
+          disabled={!pret || occupe}
+          onClick={enregistrer}
         >
-          Télécharger le post (JPEG)
+          Enregistrer pour Instagram
         </Button>
       </Modal.Footer>
     </Modal>

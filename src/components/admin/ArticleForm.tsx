@@ -729,10 +729,11 @@ export default function ArticleForm({
       </div>
     </form>
     {/* Hors du formulaire : aucun de ses boutons ne doit l'envoyer. */}
-    {studioOuvert && imageUrl && (
+    {studioOuvert && article?.id && imageUrl && (
       <StudioVisuel
         open
         onClose={() => setStudioOuvert(false)}
+        articleId={article.id}
         photoUrl={imageUrl}
         titre={titre}
         nomFichier={slug || 'article'}

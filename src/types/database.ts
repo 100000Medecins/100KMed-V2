@@ -2822,6 +2822,57 @@ export type Database = {
           },
         ]
       }
+      visuels_reseaux: {
+        Row: {
+          article_id: string | null
+          chemin: string
+          created_at: string
+          format: string
+          id: string
+          reglages: Json
+          updated_at: string
+          url: string
+          video_id: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          chemin: string
+          created_at?: string
+          format: string
+          id?: string
+          reglages?: Json
+          updated_at?: string
+          url: string
+          video_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          chemin?: string
+          created_at?: string
+          format?: string
+          id?: string
+          reglages?: Json
+          updated_at?: string
+          url?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visuels_reseaux_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visuels_reseaux_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
