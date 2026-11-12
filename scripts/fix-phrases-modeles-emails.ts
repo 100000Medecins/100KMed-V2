@@ -9,6 +9,8 @@
  * - 2026-10-10 `relance_1an`, `relance_3mois`, `lancement` : « en 1 clic » devient « en 2 clics »
  *   (décision de David). Le lien du mail mène désormais à la page /confirmer-avis, où un bouton
  *   enregistre la confirmation : un clic dans le mail, un sur la page.
+ * - 2026-11-12 six modèles : « Bonjour Dr {{nom}}, » devient « Bonjour {{nom}}, ». Tous les envois
+ *   fournissent déjà `nom` = « Dr. NOM » (ou « Docteur ») : les mails disaient « Bonjour Dr Dr. NOM ».
  *
  * Périmètre : uniquement les phrases listées ci-dessous. Une correction est ignorée si la phrase
  * d'origine n'est pas trouvée une seule fois (déjà corrigée, ou modèle modifié depuis l'admin).
@@ -80,6 +82,12 @@ const CORRECTIONS: { id: string; champ: Champ; avant: string; apres: string }[] 
     avant: 'Un clic suffit pour le confirmer ou',
     apres: 'Deux clics suffisent pour le confirmer ou',
   },
+  ...['relance_1an', 'relance_3mois', 'relance_incomplet', 'etude_clinique', 'questionnaire_recherche', 'infos_mensuels'].map((id) => ({
+    id,
+    champ: 'contenu_html' as const,
+    avant: 'Bonjour Dr {{nom}},',
+    apres: 'Bonjour {{nom}},',
+  })),
 ]
 
 async function main() {

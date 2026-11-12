@@ -5,6 +5,52 @@
 
 ---
 
+## [2026-11-12] — Mail de lancement : cause de la casse, nouveau modèle façon lettre du mois, éditeur protégé, envoi en masse corrigé
+
+Signalé par David : mail de lancement cassé dans l'aperçu de l'admin et à la réception d'un test (contenu sur le fond sombre, texte noir, boutons devenus des liens, logo en double, serif).
+
+### Cause
+- Le modèle `lancement` avait été modifié le **23/05/2026** dans l'éditeur **visuel** de l'admin (TipTap) : à la première frappe, TipTap réécrit tout le HTML (tableaux à lui avec `<colgroup>`, styles en ligne retirés). Le contenu commençait alors par `<table>` au lieu de `<tr><td>` : injecté dans le tableau du `master_layout`, le navigateur et les messageries le sortent de la carte blanche. Le backup du 10/10 (`backups/modele-lancement-2026-10-10…`) le montrait déjà cassé.
+- L'éditeur ouvrait **tous** les modèles en mode visuel par défaut, y compris le `master_layout` (document complet) : une frappe et un enregistrement suffisaient à casser n'importe quel mail.
+- Au passage : « Bonjour Dr {{nom}} » alors que l'envoi fournit déjà « Dr. NOM » (→ « Dr Dr. DUPONT ») ; lien agendas vers `/solutions/agenda-medical` (le slug est `agendas-medicaux`) ; l'aperçu de l'admin ne remplaçait pas `{{label}}`.
+
+### Nouveau modèle (en base)
+- Source de vérité [scripts/save-lancement-template.ts](scripts/save-lancement-template.ts) (remplace `save-lancement-template.mjs`, version d'avril en document complet, supprimé) : fragment pour le `master_layout`, police posée sur chaque texte (le layout n'en fixe pas), dry-run par défaut, `--preview <fichier>` (rendu complet avec le vrai layout, données fictives), `--execute` avec backup. Articles et images des catégories relus en base ; arrêt si un article n'est plus publié.
+- Contenu, façon lettre du mois : accueil (« Le nouveau 100 000 Médecins est là ✨ », « Bonjour {{nom}}, ») ; encadré « Votre avis sur {{solution_nom}} est toujours en ligne » (« Confirmer mon avis en 2 clics », « Le mettre à jour ») ; **À la une** : portabilité des données (cinq éditeurs, sans les nommer) → `/portabilite` ; **Nos derniers articles** : Pro Santé Connect (08/10) et « 46 heures par semaine » (31/08), miniatures recadrées ; **Nouveau sur la plateforme** : 7 catégories (vignettes agendas, IA scribes, IA documentaires ; liens vers les 4 autres), Prévisionnel maison de santé ; **À vous de jouer** : évaluer d'autres outils (`/solution/noter`, vidéo « Votre avis en 5 minutes » du 04/11), études cliniques (texte général, aucune étude nommée) ; transfert à un confrère ; signature « L'équipe 100 000 Médecins ». Pas de questionnaire de thèse (aucun réel en ligne). Sujet et étiquette (« Nouveau site ») inchangés.
+- `--execute` le 12/11 : backup `backups/modele-lancement-2026-11-12T15-30-11-388Z.json`, relu identique, puis vérifié par requête indépendante (début `<tr><td`, plus de `colgroup`).
+- Rendu vérifié (aperçu complet, Chrome) : 760 px et 375 px, 7 images chargées. ~~Le débordement mobile (17 px) vient de l'en-tête du `master_layout`~~ **Erreur de diagnostic, corrigée dans la suite ci-dessous** : il venait des 3 vignettes de catégories du mail lui-même.
+
+### Éditeur de modèles ([EmailTemplateEditor](src/components/admin/EmailTemplateEditor.tsx))
+- Un modèle mis en page (styles en ligne, tableaux, fragment `<tr>`, document complet) s'ouvre en **HTML brut** ; bandeau d'explication ; passer à l'éditeur visuel demande confirmation (« L'éditeur visuel réécrit le HTML… »).
+- Aperçu : `{{label}}` remplacé par l'étiquette du modèle (prop `label`, passée par [AdminEmailsAccordion](src/components/admin/AdminEmailsAccordion.tsx)).
+- Migration au fil de l'eau : boutons Enregistrer / Tester → `Button`, champs sujet / adresse de test → `Input`. **Non migré** : la fenêtre d'aperçu (`fixed inset-0…` → `Modal`), `Modal.tsx` étant en cours de modification dans une autre session.
+
+### Envoi en masse ([send-lancement](src/app/api/admin/send-lancement/route.ts)) — corrigé avant tout envoi
+- Il envoyait à `users.email` : **84** des 750 destinataires ont l'adresse fictive `psc-…@psc.sante.fr` (rebonds, réputation du domaine) et 97 ont saisi une autre adresse. → `adresseEnvoi()` (adresse saisie d'abord, jamais l'adresse fictive), comme la newsletter.
+- Il ignorait les préférences : **12** médecins ont refusé les communications. → exclus (`marketing_emails = false`).
+- Évaluation citée : la plus récente du médecin (avant : la première rendue par la base). Lecture par pages de 1 000 (851 évaluations aujourd'hui). Envoi par lots de 10, `maxDuration = 300`. La réponse donne les ignorés (désabonnés, sans adresse).
+- Destinataires attendus aujourd'hui : **738**.
+
+### Vérif
+- `tsc` (src + script ; les erreurs de `.next/dev/types` viennent d'un serveur de développement en cours, hors sujet), lint des fichiers touchés, `npm run build`.
+- Navigateur (build local, port 3107, `SENDGRID_API_KEY` et `MAKE_WEBHOOK_URL` neutralisés, lecture seule), **17 / 17** : connexion admin ; « Mail de lancement » ouvert en HTML brut avec le nouveau modèle, bandeau, pas d'éditeur visuel monté ; aperçu : « Nouveau site » à la place de `{{label}}`, « Bonjour Dr. DUPONT, », un seul `<body>`, titre dans la carte blanche, police sans empattement ; bascule vers l'éditeur visuel → avertissement, annulé → toujours en HTML brut ; `master_layout` ouvert en HTML brut ; aucun enregistrement (dates des 3 modèles relues inchangées), aucune erreur JavaScript.
+- **Non vérifié** : la réception réelle (aucun mail envoyé par Claude) ; l'envoi en masse (il enverrait pour de vrai).
+
+### Reste
+- Code sur `dev`, **non commité, non déployé**. En production : l'ancien éditeur ouvre encore ce modèle en mode visuel (passer en « HTML brut » avant toute retouche) et l'ancien envoi en masse partirait vers les 84 adresses fictives et les 12 désabonnés : **ne pas lancer l'envoi avant le report sur `main`**. Envoyer depuis l'admin de production (les liens du mail prennent le domaine d'où part l'envoi).
+- `master_layout` : voir la suite.
+
+### Suite (même jour, demandes de David)
+- **« Dr Dr. » corrigé partout** : 6 corrections ajoutées à [fix-phrases-modeles-emails.ts](scripts/fix-phrases-modeles-emails.ts) (« Bonjour Dr {{nom}}, » → « Bonjour {{nom}}, ») après vérification que tous les envois de ces modèles fournissent `nom` = « Dr. NOM » ou « Docteur » (relance-evaluations, relance-incomplets, send-etude, send-questionnaire, campagnes, send-infos-mensuels, test-relance-email). Dry-run puis `--execute` : `relance_1an`, `relance_3mois`, `relance_incomplet`, `etude_clinique`, `questionnaire_recherche`, `infos_mensuels` écrits et relus, backups dans `backups/`. Requête indépendante : 0 « Dr {{nom}} » restant dans les modèles, aucun dans les newsletters.
+- **Questionnaire d'essai dépublié** : [scripts/depublier-questionnaire.ts](scripts/depublier-questionnaire.ts) (sur le modèle de `depublier-video.ts`), `439da311…` « corrélations… chips et violence » : « publie » → « refuse », comme le bouton « Refuser » de l'admin (déjà masqué du site depuis sa date de fin, le 26/04). Backup, relu. Plus aucun questionnaire publié.
+- **Mail de lancement : section « Ces derniers mois »**, sur le modèle du bloc « l'association, c'est aussi » du mail des syndicats, à la place de « À la une » : frise mai–juin (prises de position Ségur vague 2 et IA, lien blog), début juillet (WONCA Europe, 56 évaluations sur le stand, jeu concours), 20 juillet (appel portabilité avec six syndicats), août (cadre d'usage de l'IA à la demande de la DNS), 19 octobre (encadré cinq éditeurs, bouton `/portabilite`) ; puis « Et toute l'année » : représentation DNS / ANS / Assurance maladie, Collège des Médecins Geeks, formations et congrès (textes du mail des syndicats). Faits relevés dans le CHANGELOG (21/07, 01/08, 20-21/10), la page Portabilité et le blog.
+- **Débordement mobile** : c'étaient les 3 vignettes de catégories en colonnes fixes (« documentaires » ne tient pas à 375 px). Devenues des blocs de 150 px qui passent à la ligne (3 sur une ligne sur ordinateur, empilés sur téléphone ; Outlook Windows les empile). Mesuré : 375 px → 375, 320 px → 320, plus aucun débordement. L'en-tête du `master_layout` ne déborde qu'à 320 px avec une étiquette longue (« Confirmation d'inscription » → 365 px).
+- Modèle réécrit deux fois (`--execute`), backups `modele-lancement-2026-11-12T16-04-58…` et `…T16-06-33…`, relu identique ; requête indépendante : frise et vignettes présentes, pas de balisage TipTap.
+- **Constat pour l'en-tête** : aucun modèle, ni le `master_layout`, ne fixe de police (seul le nouveau mail de lancement le fait) : sans police par défaut du lecteur (Outlook pour Windows, aperçu de l'admin), tout s'affiche en Times. Le `master_layout` sert à 15 modèles (tous sauf `lancement_syndicat`, document complet ; la newsletter a son propre gabarit dans le code). Rien modifié, explication donnée à David.
+- Au passage : [send-infos-mensuels](src/app/api/admin/send-infos-mensuels/route.ts) envoie le modèle `infos_mensuels` (fragment `<tr><td>`) sans le `master_layout` : il partirait cassé. Aucun bouton n'appelle cette route aujourd'hui.
+
+---
+
 ## [2026-11-12] — Relance PSC : médecins déjà vérifiés relancés, rattachement à la validation PSC corrigé
 
 David, inscrit et vérifié par PSC, a reçu des relances « validez votre évaluation avec Pro Santé Connect ».
