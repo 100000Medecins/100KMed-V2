@@ -5,6 +5,38 @@
 
 ---
 
+## [2026-11-12] — Notes figées : un ancien avis re-noté remplace sa note de l'ancien site
+
+Question de David (« les nouvelles notes ne défigeaient pas la note historique ? ») ; décision : option 1, remplacer l'ancienne note par la nouvelle.
+
+### Constat (lecture seule)
+- Le calcul des 24 logiciels à note figée n'ajoutait que les avis **créés** après la mise en ligne (12/04). Un avis de l'ancien site re-noté garde sa date de création : sa nouvelle note ne comptait nulle part, l'ancienne restait dans la note figée. Aucune décision écrite ne prévoyait ce cas (seule la mémoire du projet disait « figées jusqu'à ce qu'un médecin refasse le parcours »).
+- 58 anciens avis portent une date de note postérieure au 12/04, mais **9 seulement ont changé de note** ; les 49 autres sont des confirmations « toujours d'actualité » (le lien ne change que la date ; 40 datent des 23-25/04, après la relance partie le 23/04).
+- La note figée **n'est pas la somme des anciens avis** (90 lignes sur 143 s'en écartent, ex. Premiocare 4,34 figé contre 4,88 pour ses 6 avis) : on ne la recalcule pas, on y **remplace la note du médecin qui re-note**, avec le même poids que les autres votants.
+- `firebase-final-backup/` contient l'état du 26/04 (format Supabase). Les notes Firebase des avis viennent des sauvegardes de la correction du 28/05 (`docs/backup-fix-firebase-20260528-*.json`, `nouveaux_scores` / `nouvelle_moyenne`).
+
+### Base
+- Table `evaluations_notes_figees` (SQL lancé par David, vérifié) : note de chaque ancien avis telle qu'elle compte dans la note figée ; serveur seul (`anon` / `authenticated` aucun droit, RLS sans règle), lecture pour `claude_readonly`. Types régénérés (+32 lignes).
+- [scripts/remplir-notes-figees.ts](scripts/remplir-notes-figees.ts) (dry-run puis `--execute`, refus si la table n'est pas vide, lignes écrites sauvegardées dans `backups/`) : **644 lignes** ; 635 = note actuelle (jamais re-notés ou confirmés : aucun effet), **9 = note Firebase** (Medicab, AxiSanté, DrSanté, Weda ×2, Odaiji ×2, Medistory, HelloDoc). Relu : les 635 identiques aux avis, les 9 différentes.
+
+### Code (`dev`, `40328ae` : code seul, à reporter sur `main`)
+- [notes-figees.ts](src/lib/evaluations/notes-figees.ts) : `ecartAvisRenotes`, critère par critère (sous-critères compris) et note globale : nouvelle note − ancienne si le critère a une note figée valable ; nouvelle note ajoutée si l'ancienne ne comptait pas ; critère laissé vide ou note inchangée → rien. `DATE_MISE_EN_LIGNE` y est désormais (une seule définition).
+- [recalcResultatsPourSolution](src/lib/actions/evaluation.ts) : en mode figé, lit les anciens avis publiés avec leur note figée et ajoute l'écart ; en cas d'erreur de lecture, n'écrit rien (calculer sans eux effacerait les re-notations). `as any` de la fonction retirés.
+- Désormais automatique : re-noter un ancien avis (connecté, ou rattachement PSC du jour) déplace la note ; une confirmation ne change rien.
+
+### Effet attendu (pas encore appliqué : il faut le code en production puis un recalcul)
+- 7 fiches, 156 lignes de résultats (38 globales ou critères, 118 sous-critères) ; les 17 autres logiciels ne bougent pas. Note globale : Odaiji 4,66 → 4,69, Medicab 3,90 → 3,88, AxiSanté 2,31 → 2,29, HelloDoc 2,42 → 2,43 ; DrSanté, Weda, Medistory inchangées. Plus gros écart : sous-critère « profil remplaçant » de HelloDoc 3,5 → 3,2 (note figée sur 1 seul avis).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build`.
+- Simulation sur les vraies données : sans le changement, elle retombe exactement sur les notes enregistrées ; avec, mêmes valeurs que la fonction du site.
+- **Essai de bout en bout** (build local, vraie route `/api/admin/recalc-solution`, logiciel fictif inactif à note figée, 3 comptes `example.com`), **13 / 13** : comportement d'avant sans note figée ; avis re-noté (globale 3,4 → 3,8, critère 3,4 → 3,9) ; critère non noté sur l'ancien site (nouvelle note ajoutée) ; critère laissé vide (ancienne note gardée) ; avis confirmé sans effet ; avis dépublié. Tout effacé ; 644 notes figées réelles intactes.
+
+### Reste
+- Report sur `main` (ordre de David), puis recalcul des 7 fiches et relecture des notes publiques. Tant que le code de production n'a pas changé, il ignore la table : rien ne bouge.
+
+---
+
 ## [2026-11-12] — Mail de lancement : cause de la casse, nouveau modèle façon lettre du mois, éditeur protégé, envoi en masse corrigé
 
 Signalé par David : mail de lancement cassé dans l'aperçu de l'admin et à la réception d'un test (contenu sur le fond sombre, texte noir, boutons devenus des liens, logo en double, serif).
