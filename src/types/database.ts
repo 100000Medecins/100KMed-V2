@@ -1153,6 +1153,38 @@ export type Database = {
           },
         ]
       }
+      evaluations_notes_figees: {
+        Row: {
+          created_at: string
+          evaluation_id: string
+          moyenne: number | null
+          scores: Json
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          evaluation_id: string
+          moyenne?: number | null
+          scores?: Json
+          source: string
+        }
+        Update: {
+          created_at?: string
+          evaluation_id?: string
+          moyenne?: number | null
+          scores?: Json
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_notes_figees_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: true
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fiches_annuaire: {
         Row: {
           code_postal: string | null

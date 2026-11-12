@@ -11,6 +11,7 @@ import { headers } from 'next/headers'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
 import { datesUtilisationDeclarees } from '@/lib/duree-utilisation'
+import { DATE_MISE_EN_LIGNE, ecartAvisRenotes, type AvisAncienSite } from '@/lib/evaluations/notes-figees'
 
 type ScoresRecord = Record<string, unknown>
 
@@ -83,24 +84,18 @@ export async function ensureSolutionUtilisee(userId: string, solutionId: string)
 }
 
 /**
- * Date de mise en ligne du nouveau site Supabase.
- * Les évaluations créées avant cette date sont considérées comme migrées Firebase
- * et sont déjà incluses dans l'ancrage (`resultats.firebase_moyenne_base5`).
- * Les évaluations créées après contribuent incrémentalement au calcul.
- */
-const DATE_MISE_EN_LIGNE = '2026-04-12T00:00:00Z'
-
-/**
  * Recalcule les résultats agrégés d'une solution depuis les évaluations publiées.
  * Seules les évaluations statut='publiee' sont prises en compte.
  *
  * Deux modes selon `solutions.is_firebase_legacy` :
  *
  * - Solutions Firebase legacy : mode incrémental. La référence figée est dans
- *   `resultats.firebase_moyenne_base5` (× `firebase_nb_notes`). Seules les évaluations
+ *   `resultats.firebase_moyenne_base5` (× `firebase_nb_notes`). Les évaluations
  *   post-mise en ligne (`created_at >= DATE_MISE_EN_LIGNE`) s'agrègent par-dessus.
  *   Garantit que la note historique Firebase reste l'ancrage et qu'une nouvelle
  *   évaluation déplace doucement la moyenne sans tout recalculer.
+ *   Un avis de l'ancien site re-noté remplace sa note figée par la nouvelle
+ *   (`evaluations_notes_figees`, cf. src/lib/evaluations/notes-figees.ts, 2026-11-12).
  *
  * - Autres solutions : full recalc depuis toutes les évaluations publiées
  *   (le comportement d'origine).
@@ -114,12 +109,9 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     .select('is_firebase_legacy, slug, id_categorie')
     .eq('id', solutionId)
     .maybeSingle()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const isLegacy = (solRow as any)?.is_firebase_legacy === true
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const solSlug = (solRow as any)?.slug as string | null | undefined
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const solCategorieId = (solRow as any)?.id_categorie as string | null | undefined
+  const isLegacy = solRow?.is_firebase_legacy === true
+  const solSlug = solRow?.slug
+  const solCategorieId = solRow?.id_categorie
 
   const { data: criteres } = await supabase
     .from('criteres')
@@ -142,6 +134,25 @@ export async function recalcResultatsPourSolution(solutionId: string) {
     evalQuery = evalQuery.gte('created_at', DATE_MISE_EN_LIGNE)
   }
   const { data: evaluations } = await evalQuery
+
+  // Avis de l'ancien site avec leur note figée : ceux qui ont été re-notés remplacent leur
+  // ancienne note par la nouvelle. En cas d'erreur, on n'écrit rien : calculer sans eux
+  // effacerait les re-notations des notes publiques.
+  let avisAncienSite: AvisAncienSite[] = []
+  if (isLegacy) {
+    const { data: anciens, error: errAnciens } = await supabase
+      .from('evaluations')
+      .select('scores, moyenne_utilisateur, figee:evaluations_notes_figees(scores, moyenne)')
+      .eq('solution_id', solutionId)
+      .eq('statut', 'publiee')
+      .lt('created_at', DATE_MISE_EN_LIGNE)
+    if (errAnciens) throw new Error(`[recalc] avis de l'ancien site : ${errAnciens.message}`)
+    avisAncienSite = (anciens ?? []).map((a) => ({
+      scores: a.scores,
+      moyenne_utilisateur: a.moyenne_utilisateur,
+      figee: a.figee ?? null,
+    }))
+  }
 
   if (!isLegacy && (!evaluations || evaluations.length === 0)) {
     // Solution non-legacy sans évaluation : remise à zéro classique
@@ -174,21 +185,21 @@ export async function recalcResultatsPourSolution(solutionId: string) {
         .eq('critere_id', critere.id)
         .maybeSingle()
       if (!existing) continue
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fbMoy = (existing as any).firebase_moyenne_base5 as number | null
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fbNb = (existing as any).firebase_nb_notes as number | null
+      const fbMoy = existing.firebase_moyenne_base5
+      const fbNb = existing.firebase_nb_notes
 
-      const nbPost = Object.keys(notes).length
-      const sommePost = Object.values(notes).reduce((s, v) => s + v, 0)
+      // Ancrage Firebase à 0 = **pas** de note historique réelle (l'ancien site n'avait pas de
+      // note pour ce critère) → traité comme « non noté », pas comme un vrai 0.
+      const ancre = fbMoy != null && fbMoy > 0 && fbNb != null && fbNb > 0
+      const ecart = ecartAvisRenotes(avisAncienSite, key, ancre)
+      const nbPost = Object.keys(notes).length + ecart.nombre
+      const sommePost = Object.values(notes).reduce((s, v) => s + v, 0) + ecart.somme
 
       // Si pas d'ancrage Firebase pour ce critère (cas rare : critère sans données Firebase),
       // on retombe sur le calcul classique des notes post-lancement uniquement.
       let nouvelleMoyenne: number | null
       let nouveauNbNotes: number
-      // Ancrage Firebase à 0 = **pas** de note historique réelle (l'ancien site n'avait pas de
-      // note pour ce critère) → traité comme « non noté », pas comme un vrai 0.
-      if (fbMoy != null && fbMoy > 0 && fbNb != null && fbNb > 0) {
+      if (ancre) {
         nouveauNbNotes = fbNb + nbPost
         nouvelleMoyenne = nouveauNbNotes > 0
           ? Math.round(((fbMoy * fbNb + sommePost) / nouveauNbNotes) * 100) / 100
@@ -269,21 +280,22 @@ export async function recalcResultatsPourSolution(solutionId: string) {
 
     // moyenne_utilisateur des évaluations post-lancement (legacy) ou de toutes (non-legacy)
     const moyennesPost: number[] = (evaluations ?? [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((e) => (e as any).moyenne_utilisateur as number | null | undefined)
+      .map((e) => e.moyenne_utilisateur)
       .filter((v): v is number => typeof v === 'number' && v > 0)
-    const sommePost = moyennesPost.reduce((s, v) => s + v, 0)
-    const nbPost = moyennesPost.length
+    let sommePost = moyennesPost.reduce((s, v) => s + v, 0)
+    let nbPost = moyennesPost.length
 
     let nouvelleMoyenne: number | null = null
     let nouveauNb = 0
 
     if (isLegacy && ligneMoyenne) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fbMoy = (ligneMoyenne as any).firebase_moyenne_base5 as number | null
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fbNb = (ligneMoyenne as any).firebase_nb_notes as number | null
-      if (fbMoy != null && fbNb != null && fbNb > 0) {
+      const fbMoy = ligneMoyenne.firebase_moyenne_base5
+      const fbNb = ligneMoyenne.firebase_nb_notes
+      const ancre = fbMoy != null && fbNb != null && fbNb > 0
+      const ecart = ecartAvisRenotes(avisAncienSite, null, ancre)
+      sommePost += ecart.somme
+      nbPost += ecart.nombre
+      if (ancre) {
         nouveauNb = fbNb + nbPost
         nouvelleMoyenne = nouveauNb > 0
           ? Math.round(((fbMoy * fbNb + sommePost) / nouveauNb) * 100) / 100
