@@ -12,8 +12,20 @@ import { assertAdminOuContenu } from '@/lib/auth/admin-guard'
 import { FORMATS, type FormatId } from '@/lib/reseaux/gabarit'
 import { BUCKET_VISUELS, POIDS_MAX_VISUEL, estFormatVisuel, nettoyerReglages, type VisuelEnregistre, type VisuelsArticle } from '@/lib/reseaux/visuels'
 import { lireVisuelsDe } from '@/lib/reseaux/visuels-serveur'
+import { genererAccroches } from '@/lib/ai/accroche-visuel'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Accroches courtes proposées par Claude pour le visuel (titre trop long), de la meilleure à la moins bonne. */
+export async function proposerAccroches(articleId: string): Promise<{ accroches: string[] } | { error: string }> {
+  await assertAdminOuContenu()
+  if (!UUID.test(articleId)) return { error: 'Article introuvable.' }
+  const supabase = createServiceRoleClient()
+  const { data: article } = await supabase.from('articles').select('titre, extrait, contenu').eq('id', articleId).maybeSingle()
+  if (!article) return { error: 'Article introuvable.' }
+  const r = await genererAccroches({ titre: article.titre ?? '', chapeau: article.extrait, contenuHtml: article.contenu })
+  return r.ok ? { accroches: r.accroches } : { error: r.error }
+}
 
 /** Visuels enregistrés de l'article (pour rouvrir le studio sur ses réglages). */
 export async function lireVisuelsArticle(articleId: string): Promise<VisuelsArticle> {

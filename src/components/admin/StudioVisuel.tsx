@@ -11,11 +11,15 @@
  * « Enregistrer pour Instagram » dépose les deux JPEG (post et story) dans le bucket public
  * `visuels-reseaux` avec leurs réglages ; rouvrir le studio repart de ces réglages
  * (cf `docs/studio-instagram` du dépôt de la messagerie).
+ *
+ * Titre trop long pour le visuel (badge non vert en post ou en story) à la première ouverture :
+ * Claude propose trois accroches de 50 caractères au plus ; la meilleure remplace le titre, qui
+ * reste à un clic (« Revenir au titre complet »).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Space_Grotesk } from 'next/font/google'
-import { Download, ImagePlus, Save } from 'lucide-react'
+import { Download, ImagePlus, Loader2, RefreshCw, Save, Sparkles } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -61,7 +65,7 @@ import {
   type ReglagesVisuel,
   type VisuelsArticle,
 } from '@/lib/reseaux/visuels'
-import { confirmerDepotVisuel, lireVisuelsArticle, preparerDepotVisuel } from '@/lib/actions/visuels-reseaux'
+import { confirmerDepotVisuel, lireVisuelsArticle, preparerDepotVisuel, proposerAccroches } from '@/lib/actions/visuels-reseaux'
 
 // Police secondaire de la charte (« supports déclinés », licence OFL). Space Mono est réservée au logo.
 const spaceGrotesk = Space_Grotesk({ weight: '700', subsets: ['latin'] })
@@ -256,6 +260,60 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
     () => FORMATS_VISUEL.some((fmt) => JSON.stringify(reglagesAEnregistrer(fmt)) !== JSON.stringify(enregistres?.[fmt]?.reglages ?? null)),
     [reglagesAEnregistrer, enregistres],
   )
+
+  // ---- Accroche proposée par Claude ----
+  const [accroches, setAccroches] = useState<string[]>([])
+  const [accrocheEnCours, setAccrocheEnCours] = useState(false)
+  const [accrocheErreur, setAccrocheErreur] = useState<string | null>(null)
+  const demandeAuto = useRef(false)
+
+  /** Le titre tient (badge vert : 3 lignes au plus en post, 4 en story) dans les deux formats. */
+  const titreTient = useMemo(
+    () =>
+      versionPolice > 0 &&
+      FORMATS_VISUEL.every(
+        (fmt) => etatTexte(composer(fmt, { texte: titre, position: 'bas', logoL: FORMATS[fmt].logoL }, police), fmt).niveau === 'ok',
+      ),
+    [titre, police, versionPolice],
+  )
+  // Première ouverture (rien d'enregistré) d'un article au titre trop long : Claude propose.
+  const doitProposer = enregistres !== undefined && !dernier && versionPolice > 0 && !titreTient
+
+  useEffect(() => {
+    if (!doitProposer || demandeAuto.current) return
+    demandeAuto.current = true
+    proposerAccroches(articleId)
+      .then((r) => {
+        if ('error' in r) {
+          setAccrocheErreur(r.error)
+          return
+        }
+        setAccroches(r.accroches)
+        // Le titre n'est remplacé que s'il n'a pas été retouché pendant l'attente.
+        setTexte((t) => (t === titre ? r.accroches[0] : t))
+      })
+      .catch(() => setAccrocheErreur('Claude ne répond pas : gardez le titre ou écrivez une accroche.'))
+  }, [doitProposer, articleId, titre])
+
+  const accrocheAttendue = accrocheEnCours || (doitProposer && accroches.length === 0 && !accrocheErreur)
+  const indexAccroche = accroches.indexOf(texte)
+
+  async function demanderAccroches() {
+    setAccrocheEnCours(true)
+    setAccrocheErreur(null)
+    try {
+      const r = await proposerAccroches(articleId)
+      if ('error' in r) setAccrocheErreur(r.error)
+      else {
+        setAccroches(r.accroches)
+        setTexte(r.accroches[0])
+      }
+    } catch {
+      setAccrocheErreur('Claude ne répond pas : réessayez.')
+    } finally {
+      setAccrocheEnCours(false)
+    }
+  }
 
   // ---- Aperçu principal ----
   const colonneRef = useRef<HTMLElement>(null)
@@ -592,6 +650,47 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
                   </Badge>
                 </div>
               )}
+              {(accrocheAttendue || accrocheErreur || indexAccroche >= 0) && (
+                <p className={`flex items-center gap-1.5 text-xs ${accrocheErreur && !accrocheAttendue ? 'text-amber-700' : 'text-gray-500'}`}>
+                  {accrocheAttendue ? (
+                    <>
+                      <Loader2 aria-hidden className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                      {accrocheEnCours ? 'Claude cherche des accroches…' : 'Titre trop long pour le visuel : Claude prépare une accroche…'}
+                    </>
+                  ) : accrocheErreur ? (
+                    accrocheErreur
+                  ) : (
+                    <>
+                      <Sparkles aria-hidden className="h-3.5 w-3.5 shrink-0 text-accent-blue" />
+                      Accroche proposée par Claude ({indexAccroche + 1} sur {accroches.length}), à relire et modifier librement.
+                    </>
+                  )}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {accroches.length > 1 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+                    disabled={accrocheAttendue}
+                    onClick={() => setTexte(accroches[(indexAccroche + 1) % accroches.length])}
+                  >
+                    Autre proposition
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  leftIcon={<Sparkles className="h-3.5 w-3.5" />}
+                  disabled={accrocheAttendue}
+                  onClick={demanderAccroches}
+                >
+                  {accroches.length ? 'Nouvelles propositions' : 'Proposer une accroche'}
+                </Button>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {texte !== titre && (
                   <Button type="button" size="sm" variant="ghost" onClick={() => setTexte(titre)}>
