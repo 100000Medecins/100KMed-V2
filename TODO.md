@@ -129,14 +129,15 @@ _(rien en cours)_
 
 **À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
 
-### Studio des visuels Instagram — étapes 1 et 2 faites sur `dev` (posé le 2026-11-12)
+### Studio des visuels Instagram — étapes 1 à 3 faites sur `dev` (posé le 2026-11-12)
 
 **Contexte** : préparé dans le dépôt messagerie (`docs/studio-instagram/` : spécification, prompt, code de la maquette validée https://claude.ai/artifact/8onB9d4Q2ZhHR2Tv9hhDUq). Depuis la page d'un article de l'admin, recadrer la couverture en post 4:5 et story 9:16 avec l'habillage de la charte, choisir la tonalité, enregistrer ; le post Instagram de l'article part avec le visuel 4:5 (Make inchangé) ; la story se télécharge seulement.
 
 - [x] ~~Étape 1 : gabarit et studio sans enregistrement~~ ✅ 12/11 (`4ec6abb`) : identique à la maquette au pixel sur 34 cas.
-- [ ] **David** : comparer à l'œil sur dev.100000medecins.org (Admin → Blog → un article → « Visuel Instagram ») avec la maquette ; essayer sur téléphone (glisser au doigt).
+- [x] ~~**David** : comparer à l'œil sur dev avec la maquette~~ ✅ 12/11 : étapes 1 et 2 essayées et validées.
 - [x] ~~Étape 2 : couverture en grand~~ ✅ 12/11 (`8187c11`) : Unsplash et Pexels en 3 840 px, sans route relais (CORS ouvert, vérifié).
-- [ ] Étape 3 : enregistrement — **SQL à lancer par David** (table `visuels_reseaux`, bucket public `visuels-reseaux`), types, dépôt signé, vérification sharp, réglages retrouvés à la réouverture.
+- [x] ~~Étape 3 : enregistrement~~ ✅ 12/11 (`0cc1806`) : SQL lancé par David (contraintes uniques simples au lieu d'index partiels), dépôt signé, contrôle sharp, réglages retrouvés à la réouverture, fichiers effacés avec l'article.
+- [ ] **David** (facultatif) : sur dev, enregistrer un visuel sur un article, fermer, rouvrir. Attention : la base est celle de la production, le visuel reste rattaché à l'article (c'est lui qui partira sur Instagram une fois l'étape 4 en production).
 - [ ] Étape 4 : branchement de l'envoi (`envoi.ts`, `imageDisponible`, `SocialPanel`) ; essai par David depuis `dev` en « Envoyer maintenant ».
 - [ ] Étape 5 : accroche proposée par Claude.
 - [ ] Étape 6 : tutoriel de la community manager.
