@@ -14,6 +14,7 @@
  *   - md : max-w-lg  (défaut)
  *   - lg : max-w-2xl
  *   - xl : max-w-4xl
+ *   - 2xl : max-w-6xl (outils en deux colonnes, ex. studio des visuels Instagram)
  *
  * Usage standard :
  *   <Modal open={open} onClose={() => setOpen(false)} size="md">
@@ -40,7 +41,7 @@
 import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 
-type Size = 'sm' | 'md' | 'lg' | 'xl'
+type Size = 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
 interface ModalProps {
   open: boolean
@@ -57,6 +58,7 @@ const SIZE_CLASSES: Record<Size, string> = {
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-6xl',
 }
 
 function Modal({

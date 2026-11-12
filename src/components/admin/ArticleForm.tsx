@@ -1,17 +1,22 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useMemo } from 'react'
-import { Sparkles, ChevronDown, ChevronUp, Images } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { Sparkles, ChevronDown, ChevronUp, Images, Instagram } from 'lucide-react'
 import RichTextEditor from '@/components/admin/RichTextEditor'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
 import Select from '@/components/ui/Select'
+import Modal from '@/components/ui/Modal'
 import DraftBanner from '@/components/admin/DraftBanner'
 import DiffModal, { countDiffChars, MIN_DIFF_CHARS } from '@/components/admin/DiffModal'
 import { useDraft } from '@/lib/hooks/useDraft'
 import { updateArticleImageCouverture } from '@/lib/actions/admin'
 import type { UnsplashPhoto } from '@/app/api/suggerer-image/route'
+
+// Chargé à l'ouverture seulement (canvas, police Space Grotesk).
+const StudioVisuel = dynamic(() => import('@/components/admin/StudioVisuel'), { ssr: false })
 
 type Cat = { id: string; nom: string }
 
@@ -119,6 +124,7 @@ export default function ArticleForm({
   const [imageUploading, setImageUploading] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
   const imageRef = useRef<HTMLInputElement>(null)
+  const [studioOuvert, setStudioOuvert] = useState(false)
 
   // Génération article
   const [showGenerer, setShowGenerer] = useState(!article?.id)
@@ -342,7 +348,7 @@ export default function ArticleForm({
         {showGenerer && (
           <div className="px-5 pb-5 space-y-3 border-t border-accent-blue/10">
             <p className="text-xs text-gray-500 mt-3">
-              Décrivez le sujet, l'angle ou les points clés à aborder. Claude générera le titre, le chapeau, le contenu et la méta description.
+              Décrivez le sujet, l&apos;angle ou les points clés à aborder. Claude générera le titre, le chapeau, le contenu et la méta description.
             </p>
             <textarea
               value={brief}
@@ -537,58 +543,86 @@ export default function ArticleForm({
             {imageUrl && (
               <img src={imageUrl} alt="Couverture" className="w-full h-32 object-cover rounded-xl border border-gray-100" />
             )}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="md"
+              fullWidth
+              loading={imageUploading}
               onClick={() => imageRef.current?.click()}
-              disabled={imageUploading}
-              className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               {imageUploading ? 'Upload...' : imageUrl ? 'Changer l\'image' : 'Uploader une image'}
-            </button>
+            </Button>
             <div className="space-y-1.5">
-              <div className="flex gap-1 p-0.5 bg-gray-100 rounded-lg w-fit">
+              <div className="flex gap-1 p-1 border border-gray-200 rounded-button w-fit">
                 {(['unsplash', 'pexels'] as const).map((p) => (
-                  <button
+                  <Button
                     key={p}
                     type="button"
+                    size="sm"
+                    variant={suggestionProvider === p ? 'primary' : 'ghost'}
+                    aria-pressed={suggestionProvider === p}
                     onClick={() => setSuggestionProvider(p)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${suggestionProvider === p ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     {p === 'unsplash' ? 'Unsplash' : 'Pexels'}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="flex gap-2">
-                <input
+                <Input
                   type="text"
                   value={suggestionQuery}
                   onChange={(e) => setSuggestionQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSuggestImages() } }}
                   placeholder={titre || 'Mots-clés pour la recherche…'}
-                  className="flex-1 rounded-xl bg-white border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue/50 focus:outline-none px-3 py-2"
+                  className="flex-1 min-w-0"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="md"
+                  className="flex-shrink-0"
+                  leftIcon={<Images className="w-4 h-4" />}
                   onClick={() => handleSuggestImages()}
                   disabled={isLoadingSuggestions || (!suggestionQuery.trim() && !titre.trim())}
-                  className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm border border-accent-blue/30 text-accent-blue rounded-xl hover:bg-accent-blue/5 disabled:opacity-50 transition-colors flex-shrink-0"
                   title="Suggérer des images"
                 >
-                  <Images className="w-4 h-4" />
                   {isLoadingSuggestions ? 'Recherche…' : 'Suggérer'}
-                </button>
+                </Button>
               </div>
             </div>
             {imageUrl && (
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="md"
+                fullWidth
                 onClick={async () => { setImageUrl(''); setShowSuggestions(false); if (article?.id) await updateArticleImageCouverture(article.id, null) }}
-                className="w-full px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-colors"
               >
                 Supprimer l&apos;image
-              </button>
+              </Button>
             )}
             {imageError && <p className="text-xs text-red-600">{imageError}</p>}
+
+            {/* Visuel Instagram (post 4:5 et story 9:16) tiré de la couverture */}
+            <div className="space-y-1.5 pt-1">
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                fullWidth
+                leftIcon={<Instagram className="w-4 h-4" />}
+                disabled={!article?.id || !imageUrl}
+                onClick={() => setStudioOuvert(true)}
+              >
+                Visuel Instagram
+              </Button>
+              {!article?.id ? (
+                <p className="text-xs text-gray-400">Enregistrez d&apos;abord l&apos;article.</p>
+              ) : !imageUrl ? (
+                <p className="text-xs text-gray-400">Choisissez d&apos;abord une couverture.</p>
+              ) : null}
+            </div>
 
             {/* Grille de suggestions Unsplash */}
             {showSuggestions && (
@@ -638,28 +672,29 @@ export default function ArticleForm({
             )}
 
             {/* Modal prévisualisation */}
-            {previewPhoto && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setPreviewPhoto(null)}>
-                <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <Modal open={previewPhoto !== null} onClose={() => setPreviewPhoto(null)} size="xl">
+              {previewPhoto && (
+                <>
                   <img src={previewPhoto.small_url} alt={previewPhoto.alt} className="w-full object-contain max-h-[60vh]" />
-                  <div className="p-4 flex items-center justify-between gap-4">
+                  <Modal.Footer className="justify-between">
                     <p className="text-xs text-gray-400">
                       Photo par <a href={previewPhoto.photographer_url} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">{previewPhoto.photographer}</a> · {previewPhoto.source === 'pexels' ? 'Pexels' : 'Unsplash'}
                     </p>
                     <div className="flex gap-2 flex-shrink-0">
-                      <button type="button" onClick={() => setPreviewPhoto(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Annuler</button>
-                      <button
+                      <Button type="button" variant="ghost" size="md" onClick={() => setPreviewPhoto(null)}>Annuler</Button>
+                      <Button
                         type="button"
+                        variant="primary"
+                        size="md"
                         onClick={() => { handleSelectUnsplashPhoto(previewPhoto); setPreviewPhoto(null) }}
-                        className="px-4 py-2 text-sm bg-navy text-white rounded-xl hover:bg-navy-dark transition-colors font-medium"
                       >
                         Sélectionner cette photo
-                      </button>
+                      </Button>
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                  </Modal.Footer>
+                </>
+              )}
+            </Modal>
           </div>
 
           {/* Meta description */}
@@ -693,6 +728,16 @@ export default function ArticleForm({
         )}
       </div>
     </form>
+    {/* Hors du formulaire : aucun de ses boutons ne doit l'envoyer. */}
+    {studioOuvert && imageUrl && (
+      <StudioVisuel
+        open
+        onClose={() => setStudioOuvert(false)}
+        photoUrl={imageUrl}
+        titre={titre}
+        nomFichier={slug || 'article'}
+      />
+    )}
     </>
   )
 }
