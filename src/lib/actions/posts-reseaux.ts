@@ -12,6 +12,7 @@ import { genererPostsSociaux } from '@/lib/ai/posts-sociaux'
 import { listerPosts, programmationActive, sourceDuPost, transmettre } from '@/lib/reseaux/envoi'
 import { fichierDuPost, listerFichiers } from '@/lib/reseaux/fichiers'
 import { lienEtImageVideo } from '@/lib/reseaux/liens'
+import { adresseVisuelPost } from '@/lib/reseaux/visuels-serveur'
 import { RESEAUX, formatDuReseau, type MediaPost, type PostReseau, type Reseau, type SourcePost } from '@/lib/reseaux/types'
 
 type Resultat = { posts: PostReseau[]; error?: string }
@@ -151,10 +152,12 @@ export async function supprimerPost(id: string): Promise<Resultat> {
   return { posts: await listerPosts(sourceDuPost(post)) }
 }
 
+/** Même ordre que l'envoi (`lienEtImage`) : image du post, visuel 4:5 pour Instagram, couverture ou vignette. */
 async function imageDisponible(post: PostReseau): Promise<boolean> {
   if (post.image_url) return true
   const supabase = createServiceRoleClient()
   if (post.article_id) {
+    if (post.reseau === 'instagram' && (await adresseVisuelPost(supabase, post.article_id))) return true
     const { data } = await supabase.from('articles').select('image_couverture').eq('id', post.article_id).single()
     return !!data?.image_couverture
   }

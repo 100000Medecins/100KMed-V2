@@ -37,6 +37,13 @@ export type ReglagesVisuel = {
 export type VisuelEnregistre = { format: FormatId; url: string; reglages: ReglagesVisuel; enregistreLe: string }
 export type VisuelsArticle = Partial<Record<FormatId, VisuelEnregistre>>
 
+/**
+ * Événement de fenêtre émis par le studio quand le post 4:5 est enregistré : le panneau
+ * « Publier sur les réseaux » de la même page met sa vignette Instagram à jour.
+ */
+export const EVENEMENT_VISUEL = 'visuel-instagram-enregistre'
+export type DetailEvenementVisuel = { articleId: string; url: string }
+
 const TEXTE_MAX = 500
 
 function nombre(v: unknown, min: number, max: number, decimales: number): number | null {

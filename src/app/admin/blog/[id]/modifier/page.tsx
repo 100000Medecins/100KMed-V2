@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import Card from '@/components/ui/Card'
 import ArticleForm from '@/components/admin/ArticleForm'
 import SocialPanel from '@/components/admin/SocialPanel'
 import PageHistoryButton from '@/components/admin/PageHistoryButton'
@@ -9,6 +10,7 @@ import { updateArticle, restoreArticle } from '@/lib/actions/admin'
 import { getArticleHistory } from '@/lib/db/articles'
 import { listerPosts, programmationActive } from '@/lib/reseaux/envoi'
 import { lienArticle } from '@/lib/reseaux/liens'
+import { adresseVisuelPost } from '@/lib/reseaux/visuels-serveur'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -28,10 +30,11 @@ async function getCategories() {
 
 export default async function ModifierArticlePage({ params }: PageProps) {
   const { id } = await params
-  const [article, categories, postsReseaux] = await Promise.all([
+  const [article, categories, postsReseaux, visuelInstagram] = await Promise.all([
     getArticle(id),
     getCategories(),
     listerPosts({ type: 'article', id }),
+    adresseVisuelPost(createServiceRoleClient(), id),
   ])
   if (!article) notFound()
 
@@ -62,9 +65,9 @@ export default async function ModifierArticlePage({ params }: PageProps) {
           title="Voir les versions précédentes de cet article"
         />
       </div>
-      <div className="bg-white rounded-card shadow-card p-6 md:p-8">
+      <Card padding="lg" overflow="visible">
         <ArticleForm article={article} categories={categories} action={boundAction} />
-      </div>
+      </Card>
       <SocialPanel
         source={{
           type: 'article',
@@ -74,7 +77,9 @@ export default async function ModifierArticlePage({ params }: PageProps) {
           lien: lienArticle(article.slug),
           image: article.image_couverture,
           statut: article.statut,
+          slug: article.slug,
         }}
+        visuelInstagramInitial={visuelInstagram}
         postsInitiaux={postsReseaux}
         programmationActive={programmationActive()}
       />

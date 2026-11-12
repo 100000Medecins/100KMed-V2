@@ -51,10 +51,12 @@ import {
   type Ressources,
 } from '@/lib/reseaux/gabarit'
 import {
+  EVENEMENT_VISUEL,
   FORMATS_VISUEL,
   dernierVisuel,
   memePhoto,
   nettoyerReglages,
+  type DetailEvenementVisuel,
   type PhotoVisuel,
   type ReglagesVisuel,
   type VisuelsArticle,
@@ -410,6 +412,11 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
         if ('error' in res) throw new Error(res.error)
         suite = { ...suite, [fmt]: res.visuel }
         setEnregistres(suite)
+        if (fmt === 'post') {
+          window.dispatchEvent(
+            new CustomEvent<DetailEvenementVisuel>(EVENEMENT_VISUEL, { detail: { articleId, url: res.visuel.url } }),
+          )
+        }
       } catch (e) {
         setErreurEnregistrement(`Échec sur ${SUR_LE[fmt]} : ${e instanceof Error ? e.message : 'connexion interrompue.'}`)
         break

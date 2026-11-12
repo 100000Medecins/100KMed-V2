@@ -15,6 +15,12 @@ export async function lireVisuelsDe(supabase: Client, articleId: string): Promis
   return visuels
 }
 
+/** Adresse publique du visuel 4:5 (post) de l'article, celui que reçoit Instagram ; null sans visuel. */
+export async function adresseVisuelPost(supabase: Client, articleId: string): Promise<string | null> {
+  const { data } = await supabase.from('visuels_reseaux').select('url').eq('article_id', articleId).eq('format', 'post').maybeSingle()
+  return data?.url ?? null
+}
+
 /**
  * À appeler avant de supprimer un article : ses lignes partent en cascade, pas ses fichiers.
  * Vide tout le dossier de l'article, dépôts interrompus compris.
