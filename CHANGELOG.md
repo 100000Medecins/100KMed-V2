@@ -37,7 +37,7 @@ Signalé par David : mail de lancement cassé dans l'aperçu de l'admin et à la
 - **Non vérifié** : la réception réelle (aucun mail envoyé par Claude) ; l'envoi en masse (il enverrait pour de vrai).
 
 ### Reste
-- Code sur `dev`, **non commité, non déployé**. En production : l'ancien éditeur ouvre encore ce modèle en mode visuel (passer en « HTML brut » avant toute retouche) et l'ancien envoi en masse partirait vers les 84 adresses fictives et les 12 désabonnés : **ne pas lancer l'envoi avant le report sur `main`**. Envoyer depuis l'admin de production (les liens du mail prennent le domaine d'où part l'envoi).
+- ~~Code non déployé~~ : **en production depuis le 12/11** (voir « Déploiement » ci-dessous). Envoyer depuis l'admin de production (les liens du mail prennent le domaine d'où part l'envoi).
 - `master_layout` : voir la suite.
 
 ### Suite (même jour, demandes de David)
@@ -48,6 +48,13 @@ Signalé par David : mail de lancement cassé dans l'aperçu de l'admin et à la
 - Modèle réécrit deux fois (`--execute`), backups `modele-lancement-2026-11-12T16-04-58…` et `…T16-06-33…`, relu identique ; requête indépendante : frise et vignettes présentes, pas de balisage TipTap.
 - **Constat pour l'en-tête** : aucun modèle, ni le `master_layout`, ne fixe de police (seul le nouveau mail de lancement le fait) : sans police par défaut du lecteur (Outlook pour Windows, aperçu de l'admin), tout s'affiche en Times. Le `master_layout` sert à 15 modèles (tous sauf `lancement_syndicat`, document complet ; la newsletter a son propre gabarit dans le code). Rien modifié, explication donnée à David.
 - Au passage : [send-infos-mensuels](src/app/api/admin/send-infos-mensuels/route.ts) envoie le modèle `infos_mensuels` (fragment `<tr><td>`) sans le `master_layout` : il partirait cassé. Aucun bouton n'appelle cette route aujourd'hui.
+
+### Déploiement (accord de David)
+- Commits sur `dev` : `796c9e9` (code seul : éditeur, aperçu, envoi en masse) et `da4d8cc` (scripts, CHANGELOG).
+- Report du code seul sur `main` : worktree séparé, cherry-pick de `796c9e9` → **`1969ad4`**, sans conflit (les 3 fichiers étaient identiques sur `main` et `dev` avant le changement ; dépendances présentes sur `main`). `npm ci`, `tsc`, build verts ; build `main` essayé en local (envois neutralisés) : 17 / 17, `send-lancement` sans session → 401. `.env.local` copié puis supprimé, worktree vidé et oublié. Scripts et CHANGELOG laissés à `dev`.
+- Vercel « Production » `success`.
+- **Vérifié en production** (lecture seule) : `send-lancement` et `test-email` sans session → 401 ; même essai de l'admin, **17 / 17** (mail de lancement ouvert en HTML brut avec le nouveau modèle, bandeau, aperçu avec « Nouveau site » et « Bonjour Dr. DUPONT, », avertissement avant l'éditeur visuel, `master_layout` en HTML brut, aucune erreur JavaScript) ; dates des modèles relues inchangées.
+- **Non vérifié** : un envoi réel (test ou masse), laissé à David.
 
 ---
 
