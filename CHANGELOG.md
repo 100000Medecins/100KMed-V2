@@ -5,6 +5,40 @@
 
 ---
 
+## [2026-11-12] — Relance PSC : médecins déjà vérifiés relancés, rattachement à la validation PSC corrigé
+
+David, inscrit et vérifié par PSC, a reçu des relances « validez votre évaluation avec Pro Santé Connect ».
+
+### Constat (lecture seule)
+- **David** : évaluation d'essai de Weda du 25/06 déposée sans compte avec `dr.azerad+essai46@…` (Gmail livre l'alias dans sa boîte), jamais validée, relancée les 12/10, 26/10 et 09/11. Son vrai avis Weda est publié depuis le 04/07.
+- **7 médecins vérifiés** (RPPS) relancés à l'adresse de leur compte, la relance ne regardant pas si l'adresse appartient à un compte :
+  - **avis déjà publié sur le même logiciel** (Rozand / HelloDoc, Peltier / Weda, Sidorkiewicz / Weda) : un avis par compte et par logiciel (`evaluations_user_id_solution_id_key`) ; à la validation PSC, la mise à jour échouait sans message, le site annonçait « évaluation publiée », l'évaluation restait en attente et relancée. Rozand a validé le 08/10 (2 min après le dépôt) et le 19/10 (4 min après la relance), Peltier le 31/10 et le 09/11 : en vain ;
+  - **une seule piste suivie** (Longépé) : KelDoc puis Perplexity déposés à 5 min d'écart, validation par le lien de Perplexity ; la route s'arrêtait à la première piste fructueuse (jeton), KelDoc restait en attente ;
+  - **jamais validée** (Mercier, Francis, Pineau) : déposée sans être connecté.
+- 9 évaluations relancées ont été validées depuis le 12/10.
+
+### Code (`dev`)
+- [en-attente-psc.ts](src/lib/evaluations/en-attente-psc.ts), commun : recherche des évaluations en attente par le jeton **et** les adresses ; rattachement une par une, erreurs vérifiées ; si le compte a déjà un avis sur le logiciel et que son identité est vérifiée, **la plus récente l'emporte** (décision de David) : ses notes, sa moyenne et sa date passent sur l'avis du compte, qui garde sa date de création (donc sa place dans le calcul des notes, comme une réévaluation faite connecté), l'évaluation en attente est supprimée ; sans identité vérifiée, rien n'est touché. Suivi « Mes évaluations » créé ou passé à « finalisée ». Adresses des comptes vérifiés (lecture par pages, insensible aux majuscules).
+- [psc-callback](src/app/api/auth/psc-callback/route.ts) : s'en sert ; « évaluation publiée » annoncé seulement si une évaluation l'a été ; une erreur de recherche ne bloque plus la connexion.
+- [rattacherEvalsAnonymes](src/lib/actions/user.ts) (chargement du profil) : même fonction (la mise à jour groupée échouait en entier au premier conflit), et cherche aussi `email` et `contact_email` du compte.
+- [relance-psc](src/app/api/cron/relance-psc/route.ts) : **pas de relance à l'adresse d'un compte vérifié** (décision de David) ; compteur `comptesVerifiesIgnores` dans la réponse ; si la liste des comptes ne se lit pas, rien n'est envoyé. Admin → Emails : même règle pour le compteur, phrase ajoutée au bandeau.
+- Inchangé : la confirmation d'inscription par email (compte neuf, pas de conflit possible) ; le mode « association » de la route PSC (le profil, chargé juste après, rattache).
+
+### Données (accord de David)
+- [scripts/supprimer-evaluation-en-attente.ts](scripts/supprimer-evaluation-en-attente.ts) : évaluation d'essai `226a3b2a…` supprimée (dry-run puis `--execute`, sauvegarde dans `backups/`).
+- [scripts/remplacer-avis-par-evaluation-en-attente.ts](scripts/remplacer-avis-par-evaluation-en-attente.ts) (même fonction que le site ; refus sans connexion PSC réussie après le dépôt ou si un recalcul des notes était nécessaire) : **Rozand** HelloDoc 3,00 → 4,03, **Peltier** Weda 2,50 → 2,30, avec leurs commentaires ; évaluations en attente supprimées, suivis « finalisée » ; les deux lignes sauvegardées dans `backups/`. Notes des fiches inchangées : ces avis datent d'avant le lancement, sur des fiches à note historique figée (comme toute réévaluation d'un avis de l'ancien site).
+- Relu par requête indépendante : 3 lignes absentes, 1 avis par compte, 130 évaluations en attente sans compte.
+
+### Vérif
+- `tsc` (sans erreur hors fichiers générés par un serveur de développement en cours), lint des fichiers touchés (0 erreur), `npm run build`.
+- **Essai sur données fictives** (deux comptes `example.com`, trois logiciels sans évaluation, pas de recalcul), **24 / 24** : jeton et adresses réunis, `contact_email` en majuscules retrouvé ; avis plus ancien remplacé, évaluation rattachée, évaluation plus ancienne écartée, avis plus récent intact ; suivis « à compléter » → « finalisée » et créé avec la date déclarée ; rejeu sans effet ; compte non vérifié : rien touché en cas d'avis existant, rattachement en attente sinon ; adresses des comptes vérifiés (7 001) ; sur les 134 évaluations relançables, les 7 relevées sont écartées. Tout effacé (comptes, évaluations, suivis, préférences).
+- **Non essayé** : la route PSC et le chargement du profil de bout en bout (il faudrait une vraie identité PSC) ; la tâche de relance (elle enverrait).
+
+### Reste
+- **Report sur `main` avant le lundi 23/11** (ordre de David) : sinon la 4e relance part vers Mercier, Francis, Sidorkiewicz, Longépé et Pineau. Rozand et Peltier ne sont plus concernés.
+
+---
+
 ## [2026-11-12] — Studio des visuels Instagram, étapes 1 et 2 (sur dev)
 
 Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan de l'étape 1 validé par David (« tu peux tout faire »), avec : travail sur `dev`, téléchargement des JPEG dès l'étape 1, taille de fenêtre plus large.
