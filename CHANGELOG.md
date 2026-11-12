@@ -24,7 +24,7 @@ Question de David (« les nouvelles notes ne défigeaient pas la note historique
 - [recalcResultatsPourSolution](src/lib/actions/evaluation.ts) : en mode figé, lit les anciens avis publiés avec leur note figée et ajoute l'écart ; en cas d'erreur de lecture, n'écrit rien (calculer sans eux effacerait les re-notations). `as any` de la fonction retirés.
 - Désormais automatique : re-noter un ancien avis (connecté, ou rattachement PSC du jour) déplace la note ; une confirmation ne change rien.
 
-### Effet attendu (pas encore appliqué : il faut le code en production puis un recalcul)
+### Effet attendu (appliqué le 12/11 : voir « Déploiement »)
 - 7 fiches, 156 lignes de résultats (38 globales ou critères, 118 sous-critères) ; les 17 autres logiciels ne bougent pas. Note globale : Odaiji 4,66 → 4,69, Medicab 3,90 → 3,88, AxiSanté 2,31 → 2,29, HelloDoc 2,42 → 2,43 ; DrSanté, Weda, Medistory inchangées. Plus gros écart : sous-critère « profil remplaçant » de HelloDoc 3,5 → 3,2 (note figée sur 1 seul avis).
 
 ### Vérif
@@ -32,8 +32,11 @@ Question de David (« les nouvelles notes ne défigeaient pas la note historique
 - Simulation sur les vraies données : sans le changement, elle retombe exactement sur les notes enregistrées ; avec, mêmes valeurs que la fonction du site.
 - **Essai de bout en bout** (build local, vraie route `/api/admin/recalc-solution`, logiciel fictif inactif à note figée, 3 comptes `example.com`), **13 / 13** : comportement d'avant sans note figée ; avis re-noté (globale 3,4 → 3,8, critère 3,4 → 3,9) ; critère non noté sur l'ancien site (nouvelle note ajoutée) ; critère laissé vide (ancienne note gardée) ; avis confirmé sans effet ; avis dépublié. Tout effacé ; 644 notes figées réelles intactes.
 
-### Reste
-- Report sur `main` (ordre de David), puis recalcul des 7 fiches et relecture des notes publiques. Tant que le code de production n'a pas changé, il ignore la table : rien ne bouge.
+### Déploiement (12/11, ordre de David)
+- Report sur `main` dans un dossier de travail séparé, code seul : `e7c51f8` (relance PSC, entrée ci-dessous) puis **`3b4aa13`** ; fichier des types : seul le bloc `evaluations_notes_figees` ajouté à la version de `main`. `npm ci`, `tsc`, `npm run build` (pages publiques toujours statiques). Vercel « Production » `success`.
+- Recalcul des 7 fiches par `/api/admin/recalc-solution` en production. Lignes de résultats des 24 fiches photographiées avant et après (2 124) : **142 changées**, toutes parmi les 156 qui ont un écart ; pour les 14 autres, l'écart (moins de 0,007) disparaît dans l'arrondi à 2 décimales (Weda, Medistory, DrSanté, un critère de HelloDoc). Aucune autre ligne touchée. Notes globales exactement celles prévues.
+- Fiches publiques des 7 logiciels relues : les 5 critères principaux affichent les nouvelles valeurs, aucune page périmée. La note globale affichée est arrondie à 1 décimale (Odaiji 4,7, Medicab 3,9, AxiSanté 2,3, HelloDoc 2,4) : pas de changement à l'écran.
+- Les re-notations de Rozand (HelloDoc) et Peltier (Weda), fusionnées plus tôt dans la journée (entrée « Relance PSC »), font partie des 9 et comptent désormais.
 
 ---
 
@@ -116,7 +119,7 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
 
 ### Données (accord de David)
 - [scripts/supprimer-evaluation-en-attente.ts](scripts/supprimer-evaluation-en-attente.ts) : évaluation d'essai `226a3b2a…` supprimée (dry-run puis `--execute`, sauvegarde dans `backups/`).
-- [scripts/remplacer-avis-par-evaluation-en-attente.ts](scripts/remplacer-avis-par-evaluation-en-attente.ts) (même fonction que le site ; refus sans connexion PSC réussie après le dépôt ou si un recalcul des notes était nécessaire) : **Rozand** HelloDoc 3,00 → 4,03, **Peltier** Weda 2,50 → 2,30, avec leurs commentaires ; évaluations en attente supprimées, suivis « finalisée » ; les deux lignes sauvegardées dans `backups/`. Notes des fiches inchangées : ces avis datent d'avant le lancement, sur des fiches à note historique figée (comme toute réévaluation d'un avis de l'ancien site).
+- [scripts/remplacer-avis-par-evaluation-en-attente.ts](scripts/remplacer-avis-par-evaluation-en-attente.ts) (même fonction que le site ; refus sans connexion PSC réussie après le dépôt ou si un recalcul des notes était nécessaire) : **Rozand** HelloDoc 3,00 → 4,03, **Peltier** Weda 2,50 → 2,30, avec leurs commentaires ; évaluations en attente supprimées, suivis « finalisée » ; les deux lignes sauvegardées dans `backups/`. Notes des fiches inchangées : ces avis datent d'avant le lancement, sur des fiches à note historique figée (comme toute réévaluation d'un avis de l'ancien site). *Dépassé le même jour : voir « Notes figées », ces deux re-notations comptent depuis la mise en production.*
 - Relu par requête indépendante : 3 lignes absentes, 1 avis par compte, 130 évaluations en attente sans compte.
 
 ### Vérif
@@ -124,8 +127,10 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
 - **Essai sur données fictives** (deux comptes `example.com`, trois logiciels sans évaluation, pas de recalcul), **24 / 24** : jeton et adresses réunis, `contact_email` en majuscules retrouvé ; avis plus ancien remplacé, évaluation rattachée, évaluation plus ancienne écartée, avis plus récent intact ; suivis « à compléter » → « finalisée » et créé avec la date déclarée ; rejeu sans effet ; compte non vérifié : rien touché en cas d'avis existant, rattachement en attente sinon ; adresses des comptes vérifiés (7 001) ; sur les 134 évaluations relançables, les 7 relevées sont écartées. Tout effacé (comptes, évaluations, suivis, préférences).
 - **Non essayé** : la route PSC et le chargement du profil de bout en bout (il faudrait une vraie identité PSC) ; la tâche de relance (elle enverrait).
 
-### Reste
-- **Report sur `main` avant le lundi 23/11** (ordre de David) : sinon la 4e relance part vers Mercier, Francis, Sidorkiewicz, Longépé et Pineau. Rozand et Peltier ne sont plus concernés.
+### Déploiement (12/11, ordre de David)
+- En production avec les notes figées : **`e7c51f8`** sur `main` (voir l'entrée « Notes figées » pour le build et Vercel).
+- Admin → Emails en production : **125** évaluations relançables, soit les 130 en attente moins les 5 adresses de comptes vérifiés (Mercier, Francis, Sidorkiewicz, Longépé, Pineau) ; nouvelle phrase du bandeau présente. La relance du lundi 23/11 ne les vise plus.
+- Non vérifié : la tâche de relance elle-même (la lancer enverrait). À relire après son passage du 23/11 : `comptesVerifiesIgnores` dans sa réponse.
 
 ---
 
