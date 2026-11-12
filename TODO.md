@@ -129,7 +129,7 @@ _(rien en cours)_
 
 **À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
 
-### Studio des visuels Instagram — étapes 1 à 4 faites sur `dev` (posé le 2026-11-12)
+### Studio des visuels Instagram — étapes 1 à 5 faites sur `dev` (posé le 2026-11-12)
 
 **Contexte** : préparé dans le dépôt messagerie (`docs/studio-instagram/` : spécification, prompt, code de la maquette validée https://claude.ai/artifact/8onB9d4Q2ZhHR2Tv9hhDUq). Depuis la page d'un article de l'admin, recadrer la couverture en post 4:5 et story 9:16 avec l'habillage de la charte, choisir la tonalité, enregistrer ; le post Instagram de l'article part avec le visuel 4:5 (Make inchangé) ; la story se télécharge seulement.
 
@@ -138,8 +138,9 @@ _(rien en cours)_
 - [x] ~~Étape 2 : couverture en grand~~ ✅ 12/11 (`8187c11`) : Unsplash et Pexels en 3 840 px, sans route relais (CORS ouvert, vérifié).
 - [x] ~~Étape 3 : enregistrement~~ ✅ 12/11 (`0cc1806`) : SQL lancé par David (contraintes uniques simples au lieu d'index partiels), dépôt signé, contrôle sharp, réglages retrouvés à la réouverture, fichiers effacés avec l'article.
 - [x] ~~Étape 4 : branchement de l'envoi~~ ✅ 12/11 (`5192d7d`) : Instagram reçoit le visuel 4:5 (vérifié avec un faux Make local), vignette et bouton du studio dans la carte Instagram.
-- [ ] **David** : essai réel depuis dev.100000medecins.org — sur un article à publier vraiment sur Instagram, créer le visuel (carte Instagram du panneau « Publier sur les réseaux »), puis « Envoyer maintenant » (pas « Programmer » : la tâche planifiée appelle la production) ; vérifier sur Instagram que le post porte le visuel 4:5. Base partagée : le visuel et le post « envoyé » restent sur l'article en production.
-- [ ] Étape 5 : accroche proposée par Claude.
+- [ ] **David** (à la fin du chantier, pas prioritaire : la community manager publie avec son propre outil) : essai réel depuis dev.100000medecins.org — sur un article à publier vraiment sur Instagram, créer le visuel (carte Instagram du panneau « Publier sur les réseaux »), puis « Envoyer maintenant » (pas « Programmer » : la tâche planifiée appelle la production) ; vérifier sur Instagram que le post porte le visuel 4:5. Base partagée : le visuel et le post « envoyé » restent sur l'article en production.
+- [x] ~~Étape 5 : accroche proposée par Claude~~ ✅ 12/11 (`982d390`) : 3 accroches (Opus 5.5) quand le titre ne tient pas, 7 à 11 s, la meilleure remplace le titre.
+- [ ] **Studio hors d'un article** (question de David du 12/11, en attente de son accord) : bouton « Studio Instagram » dans Admin → Blog, page à part, photo importée + texte libre, téléchargement des JPEG ; sans enregistrement ni accroche (pas d'article).
 - [ ] Étape 6 : tutoriel de la community manager.
 - [ ] Non essayé : Firefox (logos rechargés avec une taille, Firefox n'étant pas installé sur le poste).
 
