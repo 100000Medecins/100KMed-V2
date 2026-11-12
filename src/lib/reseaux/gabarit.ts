@@ -430,7 +430,9 @@ export function etatTexte(bloc: Bloc, fmtId: FormatId): { niveau: NiveauEtat; me
 
 export function etatPhoto(g: Geometrie): { niveau: NiveauEtat; message: string } {
   if (g.s <= 1.02) {
-    return { niveau: 'ok', message: `Photo nette : ${Math.round(g.vw).toLocaleString('fr-FR')} px de la photo pour 1 080 px.` }
+    // Espaces insécables dans les nombres et devant « px » : jamais « 1 » en fin de ligne et « 080 » à la suivante.
+    const px = (n: number) => `${n.toLocaleString('fr-FR').replace(/\s/g, ' ')} px`
+    return { niveau: 'ok', message: `Photo nette : ${px(Math.round(g.vw))} de la photo pour ${px(1080)}.` }
   }
   if (g.s <= 1.3) return { niveau: 'ok', message: `Photo agrandie ×${nombre(g.s)} : encore nette.` }
   return {
