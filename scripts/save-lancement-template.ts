@@ -211,7 +211,7 @@ function construireContenu(articles: Article[], vignettes: Categorie[], liens: C
 </td></tr>`,
 
     // ── Ces derniers mois (actions de l'association) ──
-    // Faits relevés le 12/11/2026 : CHANGELOG (WONCA 21/07, IA DNS 01/08, portabilité 20-21/10),
+    // Faits relevés le 12/11/2026 : CHANGELOG (WONCA 21/07, portabilité 20-21/10),
     // page /portabilite, articles du blog, mail des syndicats (« l'association, c'est aussi »).
     titreSection('Ces derniers mois', '#059669'),
     `<tr><td style="padding:0 40px 18px;">
@@ -221,13 +221,10 @@ function construireContenu(articles: Article[], vignettes: Categorie[], liens: C
       `${fort('Prises de position')} sur le report de six mois du Ségur numérique (vague&nbsp;2) et sur la place de l'IA dans nos logiciels métier. ${lienFleche(`${S}/blog`, 'Sur le blog', '#059669')}`,
     )),
     etape('Début juillet', texteEtape(
-      `${fort('Congrès WONCA Europe')}&nbsp;: 56&nbsp;médecins ont évalué leurs logiciels sur notre stand. Bravo aux trois gagnantes du jeu concours&nbsp;!`,
+      `${fort('Congrès WONCA Europe')}&nbsp;: Merci à tous les collègues qui ont évalué leurs logiciels sur notre stand, et bravo aux trois gagnantes du jeu concours&nbsp;!`,
     )),
     etape('20 juillet', texteEtape(
       `${fort('Appel pour la portabilité des données')}, avec six syndicats de médecins&nbsp;: chaque éditeur doit rendre ses données au médecin qui le demande, sans attendre 2027.`,
-    )),
-    etape('Août', texteEtape(
-      `${fort('IA et données de santé')}&nbsp;: à la demande de la Délégation au numérique en santé, la page des IA documentaires rappelle le cadre d'usage de l'IA avant de choisir un outil.`,
     )),
     etape('19 octobre', `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #D1FAE5;border-radius:16px;background:#F0FDF8;">
         <tr><td style="padding:20px 22px;">

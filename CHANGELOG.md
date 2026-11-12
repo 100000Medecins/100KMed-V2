@@ -88,6 +88,11 @@ Signalé par David : mail de lancement cassé dans l'aperçu de l'admin et à la
 - **Vérifié en production** (lecture seule) : `send-lancement` et `test-email` sans session → 401 ; même essai de l'admin, **17 / 17** (mail de lancement ouvert en HTML brut avec le nouveau modèle, bandeau, aperçu avec « Nouveau site » et « Bonjour Dr. DUPONT, », avertissement avant l'éditeur visuel, `master_layout` en HTML brut, aucune erreur JavaScript) ; dates des modèles relues inchangées.
 - **Non vérifié** : un envoi réel (test ou masse), laissé à David.
 
+### Retouches de David (même soir)
+- Étape « Août » (cadre d'usage de l'IA à la demande de la DNS) retirée de la frise.
+- WONCA : « Merci à tous les collègues qui ont évalué leurs logiciels sur notre stand, et bravo aux trois gagnantes du jeu concours ! » (le chiffre de 56 n'apparaît plus).
+- `--execute` : backup `modele-lancement-2026-11-12T18-57-07…`, relu identique ; requête indépendante : étape « Août » absente, nouvelle phrase présente. Rendu 760 / 375 px sans débordement.
+
 ---
 
 ## [2026-11-12] — Relance PSC : médecins déjà vérifiés relancés, rattachement à la validation PSC corrigé
