@@ -17,7 +17,7 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
   - **jamais validée** (Mercier, Francis, Pineau) : déposée sans être connecté.
 - 9 évaluations relancées ont été validées depuis le 12/10.
 
-### Code (`dev`)
+### Code (`dev`, `af724a3` : code seul, à reporter sur `main`)
 - [en-attente-psc.ts](src/lib/evaluations/en-attente-psc.ts), commun : recherche des évaluations en attente par le jeton **et** les adresses ; rattachement une par une, erreurs vérifiées ; si le compte a déjà un avis sur le logiciel et que son identité est vérifiée, **la plus récente l'emporte** (décision de David) : ses notes, sa moyenne et sa date passent sur l'avis du compte, qui garde sa date de création (donc sa place dans le calcul des notes, comme une réévaluation faite connecté), l'évaluation en attente est supprimée ; sans identité vérifiée, rien n'est touché. Suivi « Mes évaluations » créé ou passé à « finalisée ». Adresses des comptes vérifiés (lecture par pages, insensible aux majuscules).
 - [psc-callback](src/app/api/auth/psc-callback/route.ts) : s'en sert ; « évaluation publiée » annoncé seulement si une évaluation l'a été ; une erreur de recherche ne bloque plus la connexion.
 - [rattacherEvalsAnonymes](src/lib/actions/user.ts) (chargement du profil) : même fonction (la mise à jour groupée échouait en entier au premier conflit), et cherche aussi `email` et `contact_email` du compte.
