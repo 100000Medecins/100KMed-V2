@@ -1,7 +1,10 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { Pencil, Plus } from 'lucide-react'
+import { Instagram, Pencil, Plus } from 'lucide-react'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import DeleteArticleButton from '@/components/admin/DeleteArticleButton'
 import ArticleCategoriesManager from '@/components/admin/ArticleCategoriesManager'
@@ -10,21 +13,11 @@ import { getPropositionsEnAttente } from '@/lib/propositions-articles'
 
 async function getArticlesAdmin() {
   const supabase = createServiceRoleClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('articles')
     .select('id, titre, slug, statut, date_publication, scheduled_at, id_categorie, articles_categories(nom)')
     .order('created_at', { ascending: false })
-  return (data ?? []) as Array<{
-    id: string
-    titre: string
-    slug: string
-    statut: string
-    date_publication: string | null
-    scheduled_at: string | null
-    id_categorie: string | null
-    articles_categories: { nom: string } | null
-  }>
+  return data ?? []
 }
 
 async function getArticlesCategories() {
@@ -50,27 +43,28 @@ export default async function AdminBlogPage() {
   return (
     <div className="space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-navy">Blog</h1>
           <p className="text-sm text-gray-500 mt-1">
             {articles.length} article{articles.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link
-          href="/admin/blog/nouveau"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-navy text-white text-sm font-semibold rounded-button hover:bg-navy-dark transition-colors shadow-soft"
-        >
-          <Plus className="w-4 h-4" />
-          Nouvel article
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button href="/admin/blog/studio" variant="outline" size="md" leftIcon={<Instagram className="w-4 h-4" />}>
+            Studio Instagram
+          </Button>
+          <Button href="/admin/blog/nouveau" variant="primary" size="md" leftIcon={<Plus className="w-4 h-4" />}>
+            Nouvel article
+          </Button>
+        </div>
       </div>
 
       {/* Propositions de sujets (lot hebdomadaire + regénération à la demande) */}
       <PropositionsArticlesPanel propositions={propositions} />
 
       {/* Liste articles */}
-      <div className="bg-white rounded-card shadow-card overflow-hidden">
+      <Card padding="none">
         {articles.length === 0 ? (
           <div className="px-6 py-16 text-center text-gray-400 text-sm">
             Aucun article pour l&apos;instant.{' '}
@@ -105,17 +99,13 @@ export default async function AdminBlogPage() {
                       </td>
                       <td className="px-6 py-4 hidden md:table-cell">
                         {article.statut === 'publié' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                            Publié
-                          </span>
+                          <Badge variant="success">Publié</Badge>
                         ) : isScheduled ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                          <Badge variant="warning">
                             Programmé · {new Date(article.scheduled_at!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} {new Date(article.scheduled_at!).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          </Badge>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                            Brouillon
-                          </span>
+                          <Badge variant="neutral">Brouillon</Badge>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-400 hidden lg:table-cell">
@@ -142,7 +132,7 @@ export default async function AdminBlogPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Gestion catégories */}
       <div>

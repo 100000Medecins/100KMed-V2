@@ -12,6 +12,9 @@
  * `visuels-reseaux` avec leurs réglages ; rouvrir le studio repart de ces réglages
  * (cf `docs/studio-instagram` du dépôt de la messagerie).
  *
+ * Sans article (`presentation="page"`, Admin → Blog → Studio Instagram) : photo importée, texte
+ * libre, rien n'est enregistré ni demandé à Claude ; on télécharge les JPEG.
+ *
  * Titre trop long pour le visuel (badge non vert en post ou en story) à la première ouverture :
  * Claude propose trois accroches de 50 caractères au plus ; la meilleure remplace le titre, qui
  * reste à un clic (« Revenir au titre complet »).
@@ -22,6 +25,7 @@ import { Space_Grotesk } from 'next/font/google'
 import { Download, ImagePlus, Loader2, RefreshCw, Save, Sparkles } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Field from '@/components/ui/Field'
 import Textarea from '@/components/ui/Textarea'
@@ -90,26 +94,40 @@ function photoDe(img: HTMLImageElement, apercu: string, origine: PhotoVisuel): P
 const date = (iso: string) => new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 
 export interface StudioVisuelProps {
-  open: boolean
-  onClose: () => void
-  /** Article déjà enregistré : les visuels lui sont rattachés. */
-  articleId: string
-  /** Couverture de l'article. */
-  photoUrl: string
-  /** Texte de départ (titre de l'article). */
-  titre: string
+  /** Fenêtre (depuis un article) ou page (studio libre, Admin → Blog → Studio Instagram). */
+  presentation?: 'fenetre' | 'page'
+  open?: boolean
+  /** Sans onClose, pas de bouton « Fermer » (page). */
+  onClose?: () => void
+  /**
+   * Article déjà enregistré : les visuels lui sont rattachés et Claude peut proposer une accroche.
+   * Sans article (studio libre), rien n'est enregistré : on télécharge les JPEG.
+   */
+  articleId?: string
+  /** Couverture de l'article ; sans elle, le studio part d'une photo importée. */
+  photoUrl?: string | null
+  /** Texte de départ (titre de l'article) ; vide dans le studio libre. */
+  titre?: string
   /** Début du nom des JPEG téléchargés (slug de l'article). */
   nomFichier: string
 }
 
-export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre, nomFichier }: StudioVisuelProps) {
+export default function StudioVisuel({
+  presentation = 'fenetre',
+  open = true,
+  onClose,
+  articleId,
+  photoUrl = null,
+  titre = '',
+  nomFichier,
+}: StudioVisuelProps) {
   const police = spaceGrotesk.style.fontFamily
 
   // ---- Ressources ----
   const [logos, setLogos] = useState<Record<CleLogo, HTMLImageElement> | null>(null)
   const [erreurLogos, setErreurLogos] = useState(false)
   const [photos, setPhotos] = useState<Partial<Record<SourcePhoto, PhotoChargee>>>({})
-  const [source, setSource] = useState<SourcePhoto>('couverture')
+  const [source, setSource] = useState<SourcePhoto>(photoUrl ? 'couverture' : 'import')
   const [erreurPhoto, setErreurPhoto] = useState<string | null>(null)
   /** > 0 une fois la police chargée ; augmente à chaque chargement de police (redessin). */
   const [versionPolice, setVersionPolice] = useState(0)
@@ -127,12 +145,13 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
   const [erreurJpeg, setErreurJpeg] = useState<string | null>(null)
 
   // ---- Enregistrement ----
-  /** undefined tant que la lecture n'a pas répondu. */
-  const [enregistres, setEnregistres] = useState<VisuelsArticle | undefined>(undefined)
+  /** undefined tant que la lecture n'a pas répondu ; vide d'emblée dans le studio libre. */
+  const [enregistres, setEnregistres] = useState<VisuelsArticle | undefined>(articleId ? undefined : {})
   const [enregistrement, setEnregistrement] = useState(false)
   const [erreurEnregistrement, setErreurEnregistrement] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!articleId) return
     let actif = true
     lireVisuelsArticle(articleId)
       .then((v) => {
@@ -169,6 +188,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
   }, [])
 
   useEffect(() => {
+    if (!photoUrl) return
     let actif = true
     // Grande version (3 840 px) si la banque d'images la donne, sinon l'adresse enregistrée.
     // crossOrigin : les hébergeurs répondent avec CORS ouvert, le canvas reste exportable.
@@ -277,10 +297,10 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
     [titre, police, versionPolice],
   )
   // Première ouverture (rien d'enregistré) d'un article au titre trop long : Claude propose.
-  const doitProposer = enregistres !== undefined && !dernier && versionPolice > 0 && !titreTient
+  const doitProposer = !!articleId && enregistres !== undefined && !dernier && versionPolice > 0 && !titreTient
 
   useEffect(() => {
-    if (!doitProposer || demandeAuto.current) return
+    if (!doitProposer || !articleId || demandeAuto.current) return
     demandeAuto.current = true
     proposerAccroches(articleId)
       .then((r) => {
@@ -299,6 +319,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
   const indexAccroche = accroches.indexOf(texte)
 
   async function demanderAccroches() {
+    if (!articleId) return
     setAccrocheEnCours(true)
     setAccrocheErreur(null)
     try {
@@ -399,6 +420,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
   }, [changerCadrage, format, open])
 
   // ---- Photo importée ----
+  const champImport = useRef<HTMLInputElement>(null)
   async function importer(e: React.ChangeEvent<HTMLInputElement>) {
     const fichier = e.target.files?.[0]
     e.target.value = ''
@@ -448,7 +470,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
 
   // ---- Enregistrement : post puis story, chacun dessiné, déposé, vérifié par le serveur ----
   async function enregistrer() {
-    if (!ressources) return
+    if (!ressources || !articleId) return
     setEnregistrement(true)
     setErreurEnregistrement(null)
     let suite: VisuelsArticle = { ...enregistres }
@@ -507,7 +529,9 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
   const note =
     erreurEnregistrement ??
     erreurJpeg ??
-    (!pret
+    (!articleId
+      ? 'Rien n’est enregistré ici : téléchargez le post et la story.'
+      : !pret
       ? 'Chargement…'
       : !dernier
         ? 'Pas encore enregistré pour cet article.'
@@ -542,9 +566,9 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
       actif ? 'border-navy' : 'border-transparent hover:border-gray-200'
     }`
 
-  return (
-    <Modal open={open} onClose={onClose} size="2xl" closeOnBackdropClick={false}>
-      <Modal.Header onClose={onClose}>Visuel Instagram</Modal.Header>
+  const corps = (
+    <>
+      {presentation === 'fenetre' && <Modal.Header onClose={onClose}>Visuel Instagram</Modal.Header>}
       <Modal.Body>
         <div className="grid items-start gap-8 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
           {/* Aperçu */}
@@ -565,9 +589,26 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
                 onPointerCancel={finGlisse}
               />
               {!pret && (
-                <p className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-gray-500">
-                  {erreurLogos ? 'Les logos ne se chargent pas.' : erreurPhoto && !photo ? erreurPhoto : 'Chargement…'}
-                </p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center text-sm text-gray-500">
+                  {erreurLogos ? (
+                    'Les logos ne se chargent pas.'
+                  ) : !photo && (erreurPhoto || !photoUrl) ? (
+                    <>
+                      <span>{erreurPhoto ?? 'Importez une photo de votre ordinateur ou de votre téléphone.'}</span>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="md"
+                        leftIcon={<ImagePlus className="h-4 w-4" />}
+                        onClick={() => champImport.current?.click()}
+                      >
+                        Importer une photo
+                      </Button>
+                    </>
+                  ) : (
+                    'Chargement…'
+                  )}
+                </div>
               )}
             </div>
             <div className="flex w-full max-w-[440px] items-center gap-3">
@@ -626,6 +667,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
                   )}
                   <span className="truncate px-0.5">{photos.import ? 'Votre photo' : 'Importer'}</span>
                   <input
+                    ref={champImport}
                     type="file"
                     accept="image/*"
                     aria-label="Importer une photo"
@@ -640,8 +682,21 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
 
             <fieldset className="space-y-3">
               <legend className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">Texte</legend>
-              <Field htmlFor="studio-texte" hint="Titre complet ou accroche courte. Entrée force un retour à la ligne.">
-                <Textarea id="studio-texte" rows={3} value={texte} onChange={(e) => setTexte(e.target.value)} />
+              <Field
+                htmlFor="studio-texte"
+                hint={
+                  articleId
+                    ? 'Titre complet ou accroche courte. Entrée force un retour à la ligne.'
+                    : 'Texte court : une cinquantaine de caractères au plus. Vide, le visuel ne garde que le logo. Entrée force un retour à la ligne.'
+                }
+              >
+                <Textarea
+                  id="studio-texte"
+                  rows={3}
+                  value={texte}
+                  placeholder={articleId ? undefined : 'Votre texte'}
+                  onChange={(e) => setTexte(e.target.value)}
+                />
               </Field>
               {etatT && (
                 <div>
@@ -650,7 +705,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
                   </Badge>
                 </div>
               )}
-              {(accrocheAttendue || accrocheErreur || indexAccroche >= 0) && (
+              {articleId && (accrocheAttendue || accrocheErreur || indexAccroche >= 0) && (
                 <p className={`flex items-center gap-1.5 text-xs ${accrocheErreur && !accrocheAttendue ? 'text-amber-700' : 'text-gray-500'}`}>
                   {accrocheAttendue ? (
                     <>
@@ -667,6 +722,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
                   )}
                 </p>
               )}
+              {articleId && (
               <div className="flex flex-wrap items-center gap-2">
                 {accroches.length > 1 && (
                   <Button
@@ -691,8 +747,9 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
                   {accroches.length ? 'Nouvelles propositions' : 'Proposer une accroche'}
                 </Button>
               </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
-                {texte !== titre && (
+                {titre && texte !== titre && (
                   <Button type="button" size="sm" variant="ghost" onClick={() => setTexte(titre)}>
                     Revenir au titre complet
                   </Button>
@@ -787,13 +844,22 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
           </section>
         </div>
       </Modal.Body>
-      <Modal.Footer className="flex-wrap">
-        <p role="status" className={`min-w-0 flex-1 basis-60 text-xs ${erreurEnregistrement || erreurJpeg ? 'text-amber-700' : 'text-gray-500'}`}>
+      {/* En page, les boutons restent au bas de l'écran pendant qu'on fait défiler les réglages. */}
+      <Modal.Footer className={`flex-wrap ${presentation === 'page' ? 'sticky bottom-0 z-10 rounded-b-card !bg-white' : ''}`}>
+        <p
+          role="status"
+          className={`min-w-0 flex-1 basis-60 text-xs ${erreurEnregistrement || erreurJpeg ? 'text-amber-700' : 'text-gray-500'} ${
+            // Téléphone, studio libre : la note fixe est déjà dans l'en-tête de la page, la barre du bas reste basse.
+            !articleId && !erreurJpeg ? 'hidden sm:block' : ''
+          }`}
+        >
           {note}
         </p>
-        <Button type="button" variant="ghost" size="md" onClick={onClose}>
-          Fermer
-        </Button>
+        {onClose && (
+          <Button type="button" variant="ghost" size="md" onClick={onClose}>
+            Fermer
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
@@ -808,7 +874,7 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant={articleId ? 'outline' : 'primary'}
           size="md"
           leftIcon={<Download className="h-4 w-4" />}
           loading={telechargement === 'post'}
@@ -818,18 +884,33 @@ export default function StudioVisuel({ open, onClose, articleId, photoUrl, titre
         >
           Télécharger le post
         </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="md"
-          leftIcon={<Save className="h-4 w-4" />}
-          loading={enregistrement}
-          disabled={!pret || occupe}
-          onClick={enregistrer}
-        >
-          Enregistrer pour Instagram
-        </Button>
+        {articleId && (
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            leftIcon={<Save className="h-4 w-4" />}
+            loading={enregistrement}
+            disabled={!pret || occupe}
+            onClick={enregistrer}
+          >
+            Enregistrer pour Instagram
+          </Button>
+        )}
       </Modal.Footer>
+    </>
+  )
+
+  if (presentation === 'page') {
+    return (
+      <Card padding="none" overflow="visible">
+        {corps}
+      </Card>
+    )
+  }
+  return (
+    <Modal open={open} onClose={onClose ?? (() => {})} size="2xl" closeOnBackdropClick={false}>
+      {corps}
     </Modal>
   )
 }
