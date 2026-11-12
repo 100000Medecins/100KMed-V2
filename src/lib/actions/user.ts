@@ -13,6 +13,7 @@ import { logActivity, ACTIVITY_TYPES } from '@/lib/activity/log'
 import { verifyTurnstileToken } from '@/lib/turnstile'
 import sgMail from '@sendgrid/mail'
 import { EMAIL_SENDER } from '@/lib/email/sender'
+import { trouverEvaluationsEnAttente, rattacherEvaluationsEnAttente, estRattachee, assurerSuiviFinalise } from '@/lib/evaluations/en-attente-psc'
 import sharp from 'sharp'
 
 /**
@@ -1163,36 +1164,38 @@ export async function rattacherEvalsAnonymes(): Promise<number> {
   if (!user?.email) return 0
 
   const adminSupabase = createServiceRoleClient()
-  const { data: pendingEvals } = await adminSupabase
-    .from('evaluations')
-    .select('id, solution_id')
-    .eq('email_temp', user.email.toLowerCase())
-    .eq('statut', 'en_attente_psc')
+  const { data: profileRow } = await adminSupabase
+    .from('users')
+    .select('rpps, email, contact_email')
+    .eq('id', user.id)
+    .single()
 
-  if (!pendingEvals || pendingEvals.length === 0) return 0
+  // Mêmes adresses que la relance PSC, qui ne relance plus un compte vérifié en comptant
+  // sur ce rattachement à sa prochaine connexion.
+  const pendingEvals = await trouverEvaluationsEnAttente(adminSupabase, {
+    adresses: [user.email, profileRow?.email, profileRow?.contact_email],
+  })
+  if (pendingEvals.length === 0) return 0
 
   // Ne publier que si l'utilisateur a un RPPS (identité PSC vérifiée).
   // Sinon : éval rattachée mais statut reste en_attente_psc.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profileRow } = await (adminSupabase as any)
-    .from('users')
-    .select('rpps')
-    .eq('id', user.id)
-    .single()
-  const nouveauStatut = profileRow?.rpps ? 'publiee' : 'en_attente_psc'
+  const publier = !!profileRow?.rpps
 
-  await adminSupabase
-    .from('evaluations')
-    .update({ user_id: user.id, statut: nouveauStatut, email_temp: null, token_verification: null })
-    .eq('email_temp', user.email.toLowerCase())
-    .eq('statut', 'en_attente_psc')
+  // Une évaluation par évaluation : avant le 2026-11-12, une seule mise à jour groupée
+  // échouait en entier (sans message) dès qu'une évaluation portait sur un logiciel que
+  // le compte avait déjà noté (un avis par compte et par logiciel).
+  const rattachees = (await rattacherEvaluationsEnAttente(adminSupabase, user.id, pendingEvals, { publier }))
+    .filter(estRattachee)
+  if (rattachees.length === 0) return 0
 
-  const { recalcResultatsPourSolution, ensureSolutionUtilisee } = await import('@/lib/actions/evaluation')
-  const solutionIds = [...new Set(pendingEvals.map((e) => e.solution_id).filter(Boolean) as string[])]
-  await Promise.all(solutionIds.map((id) => ensureSolutionUtilisee(user.id, id)))
-  if (nouveauStatut === 'publiee') {
+  const { recalcResultatsPourSolution } = await import('@/lib/actions/evaluation')
+  await Promise.all(rattachees.map((e) =>
+    e.solutionId ? assurerSuiviFinalise(adminSupabase, user.id, e.solutionId, e.scores) : null
+  ))
+  if (publier) {
+    const solutionIds = [...new Set(rattachees.map((e) => e.solutionId).filter((id): id is string => !!id))]
     await Promise.all(solutionIds.map((id) => recalcResultatsPourSolution(id)))
   }
 
-  return pendingEvals.length
+  return rattachees.length
 }

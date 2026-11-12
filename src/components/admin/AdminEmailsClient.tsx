@@ -287,7 +287,8 @@ export default function AdminEmailsClient({
           disabled={isPending || !peutModifierCrons}
         >
           Chaque lundi matin, relance les évaluations déposées sans compte et non validées par Pro Santé Connect depuis plus de 7 jours :
-          une relance toutes les 2 semaines, 4 au plus. Indépendant de l&apos;interrupteur ci-dessus.
+          une relance toutes les 2 semaines, 4 au plus. Pas de relance à l&apos;adresse d&apos;un compte déjà vérifié par PSC : sa prochaine
+          connexion publie l&apos;évaluation. Indépendant de l&apos;interrupteur ci-dessus.
           <span className="block mt-1 font-semibold text-gray-700">
             {evaluationsPscRelancables} évaluation(s) en attente pouvant encore être relancée(s).
           </span>
