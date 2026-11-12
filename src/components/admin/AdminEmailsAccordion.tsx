@@ -113,6 +113,7 @@ export default function AdminEmailsAccordion({ templates, masterLayoutHtml }: Ad
                   initialHtml={tpl.data?.contenu_html ?? ''}
                   updatedAt={tpl.data?.updated_at ?? null}
                   masterLayoutHtml={masterLayoutHtml}
+                  label={tpl.data?.label}
                 />
 
                 {/* Panneau envoi ciblé (études cliniques / questionnaires) */}
