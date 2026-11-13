@@ -129,7 +129,7 @@ _(rien en cours)_
 
 **À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
 
-### Studio des visuels Instagram — chantier fini sur `dev`, reste la mise en production (posé le 2026-11-12)
+### Studio des visuels Instagram — en production depuis le 13/11 (`2c9abe0`) (posé le 2026-11-12)
 
 **Contexte** : préparé dans le dépôt messagerie (`docs/studio-instagram/` : spécification, prompt, code de la maquette validée https://claude.ai/artifact/8onB9d4Q2ZhHR2Tv9hhDUq). Depuis la page d'un article de l'admin, recadrer la couverture en post 4:5 et story 9:16 avec l'habillage de la charte, choisir la tonalité, enregistrer ; le post Instagram de l'article part avec le visuel 4:5 (Make inchangé) ; la story se télécharge seulement.
 
@@ -142,9 +142,9 @@ _(rien en cours)_
 - [x] ~~Étape 5 : accroche proposée par Claude~~ ✅ 12/11 (`982d390`) : 3 accroches (Opus 5.5) quand le titre ne tient pas, 7 à 11 s, la meilleure remplace le titre.
 - [x] ~~Studio hors d'un article~~ ✅ 13/11 (`6360872`) : Admin → Blog → « Studio Instagram », photo importée + texte libre, téléchargement, rien d'enregistré.
 - [x] ~~Étape 6 : tutoriel de la community manager~~ ✅ 13/11 : https://claude.ai/artifact/4AFMFGPNq9189TUcGstamg (privé).
-- [ ] **David** : mise en production (fusion `dev` → `main`, sur son ordre, depuis un dossier séparé) ; elle emporte aussi l'annuaire, qui reste éteint (`annuaire_actif` absent) — vérifier ensuite que `/annuaire` répond 404 en production.
-- [ ] **David**, après la mise en production : partager le tutoriel avec la community manager (menu Partager de la page).
-- [ ] Non essayé : Firefox (logos rechargés avec une taille, Firefox n'étant pas installé sur le poste).
+- [x] ~~Mise en production~~ ✅ 13/11 (`2c9abe0`, `dev` fusionné dans `main`) : vérifiée en production, annuaire toujours éteint (`404 annuaire_ferme`). Tonalités « Orange plein » et « Vert plein » ajoutées avant (`d6c73ae`).
+- [ ] **David** : essai en production (studio d'un article, studio libre, sur ordinateur et sur téléphone) ; puis partager le tutoriel avec la community manager (menu Partager de la page).
+- [x] ~~Non essayé : Firefox~~ ✅ 13/11 : chemin des logos propre à Firefox simulé dans Chrome, JPEG identique à 3 pixels près ; pas besoin d'installer Firefox.
 
 ---
 

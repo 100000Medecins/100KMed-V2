@@ -134,6 +134,24 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
 
 ---
 
+## [2026-11-13] — Studio Instagram en production, tonalités « Orange plein » et « Vert plein »
+
+Ordre de David (« possible d'ajouter les tonalités "orange plein" et "vert plein"… et passe le tout en prod en main »). Il essaiera lui-même en production.
+
+### Tonalités (`d6c73ae`)
+- [gabarit.ts](src/lib/reseaux/gabarit.ts) : **Orange plein** et **Vert plein** sur le modèle de « Violet plein » (brique de la couleur, voile de la même couleur, ombre noire) ; **texte noir sur l'orange** (l'orange clair de la charte rend le blanc illisible), blanc sur le vert. Essai préalable avec le vrai gabarit sur deux photos (voile de la couleur contre voile noir) : les deux se lisent, le voile noir fait ressortir l'orange davantage ; choix du modèle « Violet plein » demandé, l'autre reste possible.
+- Huit vignettes en **4 colonnes** : briques claires (Tricolore, Orange, Vert, Lavande), puis briques pleines (Orange plein, Vert plein, Violet plein) et Noir et blanc. Identifiants existants inchangés (ils sont enregistrés avec les visuels).
+- Tutoriel republié à la même adresse (huit tonalités, nouvelle capture).
+
+### Firefox (question de David : faut-il l'installer ?)
+- Non. Seul point propre à Firefox : il refuse de dessiner les logos SVG sans largeur ni hauteur, et le studio les recharge alors avec leurs dimensions. **Chemin simulé dans Chrome** (dessin des SVG d'origine refusé) : 4 refus, logos rechargés, JPEG à **3 pixels près sur 1,46 million** du téléchargement normal.
+
+### Mise en production — `dev` fusionné dans `main` (`2c9abe0`)
+- Fusion dans un worktree séparé. 4 conflits (`SocialPanel.tsx`, `admin.ts`, `posts-reseaux.ts`, `database.ts`), fichiers reçus par `main` en reports : aucune ligne propre à `main` hors anciennes versions (dans `database.ts`, d'anciennes colonnes de l'annuaire absentes de la base, types régénérés le 12/11) → version de `dev` partout ; **arbre fusionné identique à `dev`**, couvert par le build vérifié. Emporte aussi l'annuaire « nouveaux patients » (éteint) et l'espace Mon compte commun (extraction fidèle : même rendu tant que l'annuaire est éteint).
+- Vercel « Production » `success`. **Vérifié en production** (lecture seule) : accueil `200` ; `/api/annuaire/app/fiches` → `404 annuaire_ferme` (donc `ANNUAIRE_FORCER_ACTIF` n'est pas posé en production) ; `/annuaire` sans connexion → `307` vers la connexion ; `/admin/blog/studio` sans jeton → formulaire de connexion seul ; connecté : bouton « Studio Instagram », studio libre avec 8 tonalités, logos « petite taille » servis, studio d'un article ouvert (photo chargée, accroche demandée à Claude) ; aucune erreur.
+
+---
+
 ## [2026-11-13] — Studio Instagram hors article, tutoriel de la community manager (sur dev)
 
 Ordre de David (« fais les deux à la suite maintenant ») : sa question du 12/11 (« accéder à l'outil d'incrustation en dehors d'un article… pour traiter juste une image ? ») puis l'étape 6 du chantier. Contexte donné par David : la community manager publie pour l'instant avec son propre outil ; ce dont elle a besoin, c'est de poser le gabarit sur une image.
