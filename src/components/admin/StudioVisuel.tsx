@@ -4,7 +4,7 @@
  * Studio des visuels Instagram : recadrer la couverture d'un article en post 4:5 et en story 9:16
  * avec l'habillage de la charte (texte en briques, logo, tonalité), puis télécharger les JPEG.
  *
- * Tout le dessin est dans `src/lib/reseaux/gabarit.ts` : l'aperçu, les six vignettes et le JPEG
+ * Tout le dessin est dans `src/lib/reseaux/gabarit.ts` : l'aperçu, les vignettes des tonalités et le JPEG
  * final sortent de la même fonction. La couverture est chargée dans sa grande version (3 840 px)
  * quand la banque d'images la donne.
  *
@@ -791,7 +791,7 @@ export default function StudioVisuel({
               <p className="text-xs text-gray-500">
                 Chaque vignette montre votre photo, votre cadrage et votre texte dans une tonalité. Touchez celle que vous préférez pour l’appliquer.
               </p>
-              <div className={`grid gap-3 ${format === 'story' ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-3'}`}>
+              <div className="grid grid-cols-4 gap-3">
                 {TONALITES.map((t, i) => {
                   const actif = t.id === tonaliteId
                   return (

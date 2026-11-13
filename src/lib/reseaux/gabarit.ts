@@ -81,12 +81,21 @@ export interface Tonalite {
 }
 
 const C = COULEURS
+/**
+ * Ordre d'affichage des vignettes (4 colonnes) : briques claires sur la première ligne, briques
+ * pleines et noir et blanc sur la seconde. Les identifiants sont enregistrés avec les visuels :
+ * ne jamais en renommer un.
+ */
 export const TONALITES: Tonalite[] = [
   { id: 'tricolore', nom: 'Tricolore', logo: 'couleur', brique: C.blanc, texte: C.noir, ombres: [C.orange, C.vert, C.violet], voile: C.noir, voileMax: 0.62, teinte: null },
   { id: 'orange', nom: 'Orange', logo: 'couleur', brique: C.blanc, texte: C.noir, ombres: [C.orange], voile: C.noir, voileMax: 0.6, teinte: [C.orange, 0.12] },
   { id: 'vert', nom: 'Vert', logo: 'couleur', brique: C.blanc, texte: C.noir, ombres: [C.vert], voile: C.vert, voileMax: 0.88, teinte: [C.vert, 0.16] },
-  { id: 'violet', nom: 'Violet plein', logo: 'couleur', brique: C.violet, texte: C.blanc, ombres: [C.noir], voile: C.violet, voileMax: 0.85, teinte: [C.violet, 0.14] },
   { id: 'lavande', nom: 'Lavande', logo: 'couleur', brique: C.creme, texte: C.noir, ombres: [C.violet], voile: C.lavande, voileMax: 0.92, teinte: [C.lavande, 0.2] },
+  // Briques pleines, sur le modèle de « Violet plein » (voile de la même couleur, ombre noire).
+  // Texte noir sur l'orange : le blanc y serait illisible (orange clair de la charte).
+  { id: 'orange-plein', nom: 'Orange plein', logo: 'couleur', brique: C.orange, texte: C.noir, ombres: [C.noir], voile: C.orange, voileMax: 0.85, teinte: [C.orange, 0.14] },
+  { id: 'vert-plein', nom: 'Vert plein', logo: 'couleur', brique: C.vert, texte: C.blanc, ombres: [C.noir], voile: C.vert, voileMax: 0.88, teinte: [C.vert, 0.16] },
+  { id: 'violet', nom: 'Violet plein', logo: 'couleur', brique: C.violet, texte: C.blanc, ombres: [C.noir], voile: C.violet, voileMax: 0.85, teinte: [C.violet, 0.14] },
   { id: 'nb', nom: 'Noir et blanc', logo: 'noir', brique: C.blanc, texte: C.noir, ombres: [C.noir], voile: C.noir, voileMax: 0.66, teinte: null, gris: true },
 ]
 
