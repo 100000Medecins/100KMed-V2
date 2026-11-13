@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getMaFicheAnnuaire } from '@/lib/actions/annuaire'
+import EnteteAnnuaire from '@/components/annuaire/EnteteAnnuaire'
 import MaFicheAnnuaireForm from '@/components/annuaire/MaFicheAnnuaireForm'
 
 export const metadata = { title: 'Ma fiche annuaire' }
@@ -8,5 +9,10 @@ export const metadata = { title: 'Ma fiche annuaire' }
 export default async function MaFicheAnnuairePage() {
   const fiche = await getMaFicheAnnuaire()
   if (!fiche) notFound()
-  return <MaFicheAnnuaireForm initial={fiche} />
+  return (
+    <>
+      <EnteteAnnuaire actif="fiche" />
+      <MaFicheAnnuaireForm initial={fiche} />
+    </>
+  )
 }

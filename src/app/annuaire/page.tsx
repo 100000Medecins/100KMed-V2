@@ -3,8 +3,10 @@ import { getMaFicheAnnuaire } from '@/lib/actions/annuaire'
 import { createServerClient } from '@/lib/supabase/server'
 import { SM_SPECIALITES } from '@/lib/constants/profil'
 import { RAYON_PAR_DEFAUT_KM } from '@/lib/constants/annuaire'
+import { normaliserRecherche } from '@/lib/annuaire/normaliser'
 import VerificationPsc from '@/components/annuaire/VerificationPsc'
 import AnnuaireRecherche from '@/components/annuaire/AnnuaireRecherche'
+import EnteteAnnuaire from '@/components/annuaire/EnteteAnnuaire'
 
 /**
  * Annuaire des confrères : page privée (dynamique), réservée aux médecins qui ont une preuve
@@ -18,7 +20,7 @@ export default async function AnnuairePage() {
   if (!fiche.verifie) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-navy mb-6">Annuaire des confrères</h1>
+        <EnteteAnnuaire actif="complet" />
         <VerificationPsc
           userId={fiche.userId}
           texte="L'annuaire est réservé aux médecins dont l'identité est attestée par Pro Santé Connect. Connectez-vous une fois avec votre e-CPS, puis revenez sur cette page."
@@ -37,24 +39,23 @@ export default async function AnnuairePage() {
     supabase.rpc('annuaire_source'),
   ])
 
-  // Spécialités regroupées par libellé du site (ex. SM26 / SM53 / SM54 → « Médecin généraliste »)
-  const codesParLibelle = new Map<string, string[]>()
+  // Spécialités regroupées par libellé du site (ex. SM26 / SM53 / SM54 → « Médecin généraliste »),
+  // comparé sans ponctuation : SM43 et SM92 (pédopsychiatrie, avant et après la réforme de 2017) ne
+  // diffèrent que d'une virgule et font une seule entrée, sous le libellé du code le plus récent.
+  const groupes = new Map<string, { libelle: string; codes: string[] }>()
   for (const [code, libelle] of Object.entries(SM_SPECIALITES)) {
-    codesParLibelle.set(libelle, [...(codesParLibelle.get(libelle) ?? []), code])
+    const cle = normaliserRecherche(libelle)
+    groupes.set(cle, { libelle, codes: [...(groupes.get(cle)?.codes ?? []), code] })
   }
-  const specialites = Array.from(codesParLibelle.entries())
-    .map(([libelle, codes]) => ({ libelle, codes }))
-    .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'))
+  const specialites = Array.from(groupes.values()).sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'))
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Annuaire des confrères</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Tous les médecins de l&apos;Annuaire Santé, et les fiches complétées par les confrères sur 100 000 Médecins :
-          compétences, moyen de contact préféré, portable.
-        </p>
-      </div>
+      <EnteteAnnuaire actif="complet" />
+      <p className="text-sm text-gray-500 mb-6">
+        Tous les médecins de l&apos;Annuaire Santé, et les fiches complétées par les confrères sur 100 000 Médecins :
+        compétences, moyen de contact préféré, portable.
+      </p>
       <AnnuaireRecherche
         lecteur={fiche.userId}
         catalogue={fiche.catalogue.filter((i) => i.statut === 'valide')}

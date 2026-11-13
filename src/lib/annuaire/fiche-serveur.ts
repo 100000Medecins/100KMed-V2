@@ -14,6 +14,7 @@ import {
   MAX_COMPETENCES,
   MAX_PROPOSITIONS_EN_ATTENTE,
   MOYENS_CONTACT,
+  nouveauxPatientsPossible,
   type MoyenContact,
 } from '@/lib/constants/annuaire'
 import {
@@ -45,6 +46,10 @@ export interface FicheAnnuaire {
   telephoneCabinet: string | null
   /** Identifiants des intitulés cochés (validés, ou proposés par le médecin) */
   competences: string[]
+  /** Accepte de nouveaux patients comme médecin traitant (généralistes) ; null = non renseigné */
+  nouveauxPatients: boolean | null
+  /** Date de la dernière réponse (null si non renseigné) */
+  nouveauxPatientsLe: string | null
 }
 
 export interface SaisieFiche {
@@ -56,6 +61,11 @@ export interface SaisieFiche {
   commune: Commune | null
   mssante: string
   telephoneCabinet: string
+  /**
+   * Absent : réponse inchangée ; null : non renseigné ; oui / non : réponse datée du jour, même
+   * identique à la précédente (c'est une confirmation). Ignoré pour un non-généraliste.
+   */
+  nouveauxPatients?: boolean | null
 }
 
 export interface LieuAns {
@@ -128,6 +138,8 @@ export async function lireFiche(rpps: string): Promise<FicheAnnuaire | null> {
     mssante: f.mssante,
     telephoneCabinet: f.telephone_cabinet,
     competences: (liens.data ?? []).map((l) => l.intitule_id),
+    nouveauxPatients: f.nouveaux_patients,
+    nouveauxPatientsLe: f.nouveaux_patients_le,
   }
 }
 
@@ -149,7 +161,16 @@ export async function catalogueDe(rpps: string): Promise<IntituleCatalogue[]> {
 export async function enregistrerFiche(
   rpps: string,
   saisie: SaisieFiche,
-): Promise<Resultat<{ publieeLe: string | null; miseAJour: string | null; portable: string | null; telephoneCabinet: string | null }>> {
+): Promise<
+  Resultat<{
+    publieeLe: string | null
+    miseAJour: string | null
+    portable: string | null
+    telephoneCabinet: string | null
+    nouveauxPatients: boolean | null
+    nouveauxPatientsLe: string | null
+  }>
+> {
   const moyenContact = MOYENS_CONTACT.some((m) => m.valeur === saisie.moyenContact) ? saisie.moyenContact : null
   let portable: string | null = null
   if (saisie.portable.trim()) {
@@ -184,6 +205,18 @@ export async function enregistrerFiche(
     if ((permises ?? []).length !== competences.length) return { error: 'Compétence inconnue : rechargez la page.' }
   }
 
+  // Nouveaux patients : seulement pour un généraliste (spécialité PSC), sinon la réponse est ignorée
+  let nouveauxPatients: { nouveaux_patients: boolean | null; nouveaux_patients_le: string | null } | null = null
+  if (saisie.nouveauxPatients !== undefined) {
+    const { data: identite } = await admin.from('identites_psc').select('specialite_code').eq('rpps', rpps).maybeSingle()
+    if (nouveauxPatientsPossible(identite?.specialite_code)) {
+      nouveauxPatients = {
+        nouveaux_patients: saisie.nouveauxPatients,
+        nouveaux_patients_le: saisie.nouveauxPatients === null ? null : new Date().toISOString(),
+      }
+    }
+  }
+
   const { data: fiche, error: errFiche } = await admin
     .from('fiches_annuaire')
     .upsert(
@@ -199,10 +232,11 @@ export async function enregistrerFiche(
         lon: c?.lon ?? null,
         mssante,
         telephone_cabinet: telephoneCabinet,
+        ...nouveauxPatients,
       },
       { onConflict: 'rpps' },
     )
-    .select('publiee_accord_le, mise_a_jour')
+    .select('publiee_accord_le, mise_a_jour, nouveaux_patients, nouveaux_patients_le')
     .single()
   if (errFiche) return { error: `Enregistrement impossible : ${errFiche.message}` }
 
@@ -245,6 +279,8 @@ export async function enregistrerFiche(
     miseAJour: fiche.mise_a_jour,
     portable,
     telephoneCabinet,
+    nouveauxPatients: fiche.nouveaux_patients,
+    nouveauxPatientsLe: fiche.nouveaux_patients_le,
   }
 }
 

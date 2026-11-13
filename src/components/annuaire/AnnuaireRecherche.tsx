@@ -40,6 +40,8 @@ type Criteres = {
   commune: Commune | null
   position: Point | null
   rayon: number | null
+  /** Seulement les généralistes qui déclarent accepter de nouveaux patients comme médecin traitant */
+  nouveauxPatients: boolean
 }
 
 type Memoire = {
@@ -111,6 +113,7 @@ export default function AnnuaireRecherche({
     commune: communeLecteur,
     position: null,
     rayon: RAYON_PAR_DEFAUT_KM,
+    nouveauxPatients: false,
   }
 
   // `criteres` : le formulaire ; `actifs` : les critères des résultats affichés
@@ -146,6 +149,7 @@ export default function AnnuaireRecherche({
         p_lat: p?.lat,
         p_lon: p?.lon,
         p_rayon_km: p && c.rayon ? c.rayon : undefined,
+        p_nouveaux_patients: c.nouveauxPatients || undefined,
       }
     },
     [specialites],
@@ -286,7 +290,9 @@ export default function AnnuaireRecherche({
       return `${resultats.length}${peutPlus ? '+' : ''} confrère${resultats.length > 1 ? 's' : ''}`
     }
     if (total === 0) return 'Aucun confrère ne correspond.'
-    const n = `${total.toLocaleString('fr-FR')} confrère${total > 1 ? 's' : ''}`
+    const n = `${total.toLocaleString('fr-FR')} confrère${total > 1 ? 's' : ''}${
+      actifs.nouveauxPatients ? ' acceptant de nouveaux patients' : ''
+    }`
     if (pointActif && actifs.rayon) {
       return `${n} à moins de ${actifs.rayon} km ${actifs.commune ? `de ${actifs.commune.ville}` : 'de votre position'}`
     }
@@ -382,15 +388,11 @@ export default function AnnuaireRecherche({
               <ChoixCommune
                 id="annuaire-commune-recherche"
                 valeur={criteres.commune}
-                onChange={(c) => modifier({ commune: c, position: c ? null : criteres.position }, c !== null)}
+                onChange={(c) => modifier({ commune: c, position: c ? null : criteres.position }, true)}
                 ariaLabel="Près de quelle commune"
               />
             </Field>
-            <Field
-              label="Rayon"
-              htmlFor="annuaire-rayon"
-              hint={point ? undefined : 'Indiquez une commune ou votre position.'}
-            >
+            <Field label="Rayon" htmlFor="annuaire-rayon">
               <Select
                 id="annuaire-rayon"
                 size="sm"
@@ -422,6 +424,22 @@ export default function AnnuaireRecherche({
               </Button>
             </div>
           </div>
+          <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer w-fit">
+            <input
+              type="checkbox"
+              checked={criteres.nouveauxPatients}
+              onChange={(e) => modifier({ nouveauxPatients: e.target.checked }, true)}
+              className="mt-0.5 w-4 h-4 accent-accent-blue"
+            />
+            <span>
+              Accepte de nouveaux patients comme médecin traitant
+              <span className="block text-xs text-gray-400">
+                Médecins généralistes qui l&apos;ont déclaré sur leur fiche, sans vérification par l&apos;association.
+              </span>
+            </span>
+          </label>
+          {/* Hors de la grille : une aide sous un seul champ décalait les autres colonnes */}
+          {!point && <p className="text-xs text-gray-400">Pour chercher par distance, indiquez une commune ou votre position.</p>}
           {criteres.position && !criteres.commune && (
             <p className="text-xs text-gray-400">
               Recherche autour de votre position, arrondie à environ 1 km. Elle sert à cette recherche et n&apos;est pas

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -140,42 +140,36 @@ export type Database = {
       annuaire_affichages_portables: {
         Row: {
           affiche_le: string
-          consulte_id: string | null
-          consulte_rpps: string | null
+          consulte_rpps: string
           id: string
-          lecteur_id: string | null
-          lecteur_rpps: string | null
+          lecteur_rpps: string
         }
         Insert: {
           affiche_le?: string
-          consulte_id?: string | null
-          consulte_rpps?: string | null
+          consulte_rpps: string
           id?: string
-          lecteur_id?: string | null
-          lecteur_rpps?: string | null
+          lecteur_rpps: string
         }
         Update: {
           affiche_le?: string
-          consulte_id?: string | null
-          consulte_rpps?: string | null
+          consulte_rpps?: string
           id?: string
-          lecteur_id?: string | null
-          lecteur_rpps?: string | null
+          lecteur_rpps?: string
         }
         Relationships: [
           {
-            foreignKeyName: "annuaire_affichages_portables_consulte_id_fkey"
-            columns: ["consulte_id"]
+            foreignKeyName: "annuaire_affichages_consulte_rpps_fkey"
+            columns: ["consulte_rpps"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: "identites_psc"
+            referencedColumns: ["rpps"]
           },
           {
-            foreignKeyName: "annuaire_affichages_portables_lecteur_id_fkey"
-            columns: ["lecteur_id"]
+            foreignKeyName: "annuaire_affichages_lecteur_rpps_fkey"
+            columns: ["lecteur_rpps"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: "identites_psc"
+            referencedColumns: ["rpps"]
           },
         ]
       }
@@ -1201,12 +1195,13 @@ export type Database = {
           mise_a_jour: string
           moyen_contact: string | null
           mssante: string | null
+          nouveaux_patients: boolean | null
+          nouveaux_patients_le: string | null
           publiee: boolean
           publiee_accord_le: string | null
           publiee_accord_version: string | null
           rpps: string
           telephone_cabinet: string | null
-          user_id: string | null
           ville: string | null
         }
         Insert: {
@@ -1218,12 +1213,13 @@ export type Database = {
           mise_a_jour?: string
           moyen_contact?: string | null
           mssante?: string | null
+          nouveaux_patients?: boolean | null
+          nouveaux_patients_le?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
           rpps: string
           telephone_cabinet?: string | null
-          user_id?: string | null
           ville?: string | null
         }
         Update: {
@@ -1235,12 +1231,13 @@ export type Database = {
           mise_a_jour?: string
           moyen_contact?: string | null
           mssante?: string | null
+          nouveaux_patients?: boolean | null
+          nouveaux_patients_le?: string | null
           publiee?: boolean
           publiee_accord_le?: string | null
           publiee_accord_version?: string | null
           rpps?: string
           telephone_cabinet?: string | null
-          user_id?: string | null
           ville?: string | null
         }
         Relationships: [
@@ -1258,7 +1255,6 @@ export type Database = {
           mise_a_jour: string
           portable: string
           rpps: string
-          user_id: string | null
           visible: boolean
           visible_accord_le: string | null
           visible_accord_version: string | null
@@ -1267,7 +1263,6 @@ export type Database = {
           mise_a_jour?: string
           portable: string
           rpps: string
-          user_id?: string | null
           visible?: boolean
           visible_accord_le?: string | null
           visible_accord_version?: string | null
@@ -1276,7 +1271,6 @@ export type Database = {
           mise_a_jour?: string
           portable?: string
           rpps?: string
-          user_id?: string | null
           visible?: boolean
           visible_accord_le?: string | null
           visible_accord_version?: string | null
@@ -1296,19 +1290,16 @@ export type Database = {
           created_at: string
           intitule_id: string
           rpps: string
-          user_id: string | null
         }
         Insert: {
           created_at?: string
           intitule_id: string
           rpps: string
-          user_id?: string | null
         }
         Update: {
           created_at?: string
           intitule_id?: string
           rpps?: string
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -1393,7 +1384,6 @@ export type Database = {
           groupe: string | null
           id: string
           libelle: string
-          propose_par: string | null
           propose_par_rpps: string | null
           specialites_sm: string[]
           statut: string
@@ -1406,7 +1396,6 @@ export type Database = {
           groupe?: string | null
           id?: string
           libelle: string
-          propose_par?: string | null
           propose_par_rpps?: string | null
           specialites_sm?: string[]
           statut?: string
@@ -1419,7 +1408,6 @@ export type Database = {
           groupe?: string | null
           id?: string
           libelle?: string
-          propose_par?: string | null
           propose_par_rpps?: string | null
           specialites_sm?: string[]
           statut?: string
@@ -1427,13 +1415,6 @@ export type Database = {
           type?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "intitules_propose_par_fkey"
-            columns: ["propose_par"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "intitules_propose_par_rpps_fkey"
             columns: ["propose_par_rpps"]
@@ -2841,6 +2822,57 @@ export type Database = {
           },
         ]
       }
+      visuels_reseaux: {
+        Row: {
+          article_id: string | null
+          chemin: string
+          created_at: string
+          format: string
+          id: string
+          reglages: Json
+          updated_at: string
+          url: string
+          video_id: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          chemin: string
+          created_at?: string
+          format: string
+          id?: string
+          reglages?: Json
+          updated_at?: string
+          url: string
+          video_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          chemin?: string
+          created_at?: string
+          format?: string
+          id?: string
+          reglages?: Json
+          updated_at?: string
+          url?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visuels_reseaux_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visuels_reseaux_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2856,6 +2888,7 @@ export type Database = {
           p_intitule?: string
           p_lat?: number
           p_lon?: number
+          p_nouveaux_patients?: boolean
           p_rayon_km?: number
           p_specialites?: string[]
           p_specialites_equivalentes?: string[]
@@ -2877,6 +2910,8 @@ export type Database = {
           mssante: string
           mssante_ans: string[]
           nom: string
+          nouveaux_patients: boolean
+          nouveaux_patients_le: string
           portable_disponible: boolean
           prenom: string
           rpps: string
@@ -2890,6 +2925,7 @@ export type Database = {
       annuaire_filtres: {
         Args: {
           p_intitule: string
+          p_nouveaux_patients: boolean
           p_specialites: string[]
           p_specialites_equivalentes: string[]
           p_texte: string
@@ -2910,6 +2946,7 @@ export type Database = {
           p_lat?: number
           p_limite?: number
           p_lon?: number
+          p_nouveaux_patients?: boolean
           p_rayon_km?: number
           p_specialites?: string[]
           p_specialites_equivalentes?: string[]

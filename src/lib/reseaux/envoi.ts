@@ -2,6 +2,7 @@ import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { adresseVideo } from './fichiers'
 import { lienArticle, lienEtImageVideo } from './liens'
+import { adresseVisuelPost } from './visuels-serveur'
 import type { PostReseau, SourcePost } from './types'
 
 type Client = ReturnType<typeof createServiceRoleClient>
@@ -30,11 +31,18 @@ export async function listerPosts(source: SourcePost): Promise<PostReseau[]> {
   return data ?? []
 }
 
-/** Lien et image lus au moment de l'envoi : une couverture changée entre-temps est prise en compte. */
+/**
+ * Lien et image lus au moment de l'envoi : une couverture ou un visuel changés entre-temps sont
+ * pris en compte. Instagram reçoit le visuel 4:5 du studio s'il existe, sinon la couverture ;
+ * Facebook et LinkedIn gardent la couverture (posts avec lien).
+ */
 async function lienEtImage(supabase: Client, post: PostReseau): Promise<{ lien: string | null; image: string | null }> {
   if (post.article_id) {
-    const { data } = await supabase.from('articles').select('slug, image_couverture').eq('id', post.article_id).single()
-    return { lien: lienArticle(data?.slug) ?? null, image: post.image_url ?? data?.image_couverture ?? null }
+    const [{ data }, visuel] = await Promise.all([
+      supabase.from('articles').select('slug, image_couverture').eq('id', post.article_id).single(),
+      post.reseau === 'instagram' ? adresseVisuelPost(supabase, post.article_id) : null,
+    ])
+    return { lien: lienArticle(data?.slug) ?? null, image: post.image_url ?? visuel ?? data?.image_couverture ?? null }
   }
   const { data } = await supabase.from('videos').select('url, vignette').eq('id', post.video_id!).single()
   const video = lienEtImageVideo(data?.url, data?.vignette)

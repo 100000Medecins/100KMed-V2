@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         admin
           .from('fiches_annuaire')
           .select(
-            'rpps, moyen_contact, ville, code_postal, lat, lon, mssante, telephone_cabinet, mise_a_jour, identite:identites_psc(nom, prenom, specialite_code, compte:users(nom, prenom))',
+            'rpps, moyen_contact, ville, code_postal, lat, lon, mssante, telephone_cabinet, mise_a_jour, nouveaux_patients, nouveaux_patients_le, identite:identites_psc(nom, prenom, specialite_code, compte:users(nom, prenom))',
           )
           .eq('publiee', true)
           .order('rpps')
@@ -79,6 +79,8 @@ export async function GET(request: Request) {
         portable_disponible: avecPortable.has(f.rpps),
         competences: cochesParRpps.get(f.rpps) ?? [],
         mise_a_jour: f.mise_a_jour,
+        nouveaux_patients: f.nouveaux_patients,
+        nouveaux_patients_le: f.nouveaux_patients_le,
       })),
       competences,
     })

@@ -13,6 +13,7 @@ import { normalizeContacts } from '@/lib/contacts'
 import { revalidateSolution } from '@/lib/revalidate-solution'
 import { lierPropositionAArticle } from '@/lib/actions/propositions-articles'
 import { supprimerFichiersDeLaVideo } from '@/lib/reseaux/fichiers'
+import { supprimerVisuelsDeLArticle } from '@/lib/reseaux/visuels-serveur'
 import { jetonSession, roleDepuisJeton, roleDepuisMotDePasse } from '@/lib/auth/admin-session'
 import { ACCUEIL_PAR_ROLE, type RoleAdmin } from '@/lib/auth/admin-rubriques'
 import type { ContactLigne } from '@/types/models'
@@ -1418,6 +1419,8 @@ export async function updateArticle(id: string, formData: FormData) {
 export async function deleteArticle(id: string) {
   await assertAdminOuContenu()
   const supabase = createServiceRoleClient()
+  // Les visuels Instagram ne partent pas avec la cascade : effacer leurs fichiers d'abord.
+  await supprimerVisuelsDeLArticle(supabase, id)
   const { error } = await supabase
     .from('articles')
     .delete()

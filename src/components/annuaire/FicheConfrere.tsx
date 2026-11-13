@@ -40,6 +40,8 @@ export default function FicheConfrere({ fiche }: { fiche: Fiche }) {
 
   const specialite = (fiche.specialite_code && SM_SPECIALITES[fiche.specialite_code]) || fiche.specialite
   const lieux = (Array.isArray(fiche.lieux) ? fiche.lieux : []) as unknown as LieuAns[]
+  // Généralistes seulement ; null = non renseigné (les types générés ne disent pas que la colonne peut être vide)
+  const nouveauxPatients: boolean | null = fiche.nouveaux_patients
 
   async function afficherLePortable() {
     setChargement(true)
@@ -91,6 +93,19 @@ export default function FicheConfrere({ fiche }: { fiche: Fiche }) {
             <p className="mt-3 text-sm text-navy">
               <span className="font-semibold">Préfère être contacté par :</span>{' '}
               {LIBELLES_CONTACT.get(fiche.moyen_contact) ?? fiche.moyen_contact}
+            </p>
+          )}
+          {nouveauxPatients !== null && (
+            <p className="mt-3 text-sm text-navy">
+              <span className="font-semibold">
+                {nouveauxPatients ? 'Accepte' : 'N’accepte pas'} de nouveaux patients comme médecin traitant
+              </span>
+              {fiche.nouveaux_patients_le && (
+                <span className="text-gray-500">
+                  {' '}
+                  (déclaré le {new Date(fiche.nouveaux_patients_le).toLocaleDateString('fr-FR')})
+                </span>
+              )}
             </p>
           )}
           <div className="mt-3 space-y-2 text-sm">

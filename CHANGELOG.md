@@ -5,6 +5,693 @@
 
 ---
 
+## [2026-11-12] — Notes figées : un ancien avis re-noté remplace sa note de l'ancien site
+
+Question de David (« les nouvelles notes ne défigeaient pas la note historique ? ») ; décision : option 1, remplacer l'ancienne note par la nouvelle.
+
+### Constat (lecture seule)
+- Le calcul des 24 logiciels à note figée n'ajoutait que les avis **créés** après la mise en ligne (12/04). Un avis de l'ancien site re-noté garde sa date de création : sa nouvelle note ne comptait nulle part, l'ancienne restait dans la note figée. Aucune décision écrite ne prévoyait ce cas (seule la mémoire du projet disait « figées jusqu'à ce qu'un médecin refasse le parcours »).
+- 58 anciens avis portent une date de note postérieure au 12/04, mais **9 seulement ont changé de note** ; les 49 autres sont des confirmations « toujours d'actualité » (le lien ne change que la date ; 40 datent des 23-25/04, après la relance partie le 23/04).
+- La note figée **n'est pas la somme des anciens avis** (90 lignes sur 143 s'en écartent, ex. Premiocare 4,34 figé contre 4,88 pour ses 6 avis) : on ne la recalcule pas, on y **remplace la note du médecin qui re-note**, avec le même poids que les autres votants.
+- `firebase-final-backup/` contient l'état du 26/04 (format Supabase). Les notes Firebase des avis viennent des sauvegardes de la correction du 28/05 (`docs/backup-fix-firebase-20260528-*.json`, `nouveaux_scores` / `nouvelle_moyenne`).
+
+### Base
+- Table `evaluations_notes_figees` (SQL lancé par David, vérifié) : note de chaque ancien avis telle qu'elle compte dans la note figée ; serveur seul (`anon` / `authenticated` aucun droit, RLS sans règle), lecture pour `claude_readonly`. Types régénérés (+32 lignes).
+- [scripts/remplir-notes-figees.ts](scripts/remplir-notes-figees.ts) (dry-run puis `--execute`, refus si la table n'est pas vide, lignes écrites sauvegardées dans `backups/`) : **644 lignes** ; 635 = note actuelle (jamais re-notés ou confirmés : aucun effet), **9 = note Firebase** (Medicab, AxiSanté, DrSanté, Weda ×2, Odaiji ×2, Medistory, HelloDoc). Relu : les 635 identiques aux avis, les 9 différentes.
+
+### Code (`dev`, `40328ae` : code seul, à reporter sur `main`)
+- [notes-figees.ts](src/lib/evaluations/notes-figees.ts) : `ecartAvisRenotes`, critère par critère (sous-critères compris) et note globale : nouvelle note − ancienne si le critère a une note figée valable ; nouvelle note ajoutée si l'ancienne ne comptait pas ; critère laissé vide ou note inchangée → rien. `DATE_MISE_EN_LIGNE` y est désormais (une seule définition).
+- [recalcResultatsPourSolution](src/lib/actions/evaluation.ts) : en mode figé, lit les anciens avis publiés avec leur note figée et ajoute l'écart ; en cas d'erreur de lecture, n'écrit rien (calculer sans eux effacerait les re-notations). `as any` de la fonction retirés.
+- Désormais automatique : re-noter un ancien avis (connecté, ou rattachement PSC du jour) déplace la note ; une confirmation ne change rien.
+
+### Effet attendu (appliqué le 12/11 : voir « Déploiement »)
+- 7 fiches, 156 lignes de résultats (38 globales ou critères, 118 sous-critères) ; les 17 autres logiciels ne bougent pas. Note globale : Odaiji 4,66 → 4,69, Medicab 3,90 → 3,88, AxiSanté 2,31 → 2,29, HelloDoc 2,42 → 2,43 ; DrSanté, Weda, Medistory inchangées. Plus gros écart : sous-critère « profil remplaçant » de HelloDoc 3,5 → 3,2 (note figée sur 1 seul avis).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build`.
+- Simulation sur les vraies données : sans le changement, elle retombe exactement sur les notes enregistrées ; avec, mêmes valeurs que la fonction du site.
+- **Essai de bout en bout** (build local, vraie route `/api/admin/recalc-solution`, logiciel fictif inactif à note figée, 3 comptes `example.com`), **13 / 13** : comportement d'avant sans note figée ; avis re-noté (globale 3,4 → 3,8, critère 3,4 → 3,9) ; critère non noté sur l'ancien site (nouvelle note ajoutée) ; critère laissé vide (ancienne note gardée) ; avis confirmé sans effet ; avis dépublié. Tout effacé ; 644 notes figées réelles intactes.
+
+### Déploiement (12/11, ordre de David)
+- Report sur `main` dans un dossier de travail séparé, code seul : `e7c51f8` (relance PSC, entrée ci-dessous) puis **`3b4aa13`** ; fichier des types : seul le bloc `evaluations_notes_figees` ajouté à la version de `main`. `npm ci`, `tsc`, `npm run build` (pages publiques toujours statiques). Vercel « Production » `success`.
+- Recalcul des 7 fiches par `/api/admin/recalc-solution` en production. Lignes de résultats des 24 fiches photographiées avant et après (2 124) : **142 changées**, toutes parmi les 156 qui ont un écart ; pour les 14 autres, l'écart (moins de 0,007) disparaît dans l'arrondi à 2 décimales (Weda, Medistory, DrSanté, un critère de HelloDoc). Aucune autre ligne touchée. Notes globales exactement celles prévues.
+- Fiches publiques des 7 logiciels relues : les 5 critères principaux affichent les nouvelles valeurs, aucune page périmée. La note globale affichée est arrondie à 1 décimale (Odaiji 4,7, Medicab 3,9, AxiSanté 2,3, HelloDoc 2,4) : pas de changement à l'écran.
+- Les re-notations de Rozand (HelloDoc) et Peltier (Weda), fusionnées plus tôt dans la journée (entrée « Relance PSC »), font partie des 9 et comptent désormais.
+
+---
+
+## [2026-11-12] — Mail de lancement : cause de la casse, nouveau modèle façon lettre du mois, éditeur protégé, envoi en masse corrigé
+
+Signalé par David : mail de lancement cassé dans l'aperçu de l'admin et à la réception d'un test (contenu sur le fond sombre, texte noir, boutons devenus des liens, logo en double, serif).
+
+### Cause
+- Le modèle `lancement` avait été modifié le **23/05/2026** dans l'éditeur **visuel** de l'admin (TipTap) : à la première frappe, TipTap réécrit tout le HTML (tableaux à lui avec `<colgroup>`, styles en ligne retirés). Le contenu commençait alors par `<table>` au lieu de `<tr><td>` : injecté dans le tableau du `master_layout`, le navigateur et les messageries le sortent de la carte blanche. Le backup du 10/10 (`backups/modele-lancement-2026-10-10…`) le montrait déjà cassé.
+- L'éditeur ouvrait **tous** les modèles en mode visuel par défaut, y compris le `master_layout` (document complet) : une frappe et un enregistrement suffisaient à casser n'importe quel mail.
+- Au passage : « Bonjour Dr {{nom}} » alors que l'envoi fournit déjà « Dr. NOM » (→ « Dr Dr. DUPONT ») ; lien agendas vers `/solutions/agenda-medical` (le slug est `agendas-medicaux`) ; l'aperçu de l'admin ne remplaçait pas `{{label}}`.
+
+### Nouveau modèle (en base)
+- Source de vérité [scripts/save-lancement-template.ts](scripts/save-lancement-template.ts) (remplace `save-lancement-template.mjs`, version d'avril en document complet, supprimé) : fragment pour le `master_layout`, police posée sur chaque texte (le layout n'en fixe pas), dry-run par défaut, `--preview <fichier>` (rendu complet avec le vrai layout, données fictives), `--execute` avec backup. Articles et images des catégories relus en base ; arrêt si un article n'est plus publié.
+- Contenu, façon lettre du mois : accueil (« Le nouveau 100 000 Médecins est là ✨ », « Bonjour {{nom}}, ») ; encadré « Votre avis sur {{solution_nom}} est toujours en ligne » (« Confirmer mon avis en 2 clics », « Le mettre à jour ») ; **À la une** : portabilité des données (cinq éditeurs, sans les nommer) → `/portabilite` ; **Nos derniers articles** : Pro Santé Connect (08/10) et « 46 heures par semaine » (31/08), miniatures recadrées ; **Nouveau sur la plateforme** : 7 catégories (vignettes agendas, IA scribes, IA documentaires ; liens vers les 4 autres), Prévisionnel maison de santé ; **À vous de jouer** : évaluer d'autres outils (`/solution/noter`, vidéo « Votre avis en 5 minutes » du 04/11), études cliniques (texte général, aucune étude nommée) ; transfert à un confrère ; signature « L'équipe 100 000 Médecins ». Pas de questionnaire de thèse (aucun réel en ligne). Sujet et étiquette (« Nouveau site ») inchangés.
+- `--execute` le 12/11 : backup `backups/modele-lancement-2026-11-12T15-30-11-388Z.json`, relu identique, puis vérifié par requête indépendante (début `<tr><td`, plus de `colgroup`).
+- Rendu vérifié (aperçu complet, Chrome) : 760 px et 375 px, 7 images chargées. ~~Le débordement mobile (17 px) vient de l'en-tête du `master_layout`~~ **Erreur de diagnostic, corrigée dans la suite ci-dessous** : il venait des 3 vignettes de catégories du mail lui-même.
+
+### Éditeur de modèles ([EmailTemplateEditor](src/components/admin/EmailTemplateEditor.tsx))
+- Un modèle mis en page (styles en ligne, tableaux, fragment `<tr>`, document complet) s'ouvre en **HTML brut** ; bandeau d'explication ; passer à l'éditeur visuel demande confirmation (« L'éditeur visuel réécrit le HTML… »).
+- Aperçu : `{{label}}` remplacé par l'étiquette du modèle (prop `label`, passée par [AdminEmailsAccordion](src/components/admin/AdminEmailsAccordion.tsx)).
+- Migration au fil de l'eau : boutons Enregistrer / Tester → `Button`, champs sujet / adresse de test → `Input`. **Non migré** : la fenêtre d'aperçu (`fixed inset-0…` → `Modal`), `Modal.tsx` étant en cours de modification dans une autre session.
+
+### Envoi en masse ([send-lancement](src/app/api/admin/send-lancement/route.ts)) — corrigé avant tout envoi
+- Il envoyait à `users.email` : **84** des 750 destinataires ont l'adresse fictive `psc-…@psc.sante.fr` (rebonds, réputation du domaine) et 97 ont saisi une autre adresse. → `adresseEnvoi()` (adresse saisie d'abord, jamais l'adresse fictive), comme la newsletter.
+- Il ignorait les préférences : **12** médecins ont refusé les communications. → exclus (`marketing_emails = false`).
+- Évaluation citée : la plus récente du médecin (avant : la première rendue par la base). Lecture par pages de 1 000 (851 évaluations aujourd'hui). Envoi par lots de 10, `maxDuration = 300`. La réponse donne les ignorés (désabonnés, sans adresse).
+- Destinataires attendus aujourd'hui : **738**.
+
+### Vérif
+- `tsc` (src + script ; les erreurs de `.next/dev/types` viennent d'un serveur de développement en cours, hors sujet), lint des fichiers touchés, `npm run build`.
+- Navigateur (build local, port 3107, `SENDGRID_API_KEY` et `MAKE_WEBHOOK_URL` neutralisés, lecture seule), **17 / 17** : connexion admin ; « Mail de lancement » ouvert en HTML brut avec le nouveau modèle, bandeau, pas d'éditeur visuel monté ; aperçu : « Nouveau site » à la place de `{{label}}`, « Bonjour Dr. DUPONT, », un seul `<body>`, titre dans la carte blanche, police sans empattement ; bascule vers l'éditeur visuel → avertissement, annulé → toujours en HTML brut ; `master_layout` ouvert en HTML brut ; aucun enregistrement (dates des 3 modèles relues inchangées), aucune erreur JavaScript.
+- **Non vérifié** : la réception réelle (aucun mail envoyé par Claude) ; l'envoi en masse (il enverrait pour de vrai).
+
+### Reste
+- ~~Code non déployé~~ : **en production depuis le 12/11** (voir « Déploiement » ci-dessous). Envoyer depuis l'admin de production (les liens du mail prennent le domaine d'où part l'envoi).
+- `master_layout` : voir la suite.
+
+### Suite (même jour, demandes de David)
+- **« Dr Dr. » corrigé partout** : 6 corrections ajoutées à [fix-phrases-modeles-emails.ts](scripts/fix-phrases-modeles-emails.ts) (« Bonjour Dr {{nom}}, » → « Bonjour {{nom}}, ») après vérification que tous les envois de ces modèles fournissent `nom` = « Dr. NOM » ou « Docteur » (relance-evaluations, relance-incomplets, send-etude, send-questionnaire, campagnes, send-infos-mensuels, test-relance-email). Dry-run puis `--execute` : `relance_1an`, `relance_3mois`, `relance_incomplet`, `etude_clinique`, `questionnaire_recherche`, `infos_mensuels` écrits et relus, backups dans `backups/`. Requête indépendante : 0 « Dr {{nom}} » restant dans les modèles, aucun dans les newsletters.
+- **Questionnaire d'essai dépublié** : [scripts/depublier-questionnaire.ts](scripts/depublier-questionnaire.ts) (sur le modèle de `depublier-video.ts`), `439da311…` « corrélations… chips et violence » : « publie » → « refuse », comme le bouton « Refuser » de l'admin (déjà masqué du site depuis sa date de fin, le 26/04). Backup, relu. Plus aucun questionnaire publié.
+- **Mail de lancement : section « Ces derniers mois »**, sur le modèle du bloc « l'association, c'est aussi » du mail des syndicats, à la place de « À la une » : frise mai–juin (prises de position Ségur vague 2 et IA, lien blog), début juillet (WONCA Europe, 56 évaluations sur le stand, jeu concours), 20 juillet (appel portabilité avec six syndicats), août (cadre d'usage de l'IA à la demande de la DNS), 19 octobre (encadré cinq éditeurs, bouton `/portabilite`) ; puis « Et toute l'année » : représentation DNS / ANS / Assurance maladie, Collège des Médecins Geeks, formations et congrès (textes du mail des syndicats). Faits relevés dans le CHANGELOG (21/07, 01/08, 20-21/10), la page Portabilité et le blog.
+- **Débordement mobile** : c'étaient les 3 vignettes de catégories en colonnes fixes (« documentaires » ne tient pas à 375 px). Devenues des blocs de 150 px qui passent à la ligne (3 sur une ligne sur ordinateur, empilés sur téléphone ; Outlook Windows les empile). Mesuré : 375 px → 375, 320 px → 320, plus aucun débordement. L'en-tête du `master_layout` ne déborde qu'à 320 px avec une étiquette longue (« Confirmation d'inscription » → 365 px).
+- Modèle réécrit deux fois (`--execute`), backups `modele-lancement-2026-11-12T16-04-58…` et `…T16-06-33…`, relu identique ; requête indépendante : frise et vignettes présentes, pas de balisage TipTap.
+- **Constat pour l'en-tête** : aucun modèle, ni le `master_layout`, ne fixe de police (seul le nouveau mail de lancement le fait) : sans police par défaut du lecteur (Outlook pour Windows, aperçu de l'admin), tout s'affiche en Times. Le `master_layout` sert à 15 modèles (tous sauf `lancement_syndicat`, document complet ; la newsletter a son propre gabarit dans le code). Rien modifié, explication donnée à David.
+- Au passage : [send-infos-mensuels](src/app/api/admin/send-infos-mensuels/route.ts) envoie le modèle `infos_mensuels` (fragment `<tr><td>`) sans le `master_layout` : il partirait cassé. Aucun bouton n'appelle cette route aujourd'hui.
+
+### Déploiement (accord de David)
+- Commits sur `dev` : `796c9e9` (code seul : éditeur, aperçu, envoi en masse) et `da4d8cc` (scripts, CHANGELOG).
+- Report du code seul sur `main` : worktree séparé, cherry-pick de `796c9e9` → **`1969ad4`**, sans conflit (les 3 fichiers étaient identiques sur `main` et `dev` avant le changement ; dépendances présentes sur `main`). `npm ci`, `tsc`, build verts ; build `main` essayé en local (envois neutralisés) : 17 / 17, `send-lancement` sans session → 401. `.env.local` copié puis supprimé, worktree vidé et oublié. Scripts et CHANGELOG laissés à `dev`.
+- Vercel « Production » `success`.
+- **Vérifié en production** (lecture seule) : `send-lancement` et `test-email` sans session → 401 ; même essai de l'admin, **17 / 17** (mail de lancement ouvert en HTML brut avec le nouveau modèle, bandeau, aperçu avec « Nouveau site » et « Bonjour Dr. DUPONT, », avertissement avant l'éditeur visuel, `master_layout` en HTML brut, aucune erreur JavaScript) ; dates des modèles relues inchangées.
+- **Non vérifié** : un envoi réel (test ou masse), laissé à David.
+
+### Retouches de David (même soir)
+- Étape « Août » (cadre d'usage de l'IA à la demande de la DNS) retirée de la frise.
+- WONCA : « Merci à tous les collègues qui ont évalué leurs logiciels sur notre stand, et bravo aux trois gagnantes du jeu concours ! » (le chiffre de 56 n'apparaît plus).
+- `--execute` : backup `modele-lancement-2026-11-12T18-57-07…`, relu identique ; requête indépendante : étape « Août » absente, nouvelle phrase présente. Rendu 760 / 375 px sans débordement.
+
+---
+
+## [2026-11-12] — Relance PSC : médecins déjà vérifiés relancés, rattachement à la validation PSC corrigé
+
+David, inscrit et vérifié par PSC, a reçu des relances « validez votre évaluation avec Pro Santé Connect ».
+
+### Constat (lecture seule)
+- **David** : évaluation d'essai de Weda du 25/06 déposée sans compte avec `dr.azerad+essai46@…` (Gmail livre l'alias dans sa boîte), jamais validée, relancée les 12/10, 26/10 et 09/11. Son vrai avis Weda est publié depuis le 04/07.
+- **7 médecins vérifiés** (RPPS) relancés à l'adresse de leur compte, la relance ne regardant pas si l'adresse appartient à un compte :
+  - **avis déjà publié sur le même logiciel** (Rozand / HelloDoc, Peltier / Weda, Sidorkiewicz / Weda) : un avis par compte et par logiciel (`evaluations_user_id_solution_id_key`) ; à la validation PSC, la mise à jour échouait sans message, le site annonçait « évaluation publiée », l'évaluation restait en attente et relancée. Rozand a validé le 08/10 (2 min après le dépôt) et le 19/10 (4 min après la relance), Peltier le 31/10 et le 09/11 : en vain ;
+  - **une seule piste suivie** (Longépé) : KelDoc puis Perplexity déposés à 5 min d'écart, validation par le lien de Perplexity ; la route s'arrêtait à la première piste fructueuse (jeton), KelDoc restait en attente ;
+  - **jamais validée** (Mercier, Francis, Pineau) : déposée sans être connecté.
+- 9 évaluations relancées ont été validées depuis le 12/10.
+
+### Code (`dev`, `af724a3` : code seul, à reporter sur `main`)
+- [en-attente-psc.ts](src/lib/evaluations/en-attente-psc.ts), commun : recherche des évaluations en attente par le jeton **et** les adresses ; rattachement une par une, erreurs vérifiées ; si le compte a déjà un avis sur le logiciel et que son identité est vérifiée, **la plus récente l'emporte** (décision de David) : ses notes, sa moyenne et sa date passent sur l'avis du compte, qui garde sa date de création (donc sa place dans le calcul des notes, comme une réévaluation faite connecté), l'évaluation en attente est supprimée ; sans identité vérifiée, rien n'est touché. Suivi « Mes évaluations » créé ou passé à « finalisée ». Adresses des comptes vérifiés (lecture par pages, insensible aux majuscules).
+- [psc-callback](src/app/api/auth/psc-callback/route.ts) : s'en sert ; « évaluation publiée » annoncé seulement si une évaluation l'a été ; une erreur de recherche ne bloque plus la connexion.
+- [rattacherEvalsAnonymes](src/lib/actions/user.ts) (chargement du profil) : même fonction (la mise à jour groupée échouait en entier au premier conflit), et cherche aussi `email` et `contact_email` du compte.
+- [relance-psc](src/app/api/cron/relance-psc/route.ts) : **pas de relance à l'adresse d'un compte vérifié** (décision de David) ; compteur `comptesVerifiesIgnores` dans la réponse ; si la liste des comptes ne se lit pas, rien n'est envoyé. Admin → Emails : même règle pour le compteur, phrase ajoutée au bandeau.
+- Inchangé : la confirmation d'inscription par email (compte neuf, pas de conflit possible) ; le mode « association » de la route PSC (le profil, chargé juste après, rattache).
+
+### Données (accord de David)
+- [scripts/supprimer-evaluation-en-attente.ts](scripts/supprimer-evaluation-en-attente.ts) : évaluation d'essai `226a3b2a…` supprimée (dry-run puis `--execute`, sauvegarde dans `backups/`).
+- [scripts/remplacer-avis-par-evaluation-en-attente.ts](scripts/remplacer-avis-par-evaluation-en-attente.ts) (même fonction que le site ; refus sans connexion PSC réussie après le dépôt ou si un recalcul des notes était nécessaire) : **Rozand** HelloDoc 3,00 → 4,03, **Peltier** Weda 2,50 → 2,30, avec leurs commentaires ; évaluations en attente supprimées, suivis « finalisée » ; les deux lignes sauvegardées dans `backups/`. Notes des fiches inchangées : ces avis datent d'avant le lancement, sur des fiches à note historique figée (comme toute réévaluation d'un avis de l'ancien site). *Dépassé le même jour : voir « Notes figées », ces deux re-notations comptent depuis la mise en production.*
+- Relu par requête indépendante : 3 lignes absentes, 1 avis par compte, 130 évaluations en attente sans compte.
+
+### Vérif
+- `tsc` (sans erreur hors fichiers générés par un serveur de développement en cours), lint des fichiers touchés (0 erreur), `npm run build`.
+- **Essai sur données fictives** (deux comptes `example.com`, trois logiciels sans évaluation, pas de recalcul), **24 / 24** : jeton et adresses réunis, `contact_email` en majuscules retrouvé ; avis plus ancien remplacé, évaluation rattachée, évaluation plus ancienne écartée, avis plus récent intact ; suivis « à compléter » → « finalisée » et créé avec la date déclarée ; rejeu sans effet ; compte non vérifié : rien touché en cas d'avis existant, rattachement en attente sinon ; adresses des comptes vérifiés (7 001) ; sur les 134 évaluations relançables, les 7 relevées sont écartées. Tout effacé (comptes, évaluations, suivis, préférences).
+- **Non essayé** : la route PSC et le chargement du profil de bout en bout (il faudrait une vraie identité PSC) ; la tâche de relance (elle enverrait).
+
+### Déploiement (12/11, ordre de David)
+- En production avec les notes figées : **`e7c51f8`** sur `main` (voir l'entrée « Notes figées » pour le build et Vercel).
+- Admin → Emails en production : **125** évaluations relançables, soit les 130 en attente moins les 5 adresses de comptes vérifiés (Mercier, Francis, Sidorkiewicz, Longépé, Pineau) ; nouvelle phrase du bandeau présente. La relance du lundi 23/11 ne les vise plus.
+- Non vérifié : la tâche de relance elle-même (la lancer enverrait). À relire après son passage du 23/11 : `comptesVerifiesIgnores` dans sa réponse.
+
+---
+
+## [2026-11-13] — Studio Instagram hors article, tutoriel de la community manager (sur dev)
+
+Ordre de David (« fais les deux à la suite maintenant ») : sa question du 12/11 (« accéder à l'outil d'incrustation en dehors d'un article… pour traiter juste une image ? ») puis l'étape 6 du chantier. Contexte donné par David : la community manager publie pour l'instant avec son propre outil ; ce dont elle a besoin, c'est de poser le gabarit sur une image.
+
+### Studio hors article (`6360872`)
+- Page **`/admin/blog/studio`** (rubrique Blog, donc ouverte au rôle contenu), bouton **« Studio Instagram »** à côté de « Nouvel article ». Le même [StudioVisuel](src/components/admin/StudioVisuel.tsx), affiché en page (`presentation="page"`, via [StudioLibre](src/components/admin/StudioLibre.tsx)) : photo importée de l'ordinateur ou du téléphone (invitation « Importer une photo » dans l'aperçu), texte libre, téléchargement du post et de la story (`visuel-instagram-post.jpg` / `-story.jpg`). **Rien n'est enregistré ni demandé à Claude** (sans article). Boutons du bas collés à l'écran ; sur téléphone, la note fixe est masquée (déjà dans l'en-tête de la page).
+- `StudioVisuel` : `articleId`, `photoUrl`, `titre`, `open`, `onClose` deviennent facultatifs ; sans article, pas de lecture des visuels enregistrés, pas d'« Enregistrer », pas d'accroche ; sans `onClose`, pas de « Fermer ». Le studio d'un article est inchangé.
+- [Liste du blog](src/app/admin/blog/page.tsx), au passage : boutons, pastilles de statut et carte passés aux composants du site ; requête typée (`as any` retiré, la relation vers `articles_categories` est dans les types).
+- `9029936` : message « Photo nette : … pour 1 080 px » avec espaces insécables (« 1 » / « 080 px » se coupaient sur téléphone).
+
+### Étape 6 — tutoriel de la community manager
+- Page publiée (privée, à partager par David) : **https://claude.ai/artifact/4AFMFGPNq9189TUcGstamg** — les deux entrées (image seule, article), le pas à pas (format, cadrage et zones sûres, texte, logo, tonalité, téléchargement), la lecture des pastilles, l'accroche de Claude, l'enregistrement avec un article, le téléphone, les soucis courants. Captures prises en local avec le rôle contenu (rien enregistré, une accroche demandée à Claude).
+- Le tutoriel décrit ce qui est sur `dev` : à partager une fois le studio en production.
+
+### Vérif
+- Build local, rôle contenu (mot de passe d'essai posé pour le serveur local seulement) : connexion → Admin → Blog → « Studio Instagram » → `/admin/blog/studio` ; invitation à importer, téléchargement grisé sans photo, ni « Enregistrer », ni accroche, ni « Fermer » ; photo importée (2 400 × 1 600) → « Photo nette », texte, tonalité, **2 JPEG 1080 × 1350 et 1080 × 1920** ; téléphone (390 px) sans défilement horizontal, « Télécharger le post » visible en faisant défiler ; **rien en base** (`visuels_reseaux` 0 → 0). Non-régression : studio d'un article en fenêtre (couverture, « Enregistrer », « Fermer ») ; essai complet de l'étape 3 rejoué (enregistrement, réouverture identique au pixel, réenregistrement, suppression de l'article par la liste du blog migrée) : tout bon. `tsc`, lint des fichiers touchés, `npm run build` (`/admin/blog/studio` en `ƒ`).
+
+---
+
+## [2026-11-12] — Studio des visuels Instagram, étapes 1 à 5 (sur dev)
+
+Chantier préparé dans le dépôt messagerie (`docs/studio-instagram/`). Plan de l'étape 1 validé par David (« tu peux tout faire »), avec : travail sur `dev`, téléchargement des JPEG dès l'étape 1, taille de fenêtre plus large. Étapes 1 et 2 essayées et validées par David sur dev le 12/11.
+
+### Étape 3 — enregistrement (`0cc1806`)
+- **SQL lancé par David** (SQL Editor) : table `visuels_reseaux` (une ligne par article et par format, `video_id` prévu pour plus tard, `ON DELETE CASCADE`), droits pour `service_role` et `claude_readonly` seulement, RLS sans règle ; bucket **public** `visuels-reseaux` (JPEG seulement, 8 Mo au plus). Écart à la spécification : **contraintes `UNIQUE (article_id, format)` et `UNIQUE (video_id, format)`** au lieu d'index uniques partiels, que l'upsert de `supabase-js` (`onConflict`) ne sait pas viser ; les valeurs vides ne se comparant pas, une ligne d'article ne bloque rien côté vidéo. `database.ts` régénéré (seul ajout : la table).
+- [visuels-reseaux.ts](src/lib/actions/visuels-reseaux.ts) (actions) : adresse de dépôt signée pour un nom neuf `{article}/{format}-{horodatage}.jpg` ; après le dépôt, le serveur relit le fichier (**sharp** : JPEG, 1080 × 1350 ou 1080 × 1920 exactement, 8 Mo au plus ; sinon effacé), écrit la ligne avec les réglages, puis efface les anciens fichiers du même format (version précédente, dépôts interrompus).
+- [visuels.ts](src/lib/reseaux/visuels.ts) : réglages enregistrés (photo, cadrage, texte, position, tonalité, voile, taille du logo) relus et bornés côté serveur comme côté navigateur. **Cadrage en fractions de la photo** : il reste juste si la couverture se recharge un autre jour à une autre taille.
+- Studio : « **Enregistrer pour Instagram** » (post puis story) ; à la réouverture, il repart des réglages enregistrés ; statut en pied de fenêtre (« Pas encore enregistré », « Enregistré le… », « Modifications non enregistrées »). Si la couverture a changé depuis, ou si le visuel utilisait une photo importée, une note le dit (une photo importée n'est pas conservée : la réimporter, même nom de fichier, retrouve son cadrage). Boutons de téléchargement raccourcis en « Télécharger le post / la story » (JPEG et dimensions en infobulle) pour tenir sur une ligne.
+- [deleteArticle](src/lib/actions/admin.ts) : efface d'abord le dossier de l'article dans le bucket (les lignes partent en cascade, pas les fichiers).
+
+### Étape 4 — branchement de l'envoi (`5192d7d`, ordre de David)
+- [envoi.ts](src/lib/reseaux/envoi.ts) `lienEtImage` : pour **Instagram**, `image du post ?? visuel 4:5 de l'article ?? couverture`, lu au moment de l'envoi ; Facebook et LinkedIn gardent la couverture (posts avec lien). `imageDisponible` ([posts-reseaux.ts](src/lib/actions/posts-reseaux.ts)) suit le même ordre. **Make inchangé** (même champ `image_url`).
+- [SocialPanel](src/components/admin/SocialPanel.tsx) : la carte Instagram d'un article montre la vignette du visuel (« Instagram recevra ce visuel 4:5 ») ou dit que la couverture part telle quelle, avec « Créer / Modifier le visuel » qui ouvre le studio. La vignette suit aussi un enregistrement fait depuis le studio du formulaire (événement de fenêtre `visuel-instagram-enregistre`). Un article sans couverture mais avec un visuel n'est plus bloqué pour Instagram.
+- Page d'édition d'un article : vignette lue côté serveur ; carte du formulaire passée au composant `Card`.
+- David, 12/11 : l'essai réel sur Instagram attendra la fin du chantier ; la community manager publie pour l'instant avec son propre outil, ce qui compte d'abord est de poser le gabarit sur une image (téléchargement).
+
+### Étape 5 — accroche proposée par Claude (`982d390`)
+- [accroche-visuel.ts](src/lib/ai/accroche-visuel.ts) : trois accroches, de la meilleure à la moins bonne, à partir du titre, du chapeau et du texte entier de l'article (HTML retiré). SDK Anthropic déjà installé (0.90), **Claude Opus 5.5**, sortie structurée (JSON garanti), effort `medium`. Règles du prompt : 50 caractères au plus, phrase complète jamais coupée, français, sans emoji / hashtag / guillemets / point final, fidèle à l'article, trois angles différents. Le schéma ne sait pas imposer de longueur : chaque accroche est **nettoyée et contrôlée côté serveur**, celles de plus de 50 caractères sont écartées. Pas de repli automatique sur un autre modèle en cas de refus (paramètre absent du SDK 0.90) : un refus garde le titre, avec un message.
+- Action `proposerAccroches` ([visuels-reseaux.ts](src/lib/actions/visuels-reseaux.ts)), réservée à l'admin et au rôle contenu.
+- Studio : à la **première ouverture** (aucun visuel enregistré) d'un article dont le titre ne tient pas — même règle que le badge vert : 3 lignes au plus en post, 4 en story —, la demande part seule ; pendant l'attente, le titre reste affiché et modifiable (« Claude prépare une accroche… ») ; la meilleure accroche remplace le titre **seulement s'il n'a pas été retouché entre-temps**. Ensuite : « Autre proposition » (passe aux deux autres, sans nouvel appel), « Proposer une accroche » / « Nouvelles propositions » (nouvel appel, aussi pour un titre court), « Revenir au titre complet ».
+
+### Étape 1 — gabarit et studio sans enregistrement (`4ec6abb`)
+- [gabarit.ts](src/lib/reseaux/gabarit.ts) : port en TypeScript de `dessiner()` de la maquette et de ses aides, sans changer les nombres (formats, zones sûres, six tonalités, briques, voile, logo « petite taille » jusqu'à 250 px). Code pur, partagé par l'aperçu, les vignettes et le JPEG.
+- [StudioVisuel](src/components/admin/StudioVisuel.tsx) : post / story, recadrage à la souris ou au doigt, molette et curseur de zoom, zones sûres, texte (titre de l'article au départ), texte en haut / en bas, taille du logo, six vignettes, voile, import d'une autre photo, « Télécharger le post / la story (JPEG) ». Police Space Grotesk 700 par `next/font`, attendue avant le premier dessin. Chargé seulement à l'ouverture.
+- [ArticleForm](src/components/admin/ArticleForm.tsx) : bouton « Visuel Instagram » sous la couverture (grisé, avec la raison, sans article enregistré ou sans couverture), studio rendu hors du formulaire. Au passage, bloc couverture passé aux composants du site (boutons, champ de recherche, fenêtre d'aperçu) et une apostrophe du panneau « Générer » (lint).
+- [Modal](src/components/ui/Modal.tsx) : taille `2xl` (`max-w-6xl`).
+- Logos « petite taille » du graphiste copiés dans `public/logos/` ; les versions normales du site sont déjà celles de la charte 2026 (identiques hors fins de ligne).
+- Logos : leurs SVG n'ont pas de largeur ni de hauteur, ce que Firefox refuse sur un canvas → rechargés avec les dimensions du viewBox **seulement si** le navigateur ne sait pas les dessiner (ajouter la taille partout changeait légèrement le lissage des contours dans Chrome).
+
+### Étape 2 — couverture en grand (`8187c11`)
+- `adresseGrandFormat` : couverture Unsplash ou Pexels demandée en **3 840 px** de large (au lieu de 1 080 / 940) ; repli sur l'adresse enregistrée si elle ne se charge pas.
+- **Pas de route relais** (prévue par la spécification) : Unsplash, Pexels et le stockage Supabase répondent avec `Access-Control-Allow-Origin: *`, le canvas reste exportable (vérifié par requête).
+- 3 840 plutôt que les 2 400 de la spécification : la couverture IA (16:9) restait agrandie ×1,4 en story à 2 400 px ; à 3 840 elle est nette (fichiers de 0,6 à 2,4 Mo).
+
+### Vérif
+- **Au pixel** (Chrome sans fenêtre, script hors dépôt) : la fonction de la maquette et celle du site sur les mêmes entrées, **34 cas sur 34 identiques** (post et story × 6 tonalités × haut / bas, recadrages et zooms, logo de 160 à 360 px, voile 0 à 100 %, texte vide, retours à la ligne forcés, ponctuation).
+- **Dans le site** (build local, connexion admin, rien d'enregistré) : studio ouvert sur l'article IA, police chargée, JPEG du post à **10 pixels près sur 1,46 million** de celui de la maquette (bord de quelques lettres : fichier de police servi par Next au lieu de Google Fonts) ; molette, glisser, noir et blanc, texte en haut, texte trop long signalé, « Fermer » sans envoyer le formulaire, téléphone sans défilement horizontal. Étape 2 : Unsplash et Pexels chargées en 3 840 px, photo nette en post et en story, 4 JPEG aux bonnes dimensions (205 à 288 Ko), aucune erreur.
+- `tsc` (sur `src`), lint des fichiers touchés, `npm run build`.
+- **Étape 3** (build local, base de production, article jetable en brouillon créé puis supprimé par l'essai) : table, droits et bucket conformes ; « Enregistrer » → 2 lignes, 2 fichiers, adresses publiques en `image/jpeg` aux bonnes dimensions (177 et 187 Ko), **post enregistré identique au pixel** au post téléchargé ; page rechargée et studio rouvert → texte, tonalité, voile, logo et zoom retrouvés pour chaque format, post redessiné identique au pixel à l'enregistré ; modifier → « Modifications non enregistrées », revenir au réglage → « Enregistré » ; réenregistrer → 2 fichiers neufs, anciens effacés, mêmes lignes (`created_at` gardé) ; suppression de l'article par Admin → Blog → dossier du bucket vide, lignes parties. Téléphone sans défilement horizontal, aucune erreur. Une adresse effacée reste servie un moment par le cache du CDN de Supabase (400 sans le cache). Bucket et table vides après l'essai.
+- **Étape 4** (build local, `MAKE_WEBHOOK_URL` pointé sur un faux Make local : rien n'est parti ; article jetable et 3 brouillons créés puis supprimés) : carte Instagram sans visuel → message et « Créer le visuel » ; studio ouvert depuis le panneau, enregistré → vignette affichée sans recharger ; réenregistré depuis le studio du formulaire → vignette du panneau mise à jour ; page rechargée → vignette lue côté serveur ; « Envoyer maintenant » Instagram → **`image_url` = adresse du visuel 4:5** ; Facebook → `image_url` = couverture ; posts « envoye », aucune erreur. **Reste l'essai réel par David** depuis dev (« Envoyer maintenant », pas « Programmer »).
+- **Étape 5** (build local, vrais appels à Claude, rien d'enregistré sur les vrais articles) : 9 articles sur 10 ont un titre trop long pour le visuel, y compris « IA dans les logiciels médicaux : on se trompe de cible » (54 caractères). Sur « 46 heures… », « Pro Santé Connect… » et « IA… » : accroche proposée seule en **7 à 11 s** (2 à 8 s en effort `low`, mais une proposition sortait coupée : « …pourquoi retaper ce que le LGC a » → règle « phrase complète » et effort `medium`), 44 à 49 caractères, badge vert en post et en story ; « Autre proposition » fait le tour des trois ; « Revenir au titre complet » rend le titre. Exemples : « Double saisie : on retape ce que le logiciel sait », « Pro Santé Connect enfin expliqué aux médecins », « La vraie économie s'appelle Mon espace santé ». Éléments vérifiés présents dans chaque article (5 questions, double saisie, PIN, secrétaire, Mon espace santé). Articles jetables : titre court → aucun appel ; accroche enregistrée puis studio rouvert → accroche reprise, pas de nouvel appel. Aucune erreur ; bucket vide après l'essai. Coût : une dizaine d'appels pour l'ensemble des essais (environ un centime chacun).
+- **Non essayé** : Firefox (non installé sur le poste), glisser au doigt sur un vrai téléphone.
+- Au passage : `.next/dev/types/routes.d.ts`, laissé abîmé par un `next dev` du 21/10, fait échouer `npx tsc --noEmit` ; sans effet sur le build, régénéré au prochain `next dev`.
+
+---
+
+## [2026-10-27] — Proposer : exemples sans Doctolib
+
+Demande de David : exemples de titre « Correction » et « Vidéo » de `/mon-compte/proposer` sans Doctolib.
+
+- `de4efe5` (`dev`) : « Faute de frappe sur la page de mon logiciel », « Comment configurer la téléconsultation sur mon logiciel ». Report du code seul sur `main` (worktree, cherry-pick) → `2ddba78`, poussé directement (accord de David) ; `dev` garde son avance (annuaire « nouveaux patients »).
+- Recherche de « Doctolib » ailleurs, pour David : dans le code, plus que la page Portabilité (normal). En base (lecture seule, rien modifié) : fiches Doctolib (normal) ; avis de la rédaction et descriptions d'autres agendas (Callibri, ClicRdv, Cmondoc, Divomed, GPS Santé, MadeForMed, Resalib, Ubiclic) et de logiciels médicaux (Weda, Premiocare, easy-care, TAMM, Follow) qui le citent en comparaison ou pour une intégration ; Heidi Health (avis et description de l'éditeur) : « AWS… tout comme un certain Doctolib… » ; 4 vidéos publiées qui le citent, dont un tutoriel pour patients (« Doctolib : prenez vos rendez-vous médicaux… ») ; bandeau et page Portabilité ; article brouillon MSSanté ; modèle d'email « lancement Nouveau site » ; 7 avis de médecins sur d'autres logiciels (Weda 5, Odaiji, éO Médecin).
+- Décisions de David : **tutoriel pour patients dépublié** ([scripts/depublier-video.ts](scripts/depublier-video.ts), dry-run puis `--execute`, ligne sauvegardée dans `backups/`) : `b3b8e144…` passe de « publie » à « brouillon », comme l'interrupteur d'Admin → Vidéos (republication d'un clic) ; Heidi Health : il verra ; article brouillon et modèle d'email : on n'y touche pas.
+
+---
+
+## [2026-10-21] — Mise en production de la page Portabilité, bandeau d'accueil
+
+Ordre de David (« on peut enlever MonEcho et pousser tout ça en prod »).
+
+### MonEcho retiré
+- `dc1f360` : MonEcho (sans fiche sur le site) retiré de la liste ; 7 logiciels, tous avec un lien.
+
+### Report sur `main`
+- `dev` avait 47 commits d'avance (dont l'annuaire « nouveaux patients », pas prêt) : **pas de merge complet**. Report du **code seul** de `a81d7ba`, `588e80c` et `dc1f360` dans un worktree séparé (cherry-pick sans le CHANGELOG) → `4bfeeb7` sur `main`. 15 fichiers : les 7 fichiers de code identiques à `dev` ; `admin.ts` ne reçoit que des ajouts ; PDF et logos.
+- Worktree : `npm ci`, `tsc` et build verts (page ○) ; essai du build `main` dans Chrome : page publique 30 / 30 (une réponse 304 du cache comptée en échec par l'essai) et formulaire dédié ouvert dans l'admin (lecture seule) ; `.env.local` copié puis supprimé ; worktree vidé et oublié.
+- Base : rien à faire (ligne `portabilite` déjà créée).
+- Vercel « Production » `success`. **Vérifié en production** : page 200, titre lu en base, canonical `www…/portabilite`, pas de `noindex`, 7 liens de fiches, pas de MonEcho, 2 PDF et logos 200, page dans `/sitemap.xml`.
+
+### Bandeau d'accueil
+- [scripts/annonce-portabilite.ts](scripts/annonce-portabilite.ts) (dry-run puis `--execute`) : annonce `56999842…`, style « Succès », du 21/10 au **18/11/2026 23 h 59**, bouton vers `/portabilite`. Annonce WONCA (expirée le 03/08) laissée telle quelle.
+- Première version trop longue sur mobile (titre sur 5 lignes à côté du bouton) : textes raccourcis par le même script (mise à jour des textes seuls) → titre « Portabilité : 5 éditeurs s'engagent », texte (ordinateur seulement) « Export gratuit, sous 30 jours, complet et documenté : Doctolib, MadeForMed, Orisha Care, Semble et VIDAL Group répondent à notre appel. », bouton « Voir la liste ». Rendu vérifié (serveur de développement) : 2 lignes sur ordinateur, 2 sur mobile.
+- En production, l'accueil s'est rafraîchi entre la création et la correction : il montre la première version jusqu'au prochain rafraîchissement (1 h au plus) ; « Mettre à jour » dans Admin → Annonces le force.
+
+### Reste
+- PDF des éditeurs avec le filigrane « SOUS EMBARGO 19/10 » (mis en ligne tel quel, embargo levé) : le remplacer quand ils fournissent une version sans.
+- Page VIDAL Group « Solutions (0) » (marques rangées sous leurs propres éditeurs).
+
+---
+
+## [2026-10-21] — Portabilité : textes de la page modifiables dans Admin → Pages
+
+Demande de David (option « admin » plutôt que « demander à Claude ») : modifier lui-même les textes libres de `/portabilite`.
+
+### Ce qui change
+- **Admin → Pages, ligne `portabilite`** : formulaire dédié ([PortabiliteTextesForm](src/components/admin/PortabiliteTextesForm.tsx)), sur le modèle de l'infobulle des notes : en-tête (pastille, titre, introduction, phrase en gras), « Pourquoi c'est important » (titre, texte), encadré éditeurs (titre, texte, bouton), description pour Google. Éditeur de texte allégé (gras, italique, listes, lien) pour l'introduction et « Pourquoi ». Bouton « Historique » (trigger d'audit existant, restauration). Pastille et phrase en gras : vides → masquées.
+- Rangement : titre et description dans leurs colonnes, le reste en JSON dans `contenu` ; lecture, valeurs par défaut et contrôles dans [portabilite.ts](src/lib/data/portabilite.ts) ; action `updatePortabiliteTextes` ([admin.ts](src/lib/actions/admin.ts)) : admin vérifié, champs obligatoires et longueurs, revalide `/portabilite`.
+- [Page](src/app/portabilite/page.tsx) : textes lus en base par le client public (toujours ○) ; HTML nettoyé par `sanitizeHtml` ; ligne absente ou base en erreur → textes de départ, la page ne tombe pas.
+- Restent dans le code : liste des éditeurs et logiciels, trois engagements, frise, communiqués (dit dans le formulaire).
+- Au passage, dans la page d'édition des pages : `page as any` remplacé par un type (lint).
+
+### Base
+- Ligne `portabilite` créée par [scripts/portabilite-page-admin.ts](scripts/portabilite-page-admin.ts) (dry-run puis `--execute`, insertion seule) avec les textes de la première version ; relue identique.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` (page ○).
+- Navigateur (build local, Chrome piloté, connexion admin par le formulaire), **18 / 18** : ligne dans Admin → Pages, formulaire pré-rempli, 2 éditeurs de texte, bouton Historique ; introduction vidée refusée côté serveur, page inchangée ; modification (titre, phrase en gras vidée, bouton, description, texte « Pourquoi » avec du gras) → page publique à jour aussitôt (titre, phrase masquée, bouton, `<strong>`, balise description) ; 1 version archivée, restaurée → formulaire et page revenus au départ ; aucune erreur JavaScript. Page publique : **30 / 30** (même essai qu'au 20/10).
+- Corrigé pendant l'essai : une espace disparaissait au rendu dans l'aide du formulaire (« données dès ») ; espace forcée.
+- Données d'essai : la ligne est revenue aux textes de départ (contenu relu identique) ; les versions archivées pendant l'essai ont été supprimées (historique vide).
+
+### Attention tant que ce n'est pas en production
+- La base est commune : la ligne « Portabilité des données » apparaît aussi dans Admin → Pages en production, où le code actuel l'ouvre avec le formulaire générique, qui abîmerait le contenu. Modifier ces textes depuis l'admin de **dev** uniquement, jusqu'à la mise en production.
+
+---
+
+## [2026-10-20] — Page « Portabilité des données : les éditeurs engagés » (première proposition, sur dev)
+
+Demande de David : célébrer la réponse des éditeurs à l'appel du 20/07 (communiqué commun du 19/10 de Doctolib, MadeForMed, Orisha Care, Semble et VIDAL Group : export gratuit, sous 30 jours, complet et documenté). Leur communiqué annonce que « la liste des éditeurs engagés est publiée par l'association sur son site » : c'est cette page.
+
+### Décisions de David
+- Logiciels affichés : ceux cités au communiqué (Doctolib Médecin, Odaiji, Desmos, Follow, Semble, Weda, DrSanté) ; MonEcho, sans fiche en base, en carte sans lien.
+- Liste tenue dans le code ([portabilite.ts](src/lib/data/portabilite.ts)), pas d'écran d'admin ni de migration.
+- Contenu : éditeurs, trois engagements avec un court historique, logiciels, les deux communiqués en PDF, encadré « Vous êtes éditeur ? » (courriel à contact@). Pas les logos des syndicats.
+- DrSanté : rattachement de Calimaps à Vidal demandé, **déjà en place en base** (Calimaps a Vidal pour maison-mère, comme Weda) : rien écrit.
+
+### Ce qui change
+- [/portabilite](src/app/portabilite/page.tsx), statique (○, revalidation 1 h) : en-tête, 5 cartes éditeurs vers `/editeur/<slug>` (logos officiels tirés de l'en-tête du communiqué, [public/images/portabilite/](public/images/portabilite/), repli sur le logo en base), 3 engagements, 8 cartes logiciels vers leur fiche, « Pourquoi c'est important » et frise (juillet 2026 → février 2027), 2 PDF ([public/documents/portabilite/](public/documents/portabilite/)), encadré éditeurs.
+- [db/portabilite.ts](src/lib/db/portabilite.ts) : logos, noms et liens lus par le client public (sans cookies) ; en cas d'erreur, la page s'affiche avec les noms de la liste.
+- Page ajoutée au plan du site ([sitemap-entries.ts](src/lib/seo/sitemap-entries.ts)). Pas de lien dans le menu (non demandé).
+- Bandeau d'accueil : l'annonce WONCA a expiré le 3 août (plus affichée). Rien créé en base : la base étant commune, une annonce active pointerait en production vers une page encore absente. Texte proposé à David, à créer dans Admin → Annonces le jour de la mise en production.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` (page ○).
+- Navigateur (build local, Chrome piloté, lecture seule), **30 / 30** : page 200, titre ; 5 éditeurs avec logo ; 8 logiciels dont 7 cliquables avec logo, MonEcho sans lien ; les 12 liens (éditeurs, fiches, PDF) répondent 200, PDF servis en `application/pdf` ; bouton courriel ; clic éditeur → `/editeur/semble`, clic logiciel → fiche Odaiji ; 390 px sans défilement horizontal ; images toutes chargées ; aucune erreur JavaScript (hors script de statistiques Vercel, absent en local sur toutes les pages). Captures relues (ordinateur, mobile).
+
+### Reste avant la production
+- Le PDF des éditeurs porte le filigrane « SOUS EMBARGO 19/10 » : demander une version sans.
+- La page de VIDAL Group affiche « Solutions (0) » : Weda et DrSanté sont rangés sous leurs propres éditeurs (filiales) et la page d'un groupe ne liste pas ses marques. Existant, non traité.
+
+---
+
+## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 5 : fiche d'un confrère et filtre de la recherche
+
+- [FicheConfrere](src/components/annuaire/FicheConfrere.tsx), bloc « Sa fiche », sous le moyen de contact préféré : « **Accepte** de nouveaux patients comme médecin traitant (déclaré le JJ/MM/AAAA) » ou « **N'accepte pas** … », rien si la question n'est pas renseignée. La mention « Informations déclarées par le médecin, non vérifiées par l'association » existante couvre la réponse.
+- [AnnuaireRecherche](src/components/annuaire/AnnuaireRecherche.tsx) : case « Accepte de nouveaux patients comme médecin traitant » sous « Près de / Rayon », avec l'aide « Médecins généralistes qui l'ont déclaré sur leur fiche, sans vérification par l'association. » Elle relance la recherche comme les listes ; le filtre part avec la liste, le compteur et la carte ; résumé « N confrères acceptant de nouveaux patients à moins de … » ; gardée au retour d'une fiche, comme les autres critères. Pas de pastille dans la liste des résultats (non demandée).
+- Comme pour le rayon, le résumé change dès le clic et le nombre suit à l'arrivée des résultats (fraction de seconde) : comportement existant de la page, non modifié.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` sans avertissement.
+- **Navigateur** (build local, Chrome piloté), un médecin lecteur (compte d'essai `example.com`, fiche non publiée à Lyon : la recherche part de Lyon, 10 km) et quatre fiches fictives à Lyon 3e (généraliste « oui », « non », non renseignée, et « oui » non publiée), **18 / 18** : case présente et décochée ; cochée → « 1 confrère acceptant de nouveaux patients à moins de 10 km de Lyon 3e », liste réduite à la fiche « oui » ; carte : requête avec le filtre, une seule fiche ; fiche « oui » avec « (déclaré le 16/10/2026) » ; retour de la fiche : case toujours cochée, recherche filtrée retrouvée ; décochée → même résumé qu'au départ (7 952 confrères) ; fiche « non » : « N'accepte pas … (déclaré le …) » ; fiche non renseignée : aucune mention ; fiche non publiée : page « 404 » identique à celle d'un RPPS inconnu, rien de la fiche ; 400 px sans défilement horizontal ; aucune erreur JavaScript. Captures relues (formulaire, fiche, mobile).
+- Au premier passage, 4 écarts venaient de l'essai lui-même (lecture du résumé avant l'arrivée des résultats ; attente d'un statut 404 alors qu'une fiche introuvable répond 200 avec la page « 404 », comme un RPPS inconnu, comportement existant) ; essai corrigé, second passage complet.
+- Données d'essai effacées : 0 ligne restante dans les 49 tables liées à un compte, 0 fiche et 0 identité fictives, compte d'authentification supprimé, fiche réelle identique avant et après.
+
+### Côté application (rapporté par la session messagerie, 16/10)
+- Question dans « Ma fiche », mention sur la fiche d'un confrère et case de la recherche avancée faites dans l'application et **essayées par David contre dev** : « vert ».
+- Constat en base (lecture seule) : la vraie fiche (SM53, publiée) a été enregistrée à 13:18 UTC, une minute après une ouverture de session de l'application ; réponse finale « non renseigné » (réponse et date vides, contrainte respectée). Les réponses intermédiaires de l'essai ne se voient pas : la base ne garde que la dernière.
+- Reste : le report en production avec l'annuaire.
+
+---
+
+## [2026-10-16] — Annuaire : « accepte de nouveaux patients », étape 4 : fonctions de recherche et de fiche
+
+### Base — migration B lancée par David (vérifiée)
+- Écrite à partir des définitions relues en base (`pg_get_functiondef`), changements limités : `annuaire_filtres` prend `p_nouveaux_patients` et ajoute, s'il vaut `true`, le filtre « fiche publiée qui a répondu oui » (morceau de requête fixe, aucune valeur concaténée) ; `annuaire_compter` et `annuaire_rechercher` prennent le même paramètre (vide par défaut) et le transmettent ; `annuaire_fiche` rend `nouveaux_patients` et `nouveaux_patients_le`. Signatures changées, donc `drop` puis `create` dans une transaction ; aucune dépendance en base (vérifié avant).
+- **Constat** : nouvelles signatures seules en place, `security definer`, `search_path` et `work_mem` inchangés ; droits identiques à avant (`annuaire_filtres` : `service_role` ; les trois autres : `authenticated` et `service_role` ; `anon` rien) ; corps des quatre fonctions relus en base, identiques au texte de la migration.
+- Types régénérés (+6 lignes), `tsc` passe. Le code en production appelle ces fonctions sans le nouveau paramètre (et l'annuaire y est éteint) : rien à changer côté `main`.
+- Retour arrière : définitions d'avant archivées en fin de [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+### Vérif — fonctions appelées comme le site
+- Session d'un médecin d'essai (compte `example.com`, clé publique), deux fiches fictives publiées à Lyon (généraliste « oui », psychiatre non renseigné), **27 / 27** : sans filtre, total identique à un comptage indépendant (199 580) et `p_nouveaux_patients` à `false` ou vide sans effet ; recherche sans filtre (50 résultats) ; avec filtre : 1 en France, 1 à 10 km de Lyon (contre plus de 1 000 sans filtre), combiné à la spécialité (généraliste 1, psychiatrie 0) et au nom ; fiche « oui » avec sa date, fiche non renseignée vide, vraie fiche lue avec les deux champs ; fiche dépubliée ni trouvée ni lue ; visiteur non connecté refusé ; `annuaire_filtres` refusée à un médecin connecté.
+- Une attente de l'essai était fausse au premier passage (« essai » trouve aussi 37 vrais médecins, Bessaï, Dessaint…, relevé par requête) ; corrigée, second passage complet.
+- Données d'essai effacées (fiches, identités, comptes), fiche réelle identique avant et après.
+
+---
+
+## [2026-10-15] — Annuaire : « accepte de nouveaux patients », étape 3 : la question dans Ma fiche annuaire
+
+- [MaFicheAnnuaireForm](src/components/annuaire/MaFicheAnnuaireForm.tsx) : bloc « Nouveaux patients » sous le moyen de contact, **pour les seuls généralistes** : « Acceptez-vous de nouveaux patients comme médecin traitant ? », Oui / Non / Non renseigné (coché par défaut), « Réponse du … » quand une réponse existe, mention « Déclaration de votre part, non vérifiée par l'association, visible des confrères si votre fiche est publiée. Elle est datée à chaque enregistrement de votre fiche : mettez-la à jour quand votre situation change. »
+- [annuaire.ts](src/lib/actions/annuaire.ts) : la page lit la **spécialité PSC** de la preuve (`identites_psc.specialite_code`, lisible par le médecin pour sa seule ligne : règle existante « Voit sa preuve PSC », aucun droit ajouté) et non le libellé du profil ; `enregistrerMaFiche` envoie la réponse (seulement pour un généraliste, le serveur l'ignore sinon) et rend la réponse enregistrée et sa date.
+- Rien à migrer vers le design system dans ce fichier (cases d'option sans composant commun, comme le bloc « Moyen de contact »).
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` sans avertissement (`/mon-compte/annuaire` reste dynamique, page privée).
+- **Navigateur** (build local, Chrome piloté), deux comptes d'essai (`example.com`, API d'administration, aucun e-mail) reliés à des identités PSC fictives, **17 / 17** : connexion par le formulaire ; généraliste (SM53) : question posée, « Non renseigné » par défaut, pas de date ; « Oui » enregistré et daté (page et base) ; relu après rechargement ; réenregistrement sans changement → date remise au jour ; « Non » ; « Non renseigné » efface réponse et date ; à 400 px, pas de défilement horizontal ; psychiatre (SM42) : question absente, fiche enregistrée, réponse vide en base ; aucune erreur JavaScript. Captures du bloc relues (ordinateur, mobile).
+- Données d'essai effacées : 0 ligne restante dans les 49 tables liées à un compte, comptes d'authentification supprimés, fiche réelle identique avant et après.
+
+---
+
+## [2026-10-15] — Annuaire : « accepte de nouveaux patients », étape 2 : serveur commun et application
+
+- Décision de David : une réponse envoyée pour un **non-généraliste est ignorée** (le reste de la fiche est enregistré), plutôt qu'un refus de tout l'enregistrement.
+- [constants/annuaire.ts](src/lib/constants/annuaire.ts) : `SPECIALITES_MEDECINE_GENERALE` (SM26, SM53, SM54) et `nouveauxPatientsPossible`.
+- [fiche-serveur.ts](src/lib/annuaire/fiche-serveur.ts), commun au site et à l'application : `lireFiche` rend la réponse et sa date ; `enregistrerFiche` accepte `nouveauxPatients` facultatif (absent = inchangé, `null` = non renseigné, oui / non datés du jour même si identiques), gardé seulement si la spécialité PSC relue dans `identites_psc` est de médecine générale ; il rend la réponse telle qu'enregistrée. « Ma fiche » du site n'envoie pas encore le champ : rien ne change pour lui.
+- Application ([ma-fiche](src/app/api/annuaire/app/ma-fiche/route.ts), [fiches](src/app/api/annuaire/app/fiches/route.ts)) : `GET /ma-fiche` rend `nouveaux_patients_possible` et, dans `fiche`, `nouveaux_patients` / `nouveaux_patients_le` ; `PUT /ma-fiche` accepte le champ facultatif (autre type que booléen ou `null` → `400 corps_invalide`) et rend la réponse enregistrée ; `GET /fiches` rend les deux champs pour chaque fiche publiée. Ajouts seuls : l'application actuelle fonctionne sans changement.
+- Contrat écrit dans [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md) (section « Ajout du 15/10 » et mentions « ajouté le 15/10 » dans le contrat), pour la session messagerie.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build` sans avertissement.
+- **Essai local** (build de production, faux PSC, médecins fictifs A = 99900000001 en SM53 et B = 99900000002 en SM42), **28 / 28** : sessions ; `nouveaux_patients_possible` vrai pour A, faux pour B ; corps de l'application actuelle (sans le champ) accepté, réponse non renseignée puis **conservée** après un « oui » ; « oui » daté, confirmation qui remet la date au jour, « non », `null` qui efface la date ; texte et nombre refusés (`400`) ; B qui envoie « oui » : `200`, réponse ignorée, reste de la fiche enregistré ; `GET /fiches` avec les deux champs pour toutes les fiches ; fiche dépubliée absente de `/fiches` mais réponse gardée ; base relue directement ; contrainte « réponse sans date » refusée par la base ; suppression par l'application.
+- Données d'essai effacées (0 fiche, 0 identité d'essai) ; la fiche réelle relue avant et après, identique.
+
+---
+
+## [2026-10-15] — Annuaire : « accepte de nouveaux patients » (généralistes), étape 1 : colonnes en base
+
+Demande de David : sur la fiche d'un médecin généraliste, lui demander s'il accepte de nouveaux patients comme médecin traitant, le montrer aux confrères (fiche et filtre de l'annuaire) et à l'application. Travail sur `dev` (annuaire derrière l'interrupteur).
+
+### Décisions de David
+- Généralistes = spécialité PSC (`identites_psc.specialite_code`) **SM26** « Qualifié en Médecine générale », **SM53** « Spécialiste en Médecine générale », **SM54** « Médecine générale » : les trois seuls codes de médecine générale de la nomenclature des spécialités ordinales de l'ANS (TRE-R38, consultée le 15/10), tous en vigueur.
+- Réponse à trois états (oui / non / non renseigné, par défaut) et date de la dernière réponse, **remise au jour à chaque enregistrement qui contient la réponse** (une confirmation date aussi).
+- Question : « … comme médecin traitant ». Sur la fiche d'un confrère, le « non » est affiché aussi.
+
+### Base — migration lancée par David (vérifiée)
+- `fiches_annuaire.nouveaux_patients` (booléen, `null` = non renseigné) et `nouveaux_patients_le` (date et heure), contrainte : les deux vides ou les deux remplis.
+- **Constat** (rôle de lecture, transaction en lecture seule ; serveur MCP Supabase hors ligne, même connexion utilisée par script) : colonnes et contrainte présentes ; droits inchangés, lus dans le catalogue : `service_role` tout, `claude_readonly` lecture, `anon` et `authenticated` rien, aucun droit par colonne ; RLS active sans règle (seul le serveur écrit les fiches) ; 1 fiche, publiée, non renseignée.
+- Volumes : 18 985 (SM26), 59 967 (SM53) et 2 646 (SM54) médecins dans l'Annuaire Santé ; 2 identités PSC, toutes deux SM53.
+- Types régénérés (+6 lignes, rien de retiré), `tsc` passe. Rien de visible.
+
+---
+
+## [2026-10-15] — Mise en production : outil Prévisionnel Maison de Santé et correctif de la redirection après connexion
+
+Ordre de David (« on passe en prod »). Report du **code seul** de `b7275b5` à `5f31f2e` sur `main`, dans un worktree séparé, sans les autres travaux en cours sur `dev` ni CHANGELOG :
+- `19396a9` fix(auth) (report de `5c9d356`) : `redirection.ts`, `/connexion`, `/api/auth/callback` ;
+- `667b70d` feat(previsionnel) : 17 fichiers. Sur `main`, les fichiers modifiés (Navbar, sitemap, connexion, callback) étaient identiques à leur état sur `dev` avant le chantier, sauf `database.ts` : seul le bloc `previsionnels_msp` y est ajouté (+38 lignes, rien de retiré, version PostgREST de `main` gardée).
+- Base : rien à faire (base commune ; table, règles et colonne de partage déjà en place).
+- Worktree : `npm ci`, `tsc` et build verts (page ○), essai rapide du build `main` (API 401 / 404, onglets 7 / 7), `.env.local` copié puis supprimé, worktree vidé et oublié.
+- Vercel « Production » `success`.
+- **Vérifié en production** (lecture seule, aucun compte, rien écrit) : page `200`, titre, canonical `www…`, pas de `noindex`, contenu de l'outil dans le HTML, pas d'iframe, texte « David Azérad » ; `outil.js`, `export.js`, bibliothèques `200` ; ancienne page autonome `404` ; `/api/outils/previsionnels` `401`, code de partage inconnu `404` ; page dans `/sitemap.xml`. Navigateur : lien sous « Glossaire » dans le menu Communauté, outil monté et calculé, invitation à se connecter, étape en cours en pastille, onglets sans barre, aucune erreur JavaScript (6 / 6).
+- **Non vérifié en production** : un enregistrement, un partage et les exports avec un vrai compte (aucun compte de production utilisé) ; le correctif de redirection en se connectant.
+
+---
+
+## [2026-10-15] — Prévisionnel : outil intégré dans la page (plus d'iframe), police Poppins
+
+Demande de David (« niveau navigation c'est pas top ») : double défilement, bandeau de l'outil caché sous la barre du site, lien « plein écran ». Choix validé : intégration directe en gardant le code de l'outil, police du site.
+
+### Ce qui change
+- [page.tsx](src/app/outils/previsionnel-maison-de-sante/page.tsx) rend le balisage de l'outil ([outil-html.ts](src/app/outils/previsionnel-maison-de-sante/outil-html.ts)) dans `#msp` ; [OutilPrevisionnel](src/components/outils/OutilPrevisionnel.tsx) charge [outil.js](public/outils/previsionnel-msp/outil.js) et le monte / démonte. Page toujours **statique** (○), contenu de l'outil présent dans le HTML servi (référencement).
+- [outil.css](src/app/outils/previsionnel-maison-de-sante/outil.css) : style d'origine limité à `.msp` (conversion par script, rien d'autre du site touché), Poppins (plus d'appel à Google Fonts), mode sombre retiré (le site n'en a pas), listes rétablies après la remise à zéro de Tailwind, onglets resserrés (Poppins plus large : les 6 tiennent dès 1 280 px ; ils défilaient déjà dans l'outil d'origine), boutons du bandeau plus compacts sur mobile.
+- Bandeau de l'outil collé sous la barre du site (72 px), synthèse collée dessous ; à partir de 1 150 px, une fois collé, il laisse la place au logo du site qui déborde de sa barre (même décalage que le fil d'Ariane).
+- [outil.js](public/outils/previsionnel-msp/outil.js) : code d'origine, calcul inchangé ; `monter()` remet le balisage d'origine et rend une fonction de démontage (écouteurs du document et de la page coupés) : pas de double exécution en mode développement (StrictMode) ni après une navigation sans rechargement.
+- Partage : le code `#partage=` est lu dans l'adresse de la page ; un lien collé alors que la page est ouverte recharge la page en lecture seule. L'onglet ouvert s'inscrit dans l'adresse (`#equipe`, `#resultats`…), sauf en lecture seule.
+- [export.js](public/outils/previsionnel-msp/export.js) : chemins absolus, état relu à chaque appel.
+- Retirés : `public/outils/previsionnel-msp/index.html` (page autonome, 404 désormais ; jamais en production) et le lien « plein écran ».
+- Retouches demandées par David (capture : barres de défilement sur les onglets, son écran rendant le texte plus large) : onglets sans aucune barre (ligne de séparation en ombre interne, plus de débordement d'un pixel ; resserrés ; à la ligne sur ordinateur s'ils ne tiennent pas ; au doigt sur mobile, barre masquée). Vérifié de 1 920 à 400 px et avec une police forcée plus large (7 / 7). Introduction : plus d'espace sous le titre, « que le jeune David Azérad avait conçu pour son propre projet de cabinet pluriprofessionnel sur Paris 20e ».
+- Puis : même texte dans l'onglet « Méthode » de l'outil ; étape en cours en pastille bleu marine, texte blanc (numéro inversé), fond léger au survol des autres (vérifié : 7 / 7, onglets toujours sur une ligne dès 1 280 px).
+
+### Vérif
+- `tsc`, build (page ○). Lint : 0 erreur ; 21 avertissements dans `outil.js`, tous hérités du code d'origine (variables non utilisées, `catch(e)`), que le lint ne voyait pas tant que le code était dans un fichier HTML.
+- Build local, deux comptes d'essai (créés puis supprimés, rien ne reste), essais adaptés à la page : non-régression **53 / 53** (dont : plus d'iframe, contenu dans le HTML servi, Poppins, aucune police Google, bandeau à 72 px, synthèse sans chevauchement), retouches **25 / 25** (dont ancienne page autonome en 404), partage **37 / 37** (dont lien collé page ouverte). Serveur de développement : ajout / retrait d'une profession et d'une ligne de charge exécutés une seule fois (6 / 6).
+
+---
+
+## [2026-10-15] — Prévisionnel : partage par lien en lecture seule (le partage par fichier ou texte est retiré)
+
+Choix de David : lien en lecture seule (plutôt qu'un accès par compte désigné, qui exclut comptable et banque), PDF téléchargeable sans compte, nom du propriétaire affiché, partage par fichier JSON ou texte retiré.
+
+### Base (SQL lancé par David)
+- `previsionnels_msp.partage_jeton` : texte de 24 caractères (`[A-Za-z0-9_-]`, contrainte), index unique partiel. Aucun droit d'écriture pour `authenticated` : le code est tiré et écrit par le serveur.
+- Déclencheur : « modifié le » n'avance plus si seuls le lien (ou rien) changent.
+- Types régénérés (+3 lignes).
+
+### API
+- [`[id]/partage`](src/app/api/outils/previsionnels/%5Bid%5D/partage/route.ts) : POST crée le lien (remplace l'ancien), DELETE le coupe. Propriété vérifiée sous la RLS, code (`randomBytes(18)`, 144 bits) écrit en service_role.
+- [`partages/[jeton]`](src/app/api/outils/partages/%5Bjeton%5D/route.ts) : lecture publique par le code (service_role), renvoie nom, contenu, date et nom du propriétaire (`prenom nom`), ni identifiant du prévisionnel ni du propriétaire ; jamais en cache.
+- La liste renvoie `partage_jeton` au propriétaire.
+
+### Outil
+- Propriétaire : bloc « Partager ce prévisionnel » sur le prévisionnel ouvert (créer, copier, désactiver avec confirmation), étiquette « partagé » dans la liste.
+- Lien `…/outils/previsionnel-maison-de-sante#partage=<code>` : le code est après « # », donc jamais transmis au serveur avec l'adresse de la page ni gardé dans les statistiques.
+- Visiteur : bandeau (nom, propriétaire, « lecture seule », date de version), champs verrouillés, boutons d'édition masqués ; « Télécharger le PDF » (sans compte ; l'Excel reste réservé aux membres connectés), « Copier dans mon compte » (connecté ; confirmation si son scénario en cours n'est pas enregistré) ou « Se connecter pour le copier », « Revenir à mon scénario ». Le scénario du visiteur n'est jamais écrit pendant la consultation.
+- Retiré : textarea, Copier, Charger le texte collé, Télécharger le scénario (.json), Charger un fichier.
+
+### Vérif
+- `tsc`, lint, build (page ○).
+- Build local, deux comptes d'essai (créés puis supprimés, rien ne reste) : partage **37 / 37** (création, format, « modifié le » inchangé, bandeau et verrouillage, PDF anonyme, Excel refusé, retour, dernière version visible, copie par un autre membre, 404 pour un autre compte sur créer / couper, code non modifiable en direct avec la clé publique, lecture directe anonyme refusée, API publique sans identifiants, lien coupé puis nouveau code, plein écran, mobile après correction du bandeau) ; non-régression **50 / 50** ; retouches **25 / 25**.
+
+---
+
+## [2026-10-15] — Sécurité : retour après connexion limité au site ; Prévisionnel : lien dans le menu et retouches
+
+### Fix sécurité — adresse de retour après connexion
+- **Constat** (relevé pendant le chantier Prévisionnel) : [/connexion](src/app/connexion/page.tsx) envoyait l'utilisateur, une fois connecté, sur `?redirect=` sans contrôle : un lien piégé pouvait renvoyer vers un autre site, ou exécuter du code sur le site avec la session (`javascript:`). Même défaut dans [/api/auth/callback](src/app/api/auth/callback/route.ts) avec `?next=` (`next=.evil.example` donnait `https://www.100000medecins.org.evil.example`).
+- **Fix** : [redirection.ts](src/lib/auth/redirection.ts) `cheminInterne` n'accepte qu'un chemin du site (analyse par `URL`, refus de tout changement d'origine : `//`, `/\`, tabulations, `javascript:`, `data:`, adresse complète) ; sinon repli (`/mon-compte/profil` pour la connexion, `/` pour le callback). Appliqué aux deux.
+- Vérifié : 18 / 18 cas (piégés et légitimes) ; connexion réelle sur le build local avec `redirect=javascript:…`, `//autre-site`, `/\autre-site` → arrivée sur le profil, rien exécuté.
+- Effet possible : un modèle d'e-mail Supabase (tableau de bord, non visible dans le code) qui mettrait une adresse complète dans `next` mènerait désormais à l'accueil.
+- Non traité, signalé : `/confirmer-avis` et `/gerer-notifications` envoient vers `/connexion?next=…`, paramètre que `/connexion` ignore (retour sur le profil, comme avant).
+
+### Prévisionnel — lien et retouches demandées par David
+- Lien « 🧮 Prévisionnel maison de santé » dans le menu **Communauté**, sous « Glossaire e-Santé » (ordinateur et mobile, [Navbar.tsx](src/components/layout/Navbar.tsx)).
+- Outil ([index.html](public/outils/previsionnel-msp/index.html)) :
+  - le menu « Ajouter une profession » ne propose plus les professions déjà à l'écran (« Autre profession » toujours proposée) ;
+  - dans le site, titre, sous-titre et logo de l'outil masqués (redite avec la page) ; conservés en plein écran, où ils sont le seul titre ;
+  - le nom du scénario s'étire et les boutons restent sur sa ligne (vérifié à 1 280 et 1 050 px ; sur mobile, retour à la ligne) ;
+  - bouton **« Changer »** à côté du nom, affiché s'il existe un autre prévisionnel dans le compte : menu des autres prévisionnels, ouverture directe si le scénario affiché est à jour, sinon confirmation par un second clic ; Échap et clic à côté ferment ; menu gardé dans l'écran sur mobile.
+- Vérifié sur le build local avec deux comptes d'essai (créés puis supprimés, rien ne reste) : nouveautés **25 / 25**, non-régression **50 / 50**.
+- Partage (fichier / texte) : inchangé en attendant le choix de David (proposition faite).
+
+---
+
+## [2026-10-15] — Outil « Prévisionnel Maison de Santé » : page, enregistrement dans le compte, exports Excel et PDF
+
+Outil de business-plan pour cabinet de groupe / MSP (page HTML autonome fournie par David, transposition de l'Excel « business-plan pour les nuls »), publié dans le site. Sur `dev` seulement ; aucun lien dans la navigation (en attente de la décision de David).
+
+### Feature — Page `/outils/previsionnel-maison-de-sante`
+- [page.tsx](src/app/outils/previsionnel-maison-de-sante/page.tsx) : Navbar, H1, introduction, outil en iframe (`calc(100vh - 72px)`, 800 px mini, arrondi 16 px, `loading="lazy"`), lien « plein écran » et mention sur les données. Aucune lecture de session : page **statique** (○ au build). Metadata : titre, description, canonical, OpenGraph avec l'image racine redonnée.
+- Ajoutée au [sitemap](src/lib/seo/sitemap-entries.ts) (au passage : `as any` du dédoublonnage des éditeurs typé, erreur de lint préexistante).
+- [next.config.mjs](next.config.mjs) n'a ni CSP ni X-Frame-Options : rien à ajouter pour l'iframe.
+
+### Outil — `public/outils/previsionnel-msp/`
+- [index.html](public/outils/previsionnel-msp/index.html) : moteur de calcul et interface d'origine inchangés. Ajouts : squelette HTML (`noindex`), couleurs `--accent*` alignées sur le navy (clair et sombre), boutons Excel / PDF, téléchargement et chargement d'un fichier `.json` (logique de chargement regroupée dans `loadScenario`), bloc « Dans mon compte ».
+- Encadré dans le site, l'outil s'affiche toujours en clair (le site n'a pas de mode sombre) ; en plein écran il suit le thème de l'appareil. Choix de Claude.
+- Bloc « Dans mon compte » : nom du prévisionnel (lié au nom du scénario), Enregistrer (met à jour le prévisionnel ouvert), Enregistrer comme nouveau, liste Ouvrir / Supprimer (confirmation en deux clics), compteur sur 5, état « à jour / modifications non enregistrées ». Visiteur non connecté : invitation et lien `/connexion?redirect=…` (`target=_top`).
+- [export.js](public/outils/previsionnel-msp/export.js), chargé au premier clic d'un membre connecté, tout dans le navigateur :
+  - **Excel** (exceljs 4.4.0) : 6 onglets (Synthèse, Hypothèses, Matériel, Financement, Synthèse annuelle, Détail mensuel), formats €, %, en-têtes navy, détail mensuel figé. **Valeurs, pas de formules.**
+  - **PDF** (jsPDF 4.2.1 + jspdf-autotable 5.0.9, choix de David contre l'impression navigateur) : logo, 8 chiffres clés, revenu net par profession, points d'attention, plan de financement, 3 graphiques vectoriels, synthèse annuelle, hypothèses, annexes (détail mensuel, matériel), pieds de page avec la mention « sans valeur contractuelle ».
+- Exports **réservés aux membres connectés** (décision de David) : barrière d'usage dans l'outil, pas une protection (les données sont celles de l'utilisateur).
+- Bibliothèques dans `vendor/` (copiées de npm, versions dans le nom) : aucun appel à un CDN.
+
+### Base — table `previsionnels_msp` (SQL lancé par David)
+- `id`, `user_id` (défaut `auth.uid()`, FK `users` en cascade), `nom` (1 à 120 car.), `donnees` jsonb (objet, 200 000 octets au plus), dates.
+- Déclencheur `previsionnels_msp_avant_ecriture` : **5 au plus par compte** (verrou par utilisateur), `user_id` et `created_at` figés, `updated_at` tenu par la base.
+- RLS « les siens » sur les 4 opérations ; `authenticated` : SELECT, DELETE, INSERT et UPDATE **sur `nom` et `donnees` seulement** ; `anon` : rien ; `claude_readonly` : SELECT. Types régénérés (+36 lignes ; la version PostgREST lue passe de 14.5 à 14.1).
+
+### API — `/api/outils/previsionnels`
+- [route.ts](src/app/api/outils/previsionnels/route.ts) (liste, création ; 401 sans session, ce qui renseigne l'outil), [`[id]/route.ts`](src/app/api/outils/previsionnels/%5Bid%5D/route.ts) (lecture, mise à jour, suppression ; 404 pour un prévisionnel d'un autre compte). Session de l'utilisateur et RLS (`createServerClient`), pas de service_role.
+- [previsionnels.ts](src/lib/outils/previsionnels.ts) : écritures acceptées en JSON et depuis le site seulement (Origin), validation du scénario, 150 000 octets au plus.
+
+### Vérif
+- `tsc`, lint des fichiers touchés et `npm run build` sans avertissement (page ○, API ƒ).
+- Outil seul dans Chrome : JSON téléchargé puis rechargé, fichier illisible refusé, pas de débordement à 400 px, mode sombre ; Excel relu (montants identiques à l'écran) ; PDF rendu page par page, y compris 8 professions sur 7 ans et aucune profession.
+- **Build local, deux comptes d'essai temporaires** (`example.com`, créés par l'API d'administration, aucun e-mail), **50 / 50** : page (titre, canonical, OG, iframe), outil en clair, non connecté (401, invitation, aucun export), connexion par le formulaire et retour sur l'outil, enregistrement / mise à jour / 5 / 6e refusé (409) / ouverture / suppression, exports connectés, rechargement, refus de l'API (text/plain, autre origine, données invalides, nom vide), isolement entre comptes (404), **base en direct** avec la clé publique : 6e refusé par le déclencheur, changement de propriétaire et création pour un autre refusés, données trop grosses refusées, anonyme sans accès.
+- Comptes d'essai supprimés : 0 compte, 0 prévisionnel, 0 préférence restants.
+- **Non testé** : la connexion par Pro Santé Connect depuis l'outil (elle ignore `redirect` : retour sur le profil, pas sur l'outil), Safari / iPhone, la preview Vercel.
+
+### Points relevés, non traités
+- `/connexion` suit `?redirect=` sans contrôle (redirection vers un autre site, voire `javascript:`) : correctif proposé à David.
+- Quand la page du site défile trop bas, le haut de l'iframe (bandeau de l'outil avec Excel / PDF) passe sous la barre fixe du site.
+
+---
+
+## [2026-10-12] — Vidéo native : essai réel validé sur Instagram et Facebook
+
+- **Essai de David depuis `dev`** (vidéo « Introduction ») : fichiers réels de 141 Mo (vertical) et 152 Mo (horizontal), en MP4, déposés par le panneau ; Reel Instagram transmis à 23 h 13 et vidéo Facebook à 23 h 16 (heure de Paris). Retour de David : « ça fonctionne parfaitement sur Facebook et Instagram ». En base : les deux posts sont `envoye`, `media = video`, sans erreur ; le post LinkedIn est resté en brouillon (non envoyé).
+- La branche Facebook en deux modules (« Upload a Video » sans texte, puis « Update a Video ») est donc celle qui a servi.
+- **« Publié par Make » sur Facebook** : mention d'attribution de l'application qui a publié. D'après les éditeurs d'outils de publication (Publer, Ayrshare, Hopper HQ, ContentStudio), seuls les gestionnaires de la page la voient, pas les abonnés, et elle ne se retire pas ; pas de source Meta trouvée. David l'accepte.
+### Mise en production (ordre de David, 12/10)
+- Report du **code vidéo seul** sur `main` (`c1308f1`, worktree séparé) : les 12 fichiers de `b6f0fba` et `e224f26`, sans les travaux annuaire en cours sur `dev` ni CHANGELOG / TODO. Contrôle préalable : sur `main`, ces fichiers étaient identiques à leur état sur `dev` avant le chantier, sauf `database.ts` (seul l'ajout vidéo y est reporté : +47 lignes, rien de retiré).
+- `tsc` et `npm run build` verts dans le worktree. Turbopack refuse un `node_modules` relié par lien (« points out of the filesystem root ») : dépendances installées dans le worktree (`npm ci`), puis worktree et copie de `.env.local` supprimés.
+- Vercel « Production » `success`.
+- **Vérifié en production** : accueil, `/stories-tutos` et `/videos` `200` ; `/api/cron/purge-videos-reseaux` `404` avant le déploiement, `401` sans secret après (nouveau code en ligne) ; `/api/cron/envoyer-posts-reseaux` `401` sans secret ; `/admin/videos` sans session → formulaire de connexion, aucun titre de vidéo dans la page.
+- Tâche d'effacement lancée une fois en production avec le secret : `{ ok, effaces: 0, abandonnes: 0 }`, les deux fichiers de l'essai (moins de 7 jours) toujours présents, en base et au stockage. Elle tournera ensuite seule chaque jour à 4 h 30 UTC ; les fichiers de l'essai seront effacés le 20/10.
+- **Reste** (David) : essai d'un post **programmé** en vidéo depuis la production, coup d'œil au panneau avec l'accès « contenus », relecture du tutoriel.
+
+---
+
+## [2026-10-11] — Vidéo native : arrivée sur la page de la vidéo après sa création, Make configuré, tutoriel
+
+### Feature — Après « Créer la vidéo », on arrive sur la page de la vidéo, panneau des réseaux ouvert
+- **Constat de David** (essai sur `dev`) : la page « Nouvelle vidéo » ne propose que le lien YouTube ; le dépôt des fichiers n'existe que sur la page d'une vidéo déjà enregistrée, et la création renvoyait à la liste.
+- [admin.ts](src/lib/actions/admin.ts) `createVideo` redirige vers `/admin/videos/<id>/modifier?publier=1` ; la [page](src/app/admin/videos/[id]/modifier/page.tsx) lit le paramètre et le [panneau](src/components/admin/SocialPanel.tsx) s'ouvre et se place à l'écran (`ouvertAuDepart`). Une vidéo rouverte par le crayon garde le panneau fermé, comme avant. Le lien YouTube reste obligatoire (le site lit les vidéos sur YouTube).
+- **Vérifié dans un vrai navigateur** (build local, vidéo temporaire en brouillon créée par le formulaire puis supprimée depuis la liste) : arrivée sur `…/modifier?publier=1`, panneau ouvert et entièrement visible (court, il se cale en bas de la fenêtre ; rempli, son haut vient à 24 px du bord) ; sans le paramètre, panneau fermé. `tsc`, lint des fichiers touchés et build passent. Base revenue à 19 vidéos, 0 fichier, 6 posts, bucket vide.
+
+### Make — scénario complété par David (captures)
+- Webhook : le bouton s'appelle « Detect new values » (ancien « Redetermine data structure »). Envoi neutre fait par Claude sur le signal de David (`network = essai-structure`, aucune branche ne le prend, Make a répondu `200 Accepted`) : `media` et `video_url` apparaissent dans les listes.
+- Branche « Instagram reel » : filtre `network` = `instagram` et `media` = `video`, module « Create a reel post ».
+- Branche « Facebook Video » : mêmes filtres pour `facebook` ; « Upload a Video » (type « download a video from URL », `video_url`, « Video caption » vide) puis « Update a Video » (« Video ID » du module précédent). Deux modules parce que la documentation de Make prévient qu'une description contenant des chiffres à l'envoi fait masquer la vidéo par Facebook.
+- Confirmé par David le 11/10 : `text` dans « Video caption » de « Update a Video », filtre « Facebook Video » placé avant « Upload a Video », règle « `media` différent de `video` » sur les branches d'origine. **Aucun essai réel de publication à ce stade** (prévu par David le 12/10).
+
+### Tutoriel pour la community manager
+- « Publier une vidéo sur les réseaux : mode d'emploi » (Claude Docs, deux captures du panneau) : https://claude.ai/code/artifact/802932ef-93f1-4bdf-8f50-15908eb08078. Il décrit le parcours une fois le code en production ; à relire après l'essai réel (délais de publication, comportement de Facebook).
+
+---
+
+## [2026-10-10] — Annuaire : l'application ouvre sa session, import ANS du 09/10, pédopsychiatrie en une entrée
+
+### Application — deuxième essai réussi (17:15, rapporté par la session messagerie)
+- `POST /api/annuaire/app/session` sur `dev` avec un vrai jeton du relais de production (flux CIBA, scopes `openid scope_all`) : **session ouverte**, RPPS rendu égal à celui du compte, textes d'accord lus, `GET /fiches` (1 fiche, 212 compétences), réouverture après un `401 jeton_invalide` provoqué. Le correctif `acb8245` est donc validé par un vrai jeton.
+- **`userinfo` de PSC rend bien l'identité pour ces jetons** (lu en base) : la ligne `identites_psc` du médecin de l'essai porte profession `10`, spécialité `SM53`, nom et prénom, dernière connexion à 18:17 (heure de Paris). Aucune connexion PSC au site à cette heure (`psc_session_events`, dernière à 17:33) : l'écriture vient d'une session de l'application, qui remplace ces champs par ce que PSC rend.
+- **Reste une faiblesse du code, sans effet constaté** : une profession absente n'est pas refusée (TODO, à décider).
+
+### Feature — `GET /api/annuaire/app/ma-fiche` rend la spécialité du médecin (demande de l'application)
+- Champ `specialite_code` (code SM de l'identité PSC, `null` si absent) : l'application en a besoin pour masquer à la saisie les compétences qui font redite avec la spécialité, comme le site. [authentifierApp](src/lib/annuaire/app-session.ts) lit la spécialité avec la profession (même requête) ; contrat mis à jour.
+- Vérifié en local (gestionnaire de la route appelé directement, lecture seule) : `200`, `specialite_code = "SM53"` ; identité inexistante → `401 identite_inconnue` ; jeton faux → `401 jeton_invalide`.
+
+### Données — import mensuel de l'Annuaire Santé (accord de David)
+- Nouvelle base de l'application (`annuaire.db`, extraction ANS du 2026-10-09, construite le 10/10). Import exécuté le 10/10 : lot `1791651599`, **199 578 médecins, 116 213 lieux, 309 992 liens médecin-lieu, 272 354 adresses MSSanté** ; ancien lot effacé (896 871 lignes).
+- **Vérifié par requête** : version active `2026-10-09`, un seul lot dans chaque table, 191 389 médecins avec un code SM, aucun code hors spécialités, aucun lien ni adresse MSSanté sans médecin.
+
+### Import — le code SM est lu dans l'extraction RPPS quand il existe
+- La base de l'application porte une nouvelle colonne `pro.savoir_faire_code`. Comparée au code que le script déduisait du libellé (199 578 médecins) : identiques pour 190 508 ; **177 pédopsychiatres rangés à tort en SM92** (vrai code SM43, les deux libellés ne diffèrent que d'une virgule) ; 642 médecins dont la colonne porte un code hors spécialités (`CEX22`, `CEX24`, `CEX26`, `CEX64`, gynécologie et urologie) que le libellé range correctement ; 62 sans code mais avec libellé.
+- [annuaire-import-ans.ts](scripts/annuaire-import-ans.ts) : code de la colonne quand c'est une spécialité connue du site, sinon rapprochement du libellé (inchangé). Les bases sans la colonne restent lisibles (essai à blanc sur la base du 04/10 : 199 293 médecins et 191 217 codes, les chiffres de l'import du 08/10).
+- Effet sur l'import du 10/10 : 190 685 codes lus, 704 déduits du libellé ; en base, **SM43 = 177, SM92 = 242** (avant : 0 et 418).
+
+### Fix — Filtre de spécialité de l'annuaire : pédopsychiatrie en une seule entrée
+- Le filtre avait deux entrées presque identiques, « Psychiatrie, option enfant et adolescent » (SM43, vide) et « Psychiatrie option enfant et adolescent » (SM92). [/annuaire](src/app/annuaire/page.tsx) regroupe maintenant les libellés comparés sans ponctuation : une seule entrée, codes SM43 + SM92 (93 entrées → 92, aucune autre fusion, les 95 codes toujours couverts). Libellés des fiches et de `SM_SPECIALITES` non touchés.
+- Mis en ligne sur `dev` **avant** l'import, pour que les 177 médecins passés en SM43 restent trouvés par le filtre.
+
+### Vérif
+- `tsc`, lint des fichiers touchés et `npm run build` passent. `e476fb6` poussé sur `dev`, Vercel `success` ; `main` non touché.
+- **`GET /ma-fiche` avec un vrai jeton** (application, `dev`, rapporté par David le 11/10) : `specialite_code = SM53`, lu par l'application.
+- **Non vérifié** : le filtre dans le navigateur (page réservée à un médecin connecté ; les fonctions `annuaire_*` ne sont pas appelables par le rôle de lecture). En production, l'annuaire reste éteint et `main` n'a pas le regroupement du filtre : à emporter au prochain report.
+
+---
+
+## [2026-10-10] — Vidéo native sur les réseaux : dépôt des fichiers et envoi de l'adresse à Make (côté site)
+
+Suite du cadrage du matin (Supabase passé en Pro par David). **Côté site terminé et vérifié en local ; restent les branches Make et l'essai réel par réseau (David).** Rien en production.
+
+### Base et stockage — lancés par David (vérifiés)
+- Réglage Supabase « Global file size limit » relevé (vérifié par un dépôt de 320 Mo).
+- Bucket **privé** `videos-reseaux` : 500 Mo par fichier, `video/mp4` et `video/quicktime` seulement, aucune règle d'accès (tout passe par des adresses signées).
+- Table `videos_fichiers` (un `vertical` et un `horizontal` par vidéo, suppression en cascade ; RLS active sans règle, `anon` et `authenticated` sans droit, `service_role` complet, `claude_readonly` en lecture).
+- Colonne `posts_reseaux.media` (`image` par défaut, ou `video` ; `video` réservé aux posts d'une vidéo). Ajouts seuls : la production tourne sans changement, les 6 posts existants sont en `image`.
+- Types régénérés par Claude (+47 lignes, rien de retiré).
+
+### Feature — Fichiers vidéo dans le panneau « Publier sur les réseaux » d'une vidéo
+- [FichiersVideoReseaux](src/components/admin/FichiersVideoReseaux.tsx) : deux emplacements (vertical = Reel Instagram, 300 Mo, plafond de Meta ; horizontal = vidéo Facebook, 500 Mo). Le navigateur dépose le fichier **directement au stockage** par une adresse de dépôt signée (valable 2 h), avec barre de progression et annulation ; un seul envoi, pas de reprise (320 Mo en 13 s lors de l'essai).
+- Contrôles avant dépôt : MP4 / MOV, poids, **sens du fichier** (un horizontal déposé dans l'emplacement vertical est refusé), durée d'un Reel (3 s à 15 min). Si le navigateur ne sait pas lire le fichier (MOV en HEVC), le sens et la durée ne sont pas contrôlés.
+- [videos-fichiers.ts](src/lib/actions/videos-fichiers.ts) : `preparerDepot` (session admin ou « contenus », chemin choisi par le serveur), `confirmerDepot` (poids et type **relus au stockage**, ancien fichier effacé en cas de remplacement), `supprimerFichier` (refusé si un post programmé attend le fichier).
+- [SocialPanel](src/components/admin/SocialPanel.tsx) : choix « Image » / « Vidéo » sur les posts Instagram et Facebook d'une vidéo (LinkedIn inchangé : lien YouTube + vignette). « Vidéo » est grisé tant que le fichier du réseau manque.
+  - **Choix par défaut** (décision de Claude, à revoir si besoin) : un fichier déposé fait passer le brouillon du réseau concerné en vidéo, et les nouveaux brouillons naissent en vidéo si le fichier est là. Supprimer un fichier repasse les brouillons en image.
+  - Instagram en vidéo n'exige plus d'image.
+- [envoi.ts](src/lib/reseaux/envoi.ts) : Make reçoit deux champs de plus, `media` (`image` / `video`) et `video_url` (adresse signée valable 24 h, générée au moment de l'envoi, ou `null`). Les champs existants ne changent pas.
+
+### Feature — Effacement automatique des fichiers
+- [purge-videos-reseaux](src/app/api/cron/purge-videos-reseaux/route.ts), chaque jour à 4 h 30 UTC, soit 6 h 30 à Paris en été (production seulement) → `purgerFichiers` ([fichiers.ts](src/lib/reseaux/fichiers.ts)) :
+  - fichier publié en vidéo : effacé 7 jours après la dernière activité (dépôt, modification ou envoi d'un post en vidéo du réseau) ;
+  - fichier jamais publié : 30 jours ;
+  - jamais effacé tant qu'un post programmé ou en cours d'envoi l'attend ;
+  - les brouillons en vidéo restés sans fichier repassent en image ;
+  - fichier arrivé au stockage sans avoir été enregistré (onglet fermé) : effacé après 1 jour.
+- Supprimer une vidéo efface aussi ses fichiers ([admin.ts](src/lib/actions/admin.ts) `deleteVideo`, `as any` retiré au passage).
+
+### Vérif
+- `tsc`, lint des fichiers touchés (0 erreur) et `npm run build` passent.
+- **Stockage, par script** : dépôt par adresse signée sans aucune clé (60 Mo et 320 Mo acceptés, 510 Mo refusé `413`), autre type refusé (`415`), lecture par adresse signée `206`, lecture sans jeton ou par l'adresse publique `400`.
+- **Panneau, dans un vrai navigateur** (build local, vidéo temporaire non publiée, faux Make local à la place du vrai : aucun post n'est parti) : **23 / 23** — refus du mauvais sens, dépôt des deux fichiers, brouillons Instagram et Facebook en vidéo et LinkedIn en image, bascule image / vidéo, envoi : le faux Make reçoit `media=video` et une adresse qui rend **le fichier identique à l'octet près**, LinkedIn inchangé, remplacement (ancien fichier effacé), suppression, bouton « Vidéo » grisé sans fichier.
+- **Effacement** (tâche appelée en local) : fichier récent gardé ; gardé tant qu'un post programmé l'attend ; effacé à 10 jours une fois publié (brouillon repassé en image) ; jamais publié : gardé à 10 jours, effacé à 31 ; suppression de vidéos depuis la liste de l'admin : fichiers et lignes partis.
+- Données d'essai effacées : base revenue à 19 vidéos, 0 fichier, 6 posts ; bucket vide.
+- **Non testé** : la publication réelle par Make (branches à créer), l'effacement d'un dépôt abandonné de plus d'un jour (la date d'un fichier du stockage ne se falsifie pas ; le cas « récent, donc gardé » est vérifié), un MOV en HEVC.
+
+---
+
+## [2026-10-10] — Annuaire, tranche 3 : le site attendait son propre client PSC au lieu de celui de l'application
+
+### Fix — Premier essai réel de l'application refusé (`401 jeton_psc_autre_client`)
+- **Constat** (essai de l'application contre `dev`, 10/10 à 14:36, rapporté par la session messagerie) : `POST /api/annuaire/app/session` → `401 jeton_psc_autre_client`.
+- **Cause** : `verifierJetonPsc` comparait `azp` à `NEXT_PUBLIC_PSC_CLIENT_ID`, le client PSC du site. Au bac à sable, le site et le relais de l'application partagent le même client (`100000medecins-100000medecins-org-bas`, relu dans `.env.local`), d'où l'essai local 27 / 27. En production, le relais a le sien (`100000medecins-100000medecins-org`, service « Messagerie 100000Médecins », flux CIBA, enregistré par PSC le 09/10), distinct de celui du site (`100000medecins`). L'entrée de l'étape 2 (« client PSC de l'association, partagé avec le relais ») n'était vraie qu'au bac à sable.
+- **Fix** ([app-session.ts](src/lib/annuaire/app-session.ts)) : `azp` comparé au client PSC **de l'application**, choisi par l'environnement PSC du site (`CLIENT_PSC_APPLICATION`, `PSC_ENV` exporté par [psc.ts](src/lib/auth/psc.ts)) : production → `100000medecins-100000medecins-org`, bac à sable → `100000medecins-100000medecins-org-bas`. Identifiants écrits dans le code (publics, liés au même réglage que l'émetteur attendu) : aucune variable à poser chez Vercel.
+  - Le client du site n'est **pas** accepté en plus : en production, un jeton émis pour `100000medecins` est refusé sur ces adresses (rien de légitime n'en présente). **Choix confirmé par David** (10/10).
+  - Le message de refus cite le client attendu.
+- Contrat précisé ([docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md)) : tableau environnement / sites / `iss` / `azp` attendu / client du site, à la place de « client PSC de l'association (`azp` = celui du relais) ».
+- **Vérifié** (script temporaire non commité : fonction appelée directement, faux `userinfo` local, rien écrit en base), dans les deux environnements, **16 / 16** : client de l'application accepté ; client de l'application de l'autre environnement, client du site en production, client inconnu et `azp` absent refusés avant tout appel à PSC ; autre émetteur, jeton expiré et jeton refusé par PSC inchangés.
+- `tsc`, lint des fichiers touchés et `npm run build` passent.
+- **En ligne sur `dev`** (`acb8245`, `main` non touché), vérifié sur `dev.100000medecins.org` avec deux faux jetons (signature inventée, aucune session ouverte, rien écrit en base) : `azp` = client du site (`100000medecins`) → `401 jeton_psc_autre_client`, « attendu : 100000medecins-100000medecins-org » (nouveau code, environnement PSC de production) ; `azp` = client de l'application → le contrôle du client passe, le jeton part chez PSC qui le refuse (`401 jeton_psc_refuse`).
+- **Identifiant de production recoupé** (10/10, après coup) : c'est la valeur de `PSC_PROD_CLIENT_ID` dans le `.env` du dépôt messagerie (ligne relue, signalée par David).
+- **Pas vérifié** : un vrai jeton du relais de production (prochain essai de l'application) ; que `userinfo` de PSC rende RPPS, profession et spécialité pour un jeton du flux CIBA. Point à regarder : une profession absente n'est pas refusée (seule une profession présente et différente de `10` l'est).
+
+---
+
+## [2026-10-10] — Emails : le lien « confirmer mon avis » n'agit plus à l'ouverture + phrases fausses des modèles
+
+### Fix — Revalidation d'un avis déclenchée par la simple ouverture du lien
+- **Constat** (étude du 09/10) : le bouton « Confirmer mon avis en 1 clic » des rappels pointait vers `/api/revalider-avis`, qui revalidait l'avis sur un simple GET (jeton signé sans expiration). Les antivirus des messageries ouvrent les liens des mails : ils auraient revalidé des avis à la place des médecins (date de l'avis et ordre des témoignages faussés).
+- **Fix** :
+  - nouvelle page [/confirmer-avis](src/app/confirmer-avis/page.tsx) : nom du logiciel, bouton « Oui, je confirme mon avis » (formulaire POST), lien « Non, je le mets à jour » ; `noindex`, dynamique (propre à chaque lien, comme `/gerer-notifications`), composants `Card` et `Button` ;
+  - [revalider-avis](src/app/api/revalider-avis/route.ts) : un GET n'écrit plus rien et renvoie vers la page (les liens des mails déjà partis restent utilisables) ; seul le POST revalide ;
+  - [revalidation.ts](src/lib/email/revalidation.ts) : les nouveaux liens pointent directement vers la page ; vérification du jeton partagée (`jetonRevalidationValide`, comparaison à temps constant) au lieu d'une copie dans la route.
+- **Deux défauts corrigés au passage** :
+  - un lien invalide affichait « Merci ! Votre avis a bien été confirmé » (`/avis-confirme` ignore le paramètre `erreur`) → message « Ce lien n'est plus valable » ;
+  - une revalidation qui ne touchait aucune évaluation (avis supprimé) était annoncée comme réussie → le POST vérifie qu'une ligne a été modifiée.
+- `as any` de la route retirés.
+- **Vérifié sur le build local** :
+  - ancien lien (GET, jeton valide d'une vraie évaluation) → `307` vers la page, évaluation **inchangée en base** (relue avant / après) ;
+  - page avec jeton valide → titre avec le nom du logiciel, formulaire POST, `noindex` ; jeton faux ou paramètres absents → « Ce lien n'est plus valable » ;
+  - POST avec jeton faux → `303`, `erreur=lien-invalide` ; POST avec jeton valide sur une évaluation inexistante → `303`, `erreur=revalidation-echouee`, message affiché.
+  - **Non testé** : le POST réussi (il modifierait l'avis d'un vrai médecin, la base locale étant celle de la production). La mise à jour elle-même est celle d'avant, plus le contrôle du nombre de lignes.
+- `tsc`, lint des fichiers touchés et `npm run build` passent (`/confirmer-avis` en `ƒ`, voulu).
+- **Même principe que `/gerer-notifications`** (désabonnement « HMAC-only » d'avril, que David avait en tête) : lien signé, page qui ne modifie rien à l'ouverture, action sur POST. Le lien de revalidation avait le jeton signé mais pas la seconde moitié.
+- **Déployé** (accord de David) : report du code seul de `9e40a3c` sur `main` (`e11c04f`, worktree séparé ; CHANGELOG, TODO et scripts laissés à `dev`), build vert dans le worktree, Vercel `success`.
+  - Production : ancien lien avec faux jeton → `307` vers `/confirmer-avis` (nouveau code en ligne) ; ancien lien avec le jeton valide d'une vraie évaluation → `307`, évaluation **inchangée en base** ; page → titre avec le nom du logiciel ; sans paramètres → « Ce lien n'est plus valable » ; POST faux jeton → `erreur=lien-invalide` ; POST sur une évaluation inexistante → `erreur=revalidation-echouee` ; accueil et `/avis-confirme` `200`.
+  - Toujours non testé : le POST réussi.
+
+### Modèles d'emails corrigés en base (demande de David)
+- [scripts/fix-phrases-modeles-emails.ts](scripts/fix-phrases-modeles-emails.ts) (ex `fix-modele-relance-psc.ts`, généralisé : liste de corrections, sujet ou contenu, correction ignorée si la phrase d'origine n'est pas trouvée une seule fois). Exécuté le 10/10, relu par une requête indépendante ; anciens modèles sauvegardés dans `backups/` (hors dépôt).
+- `verification_psc` (mail « Validez votre évaluation », envoyé chaque jour) : « Ce lien est valable 7 jours. » → « Vous pourrez aussi utiliser ce lien plus tard. »
+- `relance_1an` : objet « … a 1 an — toujours d'actualité ? » → « … a plus d'un an — toujours d'actualité ? » ; texte « Il y a un an, vous avez évalué » → « Il y a plus d'un an, vous avez évalué ». 188 des 262 avis concernés dataient de 2023 ou 2024.
+- **« en 2 clics »** (décision de David, un clic dans le mail puis un sur la page) dans `relance_1an`, `relance_3mois` et `lancement` (même bouton) : « Confirmer mon avis en 2 clics », « Deux clics suffisent pour le confirmer », « deux clics suffisent pour reconfirmer votre avis ».
+
+### Données — compteurs de relance du 23/04 remis à zéro (décision de David)
+- **Pourquoi** : 267 évaluations (250 médecins) gardaient la trace de la relance partie par erreur du site de développement le 23/04 (`last_relance_sent_at`, `relance_count = 1`). À la réactivation des rappels, leurs auteurs auraient d'abord reçu le « Rappel — votre avis est en attente de mise à jour », qui renvoie à ce mail.
+- [scripts/fix-compteurs-relance-incident-avril.ts](scripts/fix-compteurs-relance-incident-avril.ts) : dry-run par défaut, `--execute`, périmètre limité au 23/04, backup dans `backups/`. Exécuté le 10/10 : 267 évaluations → `last_relance_sent_at = null`, `relance_count = 0` ; notes et dates de note inchangées (seul `updated_at` bouge, par le trigger).
+- **Vérifié par requête** : plus aucune évaluation avec un compteur de relance. À la réactivation de l'interrupteur général : 525 premiers rappels (497 destinataires), aucun « Rappel ».
+
+### Sécurité — clé SendGrid du site
+- La clé du site s'appelle « 100KMed Production » dans SendGrid (identifiée par son identifiant, lecture seule) ; elle a tous les droits. Jamais examinée avant l'étude du 09/10 : l'envoi fonctionne de la même façon avec une clé complète, rien ne le signalait. Pas-à-pas donné à David (restriction sur place à « Mail Send » + « Stats » en lecture), noté en TODO.
+
+---
+
+## [2026-10-10] — Relance PSC : une relance toutes les 2 semaines
+
+- **Demande de David** : garder 4 relances, mais espacées de 2 semaines au lieu d'une.
+- [relance-psc](src/app/api/cron/relance-psc/route.ts) : la première relance part toujours 7 jours après le dépôt de l'évaluation ; les suivantes un lundi sur deux (`DELAI_ENTRE_RELANCES_JOURS = 13`). La dernière part donc 6 semaines après la première.
+- **Pourquoi 13 jours et non 14** : la tâche ne démarre pas à la seconde près d'un lundi à l'autre. Avec un seuil pile, un démarrage un peu plus tôt que la fois précédente repousse l'envoi au lundi suivant. Simulé avec des démarrages décalés de moins d'une heure : seuil 14 → lundis 0, 2, 5, 8 ; seuil 13 → lundis 0, 2, 4, 6. Le même défaut touchait l'ancien seuil de 7 jours : la relance « hebdomadaire » pouvait sauter des semaines.
+- Textes de la page Emails alignés (bandeau, confirmation à l'allumage, description du modèle).
+- **Modèle `relance_psc` corrigé en base** (demande de David) : il affirmait « Ce lien est valable 7 jours. Relance n/4. » alors que le lien ne périme pas (`token_verification` sans date limite). Nouvelle phrase : « Nous vous enverrons au plus {{max_relances}} rappels à ce sujet. Celui-ci est le n° {{relance_num}}. » Elle ne cite pas le rythme, pour rester vraie s'il change.
+  - [scripts/fix-modele-relance-psc.ts](scripts/fix-modele-relance-psc.ts) : dry-run par défaut, `--execute`, refus si la phrase attendue n'est pas trouvée une seule fois. Exécuté le 10/10, relu par une requête indépendante ; ancien modèle sauvegardé dans `backups/` (hors dépôt).
+  - **Non modifié** : le mail initial `verification_psc` porte la même phrase « Ce lien est valable 7 jours » (TODO).
+- Vérifié : `tsc`, lint des fichiers touchés (0 erreur) et `npm run build` passent. La sélection réelle n'a pas été exécutée (elle enverrait les mails).
+- **Déployé** (accord de David) : report du code seul de `2cd43b9` sur `main` (`24cdadc`, worktree séparé ; CHANGELOG et TODO laissés à `dev`), build vert dans le worktree, déploiement Vercel « Production » `success`.
+  - Production : accueil `200` ; `/api/cron/relance-psc` → `401` sans secret, `skipped` avec le secret ; `/admin/emails` sans jeton → formulaire de connexion sans contenu.
+  - Base : `relance_psc_active` absente, interrupteur général `false`, aucune évaluation relancée.
+- **Reste** : test du modèle puis allumage de « Relance PSC » par David.
+
+---
+
+## [2026-10-10] — Réseaux sociaux : publication validée sur les trois réseaux
+
+- Essai réel de David en production avec le nouveau panneau (article Pro Santé Connect) : **LinkedIn** (09/10, image arrivée grâce au module « Create a Company Image Post » en *Upload by link*), **Facebook** et **Instagram** (10/10) — « fonctionne parfaitement ». Post d'essai du 08/10 (lien `localhost`) supprimé de LinkedIn par David.
+- **Programmation des posts — activation lancée par David (10/10)**, après confirmation que la tâche ne touche que les posts réseaux (route relue : écrit `posts_reseaux`, lit `articles` / `videos`, un seul appel sortant vers Make, aucun envoi d'email). `pg_cron` 1.6.4 (`pg_catalog`) et `pg_net` 0.19.5 (`extensions`) installées (vérifié) ; `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …)` a renvoyé `1`. `claude_readonly` ne lit pas le schéma `cron` (tâche non relue).
+- **Programmation validée en production (10/10)** : variable `POSTS_PROGRAMMATION_ACTIVE=true` posée par David ; premier post programmé (Facebook, `programme_le` 13 h 10 heure de Paris) passé `envoye` à 13:10:03, soit 3 s après l'heure → tâche pg_cron, secret Vault et route opérationnels. David croyait avoir programmé le post LinkedIn : la date avait été saisie sur la carte Facebook (le brouillon LinkedIn est resté sur son créneau suggéré).
+- **`/api/upload` avec un utilisateur connecté non admin — vérifié en production (10/10)**, seul cas resté non testé depuis le correctif du 08/10. Script d'essai : compte temporaire créé par l'API d'administration (`…@example.com`, aucun déclencheur sur `auth.users`), session ouverte avec `@supabase/ssr` (mêmes cookies que le site, pas de cookie admin), envoi d'un PNG 16×16 : `401` sans session, **`200` avec la session**, image WebP servie par le bucket `images`. Nettoyage : image et compte supprimés (confirmé par l'API).
+- **Projet vidéo — cadrage décidé par David (10/10), rien de construit** : vidéos de 2-3 min, horizontales et verticales (~100-200 Mo). Make limite la taille des fichiers selon la formule (Free 5 Mo, Core 100 Mo) → **aucun fichier ne passera par Make** : Instagram (Reel, vertical) et Facebook (horizontal) téléchargent eux-mêmes le fichier à une adresse ; YouTube à la main (public), lien collé dans l'admin ; LinkedIn par lien YouTube + vignette ou dépôt manuel. Hébergement du fichier : **Supabase Pro**. n8n sur le Synology écarté (applications développeur à faire valider par LinkedIn, Meta et Google ; NAS exposé). Détail et étapes : TODO.
+
+---
+
+## [2026-10-10] — Annuaire : dans l'espace Mon compte, onglets, champ « Près de »
+
+Retours de l'essai de David sur dev :
+- **Menu de gauche absent sur l'annuaire** : `/annuaire` avait son propre gabarit, hors de Mon compte. Le gabarit de Mon compte devient un composant commun ([EspaceMonCompte](src/components/layout/EspaceMonCompte.tsx)), utilisé par `/mon-compte/*` et `/annuaire/*` (adresses inchangées : analytics, robots, proxy non touchés).
+- **Une seule entrée « Annuaire MSSanté »** dans le menu (active sur les deux onglets et la fiche d'un confrère) ; en-tête commun [EnteteAnnuaire](src/components/annuaire/EnteteAnnuaire.tsx) avec les onglets « Ma fiche annuaire » (`/mon-compte/annuaire`) et « Annuaire MSSanté complet » (`/annuaire`), aussi sur la fiche d'un confrère (le lien de retour n'est plus collé au logo).
+- **« Près de » décalé vers le bas quand on le vide** : l'aide sous le rayon (seulement sans position) allongeait sa colonne ; sortie de la grille. Vider « Près de » relance maintenant la recherche (toute la France).
+- `tsc`, lint, build verts.
+
+---
+
+## [2026-10-10] — Annuaire, tranche 3 : étape 3, retrait des anciennes colonnes
+
+- Feu vert de David pour mener l'étape 3 seul (la migration reste lancée par lui). Préalables : essais de suppression et de fusion de comptes (14 / 14), production passée au nouveau code (`9c97175`), voir l'entrée de l'étape 2.
+- **Migration de retrait lancée par David, vérifiée** : passerelles de transition supprimées ; règles RLS des fiches, portables et compétences cochées supprimées et **droits de `authenticated` retirés** sur ces tables (le site passe par le serveur) ; lecture des intitulés réduite aux validés ; `user_id` retiré des tables de fiches, `intitules.propose_par` retiré ; journal des portables **par RPPS seulement**, lié aux identités en cascade ; `annuaire_portable_pour` n'écrit plus que les RPPS. `identites_psc.user_id` reste le seul lien (facultatif) avec un compte du site.
+- Types régénérés (53 lignes, colonnes retirées) ; `tsc` et build verts sans changement de code (le code n'utilisait déjà plus ces colonnes).
+- **Revérifié après la migration** : essai local de l'application **27 / 27**, essai des comptes (suppression, fusion) **14 / 14** ; le journal des médecins fictifs est parti avec leurs identités (nouvelle cascade). Base revenue à 1 identité, 1 fiche, 3 compétences, 0 proposition, 0 compte d'essai.
+- Doc : [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+---
+
 ## [2026-10-10] — Annuaire, tranche 3 : étape 2, l'application raccordée au site
 
 ### Base — migration lancée par David (vérifiée)
@@ -21,7 +708,10 @@
 ### Vérif
 - `tsc`, lint, `npm run build` verts.
 - **Essai local** (build de production, faux PSC d'essai, médecins fictifs 99900000001 / 99900000002) : **27 / 27** — refus des jetons absents, d'un autre client, d'un autre environnement, expirés, refusés par PSC, du jeton du site falsifié et d'un jeton PSC à la place du jeton du site ; fiche vide, enregistrement refusé pour accord périmé, portable invalide, corps mal formé, compétence inconnue ; enregistrement (téléphones normalisés) et relecture ; fichier des fiches avec `portable_disponible` et **sans numéro** ; portable vu par B, revu (non recompté), le sien (sans trace), absent (`404`) ; proposition de compétence, libellé existant reconnu ; suppression. Journal contrôlé en base : **une seule ligne** (B → A). Données d'essai effacées (base revenue à 1 identité, 1 fiche, 3 compétences, 0 proposition).
-- **Reste** : essai de David sur dev (Ma fiche, `/annuaire`, admin Annuaire) ; suppression et fusion de comptes de test avant l'étape 3 ; côté messagerie, l'application.
+- **Essai de David sur dev** (étape 1) : Ma fiche enregistrée et relue, « ça passe parfaitement ».
+- **Suppression et fusion de comptes** (préalable à l'étape 3, feu vert de David « tout seul ») : script temporaire non commité, trois comptes de test (e-mails `@exemple.invalid`, RPPS fictifs), parties annuaire de `deleteUser` et `mergeAccounts` rejouées avec les vraies fonctions de [compte.ts](src/lib/annuaire/compte.ts), puis suppression des comptes : **14 / 14** — suppression : identité, fiche, portable, compétences, proposition en attente et journal des portables (lu et consulté) effacés, l'autre fiche intacte ; fusion : identité et fiche rattachées au compte conservé, portable, compétence et proposition conservés. Plus aucune donnée de test (comptes compris). L'action d'admin elle-même n'a pas été appelée : elle aurait inscrit une fausse suppression dans les statistiques et le journal d'activité.
+- Plus aucun usage de `intitules.propose_par` dans le code (`ec1f846`) : le code marche avant et après la migration de retrait.
+- **Déployé en production** : `dev` fusionné dans `main` (`9c97175`, worktree séparé, arbre identique à `dev`, build vert). Vérifié : accueil et solutions `200`, `/annuaire` → connexion, `/admin/utilisateurs` sans connexion → formulaire seul (0 adresse), adresses de l'application → `404 annuaire_ferme` (annuaire éteint en production).
 
 ---
 

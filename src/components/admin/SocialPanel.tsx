@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, Clock, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe, CalendarX, Loader2, Film } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { Send, Clock, ChevronDown, ChevronUp, Sparkles, X, AlertCircle, Globe, CalendarX, Loader2, Film, ImagePlus, Instagram } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -18,6 +19,10 @@ import {
   supprimerPost,
 } from '@/lib/actions/posts-reseaux'
 import { RESEAUX, formatDuReseau, type FichierVideo, type MediaPost, type PostReseau, type Reseau } from '@/lib/reseaux/types'
+import { EVENEMENT_VISUEL, type DetailEvenementVisuel } from '@/lib/reseaux/visuels'
+
+// Studio des visuels Instagram : chargé seulement à l'ouverture (canvas, police).
+const StudioVisuel = dynamic(() => import('@/components/admin/StudioVisuel'), { ssr: false })
 
 const NETWORK_LABELS: Record<Reseau, string> = {
   linkedin: 'LinkedIn',
@@ -93,10 +98,13 @@ export type SourcePublication = {
   lien?: string // page de l'article, ou vidéo YouTube
   image?: string | null // couverture de l'article, vignette de la vidéo
   statut?: string | null // article seulement : « publié » ou non
+  slug?: string | null // article seulement : début du nom des JPEG téléchargés depuis le studio
 }
 
 interface Props {
   source: SourcePublication
+  /** Article seulement : adresse du visuel 4:5 du studio, que reçoit Instagram à la place de la couverture. */
+  visuelInstagramInitial?: string | null
   postsInitiaux: PostReseau[]
   programmationActive: boolean // tâche planifiée en place ; sinon envoi immédiat seulement
   fichiersInitiaux?: FichierVideo[] // vidéo seulement : fichiers déposés pour la publication native
@@ -105,7 +113,7 @@ interface Props {
 
 type Resultat = { posts: PostReseau[]; error?: string }
 
-export default function SocialPanel({ source, postsInitiaux, programmationActive, fichiersInitiaux = [], ouvertAuDepart = false }: Props) {
+export default function SocialPanel({ source, visuelInstagramInitial = null, postsInitiaux, programmationActive, fichiersInitiaux = [], ouvertAuDepart = false }: Props) {
   const [open, setOpen] = useState(ouvertAuDepart)
   const panneau = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -122,6 +130,20 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
   // Une vidéo pointe vers YouTube : sa publication sur le site n'a pas d'effet sur l'aperçu du lien.
   const [isPublished, setIsPublished] = useState(source.type !== 'article' || source.statut === 'publié')
 
+  // Visuel 4:5 du studio (articles) : mis à jour quand le studio l'enregistre, d'ici ou du formulaire.
+  const [visuel, setVisuel] = useState<string | null>(source.type === 'article' ? visuelInstagramInitial : null)
+  const [studioOuvert, setStudioOuvert] = useState(false)
+  useEffect(() => {
+    const surVisuel = (e: Event) => {
+      const d = (e as CustomEvent<DetailEvenementVisuel>).detail
+      if (d?.articleId === source.id) setVisuel(d.url)
+    }
+    window.addEventListener(EVENEMENT_VISUEL, surVisuel)
+    return () => window.removeEventListener(EVENEMENT_VISUEL, surVisuel)
+  }, [source.id])
+  // Image que recevrait Instagram : le visuel, sinon la couverture ou la vignette.
+  const imageInstagram = visuel ?? source.image
+
   const ordre = (p: PostReseau) => RESEAUX.indexOf(p.reseau as Reseau)
   const actifs = posts.filter((p) => p.statut !== 'envoye').sort((a, b) => ordre(a) - ordre(b))
   const envoyes = posts.filter((p) => p.statut === 'envoye')
@@ -133,7 +155,7 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
   const formatDe = (p: PostReseau) => (source.type === 'video' ? formatDuReseau(p.reseau) : null)
   const fichierDepose = (p: PostReseau) => fichiers.some((f) => f.format === formatDe(p))
   // Instagram en image exige une image ; en vidéo, le fichier suffit.
-  const sansImageDe = (p: PostReseau) => p.reseau === 'instagram' && p.media !== 'video' && !source.image
+  const sansImageDe = (p: PostReseau) => p.reseau === 'instagram' && p.media !== 'video' && !imageInstagram
 
   async function executer(cle: string, action: () => Promise<Resultat>) {
     setOccupe(cle)
@@ -209,6 +231,7 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
   }
 
   return (
+    <>
     <Card padding="none" ref={panneau} className="scroll-mt-6">
       <button
         type="button"
@@ -243,7 +266,7 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
           )}
 
           {/* Instagram sans image (ni fichier vertical à publier à la place) */}
-          {!source.image && !fichiers.some((f) => f.format === 'vertical') && (
+          {!imageInstagram && !fichiers.some((f) => f.format === 'vertical') && (
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-button px-4 py-3">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700">
@@ -333,6 +356,38 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
                           Vidéo
                         </Button>
                         {!fichierDepose(p) && <span className="text-xs text-gray-400">Déposez le fichier {format} pour publier la vidéo.</span>}
+                      </div>
+                    )}
+
+                    {source.type === 'article' && reseau === 'instagram' && (
+                      <div className="flex items-center gap-3 rounded-button border border-gray-100 bg-surface-light/60 p-2.5">
+                        {visuel ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- fichier du bucket public, simple vignette
+                          <img src={visuel} alt="Visuel Instagram 4:5" className="aspect-[4/5] w-14 shrink-0 rounded-md object-cover" />
+                        ) : (
+                          <span aria-hidden className="grid aspect-[4/5] w-14 shrink-0 place-items-center rounded-md border-[1.5px] border-dashed border-gray-300 text-gray-400">
+                            <ImagePlus className="h-4 w-4" />
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <p className="text-xs text-gray-600">
+                            {visuel
+                              ? 'Instagram recevra ce visuel 4:5.'
+                              : source.image
+                                ? 'Sans visuel, Instagram reçoit la couverture telle quelle.'
+                                : 'Choisissez d’abord une couverture pour créer le visuel.'}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            leftIcon={<Instagram className="h-3.5 w-3.5" />}
+                            disabled={!source.image || pending}
+                            onClick={() => setStudioOuvert(true)}
+                          >
+                            {visuel ? 'Modifier le visuel' : 'Créer le visuel'}
+                          </Button>
+                        </div>
                       </div>
                     )}
 
@@ -432,5 +487,16 @@ export default function SocialPanel({ source, postsInitiaux, programmationActive
         </div>
       )}
     </Card>
+    {studioOuvert && source.type === 'article' && source.image && (
+      <StudioVisuel
+        open
+        onClose={() => setStudioOuvert(false)}
+        articleId={source.id}
+        photoUrl={source.image}
+        titre={source.titre}
+        nomFichier={source.slug || 'article'}
+      />
+    )}
+    </>
   )
 }

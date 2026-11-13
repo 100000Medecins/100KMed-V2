@@ -22,9 +22,9 @@ const PSC_ENVS = {
   },
 } as const
 
-const pscEnv = (process.env.NEXT_PUBLIC_PSC_ENV === 'production' ? 'production' : 'bas') as keyof typeof PSC_ENVS
+export const PSC_ENV = (process.env.NEXT_PUBLIC_PSC_ENV === 'production' ? 'production' : 'bas') as keyof typeof PSC_ENVS
 
-export const PSC_ENDPOINTS = PSC_ENVS[pscEnv]
+export const PSC_ENDPOINTS = PSC_ENVS[PSC_ENV]
 
 /**
  * Mode relais : l'URI enregistrée chez PSC est `www.100000medecins.org/connexionPsc`, pour la

@@ -12,7 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase/server'
 import { getAnnuaireActif } from '@/lib/db/settings'
-import type { MoyenContact } from '@/lib/constants/annuaire'
+import { nouveauxPatientsPossible, type MoyenContact } from '@/lib/constants/annuaire'
 import { codesSmDeSpecialite, afficherPortable } from '@/lib/annuaire/normaliser'
 import type { Commune } from '@/lib/annuaire/geocodage'
 import {
@@ -49,6 +49,10 @@ export interface MaFicheAnnuaire {
   catalogue: IntituleCatalogue[]
   /** Ce que l'Annuaire Santé connaît pour le RPPS du médecin : proposé, à confirmer d'un clic. */
   propositionsAns: PropositionsAns | null
+  /** Généraliste d'après sa spécialité PSC : la question « nouveaux patients » le concerne. */
+  nouveauxPatientsPossible: boolean
+  nouveauxPatients: boolean | null
+  nouveauxPatientsLe: string | null
 }
 
 /** Pour le menu de Mon compte. */
@@ -56,20 +60,24 @@ export async function annuaireEstActif(): Promise<boolean> {
   return getAnnuaireActif()
 }
 
-/** Le compte connecté et le RPPS de sa preuve PSC (null sans preuve). */
+/** Le compte connecté, le RPPS et la spécialité de sa preuve PSC (null sans preuve). */
 async function compteConnecte() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: identite } = await supabase.from('identites_psc').select('rpps').eq('user_id', user.id).maybeSingle()
-  return { supabase, userId: user.id, rpps: identite?.rpps ?? null }
+  const { data: identite } = await supabase
+    .from('identites_psc')
+    .select('rpps, specialite_code')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  return { supabase, userId: user.id, rpps: identite?.rpps ?? null, specialiteCode: identite?.specialite_code ?? null }
 }
 
 export async function getMaFicheAnnuaire(): Promise<MaFicheAnnuaire | null> {
   if (!(await getAnnuaireActif())) return null
   const compte = await compteConnecte()
   if (!compte) return null
-  const { supabase, userId, rpps } = compte
+  const { supabase, userId, rpps, specialiteCode } = compte
 
   const [profil, fiche, catalogue, propositionsAns] = await Promise.all([
     supabase.from('users').select('specialite').eq('id', userId).maybeSingle(),
@@ -104,6 +112,9 @@ export async function getMaFicheAnnuaire(): Promise<MaFicheAnnuaire | null> {
     competences: fiche?.competences ?? [],
     catalogue,
     propositionsAns,
+    nouveauxPatientsPossible: nouveauxPatientsPossible(specialiteCode),
+    nouveauxPatients: fiche?.nouveauxPatients ?? null,
+    nouveauxPatientsLe: fiche?.nouveauxPatientsLe ?? null,
   }
 }
 
@@ -124,8 +135,18 @@ export async function enregistrerMaFiche(input: {
   commune: Commune | null
   mssante: string
   telephoneCabinet: string
+  /** Absent : inchangé ; envoyé par la page aux seuls généralistes (le serveur l'ignore sinon). */
+  nouveauxPatients?: boolean | null
 }): Promise<
-  | { ok: true; publieeLe: string | null; miseAJour: string | null; portable: string; telephoneCabinet: string }
+  | {
+      ok: true
+      publieeLe: string | null
+      miseAJour: string | null
+      portable: string
+      telephoneCabinet: string
+      nouveauxPatients: boolean | null
+      nouveauxPatientsLe: string | null
+    }
   | { error: string }
 > {
   const ctx = await rppsVerifie()
@@ -141,6 +162,8 @@ export async function enregistrerMaFiche(input: {
     miseAJour: res.miseAJour,
     portable: afficherPortable(res.portable),
     telephoneCabinet: afficherPortable(res.telephoneCabinet),
+    nouveauxPatients: res.nouveauxPatients,
+    nouveauxPatientsLe: res.nouveauxPatientsLe,
   }
 }
 

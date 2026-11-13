@@ -36,13 +36,27 @@ _(rien en cours)_
 
 **Tranche 2b (08/10)** : tables `ans_*` + `annuaire_oppositions`, premier import (199 293 médecins, extraction du 04/10), recherche et fiches sur l'ANS, marqueur au cabinet, propositions dans Ma fiche, onglet Oppositions, recherche accélérée (2b-bis, mesurée). Fusionnée dans `main` (éteinte) le 08/10 avec `6002f31`.
 - [ ] **David** : essai sur dev.100000medecins.org — recherche par nom, spécialité, compétence ; « Autour de moi » et rayons ; carte (marqueurs aux cabinets) ; fiche d'un confrère sans fiche (carte ANS seule) ; Ma fiche → « Utiliser » un lieu et une MSSanté ; onglet Oppositions (ajouter puis retirer un RPPS de test).
-- [ ] **Messagerie** : exclure `annuaire_oppositions` de `annuaire.db` (base de l'application) ; import mensuel côté site : `npx tsx scripts/annuaire-import-ans.ts --execute` après reconstruction de la base.
+- [ ] **Messagerie** : exclure `annuaire_oppositions` de `annuaire.db` (base de l'application) ; import mensuel côté site : `npx tsx scripts/annuaire-import-ans.ts --execute` après reconstruction de la base (dernier import : 10/10, extraction ANS du 09/10).
 
-**Tranche 3 — raccordement de l'application (10/10)** : décisions de David (identification par jeton PSC vérifié par le site, fiches téléchargées à chaque connexion, modification de sa fiche dans l'application, médecins seulement). Étape 1 (annuaire rangé par RPPS, migration d'ajout) et étape 2 (fonctions par RPPS, module serveur commun, adresses `/api/annuaire/app/…`, essai local 27/27) faites sur `dev`. Doc et contrat d'échange : `docs/2026-10-10-annuaire-tranche-3.md`.
+**Tranche 3 — raccordement de l'application (10/10)** : décisions de David (identification par jeton PSC vérifié par le site, fiches téléchargées à chaque connexion, modification de sa fiche dans l'application, médecins seulement). Étapes 1 à 3 faites le 10/10 (annuaire rangé par RPPS, module serveur commun, adresses `/api/annuaire/app/…`, anciennes colonnes retirées ; essais 27/27 et 14/14), en production (éteint). Doc et contrat d'échange : `docs/2026-10-10-annuaire-tranche-3.md`.
 - [ ] **David** : essai sur dev — Ma fiche (enregistrer, proposer une compétence), `/annuaire` (sa fiche visible, portable), admin Annuaire.
-- [ ] **Claude** : avant l'étape 3, essais de suppression et de fusion de comptes de test sur dev (accord de David pour créer deux comptes de test).
-- [ ] Fusion de l'étape 2 dans `main` (accord de David), puis **étape 3** : retrait de `user_id` des tables de fiches, des passerelles, de `intitules.propose_par`, de `lecteur_id` / `consulte_id` du journal et des règles RLS d'écriture par `user_id` (migration montrée à David).
+- [x] ~~Essai avec un vrai jeton PSC de l'application sur `POST /api/annuaire/app/session` (dev)~~ ✅ 10/10 : refusé à 14:36 (client PSC du relais distinct de celui du site en production), corrigé, session ouverte à 17:15 ; `userinfo` rend RPPS, profession et spécialité (lu dans `identites_psc`).
+- [ ] **À décider (David), avant l'ouverture** : refuser l'annuaire quand PSC ne rend pas la profession. Aujourd'hui seule une profession présente et différente de `10` est refusée, et c'est un choix voulu, identique à trois endroits : connexion PSC au site (`psc-callback`, « ne bloquer que si PSC fournit explicitement un code différent »), annuaire du site (fonction SQL `annuaire_lecteur_autorise`, `coalesce(code_profession, '10')`), application (`app-session.ts`). **Ne pas durcir l'application seule** : le faire pour l'annuaire entier (application + fonction SQL, donc une migration), sans toucher à la connexion au site. Fréquence d'une profession absente inconnue (la profession n'est gardée que dans `identites_psc`, 1 ligne).
+- [x] ~~Vérifier `GET /api/annuaire/app/ma-fiche` avec un vrai jeton : champ `specialite_code` ajouté le 10/10 (demande de l'application)~~ ✅ lu par l'application sur dev (`SM53`), rapporté le 11/10.
+- [ ] **David** : sur dev, `/annuaire` → spécialité « Psychiatrie option enfant et adolescent » : une seule entrée dans la liste, 419 médecins France entière (SM43 + SM92). À emporter dans `main` avec le prochain report (annuaire éteint en production).
 - [ ] **Messagerie** : session au site après chaque validation PSC, téléchargement des fiches, fiche d'un confrère (badge, contact préféré, compétences, portable), recherche par compétence, écran « Ma fiche » — selon le contrat d'échange.
+
+**« Accepte de nouveaux patients » — généralistes (demande du 15/10)** : question dans Ma fiche (comme médecin traitant ; oui / non / non renseigné ; date remise au jour à chaque enregistrement qui contient la réponse), mention sur la fiche d'un confrère (« oui » et « non », avec la date), filtre dans la recherche, deux champs de plus dans le contrat de l'application (ajout rétrocompatible). Généralistes = spécialité PSC SM26, SM53, SM54. Voir CHANGELOG du 15/10.
+- [x] ~~Étape 1 : colonnes `fiches_annuaire.nouveaux_patients` / `nouveaux_patients_le`~~ ✅ 15/10 (migration lancée par David, constat fait, types régénérés).
+- [x] ~~**David** : `PUT /ma-fiche` d'un non-généraliste qui envoie la réponse → ignoré ou refusé ?~~ ✅ 15/10 : ignoré.
+- [x] ~~Étape 2 : serveur commun et adresses de l'application, contrat dans `docs/2026-10-10-annuaire-tranche-3.md`~~ ✅ 15/10 (essai local 28 / 28).
+- [x] ~~Étape 3 : la question dans Ma fiche (site)~~ ✅ 15/10 (navigateur 17 / 17).
+- [x] ~~Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche`~~ ✅ 16/10 (lancée par David, constat fait, essai 27 / 27, types régénérés).
+- [x] ~~Étape 5 : mention sur la fiche d'un confrère et filtre dans la recherche (site)~~ ✅ 16/10 (navigateur 18 / 18).
+- [x] ~~**David** : essai sur dev.100000medecins.org — Ma fiche annuaire, `/annuaire` (case, fiche d'un confrère)~~ ✅ 16/10 (« c'est bon »).
+- [ ] À emporter dans `main` au prochain report de l'annuaire (éteint en production ; base déjà migrée).
+- [ ] **Jour J, CGU et charte** (textes préparés dans le dépôt messagerie) : remplacer « vos disponibilités » (champ qui n'existe pas) par la réponse sur les nouveaux patients dans CGU art. 4 bis « Votre fiche », charte « Données traitées » et « Ce qui est visible » ; l'ajouter aux déclarations non vérifiées (CGU art. 5).
+- [x] ~~**Messagerie** : poser la question dans « Ma fiche » si `nouveaux_patients_possible`, l'afficher sur la fiche d'un confrère, filtre — selon le contrat~~ ✅ 16/10 : fait et essayé par David contre dev (rapporté par la session messagerie) ; en base, la vraie fiche enregistrée par l'application à 15 h 18, réponse finale « non renseigné ».
 
 **Suite (à décider avec David)** :
 - **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
@@ -73,28 +87,68 @@ _(rien en cours)_
 - des `completer_error` → bug à corriger ;
 - comparer le taux de complétion avant/après l'ajout des choix de notifications, et lire les choix faits (détail de `completer_success`).
 
-### Réseaux sociaux et accès de la community manager — restes (posé le 2026-10-08)
+### Réseaux sociaux et accès de la community manager — opérationnel ; reste la programmation (posé le 2026-10-08)
 
-**Contexte** : accès « contenus » à l'admin, posts réseaux en base avec programmation, panneau sur les vidéos (CHANGELOG du 2026-10-08).
+**Contexte** : accès « contenus » à l'admin, posts réseaux en base, panneau sur les articles et les vidéos (CHANGELOG des 08 et 09/10). **Validé de bout en bout le 10/10** sur LinkedIn, Facebook et Instagram.
 
 **À faire (David)** :
 - ~~**Make, branche LinkedIn** : « Create a Company Image Post » en Upload by link~~ ✅ fait par David le 09/10 : post LinkedIn arrivé **avec sa photo** (article Pro Santé Connect, `posts_reseaux` « envoye », sans lien localhost).
 - ~~**Supprimer sur LinkedIn le post d'essai du 08/10**~~ ✅ supprimé par David le 09/10.
-- **Facebook et Instagram** : pas encore essayés avec le nouveau panneau (brouillons prêts sur l'article Pro Santé Connect). Vérifier au premier envoi le champ Link du module Facebook (carte de l'article) et la photo Instagram.
+- ~~**Facebook et Instagram** : premier envoi avec le nouveau panneau~~ ✅ « fonctionne parfaitement » (David, 10/10).
 - ~~**Vercel** : variable `ADMIN_CONTENU_PASSWORD`~~ ✅ fait et testé par David le 09/10.
 
-**Programmation des posts — désactivée (décision de David, 2026-10-09)** : pas de `pg_cron` pour l'instant (méfiance après un envoi de masse involontaire par le passé). Le panneau ne propose que « Envoyer maintenant » ; le serveur refuse toute programmation. **Pour l'activer un jour** : (1) activer `pg_cron` et `pg_net` (Database › Extensions) ; (2) SQL : `delete from vault.secrets where name = 'cron_secret'`, `vault.create_secret('<CRON_SECRET>', 'cron_secret')`, `cron.schedule('envoyer-posts-reseaux', '*/5 * * * *', …net.http_get(…/api/cron/envoyer-posts-reseaux)… where exists (posts dus))` — texte complet dans le CHANGELOG du 2026-10-08 ; la tâche ne touche que `posts_reseaux`, aucun email ; (3) variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true` + redéploiement ; (4) tester un post à +15 min.
+**Programmation des posts — ✅ active et validée (2026-10-10)** : `pg_cron` + `pg_net` activées par David, tâche `envoyer-posts-reseaux` (toutes les 5 min, secret `cron_secret` dans Vault), variable Vercel `POSTS_PROGRAMMATION_ACTIVE=true`. Premier post programmé (Facebook, 13 h 10) transmis à Make à 13:10:03. La tâche ne touche que `posts_reseaux`, aucun email. **Arrêt** : `select cron.unschedule('envoyer-posts-reseaux');` + retirer la variable.
+
+### Vidéo native sur les réseaux — en production depuis le 2026-10-12 ; reste l'essai d'un post programmé (posé le 2026-10-08)
+
+**Fait (CHANGELOG du 10/10)** : Supabase Pro, bucket privé `videos-reseaux`, table `videos_fichiers`, colonne `posts_reseaux.media`, dépôt des deux fichiers dans le panneau « Publier sur les réseaux » d'une vidéo, choix image / vidéo par post, envoi de `media` et `video_url` à Make, effacement automatique des fichiers. **En production depuis le 12/10** (`c1308f1`, code vidéo seul reporté sur `main`).
+
+**Décisions de David (10/10)** :
+- **Aucun fichier ne passe par Make** (pas de formule Make payante : Free limite un fichier à 5 Mo, Core à 100 Mo, et les vidéos font 2-3 min, soit ~100-200 Mo).
+- **Instagram** : Reel avec le fichier **vertical** ; **Facebook** : vidéo avec le fichier **horizontal**. Les deux réseaux téléchargent eux-mêmes le fichier à l'adresse transmise : Make ne transmet que l'adresse.
+- **YouTube** : dépôt **à la main** dans YouTube Studio, en **public**, puis lien collé dans l'admin (existant). Pas d'envoi automatique (une vidéo envoyée par un projet Google non audité reste privée).
+- **LinkedIn** : post avec lien YouTube + vignette (existant) ; vidéo déposée à la main pour les plus importantes.
+- **Hébergement du fichier le temps de la publication : Supabase Pro** (25 $/mois ; apporte aussi les sauvegardes quotidiennes). La lecture sur le site reste YouTube.
+- **n8n sur le Synology écarté** : en auto-hébergé, il faut ses propres applications développeur, chacune soumise à validation (LinkedIn Community Management, App Review Meta, audit Google), plus un NAS exposé à internet.
+
+**Essai réel du 12/10 (David, depuis `dev`)** : vidéo « Introduction », fichiers de 141 Mo (vertical) et 152 Mo (horizontal) ; Reel Instagram et vidéo Facebook publiés, « fonctionne parfaitement ». Facebook affiche « Publié par Make » : mention d'attribution que seuls les gestionnaires de la page voient d'après les éditeurs d'outils de publication (pas de source Meta), non retirable ; David l'accepte.
+
+**Reste (David)** : programmer un post en vidéo depuis la production et vérifier qu'il part à l'heure en vidéo ; ouvrir le panneau avec l'accès « contenus » de la community manager ; relire le tutoriel (ajouter une ligne sur « Publié par Make » si souhaité).
+
+**Make — état au 2026-10-11** (captures de David) : champs `media` et `video_url` détectés par le webhook (« Detect new values », nouveau nom de « Redetermine data structure », avec un envoi neutre de Claude) ; branche « Instagram reel » créée (« Create a reel post ») ; branche « Facebook Video » créée (« Upload a Video » en « download a video from URL », « Video caption » vide, puis « Update a Video » avec le « Video ID » du module précédent). **Confirmé par David le 11/10** : `text` dans « Video caption » de « Update a Video », filtre « Facebook Video » placé avant « Upload a Video », règle « `media` différent de `video` » sur les deux branches d'origine. **Reste l'essai réel, prévu par David le 12/10.**
+
+**Tutoriel pour la community manager** (Claude Docs, 11/10, deux captures du panneau) : https://claude.ai/code/artifact/802932ef-93f1-4bdf-8f50-15908eb08078 — il décrit le parcours une fois en production ; à relire après l'essai réel.
+
+**À faire (David, pas-à-pas donné par Claude le 10/10)** :
+1. ~~**Make, branches existantes Instagram et Facebook** : ajouter au filtre la condition « `media` différent de `video` » (un envoi sans champ `media`, comme ceux de la production actuelle, continue de passer).~~ ✅ fait par David le 11/10
+2. ~~**Make, branche Reel Instagram** : filtre `network` = `instagram` et `media` = `video` ; module « Create a Reel Post », adresse de la vidéo = `video_url`, légende = `text`.~~ ✅ fait par David le 11/10
+3. ~~**Make, branche vidéo Facebook** : filtre `network` = `facebook` et `media` = `video` ; module « Upload a Video » en mode « Download a video from URL » (adresse = `video_url`), **description laissée vide**, suivi du module « Update a Video » (description = `text`). Raison : la documentation de Make prévient qu'une description contenant des chiffres au moment de l'envoi fait masquer la vidéo par Facebook (« Your post goes against our community standards so only you can see it »), et nos textes en contiennent (nom de l'association, lien). Repli si le module télécharge lui-même le fichier (limite de 5 Mo) : « Make an API Call » (`POST /{id de la page}/videos`, `file_url` = `video_url`). Libellés relevés dans la documentation et des tutoriels, pas à l'écran : à confirmer à la mise en place.~~ ✅ fait par David le 11/10
+   - ~~Au préalable, pour que `media` et `video_url` apparaissent dans Make : « Redetermine data structure » sur le webhook, puis un envoi neutre fait par Claude (réseau fictif, aucune branche ne publie).~~ ✅ fait par David le 11/10
+4. ~~**Essai par réseau** depuis `dev` (ouvrir une vidéo existante par le crayon, ou en créer une : on arrive désormais sur sa page, panneau ouvert) avec une vidéo courte, par **« Envoyer maintenant »** (pas « Programmer » : la tâche planifiée appelle la production, qui n'a pas encore ce code et enverrait le post en image).~~ ✅ fait par David le 12/10 (Instagram et Facebook)
+5. ~~**Mise en production**~~ ✅ faite le 12/10 (`c1308f1`) ; **reste l'essai d'un post programmé**.
+
+**À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
+
+### Studio des visuels Instagram — chantier fini sur `dev`, reste la mise en production (posé le 2026-11-12)
+
+**Contexte** : préparé dans le dépôt messagerie (`docs/studio-instagram/` : spécification, prompt, code de la maquette validée https://claude.ai/artifact/8onB9d4Q2ZhHR2Tv9hhDUq). Depuis la page d'un article de l'admin, recadrer la couverture en post 4:5 et story 9:16 avec l'habillage de la charte, choisir la tonalité, enregistrer ; le post Instagram de l'article part avec le visuel 4:5 (Make inchangé) ; la story se télécharge seulement.
+
+- [x] ~~Étape 1 : gabarit et studio sans enregistrement~~ ✅ 12/11 (`4ec6abb`) : identique à la maquette au pixel sur 34 cas.
+- [x] ~~**David** : comparer à l'œil sur dev avec la maquette~~ ✅ 12/11 : étapes 1 et 2 essayées et validées.
+- [x] ~~Étape 2 : couverture en grand~~ ✅ 12/11 (`8187c11`) : Unsplash et Pexels en 3 840 px, sans route relais (CORS ouvert, vérifié).
+- [x] ~~Étape 3 : enregistrement~~ ✅ 12/11 (`0cc1806`) : SQL lancé par David (contraintes uniques simples au lieu d'index partiels), dépôt signé, contrôle sharp, réglages retrouvés à la réouverture, fichiers effacés avec l'article.
+- [x] ~~Étape 4 : branchement de l'envoi~~ ✅ 12/11 (`5192d7d`) : Instagram reçoit le visuel 4:5 (vérifié avec un faux Make local), vignette et bouton du studio dans la carte Instagram.
+- [ ] **David** (à la fin du chantier, pas prioritaire : la community manager publie avec son propre outil) : essai réel depuis dev.100000medecins.org — sur un article à publier vraiment sur Instagram, créer le visuel (carte Instagram du panneau « Publier sur les réseaux »), puis « Envoyer maintenant » (pas « Programmer » : la tâche planifiée appelle la production) ; vérifier sur Instagram que le post porte le visuel 4:5. Base partagée : le visuel et le post « envoyé » restent sur l'article en production.
+- [x] ~~Étape 5 : accroche proposée par Claude~~ ✅ 12/11 (`982d390`) : 3 accroches (Opus 5.5) quand le titre ne tient pas, 7 à 11 s, la meilleure remplace le titre.
+- [x] ~~Studio hors d'un article~~ ✅ 13/11 (`6360872`) : Admin → Blog → « Studio Instagram », photo importée + texte libre, téléchargement, rien d'enregistré.
+- [x] ~~Étape 6 : tutoriel de la community manager~~ ✅ 13/11 : https://claude.ai/artifact/4AFMFGPNq9189TUcGstamg (privé).
+- [ ] **David** : mise en production (fusion `dev` → `main`, sur son ordre, depuis un dossier séparé) ; elle emporte aussi l'annuaire, qui reste éteint (`annuaire_actif` absent) — vérifier ensuite que `/annuaire` répond 404 en production.
+- [ ] **David**, après la mise en production : partager le tutoriel avec la community manager (menu Partager de la page).
+- [ ] Non essayé : Firefox (logos rechargés avec une taille, Firefox n'étant pas installé sur le poste).
 
 ---
 
 ## En attente / Idées
-
-### Vidéo : dépôt dans l'admin → YouTube + publication native sur les réseaux (posé le 2026-10-08)
-- **Prérequis** : Supabase **Pro** (25 $/mois : fichiers > 50 Mo, 100 Go de stockage, 250 Go de bande passante, et sauvegardes quotidiennes).
-- **Décidé** : vidéos publiées en **publique** sur YouTube ; la lecture sur le site reste YouTube (pas d'hébergement des vidéos sur le site : bande passante, pas de lecture adaptée au débit).
-- **Principe** : dans Vidéos, déposer le MP4 + titre + description → fichier envoyé directement du navigateur au stockage Supabase (bucket privé, adresse signée) → Make (module YouTube « Upload a Video ») le publie → Make rappelle le site, qui crée la fiche vidéo (lien, vignette) → le fichier reste disponible pour une publication **native** (LinkedIn « Create a Company Video Post », Facebook « Upload a Video », Instagram en Reel), puis suppression du fichier.
-- **Pourquoi Make et pas l'API YouTube depuis le site** : une vidéo envoyée par un projet Google non audité est forcée en privé. Make propose public / non répertorié / privé, mais certains signalent des vidéos « Private (locked) » : tester sur une première vidéo.
-- **Contraintes** : Instagram (Reel) veut du MP4 plutôt vertical, durée et poids limités (vérifier les chiffres à jour au moment de construire).
 
 ### Annuaire mutualisé — coller les CGU et la charte le jour du passage en prod (posé le 2026-10-05)
 
@@ -118,6 +172,7 @@ _(rien en cours)_
 - ~~Actions serveur — revue d'accès~~ ✅ faite le 2026-10-08 (17 actions admin protégées, cf. CHANGELOG). **Fusionner dans `main`**.
 - ~~DMH : limiter à ses propres études~~ ✅ fait le 2026-10-08 (décision de David).
 - **Formulaires publics — anti-abus** (vu le 08/10) : l'évaluation anonyme (`submitEvaluationAnonyme`) envoie un email à l'adresse saisie sans Turnstile ; `checkEmailExists` révèle si une adresse a un compte. Ajouter Turnstile (déjà utilisé à l'inscription) et voir si `checkEmailExists` est encore utile.
+- ~~**`/api/upload` : un essai à faire avec un compte non admin**~~ ✅ fait par Claude le 2026-10-10 en production (compte de test temporaire) : `401` sans session, `200` avec la session d'un utilisateur non admin, image WebP lisible ; image et compte de test supprimés.
 - ~~Fusionner dans `main` le correctif `admin-users.ts`~~ ✅ fait le 2026-10-08 (`bb41b77`), vérifié.
 - **⏰ Vers le 2026-10-22 — Connexion PSC : décider le blocage CSRF** (contrôle posé le 08/10, en mesure). Demander à Claude la répartition des `state_check` (`ok` / `absent` / `different`) dans `psc_session_events` depuis la mise en production. Si `absent` et `different` sont nuls ou isolés → poser `PSC_ETAT_STRICT=true` dans Vercel (Production et Preview) et redéployer. Si `absent` est fréquent → les retours e-CPS changent de navigateur : chercher une autre preuve avant de bloquer.
 - ~~**Connexion PSC — protection CSRF absente** (vu le 07/10)~~ → contrôle posé le 08/10, cf. ci-dessus. Détail d'origine : le cookie `psc_state` est posé par `connectWithPsc` / `psc-initier` mais jamais comparé au `state` au retour. Un tiers peut faire aboutir dans le navigateur d'un médecin une connexion PSC qu'il a lui-même lancée (connexion sur le compte du tiers). Ajouter la comparaison, en vérifiant que le cookie survit bien au passage par l'application e-CPS (cf. CLAUDE.md : cookies plutôt que sessionStorage pour cette raison).
@@ -268,23 +323,33 @@ _(rien en cours)_
 
 ### Déploiement final
 
-#### Relance PSC — interrupteur séparé (en production depuis le 2026-10-09, `6cb56be`)
-- Dans Admin → Emails : envoyer un test du modèle « Relance vérification PSC » et le relire, puis allumer « Relance PSC ».
-- Effet attendu : ~116 relances le premier lundi vers 11 h, selon la date d'activation (126 évaluations en attente au 09/10, dont les 34 MedGPT, gardées par décision de David), puis une par semaine, 4 au plus.
-- À vérifier au premier envoi : les liens du mail doivent pointer vers `www.100000medecins.org`. L'adresse est tirée de l'appel de Vercel ; on peut la voir dans le récapitulatif « [Activité] » du lundi.
+#### Relance PSC — interrupteur séparé (en production ; une relance toutes les 2 semaines depuis le 2026-10-10, `24cdadc`)
+- **Allumé par David le 2026-10-10 à 13 h 08** (`relance_psc_active = true` ; interrupteur général toujours `false`). Premier envoi : lundi 12/10 vers 11 h, 119 relances attendues (127 évaluations en attente au 10/10) ; suivants les 26/10, 09/11 et 23/11.
+- **⏰ Lundi 12/10 après 11 h — contrôler le premier envoi** : demander à Claude le nombre d'évaluations avec `relance_psc_count = 1` (≈ 119 attendues) et les rebonds SendGrid du jour ; vérifier dans un mail reçu que le lien pointe vers `www.100000medecins.org`.
+- Rappel du fonctionnement : première relance le lundi qui suit les 7 jours après le dépôt, puis une toutes les 2 semaines, 4 au plus. Les 34 évaluations MedGPT sont relancées comme les autres (décision de David). L'adresse des liens est tirée de l'appel de Vercel.
+- ~~**Notes figées « défigées » (12/11, sur `dev`)** : à reporter sur `main` avec le correctif ci-dessous, puis recalculer les 7 fiches et relire leurs notes publiques.~~ ✅ 12/11 : `3b4aa13` en production, 7 fiches recalculées, notes publiques relues (CHANGELOG).
+- ~~**⏰ Avant le lundi 23/11 — reporter sur `main` le correctif du 12/11** (rattachement à la validation PSC, pas de relance aux comptes vérifiés).~~ ✅ 12/11 : `e7c51f8` en production ; l'admin compte 125 évaluations relançables (130 moins les 5 comptes vérifiés).
+- **⏰ Lundi 23/11 après 11 h — relire la relance PSC** : demander à Claude si Mercier, Francis, Sidorkiewicz, Longépé et Pineau ont été épargnés (`relance_psc_count` inchangé) et si la réponse de la tâche porte `comptesVerifiesIgnores`.
+- Observation du 12/11, non traitée : `contact_email` se saisit sans vérification (`completeProfile`), et la validation PSC rattache les évaluations en attente déposées à cette adresse. Un médecin vérifié pourrait donc s'attribuer l'évaluation en attente d'un confrère dont il connaît l'adresse (existait avant le correctif).
+
+#### Clé SendGrid du site à restreindre (David, dans SendGrid — vu le 2026-10-09)
+- La clé `SENDGRID_API_KEY` du site (nommée **« 100KMed Production »** dans SendGrid) a tous les droits du compte (créer des clés, lire les destinataires, changer les réglages). Le site n'a besoin que d'envoyer.
+- Le plus simple, sans toucher à Vercel ni aux `.env.local` : SendGrid → Settings → API Keys → ligne « 100KMed Production » → roue dentée → « Edit API Key » → « Restricted Access » → **Mail Send : Full Access** et **Stats : Read Access**, tout le reste sur « No Access » → Update. Puis envoyer un test d'un modèle depuis Admin → Emails.
+- Si l'écran ne permet pas de modifier la clé : en créer une nouvelle avec ces mêmes droits, la mettre dans Vercel (Production et Preview) et dans les `.env.local` des deux postes, redéployer, tester, puis supprimer l'ancienne.
+- Le compte contient 4 autres clés (« 100kMed » deux fois, « BonneAnneeBonneSante », « Site Portabilité-Conservation ») : à passer en revue par David.
 
 #### ⚠️ Kill-switch emails routiniers — à activer maintenant que le site est en prod
 - Dans **Admin → Emails** (sur https://www.100000medecins.org/admin/emails), activer le toggle "Emails routiniers"
 - Le switch est actuellement OFF (vérifié en base le 2026-09-24 : `site_config.crons_routiniers_actifs = false`)
 - **Tant qu'il est OFF** : aucune relance évaluation / newsletter ne partira (la relance PSC a son propre interrupteur depuis le 2026-10-09)
-- **À corriger avant de l'activer** (vu le 2026-10-09) :
-  - le lien « revalider en un clic » ([revalider-avis](src/app/api/revalider-avis/route.ts)) agit dès l'ouverture (GET, jeton sans expiration) : les antivirus des messageries qui suivent les liens revalideraient des avis à la place des médecins → page de confirmation avec bouton ;
-  - 499 destinataires, dont ~27 seulement se sont connectés au nouveau site ; objet « Votre avis a 1 an » alors que 148 avis datent de 2023 ; 249 reçoivent un « Rappel » qui renvoie au mail parti par erreur le 23/04.
+- **Avant de l'activer** (point du 2026-10-10) :
+  - 497 destinataires, dont ~27 seulement se sont connectés au nouveau site : pour les autres, ce sera le premier mail du nouveau site. C'est le seul point qui reste à peser.
+  - Fait le 10/10 : lien de confirmation qui n'écrit plus à l'ouverture (page `/confirmer-avis`, en production) ; objet et texte de `relance_1an` (« a plus d'un an ») ; « en 2 clics » dans `relance_1an`, `relance_3mois` et `lancement` ; compteurs de relance du 23/04 remis à zéro (267 évaluations : tout le monde reçoit le premier rappel, plus personne le « Rappel » d'abord).
 - **Avant d'activer (2026-09-24)** :
   1. Déployer en prod le correctif « adresse d'envoi » (merge `dev` → `main`) ;
   2. Lancer `npx tsx scripts/fix-users-email-psc.ts --execute` (175 comptes : vrai email saisi mais `users.email` resté en `psc-…`) ;
   3. Supprimer le brouillon de newsletter d'**avril** dans `/admin/newsletters` (sinon rappel quotidien à `contact@`).
-- **Volume attendu** (recompté le 2026-10-09) : 527 rappels de revalidation en retard (499 destinataires) → **100/jour** grâce au plafond, donc ~6 jours ; le lundi +19 relances d'évals incomplètes. Ensuite 5 à 15 rappels par mois, et les ~500 reviennent tous les 3 mois tant qu'ils ne revalident pas. Détail : [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md).
+- **Volume attendu** (recompté le 2026-10-10, après remise à zéro) : 525 premiers rappels « a plus d'un an » (497 destinataires), aucun « Rappel » → **100/jour** grâce au plafond, donc ~6 jours ; le lundi +19 relances d'évals incomplètes. Ensuite 5 à 15 rappels par mois, et les ~500 reçoivent le « Rappel » 3 mois plus tard s'ils n'ont pas confirmé. Détail : [docs/2026-10-09-etude-inscriptions-connexions-emails.md](docs/2026-10-09-etude-inscriptions-connexions-emails.md).
 
 #### ⚠️ Newsletter : l'envoi ne toucherait que 1 000 inscrits sur 6 545 (constaté le 2026-09-24)
 - `send-newsletter`, `send-infos-mensuels` et le cron `envoyer-newsletter-programmee` lisent les opt-in sans pagination → Supabase plafonne à **1 000 lignes**. Puis `.in('id', …)` avec 1 000 uuid dans l'URL risque d'échouer, et 6 500 envois séquentiels dépasseraient la durée max d'une fonction Vercel.

@@ -3,9 +3,10 @@ import 'server-only'
 /**
  * Annuaire — identification de l'application (tranche 3, option A).
  *
- * 1. L'application présente son jeton d'accès PSC (obtenu par le relais, même client PSC que le
- *    site) : le site vérifie qu'il a été émis pour ce client et cet environnement, puis le fait
- *    valider par PSC (`userinfo`), qui donne le RPPS, la profession, le nom et la spécialité.
+ * 1. L'application présente son jeton d'accès PSC (obtenu par le relais, dont le client PSC
+ *    n'est pas celui du site en production) : le site vérifie qu'il a été émis pour le client de
+ *    l'application et pour son environnement, puis le fait valider par PSC (`userinfo`), qui
+ *    donne le RPPS, la profession, le nom et la spécialité.
  * 2. Le site rend un jeton à lui, signé (HMAC, `ANNUAIRE_APP_SECRET`), valable 30 minutes.
  * 3. Chaque appel de l'application présente ce jeton : il est contrôlé, et l'identité doit
  *    toujours exister (compte supprimé entre-temps → refus).
@@ -15,7 +16,7 @@ import 'server-only'
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { NextResponse } from 'next/server'
-import { PSC_ENDPOINTS, extractCodeProfession, extractRpps } from '@/lib/auth/psc'
+import { PSC_ENDPOINTS, PSC_ENV, extractCodeProfession, extractRpps } from '@/lib/auth/psc'
 import { extractSpecialiteCode } from '@/lib/auth/psc-specialites'
 import { getAnnuaireActif } from '@/lib/db/settings'
 import { createServiceRoleClient } from '@/lib/supabase/server'
@@ -75,23 +76,26 @@ function jetonPorteur(request: Request): string | null {
 
 /**
  * Contrôle d'un appel de l'application : annuaire ouvert, jeton du site valide, identité de
- * médecin toujours présente. Renvoie le RPPS du lecteur, ou la réponse de refus à renvoyer.
+ * médecin toujours présente. Renvoie le RPPS du lecteur et sa spécialité d'après PSC, ou la
+ * réponse de refus à renvoyer.
  */
-export async function authentifierApp(request: Request): Promise<{ rpps: string } | NextResponse> {
+export async function authentifierApp(
+  request: Request,
+): Promise<{ rpps: string; specialiteCode: string | null } | NextResponse> {
   if (!(await getAnnuaireActif())) return refus(404, 'annuaire_ferme', "L'annuaire n'est pas ouvert.")
   const jeton = jetonPorteur(request)
   const lu = jeton ? lireJetonApp(jeton) : null
   if (!lu) return refus(401, 'jeton_invalide', 'Jeton absent, invalide ou expiré : ouvrir une nouvelle session.')
   const { data: identite } = await createServiceRoleClient()
     .from('identites_psc')
-    .select('code_profession')
+    .select('code_profession, specialite_code')
     .eq('rpps', lu.rpps)
     .maybeSingle()
   if (!identite) return refus(401, 'identite_inconnue', 'Identité inconnue : ouvrir une nouvelle session.')
   if ((identite.code_profession ?? '10') !== '10') {
     return refus(403, 'profession_non_admise', "L'annuaire est réservé aux médecins.")
   }
-  return lu
+  return { rpps: lu.rpps, specialiteCode: identite.specialite_code }
 }
 
 /** Adresse `userinfo` de PSC ; remplaçable pour les essais locaux seulement (faux PSC), jamais chez Vercel. */
@@ -105,11 +109,21 @@ function emetteurAttendu(): string {
   return PSC_ENDPOINTS.userinfo.replace(/\/protocol\/openid-connect\/userinfo$/, '')
 }
 
+/**
+ * Client PSC de l'application (relais de la messagerie, flux CIBA), par environnement PSC.
+ * En production ce n'est pas celui du site (`NEXT_PUBLIC_PSC_CLIENT_ID` = `100000medecins`) ;
+ * au bac à sable, le site et l'application partagent le même.
+ */
+const CLIENT_PSC_APPLICATION = {
+  bas: '100000medecins-100000medecins-org-bas',
+  production: '100000medecins-100000medecins-org',
+} as const
+
 type VerificationPsc = { ok: true; infos: InfosPsc } | { ok: false; statut: number; erreur: string; detail: string }
 
 /**
  * Vérifie un jeton d'accès PSC présenté par l'application : client émetteur (`azp`) = client
- * PSC de l'association, émetteur (`iss`) = environnement PSC du site, non expiré ; puis
+ * PSC de l'application, émetteur (`iss`) = environnement PSC du site, non expiré ; puis
  * validation par PSC (`userinfo`), qui fait foi pour l'identité.
  */
 export async function verifierJetonPsc(jeton: string): Promise<VerificationPsc> {
@@ -119,8 +133,14 @@ export async function verifierJetonPsc(jeton: string): Promise<VerificationPsc> 
   } catch {
     return { ok: false, statut: 401, erreur: 'jeton_psc_illisible', detail: "Ce n'est pas un jeton d'accès PSC." }
   }
-  if (charge.azp !== process.env.NEXT_PUBLIC_PSC_CLIENT_ID) {
-    return { ok: false, statut: 401, erreur: 'jeton_psc_autre_client', detail: "Jeton PSC émis pour un autre service que l'association." }
+  const clientAttendu = CLIENT_PSC_APPLICATION[PSC_ENV]
+  if (charge.azp !== clientAttendu) {
+    return {
+      ok: false,
+      statut: 401,
+      erreur: 'jeton_psc_autre_client',
+      detail: `Jeton PSC émis pour un autre client que celui de l'application (attendu : ${clientAttendu}).`,
+    }
   }
   if (charge.iss !== emetteurAttendu()) {
     return { ok: false, statut: 401, erreur: 'jeton_psc_autre_environnement', detail: 'Jeton PSC d’un autre environnement (bac à sable / production).' }
