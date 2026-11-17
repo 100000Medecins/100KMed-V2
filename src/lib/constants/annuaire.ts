@@ -8,14 +8,53 @@
  * (`fiches_annuaire.publiee_accord_version`, `fiches_annuaire_portables.visible_accord_version`).
  * À changer à chaque modification de ces textes, et le jour où les CGU de l'annuaire sont publiées :
  * un accord donné sous une autre version reste daté de son jour, le nouveau prend la date du jour.
+ * 2026-11-17 : fiches visibles de tous les professionnels de santé connectés (les fiches déjà
+ * publiées le restent, décision de David).
  */
-export const ANNUAIRE_VERSION_ACCORD = '2026-10-07'
+export const ANNUAIRE_VERSION_ACCORD = '2026-11-17'
 
 export const TEXTE_ACCORD_PUBLICATION =
-  'Je publie ma fiche dans l’annuaire, visible des seuls médecins connectés par Pro Santé Connect.'
+  'Je publie ma fiche dans l’annuaire, visible des seuls professionnels de santé connectés par Pro Santé Connect.'
 
 export const TEXTE_ACCORD_PORTABLE =
-  'Je rends mon portable visible des médecins connectés par Pro Santé Connect, à la demande, fiche par fiche.'
+  'Je rends mon portable visible des professionnels de santé connectés par Pro Santé Connect, à la demande, fiche par fiche.'
+
+/** Code de profession RPPS des médecins (nomenclature TRE_G15). */
+export const PROFESSION_MEDECIN = '10'
+
+/**
+ * Professions de santé de l'annuaire (codes RPPS, nomenclature TRE_G15, vérifiés dans l'extraction
+ * RPPS du 10/10/2026). Depuis le 17/11/2026, l'annuaire de l'application leur est ouvert ; le site
+ * reste réservé aux médecins.
+ */
+export const PROFESSIONS_SANTE: Record<string, string> = {
+  '10': 'Médecin',
+  '21': 'Pharmacien',
+  '40': 'Chirurgien-dentiste',
+  '50': 'Sage-femme',
+  '60': 'Infirmier',
+  '70': 'Masseur-kinésithérapeute',
+  '80': 'Pédicure-podologue',
+  '91': 'Orthophoniste',
+  '92': 'Orthoptiste',
+  '93': 'Psychologue',
+  '94': 'Ergothérapeute',
+  '95': 'Diététicien',
+  '96': 'Psychomotricien',
+}
+
+/** Profession d'une identité PSC : vide = médecin (comme avant le 17/11). */
+export function professionDe(codeProfession: string | null | undefined): string {
+  return codeProfession || PROFESSION_MEDECIN
+}
+
+export function estMedecin(codeProfession: string | null | undefined): boolean {
+  return professionDe(codeProfession) === PROFESSION_MEDECIN
+}
+
+export function libelleProfession(codeProfession: string | null | undefined): string {
+  return PROFESSIONS_SANTE[professionDe(codeProfession)] ?? 'Professionnel de santé'
+}
 
 export const MOYENS_CONTACT = [
   { valeur: 'messagerie', libelle: 'Messagerie instantanée (application 100 000 Médecins)' },

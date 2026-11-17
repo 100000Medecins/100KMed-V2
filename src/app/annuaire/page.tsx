@@ -33,10 +33,18 @@ export default async function AnnuairePage() {
   const supabase = await createServerClient()
   const point = fiche.commune
   const zone = { p_lat: point?.lat, p_lon: point?.lon, p_rayon_km: point ? RAYON_PAR_DEFAUT_KM : undefined }
-  const [{ data: initiaux }, { data: totalInitial }, { data: sourceVersion }] = await Promise.all([
+  // Recherche par compétence : catalogue entier (toutes professions, 17/11), pour trouver aussi les
+  // fiches des autres professionnels de santé ; « Ma fiche » ne propose que celles des médecins.
+  const [{ data: initiaux }, { data: totalInitial }, { data: sourceVersion }, { data: catalogue }] = await Promise.all([
     supabase.rpc('annuaire_rechercher', { ...zone, p_limite: 50 }),
     supabase.rpc('annuaire_compter', zone),
     supabase.rpc('annuaire_source'),
+    supabase
+      .from('intitules')
+      .select('id, libelle, synonymes, groupe, specialites_sm, statut, professions')
+      .eq('type', 'competence')
+      .eq('statut', 'valide')
+      .order('libelle'),
   ])
 
   // Spécialités regroupées par libellé du site (ex. SM26 / SM53 / SM54 → « Médecin généraliste »),
@@ -58,7 +66,7 @@ export default async function AnnuairePage() {
       </p>
       <AnnuaireRecherche
         lecteur={fiche.userId}
-        catalogue={fiche.catalogue.filter((i) => i.statut === 'valide')}
+        catalogue={catalogue ?? []}
         specialites={specialites}
         communeLecteur={fiche.commune}
         resultatsInitiaux={initiaux ?? []}

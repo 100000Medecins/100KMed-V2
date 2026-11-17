@@ -8,8 +8,8 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import { createClient } from '@/lib/supabase/client'
 import { afficherPortable, normaliserTelephone } from '@/lib/annuaire/normaliser'
-import { MOYENS_CONTACT } from '@/lib/constants/annuaire'
-import { SM_SPECIALITES } from '@/lib/constants/profil'
+import { MOYENS_CONTACT, estMedecin } from '@/lib/constants/annuaire'
+import { nomAffiche, qualiteAffichee } from '@/lib/annuaire/affichage'
 import type { Database } from '@/types/database'
 
 type Fiche = Database['public']['Functions']['annuaire_fiche']['Returns'][number]
@@ -38,7 +38,7 @@ export default function FicheConfrere({ fiche }: { fiche: Fiche }) {
   const [message, setMessage] = useState<string | null>(null)
   const [chargement, setChargement] = useState(false)
 
-  const specialite = (fiche.specialite_code && SM_SPECIALITES[fiche.specialite_code]) || fiche.specialite
+  const specialite = qualiteAffichee(fiche)
   const lieux = (Array.isArray(fiche.lieux) ? fiche.lieux : []) as unknown as LieuAns[]
   // Généralistes seulement ; null = non renseigné (les types générés ne disent pas que la colonne peut être vide)
   const nouveauxPatients: boolean | null = fiche.nouveaux_patients
@@ -71,9 +71,7 @@ export default function FicheConfrere({ fiche }: { fiche: Fiche }) {
       </Link>
 
       <Card padding="lg">
-        <h1 className="text-2xl font-bold text-navy">
-          Dr {fiche.prenom} {fiche.nom}
-        </h1>
+        <h1 className="text-2xl font-bold text-navy">{nomAffiche(fiche)}</h1>
         {specialite && <p className="text-gray-500 mt-1">{specialite}</p>}
         <div className="mt-2">
           {fiche.a_une_fiche ? (
@@ -172,7 +170,8 @@ export default function FicheConfrere({ fiche }: { fiche: Fiche }) {
           )}
 
           <p className="mt-5 text-xs text-gray-400">
-            Informations déclarées par le médecin, non vérifiées par l&apos;association
+            Informations déclarées par {estMedecin(fiche.code_profession) ? 'le médecin' : 'le professionnel'}, non
+            vérifiées par l&apos;association
             {fiche.mise_a_jour && ` — mises à jour le ${new Date(fiche.mise_a_jour).toLocaleDateString('fr-FR')}`}.
           </p>
         </Card>

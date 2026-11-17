@@ -4,7 +4,8 @@
  * Insère dans `intitules` (type `competence`, statut `valide`) les intitulés de
  * `scripts/data/annuaire-catalogue-initial.json`, construit depuis le document
  * `annuaire-surspecialites.md` du dépôt messagerie avec les décisions de David
- * (cf. docs/2026-10-07-annuaire-tranche-1.md).
+ * (cf. docs/2026-10-07-annuaire-tranche-1.md). Depuis le 17/11/2026, le fichier porte aussi le
+ * catalogue des autres professions de santé (versé par `annuaire-catalogue-professions.ts`).
  *
  * Relançable : un intitulé déjà présent (même libellé, casse et espaces ignorés)
  * n'est ni réinséré ni modifié.
@@ -26,7 +27,8 @@ dotenv.config({ path: path.resolve(__dirname, '../.env.local') })
 const EXECUTE = process.argv.includes('--execute')
 const supabase = createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-type EntreeCatalogue = { libelle: string; synonymes: string[]; groupe: string; specialites_sm: string[] }
+/** `professions` (codes RPPS) : ajouté le 17/11/2026 (autres professions de santé) ; absent = médecins. */
+type EntreeCatalogue = { libelle: string; synonymes: string[]; groupe: string; specialites_sm: string[]; professions?: string[] }
 
 const cle = (libelle: string) => libelle.trim().toLowerCase()
 
@@ -66,6 +68,7 @@ async function main() {
     synonymes: e.synonymes,
     groupe: e.groupe,
     specialites_sm: e.specialites_sm,
+    professions: e.professions ?? ['10'],
     statut: 'valide',
     decide_le: maintenant,
   }))

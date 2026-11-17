@@ -1,6 +1,9 @@
 /**
  * Annuaire — fiches publiées et catalogue des compétences, téléchargés par l'application à
  * chaque session (tranche 3). Jamais les portables : seulement s'ils sont disponibles.
+ * Depuis le 17/11 : lu par tous les professionnels de santé connectés ; chaque fiche porte la
+ * profession de son auteur, et le catalogue reste entier (toutes professions) pour que la recherche
+ * par compétence trouve tous ceux qui la déclarent.
  * GET, `Authorization: Bearer <jeton du site>`.
  * Contrat : docs/2026-10-10-annuaire-tranche-3.md
  */
@@ -8,6 +11,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { authentifierApp, refus, reponse } from '@/lib/annuaire/app-session'
+import { professionDe } from '@/lib/constants/annuaire'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
         admin
           .from('fiches_annuaire')
           .select(
-            'rpps, moyen_contact, ville, code_postal, lat, lon, mssante, telephone_cabinet, mise_a_jour, nouveaux_patients, nouveaux_patients_le, identite:identites_psc(nom, prenom, specialite_code, compte:users(nom, prenom))',
+            'rpps, moyen_contact, ville, code_postal, lat, lon, mssante, telephone_cabinet, mise_a_jour, nouveaux_patients, nouveaux_patients_le, identite:identites_psc(nom, prenom, specialite_code, code_profession, compte:users(nom, prenom))',
           )
           .eq('publiee', true)
           .order('rpps')
@@ -46,7 +50,7 @@ export async function GET(request: Request) {
       toutesLesLignes((de, a) =>
         admin
           .from('intitules')
-          .select('id, libelle, synonymes, groupe, specialites_sm')
+          .select('id, libelle, synonymes, groupe, specialites_sm, professions')
           .eq('type', 'competence')
           .eq('statut', 'valide')
           .order('libelle')
@@ -69,6 +73,7 @@ export async function GET(request: Request) {
         nom: f.identite?.nom ?? f.identite?.compte?.nom ?? null,
         prenom: f.identite?.prenom ?? f.identite?.compte?.prenom ?? null,
         specialite_code: f.identite?.specialite_code ?? null,
+        code_profession: professionDe(f.identite?.code_profession),
         moyen_contact: f.moyen_contact,
         ville: f.ville,
         code_postal: f.code_postal,

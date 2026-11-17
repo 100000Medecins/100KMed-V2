@@ -15,7 +15,7 @@ import ChoixCommune from '@/components/annuaire/ChoixCommune'
 import { createClient } from '@/lib/supabase/client'
 import { arrondirPosition, type Commune } from '@/lib/annuaire/geocodage'
 import { normaliserRecherche } from '@/lib/annuaire/normaliser'
-import { SM_SPECIALITES } from '@/lib/constants/profil'
+import { nomAffiche, qualiteAffichee } from '@/lib/annuaire/affichage'
 import { MOYENS_CONTACT, RAYONS_KM, RAYON_PAR_DEFAUT_KM } from '@/lib/constants/annuaire'
 import type { IntituleCatalogue } from '@/lib/actions/annuaire'
 import type { Database } from '@/types/database'
@@ -66,11 +66,6 @@ let memoire: Memoire | null = null
 function afficherDistance(km: number | null): string | null {
   if (km == null) return null
   return km < 1 ? 'moins d’1 km' : `${Math.round(km)} km`
-}
-
-/** Libellé de spécialité affiché : celui du site si le code est connu, sinon celui de l'ANS. */
-function libelleSpecialite(r: { specialite: string | null; specialite_code: string | null }): string | null {
-  return (r.specialite_code && SM_SPECIALITES[r.specialite_code]) || r.specialite
 }
 
 function pointDe(c: Criteres): Point | null {
@@ -532,10 +527,8 @@ export default function AnnuaireRecherche({
               <Card padding="md" hoverable className="h-full">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-navy truncate">
-                      Dr {r.prenom} {r.nom}
-                    </p>
-                    {libelleSpecialite(r) && <p className="text-sm text-gray-500 truncate">{libelleSpecialite(r)}</p>}
+                    <p className="font-semibold text-navy truncate">{nomAffiche(r)}</p>
+                    {qualiteAffichee(r) && <p className="text-sm text-gray-500 truncate">{qualiteAffichee(r)}</p>}
                     {r.a_une_fiche && (
                       <Badge variant="success" size="sm" className="mt-1">
                         Fiche complétée
@@ -588,7 +581,7 @@ export default function AnnuaireRecherche({
       <p className="text-xs text-gray-400">
         {sourceVersion &&
           `Source : ANS, Annuaire Santé, données du ${new Date(sourceVersion).toLocaleDateString('fr-FR')} (Licence Ouverte 2.0). `}
-        Fiches complétées : informations déclarées par les médecins, non vérifiées par l&apos;association.
+        Fiches complétées : informations déclarées par les professionnels de santé, non vérifiées par l&apos;association.
         L&apos;annuaire ne note ni ne classe personne : les résultats sont triés par distance, puis par ordre alphabétique.
       </p>
     </div>

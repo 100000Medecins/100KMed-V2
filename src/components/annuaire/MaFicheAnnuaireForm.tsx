@@ -32,7 +32,8 @@ function EnTete({ enregistre = false }: { enregistre?: boolean }) {
     // Titre et onglets : EnteteAnnuaire, au-dessus (page)
     <div className="mb-6 flex items-start justify-between gap-4">
       <p className="text-sm text-gray-500">
-        Comment vos confrères médecins peuvent vous joindre, et pour quoi vous adresser un patient.
+        Comment vos confrères et les autres professionnels de santé peuvent vous joindre, et pour quoi vous adresser
+        un patient.
       </p>
       {enregistre && (
         <div className="flex items-center gap-1.5 text-green-700 text-sm flex-shrink-0">

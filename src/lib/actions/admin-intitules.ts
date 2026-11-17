@@ -2,8 +2,9 @@
 
 /**
  * Administration du catalogue de l'annuaire : décisions sur les intitulés proposés
- * par les médecins (Accepter / Reformuler, Fusionner comme synonyme, Refuser), et
- * gestion des compétences validées (ajouter, modifier, supprimer).
+ * par les professionnels de santé (Accepter / Reformuler, Fusionner comme synonyme, Refuser), et
+ * gestion des compétences validées (ajouter, modifier, supprimer), avec les professions à qui
+ * chacune est proposée (17/11).
  * Chaque décision efface le lien avec l'auteur (promesse de la charte) : acceptée,
  * la proposition perd `propose_par_rpps` ; fusionnée ou refusée, elle est supprimée.
  * Aussi : oppositions (médecins retirés de l'annuaire issu de l'ANS).
@@ -13,6 +14,7 @@ import { revalidatePath } from 'next/cache'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { assertAdmin } from '@/lib/auth/admin-guard'
 import { normaliserLibelle, normaliserRecherche } from '@/lib/annuaire/normaliser'
+import { PROFESSIONS_SANTE } from '@/lib/constants/annuaire'
 
 type Resultat = { ok: true } | { error: string }
 
@@ -29,6 +31,17 @@ async function marquerEvenementLu(admin: ReturnType<typeof createServiceRoleClie
 
 function nettoyerSynonymes(synonymes: string[]): string[] {
   return Array.from(new Set(synonymes.map(normaliserRecherche).filter((s) => s.length > 0)))
+}
+
+/** Codes de profession sans doublon, dans l'ordre de la nomenclature. */
+function trierProfessions(codes: string[]): string[] {
+  return Array.from(new Set(codes)).sort()
+}
+
+/** Professions choisies dans l'admin : au moins une, toutes connues ; null sinon. */
+function nettoyerProfessions(codes: string[]): string[] | null {
+  const propres = trierProfessions(codes.map((c) => c.trim()))
+  return propres.length > 0 && propres.every((c) => c in PROFESSIONS_SANTE) ? propres : null
 }
 
 /** Accepte une proposition, telle quelle ou reformulée (libellé, synonymes, rubrique). */
@@ -55,7 +68,9 @@ export async function accepterIntitule(
     .eq('statut', 'propose')
     .select('id')
   if (error) {
-    if (error.code === '23505') return { error: 'Un intitulé porte déjà ce nom : utilisez « Fusionner ».' }
+    if (error.code === '23505') {
+      return { error: 'Une compétence validée porte déjà ce nom : « Fusionner » avec elle l’ouvre à la profession de l’auteur.' }
+    }
     return { error: error.message }
   }
   if (!data || data.length === 0) return { error: 'Proposition introuvable (déjà traitée ?).' }
@@ -66,16 +81,18 @@ export async function accepterIntitule(
 }
 
 /**
- * Fusionne une proposition dans un intitulé validé : le libellé proposé devient un synonyme
- * de la cible, les médecins qui l'avaient coché reçoivent la cible, la proposition disparaît.
+ * Fusionne une proposition dans un intitulé validé : le libellé proposé devient un synonyme de la
+ * cible (sauf s'il est son libellé), la cible s'ouvre aux professions de la proposition (17/11 : une
+ * infirmière qui propose un intitulé des médecins), les professionnels qui l'avaient coché reçoivent
+ * la cible, la proposition disparaît.
  */
 export async function fusionnerIntitule(id: string, cibleId: string): Promise<Resultat> {
   await assertAdmin()
   const admin = createServiceRoleClient()
 
   const [{ data: proposition }, { data: cible }] = await Promise.all([
-    admin.from('intitules').select('id, libelle').eq('id', id).eq('statut', 'propose').maybeSingle(),
-    admin.from('intitules').select('id, synonymes').eq('id', cibleId).eq('statut', 'valide').maybeSingle(),
+    admin.from('intitules').select('id, libelle, professions').eq('id', id).eq('statut', 'propose').maybeSingle(),
+    admin.from('intitules').select('id, libelle, synonymes, professions').eq('id', cibleId).eq('statut', 'valide').maybeSingle(),
   ])
   if (!proposition) return { error: 'Proposition introuvable (déjà traitée ?).' }
   if (!cible) return { error: 'Intitulé cible introuvable.' }
@@ -83,9 +100,13 @@ export async function fusionnerIntitule(id: string, cibleId: string): Promise<Re
   const { data: liens, error: errLiens } = await admin.from('fiches_intitules').select('rpps').eq('intitule_id', id)
   if (errLiens) return { error: errLiens.message }
 
+  const memeLibelle = normaliserRecherche(proposition.libelle) === normaliserRecherche(cible.libelle)
   const { error: errSyn } = await admin
     .from('intitules')
-    .update({ synonymes: nettoyerSynonymes([...cible.synonymes, proposition.libelle]) })
+    .update({
+      synonymes: nettoyerSynonymes(memeLibelle ? cible.synonymes : [...cible.synonymes, proposition.libelle]),
+      professions: trierProfessions([...cible.professions, ...proposition.professions]),
+    })
     .eq('id', cibleId)
   if (errSyn) return { error: errSyn.message }
 
@@ -118,16 +139,26 @@ function nettoyerCodesSm(codes: string[]): string[] | null {
   return propres.every((c) => /^SM\d{2}$/.test(c)) ? propres : null
 }
 
-export async function ajouterIntitule(input: { libelle: string; synonymes: string[]; groupe: string | null }): Promise<Resultat> {
+const ERREUR_PROFESSIONS = 'Cochez au moins une profession.'
+
+export async function ajouterIntitule(input: {
+  libelle: string
+  synonymes: string[]
+  groupe: string | null
+  professions: string[]
+}): Promise<Resultat> {
   await assertAdmin()
   const libelle = normaliserLibelle(input.libelle)
   if (libelle.length < 2 || libelle.length > 120) return { error: 'Un intitulé compte de 2 à 120 caractères.' }
+  const professions = nettoyerProfessions(input.professions)
+  if (!professions) return { error: ERREUR_PROFESSIONS }
 
   const { error } = await createServiceRoleClient().from('intitules').insert({
     type: 'competence',
     libelle,
     synonymes: nettoyerSynonymes(input.synonymes),
     groupe: input.groupe?.trim() || null,
+    professions,
     statut: 'valide',
     decide_le: new Date().toISOString(),
   })
@@ -138,14 +169,18 @@ export async function ajouterIntitule(input: { libelle: string; synonymes: strin
 
 export async function modifierIntitule(
   id: string,
-  input: { libelle: string; synonymes: string[]; groupe: string | null; specialitesSm: string[] },
+  input: { libelle: string; synonymes: string[]; groupe: string | null; specialitesSm: string[]; professions: string[] },
 ): Promise<Resultat> {
   await assertAdmin()
   const libelle = normaliserLibelle(input.libelle)
   if (libelle.length < 2 || libelle.length > 120) return { error: 'Un intitulé compte de 2 à 120 caractères.' }
   const specialitesSm = nettoyerCodesSm(input.specialitesSm)
   if (!specialitesSm) return { error: 'Codes de spécialité attendus sous la forme SM57, séparés par des virgules.' }
+  const professions = nettoyerProfessions(input.professions)
+  if (!professions) return { error: ERREUR_PROFESSIONS }
 
+  // Une profession retirée : les fiches de cette profession qui l'ont cochée la gardent (elle ne
+  // leur est simplement plus proposée).
   const { data, error } = await createServiceRoleClient()
     .from('intitules')
     .update({
@@ -153,6 +188,7 @@ export async function modifierIntitule(
       synonymes: nettoyerSynonymes(input.synonymes),
       groupe: input.groupe?.trim() || null,
       specialites_sm: specialitesSm,
+      professions,
     })
     .eq('id', id)
     .eq('statut', 'valide')

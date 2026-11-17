@@ -1,6 +1,7 @@
 /**
- * Annuaire — la fiche du médecin connecté, depuis l'application (tranche 3).
- * GET : fiche, catalogue, textes d'accord, propositions de l'Annuaire Santé.
+ * Annuaire — la fiche du professionnel connecté, depuis l'application (tranche 3 ; toutes
+ * professions depuis le 17/11).
+ * GET : fiche, catalogue de sa profession, textes d'accord, propositions de l'Annuaire Santé.
  * PUT : enregistrement (mêmes contrôles et accords que le site).
  * DELETE : suppression de la fiche.
  * `Authorization: Bearer <jeton du site>`. Contrat : docs/2026-10-10-annuaire-tranche-3.md
@@ -32,9 +33,14 @@ export async function GET(request: Request) {
   const auth = await authentifierApp(request)
   if (auth instanceof NextResponse) return auth
 
-  const [fiche, catalogue, ans] = await Promise.all([lireFiche(auth.rpps), catalogueDe(auth.rpps), propositionsAnsPour(auth.rpps)])
+  const [fiche, catalogue, ans] = await Promise.all([
+    lireFiche(auth.rpps),
+    catalogueDe(auth.rpps, auth.codeProfession),
+    propositionsAnsPour(auth.rpps),
+  ])
   return reponse({
     rpps: auth.rpps,
+    code_profession: auth.codeProfession,
     specialite_code: auth.specialiteCode,
     nouveaux_patients_possible: nouveauxPatientsPossible(auth.specialiteCode),
     fiche: fiche && {

@@ -1384,6 +1384,7 @@ export type Database = {
           groupe: string | null
           id: string
           libelle: string
+          professions: string[]
           propose_par_rpps: string | null
           specialites_sm: string[]
           statut: string
@@ -1396,6 +1397,7 @@ export type Database = {
           groupe?: string | null
           id?: string
           libelle: string
+          professions?: string[]
           propose_par_rpps?: string | null
           specialites_sm?: string[]
           statut?: string
@@ -1408,6 +1410,7 @@ export type Database = {
           groupe?: string | null
           id?: string
           libelle?: string
+          professions?: string[]
           propose_par_rpps?: string | null
           specialites_sm?: string[]
           statut?: string
@@ -2901,6 +2904,7 @@ export type Database = {
         Returns: {
           a_une_fiche: boolean
           code_postal: string
+          code_profession: string
           competences: string[]
           lat: number
           lieux: Json
@@ -2955,6 +2959,7 @@ export type Database = {
         Returns: {
           a_une_fiche: boolean
           code_postal: string
+          code_profession: string
           competences: string[]
           distance_km: number
           lat: number

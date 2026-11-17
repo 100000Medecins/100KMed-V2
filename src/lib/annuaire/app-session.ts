@@ -6,7 +6,8 @@ import 'server-only'
  * 1. L'application présente son jeton d'accès PSC (obtenu par le relais, dont le client PSC
  *    n'est pas celui du site en production) : le site vérifie qu'il a été émis pour le client de
  *    l'application et pour son environnement, puis le fait valider par PSC (`userinfo`), qui
- *    donne le RPPS, la profession, le nom et la spécialité.
+ *    donne le RPPS, la profession, le nom et la spécialité. Toutes les professions de santé sont
+ *    admises (17/11) ; aucun compte du site n'est créé.
  * 2. Le site rend un jeton à lui, signé (HMAC, `ANNUAIRE_APP_SECRET`), valable 30 minutes.
  * 3. Chaque appel de l'application présente ce jeton : il est contrôlé, et l'identité doit
  *    toujours exister (compte supprimé entre-temps → refus).
@@ -20,6 +21,7 @@ import { PSC_ENDPOINTS, PSC_ENV, extractCodeProfession, extractRpps } from '@/li
 import { extractSpecialiteCode } from '@/lib/auth/psc-specialites'
 import { getAnnuaireActif } from '@/lib/db/settings'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { professionDe } from '@/lib/constants/annuaire'
 import type { InfosPsc } from '@/lib/annuaire/identite-psc'
 
 export const DUREE_JETON_APP_S = 30 * 60
@@ -75,13 +77,14 @@ function jetonPorteur(request: Request): string | null {
 }
 
 /**
- * Contrôle d'un appel de l'application : annuaire ouvert, jeton du site valide, identité de
- * médecin toujours présente. Renvoie le RPPS du lecteur et sa spécialité d'après PSC, ou la
- * réponse de refus à renvoyer.
+ * Contrôle d'un appel de l'application : annuaire ouvert, jeton du site valide, identité toujours
+ * présente. Toutes les professions de santé sont admises depuis le 17/11 (`profession_non_admise`
+ * reste au contrat pour le jour où une profession serait exclue). Renvoie le RPPS du lecteur, sa
+ * profession (vide = médecin) et sa spécialité d'après PSC, ou la réponse de refus à renvoyer.
  */
 export async function authentifierApp(
   request: Request,
-): Promise<{ rpps: string; specialiteCode: string | null } | NextResponse> {
+): Promise<{ rpps: string; codeProfession: string; specialiteCode: string | null } | NextResponse> {
   if (!(await getAnnuaireActif())) return refus(404, 'annuaire_ferme', "L'annuaire n'est pas ouvert.")
   const jeton = jetonPorteur(request)
   const lu = jeton ? lireJetonApp(jeton) : null
@@ -92,10 +95,7 @@ export async function authentifierApp(
     .eq('rpps', lu.rpps)
     .maybeSingle()
   if (!identite) return refus(401, 'identite_inconnue', 'Identité inconnue : ouvrir une nouvelle session.')
-  if ((identite.code_profession ?? '10') !== '10') {
-    return refus(403, 'profession_non_admise', "L'annuaire est réservé aux médecins.")
-  }
-  return { rpps: lu.rpps, specialiteCode: identite.specialite_code }
+  return { rpps: lu.rpps, codeProfession: professionDe(identite.code_profession), specialiteCode: identite.specialite_code }
 }
 
 /** Adresse `userinfo` de PSC ; remplaçable pour les essais locaux seulement (faux PSC), jamais chez Vercel. */
@@ -165,10 +165,9 @@ export async function verifierJetonPsc(jeton: string): Promise<VerificationPsc> 
   if (!rpps || !/^[0-9]{11}$/.test(rpps)) {
     return { ok: false, statut: 403, erreur: 'rpps_absent', detail: 'PSC ne donne pas de RPPS pour cette identité.' }
   }
+  // Toutes les professions de santé (décision de David du 17/11) ; le site lui-même reste aux médecins
+  // (connexion PSC du site : psc-callback).
   const codeProfession = extractCodeProfession(userInfo)
-  if (codeProfession && codeProfession !== '10') {
-    return { ok: false, statut: 403, erreur: 'profession_non_admise', detail: "L'annuaire est réservé aux médecins pour l'instant." }
-  }
   return {
     ok: true,
     infos: {
