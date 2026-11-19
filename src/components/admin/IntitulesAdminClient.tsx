@@ -10,17 +10,24 @@ import Select from '@/components/ui/Select'
 import Field from '@/components/ui/Field'
 import Badge from '@/components/ui/Badge'
 import { accepterIntitule, fusionnerIntitule, refuserIntitule } from '@/lib/actions/admin-intitules'
+import { libelleProfession } from '@/lib/constants/annuaire'
 
 export interface PropositionIntitule {
   id: string
   libelle: string
   synonymes: string[]
   groupe: string | null
-  /** Prénom, nom (spécialité) de l'auteur ; effacé à la décision. */
+  /** Profession de l'auteur (codes RPPS) : l'intitulé accepté lui sera proposé. */
+  professions: string[]
+  /** Prénom, nom (spécialité ou profession) de l'auteur ; effacé à la décision. */
   auteur: string | null
   creeLe: string
   nbFiches: number
+  /** Compétence validée de même libellé ou synonyme, à ouvrir à cette profession par « Fusionner ». */
+  homonyme: { id: string; libelle: string; professions: string[] } | null
 }
+
+const nomsProfessions = (codes: string[]) => codes.map((c) => libelleProfession(c)).join(', ')
 
 export interface IntituleValide {
   id: string
@@ -43,7 +50,7 @@ function CarteProposition({
   const [libelle, setLibelle] = useState(proposition.libelle)
   const [synonymes, setSynonymes] = useState(proposition.synonymes.join(', '))
   const [groupe, setGroupe] = useState(proposition.groupe ?? '')
-  const [cible, setCible] = useState('')
+  const [cible, setCible] = useState(proposition.homonyme?.id ?? '')
   const [erreur, setErreur] = useState<string | null>(null)
   const [traitee, setTraitee] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -83,11 +90,19 @@ function CarteProposition({
           Proposée
         </Badge>
         <span>le {new Date(proposition.creeLe).toLocaleDateString('fr-FR')}</span>
-        <span>· par {proposition.auteur ?? 'un médecin (compte supprimé)'}</span>
+        <span>· par {proposition.auteur ?? 'un professionnel (identité supprimée)'}</span>
         <span>
           · cochée sur {proposition.nbFiches} fiche{proposition.nbFiches !== 1 ? 's' : ''}
         </span>
+        <span>· pour : {nomsProfessions(proposition.professions)}</span>
       </div>
+
+      {proposition.homonyme && (
+        <p className="mt-3 text-sm bg-accent-blue/10 text-navy p-3 rounded-xl">
+          « {proposition.homonyme.libelle} » existe déjà au catalogue pour : {nomsProfessions(proposition.homonyme.professions)}.
+          « Fusionner » avec elle (déjà choisie ci-dessous) l&apos;ouvre aussi à : {nomsProfessions(proposition.professions)}.
+        </p>
+      )}
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Field label="Libellé" htmlFor={`libelle-${proposition.id}`}>
@@ -128,7 +143,7 @@ function CarteProposition({
           onClick={() =>
             agir(
               () => accepterIntitule(proposition.id, { libelle, synonymes: synonymes.split(','), groupe: groupe || null }),
-              `« ${libelle.trim()} » accepté${reformulee ? ' (reformulé)' : ''} : il rejoint le catalogue.`,
+              `« ${libelle.trim()} » accepté${reformulee ? ' (reformulé)' : ''} : il rejoint le catalogue (pour : ${nomsProfessions(proposition.professions)}).`,
             )
           }
         >
@@ -163,7 +178,7 @@ function CarteProposition({
             onClick={() =>
               agir(
                 () => fusionnerIntitule(proposition.id, cible),
-                `« ${proposition.libelle} » fusionné dans « ${libelleCible} » (ajouté à ses synonymes).`,
+                `« ${proposition.libelle} » fusionné dans « ${libelleCible} » (synonymes et professions complétés).`,
               )
             }
           >

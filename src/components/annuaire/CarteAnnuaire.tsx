@@ -5,7 +5,7 @@ import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from 'maplibre
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Feature, FeatureCollection, Polygon, Point as PointGeo } from 'geojson'
 import { STYLE_CARTE_PLAN_IGN } from '@/lib/constants/annuaire'
-import { SM_SPECIALITES } from '@/lib/constants/profil'
+import { nomAffiche, qualiteAffichee } from '@/lib/annuaire/affichage'
 import type { ResultatAnnuaire } from '@/components/annuaire/AnnuaireRecherche'
 
 // Couleurs du thème (navy, accent-orange, accent-blue)
@@ -50,7 +50,7 @@ function contenuBulle(groupe: ResultatAnnuaire[], ouvrir: (rpps: string) => void
     const lien = document.createElement('a')
     lien.href = `/annuaire/${r.rpps}`
     lien.className = 'text-accent-blue hover:underline'
-    lien.textContent = `Dr ${r.prenom ?? ''} ${r.nom ?? ''}`.trim()
+    lien.textContent = nomAffiche(r)
     // Navigation dans l'application (la recherche reste en mémoire pour le retour)
     lien.addEventListener('click', (e) => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
@@ -58,7 +58,7 @@ function contenuBulle(groupe: ResultatAnnuaire[], ouvrir: (rpps: string) => void
       ouvrir(r.rpps)
     })
     item.appendChild(lien)
-    const specialite = (r.specialite_code && SM_SPECIALITES[r.specialite_code]) || r.specialite
+    const specialite = qualiteAffichee(r)
     if (specialite) {
       const spe = document.createElement('span')
       spe.className = 'text-gray-500'

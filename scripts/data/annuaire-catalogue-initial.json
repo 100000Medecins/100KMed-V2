@@ -8,7 +8,11 @@
       "pilule"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50"
+    ]
   },
   {
     "libelle": "Suivi de grossesse",
@@ -18,7 +22,11 @@
       "enceinte"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50"
+    ]
   },
   {
     "libelle": "Pose de DIU et d'implant contraceptif",
@@ -29,7 +37,11 @@
       "contraception longue duree"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50"
+    ]
   },
   {
     "libelle": "IVG médicamenteuse",
@@ -40,7 +52,11 @@
       "interruption de grossesse"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50"
+    ]
   },
   {
     "libelle": "Suivi de l'enfant en médecine générale",
@@ -51,7 +67,10 @@
       "vaccination enfant"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Échographie générale",
@@ -62,7 +81,10 @@
       "echographie clinique"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Dermatoscopie",
@@ -73,7 +95,10 @@
       "depistage melanome"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Petite chirurgie et gestes techniques",
@@ -84,7 +109,10 @@
       "ongle incarne"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "ECG",
@@ -94,7 +122,10 @@
       "electrocardiographie"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Holter ECG",
@@ -105,7 +136,10 @@
       "enregistrement ecg 24h"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "MAPA (holter tensionnel)",
@@ -116,7 +150,10 @@
       "hta"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Spirométrie",
@@ -127,7 +164,10 @@
       "depistage bpco"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine des voyages",
@@ -138,7 +178,10 @@
       "conseil aux voyageurs"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Santé mentale en soins primaires",
@@ -149,7 +192,12 @@
       "souffrance psychique"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "60",
+      "93"
+    ]
   },
   {
     "libelle": "Psychotraumatisme",
@@ -160,7 +208,11 @@
       "emdr"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "93"
+    ]
   },
   {
     "libelle": "Violence intrafamiliale et conjugale",
@@ -171,7 +223,13 @@
       "emprise"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50",
+      "60",
+      "93"
+    ]
   },
   {
     "libelle": "Trouble du neurodéveloppement",
@@ -182,7 +240,14 @@
       "plateforme tnd"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "91",
+      "93",
+      "94",
+      "96"
+    ]
   },
   {
     "libelle": "Trouble du spectre de l'autisme",
@@ -192,7 +257,14 @@
       "asperger"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "91",
+      "93",
+      "94",
+      "96"
+    ]
   },
   {
     "libelle": "Trouble déficit de l'attention avec hyperactivité",
@@ -203,7 +275,12 @@
       "methylphenidate"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "93",
+      "96"
+    ]
   },
   {
     "libelle": "Trouble des conduites alimentaires",
@@ -214,7 +291,12 @@
       "hyperphagie"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "93",
+      "95"
+    ]
   },
   {
     "libelle": "PrEP et suivi du VIH",
@@ -225,7 +307,10 @@
       "prophylaxie pre exposition"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Soins aux personnes en situation de handicap",
@@ -236,7 +321,16 @@
       "mdph"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "40",
+      "60",
+      "70",
+      "91",
+      "94",
+      "96"
+    ]
   },
   {
     "libelle": "Santé des personnes en précarité",
@@ -247,7 +341,13 @@
       "acces aux soins"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "21",
+      "60",
+      "93"
+    ]
   },
   {
     "libelle": "Santé des personnes migrantes",
@@ -258,7 +358,10 @@
       "interpretariat"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Éducation thérapeutique du patient",
@@ -268,7 +371,22 @@
       "maladie chronique"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "21",
+      "40",
+      "50",
+      "60",
+      "70",
+      "80",
+      "91",
+      "92",
+      "93",
+      "94",
+      "95",
+      "96"
+    ]
   },
   {
     "libelle": "Médecin agréé pour le permis de conduire",
@@ -279,7 +397,10 @@
       "prefecture"
     ],
     "groupe": "Médecine générale",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecin agréé",
@@ -292,7 +413,10 @@
       "conge longue maladie"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Addictologie",
@@ -303,7 +427,13 @@
       "toxicomanie"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "21",
+      "60",
+      "93"
+    ]
   },
   {
     "libelle": "Tabacologie et aide au sevrage tabagique",
@@ -314,7 +444,16 @@
       "cigarette electronique"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "21",
+      "40",
+      "50",
+      "60",
+      "70",
+      "93"
+    ]
   },
   {
     "libelle": "Médecine de la douleur",
@@ -324,7 +463,10 @@
       "centre antidouleur"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine palliative",
@@ -335,7 +477,10 @@
       "accompagnement"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine du sommeil",
@@ -346,7 +491,10 @@
       "polysomnographie"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Nutrition appliquée",
@@ -359,6 +507,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM62"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -372,6 +523,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM57"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -383,7 +537,12 @@
       "sante sexuelle"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50",
+      "93"
+    ]
   },
   {
     "libelle": "Expertise médicale et préjudice corporel",
@@ -396,6 +555,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM60"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -409,6 +571,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM60"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -420,7 +585,10 @@
       "usmp"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine de catastrophe",
@@ -431,7 +599,10 @@
       "nrbc"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine en situation de guerre",
@@ -442,7 +613,10 @@
       "sse"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine aérospatiale",
@@ -453,7 +627,10 @@
       "dgac"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine hyperbare et de plongée",
@@ -464,7 +641,10 @@
       "oxygenotherapie hyperbare"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine thermale",
@@ -475,7 +655,10 @@
       "station thermale"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine tropicale",
@@ -488,6 +671,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM58"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -501,6 +687,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM25"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -512,7 +701,10 @@
       "sante scolaire"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Hygiène et prévention des infections",
@@ -523,7 +715,12 @@
       "eoh"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "21",
+      "60"
+    ]
   },
   {
     "libelle": "Pharmacologie médicale et thérapeutique",
@@ -534,7 +731,10 @@
       "pharmacovigilance"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Génétique et médecine moléculaire",
@@ -547,6 +747,9 @@
     "groupe": "Pratiques transversales",
     "specialites_sm": [
       "SM17"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -558,7 +761,10 @@
       "efs"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Bio-informatique médicale",
@@ -569,7 +775,10 @@
       "dim"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Soigner les soignants",
@@ -580,7 +789,10 @@
       "burn out"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Hypnose médicale",
@@ -590,7 +802,10 @@
       "hypnoanalgesie"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine du sport",
@@ -601,7 +816,10 @@
       "traumatologie du sport"
     ],
     "groupe": "Médecine du sport",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cardiologie du sport",
@@ -612,7 +830,10 @@
       "mort subite du sportif"
     ],
     "groupe": "Médecine du sport",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Échographie ostéo-articulaire",
@@ -622,7 +843,10 @@
       "echo tendons"
     ],
     "groupe": "Médecine du sport",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cardiologie interventionnelle",
@@ -635,6 +859,9 @@
     "groupe": "Cardiologie et médecine vasculaire",
     "specialites_sm": [
       "SM79"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -648,6 +875,9 @@
     "groupe": "Cardiologie et médecine vasculaire",
     "specialites_sm": [
       "SM81"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -661,6 +891,9 @@
     "groupe": "Cardiologie et médecine vasculaire",
     "specialites_sm": [
       "SM80"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -672,7 +905,10 @@
       "echocardio"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cardio-oncologie",
@@ -682,7 +918,10 @@
       "chimiotherapie coeur"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cardiologie pédiatrique et congénitale",
@@ -692,7 +931,10 @@
       "cardiopediatrie"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Réadaptation cardiaque",
@@ -702,7 +944,11 @@
       "ssr cardio"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "70"
+    ]
   },
   {
     "libelle": "Angiologie",
@@ -715,6 +961,9 @@
     "groupe": "Cardiologie et médecine vasculaire",
     "specialites_sm": [
       "SM61"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -726,7 +975,10 @@
       "laser endoveineux"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Imagerie vasculaire non invasive",
@@ -737,7 +989,10 @@
       "carotides"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Lymphologie",
@@ -747,7 +1002,11 @@
       "contention"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "70"
+    ]
   },
   {
     "libelle": "Dermatologie esthétique et lasers",
@@ -758,7 +1017,10 @@
       "cosmetologie"
     ],
     "groupe": "Dermatologie et vénéréologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Infections sexuellement transmissibles",
@@ -769,7 +1031,11 @@
       "cegidd"
     ],
     "groupe": "Dermatologie et vénéréologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50"
+    ]
   },
   {
     "libelle": "Dermatologie pédiatrique",
@@ -779,7 +1045,10 @@
       "angiome"
     ],
     "groupe": "Dermatologie et vénéréologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Dermato-oncologie",
@@ -790,7 +1059,10 @@
       "onco dermato"
     ],
     "groupe": "Dermatologie et vénéréologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Dermatologie chirurgicale",
@@ -800,7 +1072,10 @@
       "chirurgie de mohs"
     ],
     "groupe": "Dermatologie et vénéréologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Plaies et cicatrisation",
@@ -808,10 +1083,15 @@
       "plaie chronique",
       "ulcere",
       "escarre",
-      "cicatrisation"
+      "cicatrisation",
+      "pansements complexes"
     ],
     "groupe": "Dermatologie et vénéréologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "60"
+    ]
   },
   {
     "libelle": "Endoscopie digestive interventionnelle",
@@ -822,7 +1102,10 @@
       "mucosectomie"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Soins intensifs hépato-gastro-entérologiques",
@@ -832,7 +1115,10 @@
       "soins intensifs digestifs"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Proctologie",
@@ -843,7 +1129,10 @@
       "fistule anale"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Maladie inflammatoire chronique de l'intestin",
@@ -854,7 +1143,10 @@
       "rch"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Explorations fonctionnelles digestives",
@@ -864,7 +1156,10 @@
       "impedancemetrie"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Pancréatologie",
@@ -874,7 +1169,10 @@
       "tumeur du pancreas"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Hépatologie",
@@ -885,7 +1183,10 @@
       "elastometrie"
     ],
     "groupe": "Gastro-entérologie et hépatologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Échographie gynécologique et obstétricale",
@@ -896,7 +1197,11 @@
       "echo pelvienne"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50"
+    ]
   },
   {
     "libelle": "Médecine fœtale",
@@ -907,7 +1212,10 @@
       "cpdpn"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine et biologie de la reproduction",
@@ -918,7 +1226,10 @@
       "andrologie"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Gynécologie chirurgicale",
@@ -928,7 +1239,10 @@
       "coelioscopie gyneco"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Grossesse à risque",
@@ -938,7 +1252,10 @@
       "grossesse a haut risque"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Sénologie",
@@ -949,7 +1266,10 @@
       "nodule mammaire"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Colposcopie",
@@ -960,7 +1280,10 @@
       "conisation"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Pelvi-périnéologie",
@@ -968,10 +1291,18 @@
       "perinee",
       "incontinence urinaire",
       "prolapsus",
-      "uro gyneco"
+      "uro gyneco",
+      "reeducation perineale",
+      "reeducation pelvienne",
+      "perinee post partum"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50",
+      "70"
+    ]
   },
   {
     "libelle": "Ménopause",
@@ -982,7 +1313,10 @@
       "bouffees de chaleur"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "IVG instrumentale",
@@ -992,7 +1326,10 @@
       "orthogenie"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Néonatologie",
@@ -1005,6 +1342,9 @@
     "groupe": "Pédiatrie",
     "specialites_sm": [
       "SM87"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1018,6 +1358,9 @@
     "specialites_sm": [
       "SM82",
       "SM90"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1030,6 +1373,9 @@
     "groupe": "Pédiatrie",
     "specialites_sm": [
       "SM88"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1042,6 +1388,9 @@
     "groupe": "Pédiatrie",
     "specialites_sm": [
       "SM89"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1052,7 +1401,10 @@
       "sau pediatrique"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Infectiologie pédiatrique",
@@ -1062,7 +1414,10 @@
       "vaccination enfant"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Hémato-cancérologie pédiatrique",
@@ -1072,7 +1427,10 @@
       "onco pediatrie"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Endocrinologie diabétologie pédiatrique",
@@ -1083,7 +1441,10 @@
       "endoc ped"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Gastro-entérologie pédiatrique",
@@ -1093,7 +1454,10 @@
       "rgo nourrisson"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine de l'adolescent",
@@ -1103,7 +1467,10 @@
       "maison des adolescents"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Protection de l'enfance",
@@ -1113,7 +1480,13 @@
       "information preoccupante"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50",
+      "60",
+      "93"
+    ]
   },
   {
     "libelle": "Allaitement maternel",
@@ -1123,7 +1496,12 @@
       "consultante en lactation"
     ],
     "groupe": "Pédiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "50",
+      "60"
+    ]
   },
   {
     "libelle": "Psychiatrie de l'adulte",
@@ -1132,7 +1510,10 @@
       "psy adulte"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Psychiatrie de l'enfant et de l'adolescent",
@@ -1146,6 +1527,9 @@
     "specialites_sm": [
       "SM43",
       "SM92"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1158,6 +1542,9 @@
     "groupe": "Psychiatrie",
     "specialites_sm": [
       "SM93"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1168,7 +1555,10 @@
       "detenu"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Psychiatrie périnatale",
@@ -1178,7 +1568,10 @@
       "psy perinatale"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Psychothérapie",
@@ -1188,7 +1581,11 @@
       "therapie"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "93"
+    ]
   },
   {
     "libelle": "Psychanalyse",
@@ -1197,7 +1594,10 @@
       "analyste"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Urgences psychiatriques et prévention du suicide",
@@ -1207,7 +1607,10 @@
       "prevention du suicide"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Réhabilitation psychosociale",
@@ -1217,7 +1620,10 @@
       "schizophrenie"
     ],
     "groupe": "Psychiatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Traitement interventionnel de l'AVC ischémique",
@@ -1229,6 +1635,9 @@
     "groupe": "Neurologie",
     "specialites_sm": [
       "SM84"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1240,7 +1649,10 @@
       "accident vasculaire cerebral"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Épileptologie",
@@ -1250,7 +1662,10 @@
       "eeg"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Migraine et céphalées",
@@ -1261,7 +1676,10 @@
       "algie vasculaire"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Neurophysiologie clinique",
@@ -1272,7 +1690,10 @@
       "potentiels evoques"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Mouvements anormaux",
@@ -1283,7 +1704,10 @@
       "toxine botulique"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Neuro-immunologie",
@@ -1293,7 +1717,10 @@
       "neuro inflammation"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Maladies neuromusculaires",
@@ -1304,7 +1731,10 @@
       "neuropathie"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Consultation mémoire",
@@ -1315,7 +1745,10 @@
       "cmrr"
     ],
     "groupe": "Neurologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Soins intensifs respiratoires",
@@ -1327,6 +1760,9 @@
     "groupe": "Pneumologie",
     "specialites_sm": [
       "SM91"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1337,7 +1773,10 @@
       "ebus"
     ],
     "groupe": "Pneumologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Oncologie thoracique",
@@ -1347,7 +1786,10 @@
       "onco thoracique"
     ],
     "groupe": "Pneumologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Réhabilitation respiratoire",
@@ -1357,7 +1799,11 @@
       "bpco"
     ],
     "groupe": "Pneumologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "70"
+    ]
   },
   {
     "libelle": "Pathologie osseuse médicale",
@@ -1367,7 +1813,10 @@
       "maladie osseuse"
     ],
     "groupe": "Rhumatologie et appareil locomoteur",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Infiltration et ponction articulaire",
@@ -1378,7 +1827,10 @@
       "geste echoguide"
     ],
     "groupe": "Rhumatologie et appareil locomoteur",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Podologie médicale",
@@ -1389,7 +1841,10 @@
       "podologie"
     ],
     "groupe": "Rhumatologie et appareil locomoteur",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Diabétologie",
@@ -1405,6 +1860,9 @@
     "specialites_sm": [
       "SM16",
       "SM62"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1416,7 +1874,10 @@
       "goitre"
     ],
     "groupe": "Endocrinologie, diabétologie, nutrition",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Pied diabétique",
@@ -1426,7 +1887,12 @@
       "mal perforant"
     ],
     "groupe": "Endocrinologie, diabétologie, nutrition",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "60",
+      "80"
+    ]
   },
   {
     "libelle": "Phoniatrie",
@@ -1437,7 +1903,10 @@
       "laryngologie"
     ],
     "groupe": "ORL, face et cou",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Audiologie",
@@ -1450,6 +1919,9 @@
     "groupe": "ORL, face et cou",
     "specialites_sm": [
       "SM86"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1460,7 +1932,10 @@
       "amygdales enfant"
     ],
     "groupe": "ORL, face et cou",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Rhinologie",
@@ -1471,7 +1946,10 @@
       "chirurgie des sinus"
     ],
     "groupe": "ORL, face et cou",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Otologie et otoneurologie",
@@ -1482,7 +1960,10 @@
       "otologie"
     ],
     "groupe": "ORL, face et cou",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cancérologie cervico-faciale",
@@ -1493,7 +1974,10 @@
       "cancer de la bouche"
     ],
     "groupe": "ORL, face et cou",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Orthodontie des dysmorphies maxillo-faciales",
@@ -1505,6 +1989,9 @@
     "groupe": "ORL, face et cou",
     "specialites_sm": [
       "SM77"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1514,7 +2001,11 @@
       "implantologie"
     ],
     "groupe": "ORL, face et cou",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "40"
+    ]
   },
   {
     "libelle": "Ophtalmopédiatrie et strabologie",
@@ -1526,6 +2017,9 @@
     "groupe": "Ophtalmologie",
     "specialites_sm": [
       "SM85"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1537,7 +2031,10 @@
       "oculoplastie"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie réfractive et de la cataracte",
@@ -1548,7 +2045,10 @@
       "chirurgie refractive"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie rétinovitréenne",
@@ -1558,7 +2058,10 @@
       "chirurgie de la retine"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Imagerie et pathologie rétinienne",
@@ -1569,7 +2072,10 @@
       "angiographie"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Adaptation de lentilles de contact",
@@ -1579,7 +2085,11 @@
       "orthokeratologie"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "92"
+    ]
   },
   {
     "libelle": "Glaucome",
@@ -1589,7 +2099,10 @@
       "hypertonie oculaire"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cornée et surface oculaire",
@@ -1600,7 +2113,10 @@
       "oeil sec"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Neuro-ophtalmologie",
@@ -1610,7 +2126,10 @@
       "neuro ophtalmo"
     ],
     "groupe": "Ophtalmologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Onco-urologie",
@@ -1621,7 +2140,10 @@
       "onco uro"
     ],
     "groupe": "Urologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Urologie fonctionnelle et neuro-urologie",
@@ -1631,7 +2153,10 @@
       "bilan urodynamique"
     ],
     "groupe": "Urologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Endo-urologie et lithiase",
@@ -1642,7 +2167,10 @@
       "ureteroscopie"
     ],
     "groupe": "Urologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Soins intensifs néphrologiques",
@@ -1653,6 +2181,9 @@
     "groupe": "Néphrologie",
     "specialites_sm": [
       "SM83"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1662,7 +2193,11 @@
       "dialyse peritoneale"
     ],
     "groupe": "Néphrologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "60"
+    ]
   },
   {
     "libelle": "Transplantation rénale",
@@ -1672,7 +2207,10 @@
       "greffe renale"
     ],
     "groupe": "Néphrologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Orthopédie pédiatrique",
@@ -1684,6 +2222,9 @@
     "groupe": "Chirurgie orthopédique et traumatologique",
     "specialites_sm": [
       "SM70"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1695,7 +2236,10 @@
       "sos mains"
     ],
     "groupe": "Chirurgie orthopédique et traumatologique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie du pied et de la cheville",
@@ -1705,7 +2249,10 @@
       "hallux valgus"
     ],
     "groupe": "Chirurgie orthopédique et traumatologique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie du rachis",
@@ -1716,7 +2263,10 @@
       "scoliose"
     ],
     "groupe": "Chirurgie orthopédique et traumatologique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Arthroscopie",
@@ -1726,7 +2276,10 @@
       "ligament croise"
     ],
     "groupe": "Chirurgie orthopédique et traumatologique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie de l'épaule et du coude",
@@ -1736,7 +2289,10 @@
       "coude"
     ],
     "groupe": "Chirurgie orthopédique et traumatologique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie de la hanche et du genou",
@@ -1747,7 +2303,10 @@
       "ptg"
     ],
     "groupe": "Chirurgie orthopédique et traumatologique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie viscérale pédiatrique",
@@ -1759,6 +2318,9 @@
     "groupe": "Chirurgie viscérale et autres chirurgies",
     "specialites_sm": [
       "SM69"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1770,6 +2332,9 @@
     "groupe": "Chirurgie viscérale et autres chirurgies",
     "specialites_sm": [
       "SM78"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1781,7 +2346,10 @@
       "carcinose"
     ],
     "groupe": "Chirurgie viscérale et autres chirurgies",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie endocrinienne et métabolique",
@@ -1792,7 +2360,10 @@
       "obesite"
     ],
     "groupe": "Chirurgie viscérale et autres chirurgies",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Cœlioscopie",
@@ -1803,7 +2374,10 @@
       "robot"
     ],
     "groupe": "Chirurgie viscérale et autres chirurgies",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie en situation de guerre ou de catastrophe",
@@ -1813,7 +2387,10 @@
       "catastrophe"
     ],
     "groupe": "Chirurgie viscérale et autres chirurgies",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Radiologie interventionnelle avancée",
@@ -1825,6 +2402,9 @@
     "groupe": "Radiologie et imagerie",
     "specialites_sm": [
       "SM94"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1835,7 +2415,10 @@
       "imagerie du cerveau"
     ],
     "groupe": "Radiologie et imagerie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Radiopédiatrie",
@@ -1844,7 +2427,10 @@
       "radio enfant"
     ],
     "groupe": "Radiologie et imagerie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Ostéodensitométrie",
@@ -1854,7 +2440,10 @@
       "osteoporose"
     ],
     "groupe": "Radiologie et imagerie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Gérontologie",
@@ -1867,6 +2456,9 @@
     "groupe": "Gériatrie",
     "specialites_sm": [
       "SM18"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1877,7 +2469,10 @@
       "maison de retraite"
     ],
     "groupe": "Gériatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Fragilité et prévention des chutes",
@@ -1887,7 +2482,14 @@
       "sarcopenie"
     ],
     "groupe": "Gériatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "70",
+      "80",
+      "94",
+      "96"
+    ]
   },
   {
     "libelle": "Oncogériatrie",
@@ -1897,7 +2499,10 @@
       "ucog"
     ],
     "groupe": "Gériatrie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Appareillage",
@@ -1908,7 +2513,11 @@
       "fauteuil roulant"
     ],
     "groupe": "Médecine physique et de réadaptation",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "94"
+    ]
   },
   {
     "libelle": "Rééducation neurologique",
@@ -1919,7 +2528,12 @@
       "rehabilitation"
     ],
     "groupe": "Médecine physique et de réadaptation",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "70",
+      "94"
+    ]
   },
   {
     "libelle": "Spasticité et toxine botulique",
@@ -1929,7 +2543,10 @@
       "injection de toxine"
     ],
     "groupe": "Médecine physique et de réadaptation",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Polyarthrites et maladies systémiques",
@@ -1940,7 +2557,10 @@
       "spondyloarthrite"
     ],
     "groupe": "Médecine interne et maladies systémiques",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine hospitalière polyvalente",
@@ -1950,7 +2570,10 @@
       "medecine interne polyvalente"
     ],
     "groupe": "Médecine interne et maladies systémiques",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Maladie rare",
@@ -1960,7 +2583,10 @@
       "filiere maladie rare"
     ],
     "groupe": "Médecine interne et maladies systémiques",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Oncologie médicale",
@@ -1972,6 +2598,9 @@
     "groupe": "Oncologie et hématologie",
     "specialites_sm": [
       "SM36"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1985,6 +2614,9 @@
     "specialites_sm": [
       "SM37",
       "SM45"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -1995,7 +2627,10 @@
       "traitement du cancer"
     ],
     "groupe": "Oncologie et hématologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Hématologie bioclinique",
@@ -2009,6 +2644,9 @@
       "SM21",
       "SM22",
       "SM71"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -2019,7 +2657,10 @@
       "conseil genetique cancer"
     ],
     "groupe": "Oncologie et hématologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Soins oncologiques de support",
@@ -2029,7 +2670,14 @@
       "effets secondaires chimiotherapie"
     ],
     "groupe": "Oncologie et hématologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "60",
+      "70",
+      "93",
+      "95"
+    ]
   },
   {
     "libelle": "Hémostase et thrombose",
@@ -2040,7 +2688,10 @@
       "hemostase"
     ],
     "groupe": "Oncologie et hématologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecine d'urgence",
@@ -2053,6 +2704,9 @@
     "groupe": "Anesthésie, réanimation et urgences",
     "specialites_sm": [
       "SM59"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -2064,7 +2718,10 @@
       "samu"
     ],
     "groupe": "Anesthésie, réanimation et urgences",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Médecin correspondant du SAMU",
@@ -2074,7 +2731,10 @@
       "samu"
     ],
     "groupe": "Anesthésie, réanimation et urgences",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Anesthésie pédiatrique",
@@ -2085,6 +2745,9 @@
     "groupe": "Anesthésie, réanimation et urgences",
     "specialites_sm": [
       "SM76"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -2095,7 +2758,10 @@
       "rachianesthesie"
     ],
     "groupe": "Anesthésie, réanimation et urgences",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Fœtopathologie",
@@ -2106,7 +2772,10 @@
       "pathologie foetale"
     ],
     "groupe": "Anatomie pathologique et biologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Agents infectieux (microbiologie)",
@@ -2119,6 +2788,9 @@
     "groupe": "Anatomie pathologique et biologie",
     "specialites_sm": [
       "SM66"
+    ],
+    "professions": [
+      "10"
     ]
   },
   {
@@ -2130,7 +2802,10 @@
       "dysmenorrhee"
     ],
     "groupe": "Gynécologie, obstétrique et santé des femmes",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Insuffisance cardiaque",
@@ -2141,7 +2816,10 @@
       "cardiomyopathie"
     ],
     "groupe": "Cardiologie et médecine vasculaire",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Mucoviscidose",
@@ -2151,7 +2829,11 @@
       "fibrose kystique"
     ],
     "groupe": "Pneumologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10",
+      "70"
+    ]
   },
   {
     "libelle": "Drépanocytose",
@@ -2162,7 +2844,10 @@
       "thalassemie"
     ],
     "groupe": "Oncologie et hématologie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Covid long",
@@ -2173,7 +2858,10 @@
       "fatigue chronique"
     ],
     "groupe": "Pratiques transversales",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Neurochirurgie fonctionnelle",
@@ -2184,7 +2872,10 @@
       "chirurgie de l epilepsie"
     ],
     "groupe": "Neurochirurgie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Neuro-oncologie chirurgicale",
@@ -2195,7 +2886,10 @@
       "neuro oncologie"
     ],
     "groupe": "Neurochirurgie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie de l'hypophyse et de la base du crâne",
@@ -2205,7 +2899,10 @@
       "base du crane"
     ],
     "groupe": "Neurochirurgie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Neurochirurgie pédiatrique",
@@ -2215,7 +2912,10 @@
       "malformation cerebrale"
     ],
     "groupe": "Neurochirurgie",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Reconstruction mammaire",
@@ -2226,7 +2926,10 @@
       "apres cancer du sein"
     ],
     "groupe": "Chirurgie plastique, reconstructrice et esthétique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie des brûlés",
@@ -2236,7 +2939,10 @@
       "greffe de peau"
     ],
     "groupe": "Chirurgie plastique, reconstructrice et esthétique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie esthétique",
@@ -2247,7 +2953,10 @@
       "liposuccion"
     ],
     "groupe": "Chirurgie plastique, reconstructrice et esthétique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie de l'aorte",
@@ -2257,7 +2966,10 @@
       "endoprothese aortique"
     ],
     "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie des artères des membres et des carotides",
@@ -2268,7 +2980,10 @@
       "carotide"
     ],
     "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Abords vasculaires pour hémodialyse",
@@ -2278,7 +2993,10 @@
       "abord de dialyse"
     ],
     "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie valvulaire cardiaque",
@@ -2289,7 +3007,10 @@
       "retrecissement aortique"
     ],
     "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie coronaire",
@@ -2299,7 +3020,10 @@
       "revascularisation"
     ],
     "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
   },
   {
     "libelle": "Chirurgie thoracique et pulmonaire",
@@ -2310,6 +3034,1559 @@
       "cancer du poumon"
     ],
     "groupe": "Chirurgie vasculaire, cardiaque et thoracique",
-    "specialites_sm": []
+    "specialites_sm": [],
+    "professions": [
+      "10"
+    ]
+  },
+  {
+    "libelle": "Vaccination",
+    "synonymes": [
+      "vaccins",
+      "vaccinateur",
+      "vaccination adulte",
+      "vaccination grippe"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [],
+    "professions": [
+      "21",
+      "50",
+      "60"
+    ]
+  },
+  {
+    "libelle": "Deuil périnatal",
+    "synonymes": [
+      "deuil perinatal",
+      "mort foetale",
+      "perte de grossesse",
+      "accompagnement du deuil"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [],
+    "professions": [
+      "50",
+      "93"
+    ]
+  },
+  {
+    "libelle": "Rééducation de la main",
+    "synonymes": [
+      "therapie de la main",
+      "orthese de main",
+      "reeducation du poignet"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [],
+    "professions": [
+      "70",
+      "94"
+    ]
+  },
+  {
+    "libelle": "Paralysie faciale",
+    "synonymes": [
+      "paralysie faciale peripherique",
+      "reeducation faciale",
+      "paralysie de bell"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [],
+    "professions": [
+      "70",
+      "91"
+    ]
+  },
+  {
+    "libelle": "Trouble développemental de la coordination",
+    "synonymes": [
+      "tdc",
+      "dyspraxie",
+      "maladresse de l enfant"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [],
+    "professions": [
+      "94",
+      "96"
+    ]
+  },
+  {
+    "libelle": "Graphomotricité",
+    "synonymes": [
+      "dysgraphie",
+      "graphisme",
+      "difficultes d ecriture"
+    ],
+    "groupe": "Pratiques transversales",
+    "specialites_sm": [],
+    "professions": [
+      "94",
+      "96"
+    ]
+  },
+  {
+    "libelle": "Soins palliatifs à domicile",
+    "synonymes": [
+      "fin de vie a domicile",
+      "had",
+      "accompagnement fin de vie"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Chimiothérapie et chambre implantable",
+    "synonymes": [
+      "chambre implantable",
+      "picc line",
+      "catheter central",
+      "chimiotherapie a domicile"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Perfusions à domicile",
+    "synonymes": [
+      "perfusion a domicile",
+      "antibiotherapie intraveineuse",
+      "nutrition parenterale a domicile"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Suivi infirmier du diabète",
+    "synonymes": [
+      "insulinotherapie",
+      "education diabete",
+      "surveillance glycemique"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Stomathérapie",
+    "synonymes": [
+      "stomie",
+      "colostomie",
+      "ileostomie",
+      "stomatherapeute"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Thérapie par pression négative",
+    "synonymes": [
+      "tpn",
+      "vac therapie",
+      "pression negative"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Prélèvements à domicile",
+    "synonymes": [
+      "prise de sang a domicile",
+      "prelevement sanguin",
+      "bilan sanguin a domicile"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Soins de nursing et dépendance",
+    "synonymes": [
+      "nursing",
+      "toilette a domicile",
+      "bsi",
+      "perte d autonomie"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Soins infirmiers en psychiatrie",
+    "synonymes": [
+      "infirmier psy",
+      "injection retard",
+      "suivi psychiatrique a domicile"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Puériculture",
+    "synonymes": [
+      "puericultrice",
+      "puericulteur",
+      "soins du nourrisson",
+      "pmi"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Protocoles de coopération avec le médecin",
+    "synonymes": [
+      "asalee",
+      "protocole de cooperation",
+      "delegation de taches"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Pratique avancée : pathologies chroniques stabilisées",
+    "synonymes": [
+      "ipa pcs",
+      "pathologies chroniques stabilisees",
+      "ipa polypathologie"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Pratique avancée : psychiatrie et santé mentale",
+    "synonymes": [
+      "ipa psy",
+      "ipa sante mentale"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Pratique avancée : oncologie et hémato-oncologie",
+    "synonymes": [
+      "ipa onco",
+      "ipa oncologie"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Pratique avancée : maladie rénale chronique, dialyse, transplantation",
+    "synonymes": [
+      "ipa nephro",
+      "ipa mrc"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Pratique avancée : urgences",
+    "synonymes": [
+      "ipa urgences"
+    ],
+    "groupe": "Soins infirmiers",
+    "specialites_sm": [],
+    "professions": [
+      "60"
+    ]
+  },
+  {
+    "libelle": "Kinésithérapie respiratoire",
+    "synonymes": [
+      "kine respiratoire",
+      "kine respi",
+      "bronchiolite",
+      "desencombrement bronchique"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Rééducation vestibulaire",
+    "synonymes": [
+      "vertiges",
+      "reeducation des vertiges",
+      "vestibulaire"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Kinésithérapie du sport",
+    "synonymes": [
+      "kine du sport",
+      "kine sport",
+      "reathletisation",
+      "reprise du sport"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Kinésithérapie pédiatrique",
+    "synonymes": [
+      "kine pediatrique",
+      "kine enfant",
+      "plagiocephalie",
+      "torticolis congenital"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Rééducation maxillo-faciale",
+    "synonymes": [
+      "reeducation atm",
+      "reeducation de la machoire",
+      "reeducation maxillo faciale"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Thérapie manuelle et rachis",
+    "synonymes": [
+      "therapie manuelle",
+      "lombalgie",
+      "cervicalgie",
+      "mal de dos"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Rééducation post-opératoire orthopédique",
+    "synonymes": [
+      "reeducation post operatoire",
+      "ligamentoplastie",
+      "lca",
+      "reeducation apres prothese"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Kinésithérapie en cancérologie",
+    "synonymes": [
+      "kine onco",
+      "reeducation apres cancer",
+      "kine apres cancer du sein"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Activité physique adaptée",
+    "synonymes": [
+      "apa",
+      "sport sur ordonnance",
+      "activite physique adaptee"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Kinésithérapie à domicile",
+    "synonymes": [
+      "kine a domicile",
+      "kinesitherapie a domicile",
+      "reeducation a domicile"
+    ],
+    "groupe": "Masso-kinésithérapie",
+    "specialites_sm": [],
+    "professions": [
+      "70"
+    ]
+  },
+  {
+    "libelle": "Entretiens pharmaceutiques",
+    "synonymes": [
+      "entretien pharmaceutique",
+      "aod",
+      "avk",
+      "suivi des anticoagulants oraux"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Bilan partagé de médication",
+    "synonymes": [
+      "bpm",
+      "conciliation medicamenteuse",
+      "polymedication",
+      "revue de medication"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Préparations magistrales",
+    "synonymes": [
+      "preparation magistrale",
+      "preparatoire",
+      "preparations pediatriques"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Préparation des doses à administrer",
+    "synonymes": [
+      "pda",
+      "piluliers",
+      "preparation des piluliers"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Matériel médical et maintien à domicile",
+    "synonymes": [
+      "mad",
+      "materiel medical",
+      "location de materiel",
+      "lit medicalise"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Orthopédie et contention à l'officine",
+    "synonymes": [
+      "bas de contention",
+      "orthopedie officinale",
+      "ceinture lombaire"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Tests rapides d'orientation diagnostique",
+    "synonymes": [
+      "trod",
+      "test angine",
+      "test cystite",
+      "autotest vih"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Accompagnement des anticancéreux oraux",
+    "synonymes": [
+      "anticancereux oraux",
+      "chimiotherapie orale"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Nutrition clinique à l'officine",
+    "synonymes": [
+      "complements nutritionnels oraux",
+      "nutrition enterale a domicile"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Réduction des risques et traitements de substitution",
+    "synonymes": [
+      "tso",
+      "methadone",
+      "buprenorphine",
+      "reduction des risques"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Téléconsultation en officine",
+    "synonymes": [
+      "cabine de teleconsultation",
+      "teleconsultation pharmacie"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Phytothérapie et aromathérapie",
+    "synonymes": [
+      "phytotherapie",
+      "aromatherapie",
+      "plantes medicinales"
+    ],
+    "groupe": "Pharmacie",
+    "specialites_sm": [],
+    "professions": [
+      "21"
+    ]
+  },
+  {
+    "libelle": "Préparation à la naissance et à la parentalité",
+    "synonymes": [
+      "ppnp",
+      "preparation a l accouchement",
+      "cours de preparation",
+      "haptonomie"
+    ],
+    "groupe": "Maïeutique et santé des femmes",
+    "specialites_sm": [],
+    "professions": [
+      "50"
+    ]
+  },
+  {
+    "libelle": "Entretien prénatal précoce",
+    "synonymes": [
+      "epp",
+      "entretien du 4e mois"
+    ],
+    "groupe": "Maïeutique et santé des femmes",
+    "specialites_sm": [],
+    "professions": [
+      "50"
+    ]
+  },
+  {
+    "libelle": "Suivi postnatal à domicile",
+    "synonymes": [
+      "sortie de maternite",
+      "prado",
+      "visite post natale",
+      "suivi du nouveau ne a domicile"
+    ],
+    "groupe": "Maïeutique et santé des femmes",
+    "specialites_sm": [],
+    "professions": [
+      "50"
+    ]
+  },
+  {
+    "libelle": "Accouchement accompagné",
+    "synonymes": [
+      "accompagnement global",
+      "plateau technique",
+      "accouchement a domicile",
+      "maison de naissance"
+    ],
+    "groupe": "Maïeutique et santé des femmes",
+    "specialites_sm": [],
+    "professions": [
+      "50"
+    ]
+  },
+  {
+    "libelle": "Surveillance de grossesse à domicile",
+    "synonymes": [
+      "monitoring a domicile",
+      "grossesse pathologique a domicile"
+    ],
+    "groupe": "Maïeutique et santé des femmes",
+    "specialites_sm": [],
+    "professions": [
+      "50"
+    ]
+  },
+  {
+    "libelle": "Acupuncture obstétricale",
+    "synonymes": [
+      "acupuncture",
+      "acupuncture grossesse"
+    ],
+    "groupe": "Maïeutique et santé des femmes",
+    "specialites_sm": [],
+    "professions": [
+      "50"
+    ]
+  },
+  {
+    "libelle": "Troubles de l'oralité",
+    "synonymes": [
+      "oralite",
+      "oralite alimentaire",
+      "troubles alimentaires pediatriques",
+      "refus alimentaire",
+      "selectivite alimentaire"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Bégaiement et troubles de la fluence",
+    "synonymes": [
+      "begaiement",
+      "fluence",
+      "bredouillement"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Troubles du langage écrit",
+    "synonymes": [
+      "dyslexie",
+      "dysorthographie",
+      "langage ecrit"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Troubles du langage oral",
+    "synonymes": [
+      "retard de langage",
+      "retard de parole",
+      "tdl",
+      "dysphasie"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Troubles de la cognition mathématique",
+    "synonymes": [
+      "dyscalculie",
+      "logico mathematique",
+      "troubles du calcul"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Troubles de la déglutition",
+    "synonymes": [
+      "dysphagie",
+      "fausses routes",
+      "deglutition adulte"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Aphasie",
+    "synonymes": [
+      "aphasie post avc",
+      "troubles du langage apres avc"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Troubles cognitifs et maladies neurodégénératives",
+    "synonymes": [
+      "maladie d alzheimer",
+      "maladie de parkinson",
+      "stimulation cognitive"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Troubles de la voix",
+    "synonymes": [
+      "dysphonie",
+      "reeducation vocale",
+      "nodules des cordes vocales"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Surdité et implant cochléaire",
+    "synonymes": [
+      "reeducation auditive",
+      "lecture labiale",
+      "education auditive"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Communication alternative et améliorée",
+    "synonymes": [
+      "caa",
+      "communication alternative",
+      "makaton",
+      "pictogrammes"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Rééducation myofonctionnelle",
+    "synonymes": [
+      "deglutition atypique",
+      "ventilation buccale",
+      "myofonctionnel"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Laryngectomie",
+    "synonymes": [
+      "voix oesophagienne",
+      "laryngectomise",
+      "implant phonatoire"
+    ],
+    "groupe": "Orthophonie",
+    "specialites_sm": [],
+    "professions": [
+      "91"
+    ]
+  },
+  {
+    "libelle": "Orthopédie dento-faciale",
+    "synonymes": [
+      "odf",
+      "appareil dentaire",
+      "orthodontie enfant",
+      "orthodontie adulte",
+      "aligneurs"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Parodontologie",
+    "synonymes": [
+      "parodontie",
+      "gencives",
+      "parodontite",
+      "dechaussement dentaire"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Odontologie pédiatrique",
+    "synonymes": [
+      "pedodontie",
+      "dentiste pour enfants",
+      "soins dentaires enfant"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Endodontie",
+    "synonymes": [
+      "traitement de canal",
+      "devitalisation",
+      "endodontie microscopique"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Prothèse dentaire et réhabilitation",
+    "synonymes": [
+      "couronne",
+      "bridge",
+      "dentier",
+      "prothese amovible"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Chirurgie orale",
+    "synonymes": [
+      "dents de sagesse",
+      "extraction dentaire",
+      "chirurgie buccale"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Soins dentaires sous sédation",
+    "synonymes": [
+      "meopa",
+      "patients anxieux",
+      "phobie du dentiste",
+      "sedation consciente"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Occlusodontie et troubles de l'ATM",
+    "synonymes": [
+      "occlusodontie",
+      "atm",
+      "bruxisme",
+      "dysfonction temporo mandibulaire"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Soins dentaires des patients à risque médical",
+    "synonymes": [
+      "patients anticoagules",
+      "patients irradies",
+      "bisphosphonates"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Esthétique dentaire",
+    "synonymes": [
+      "facettes",
+      "blanchiment dentaire",
+      "dentisterie esthetique"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Soins dentaires à domicile et en EHPAD",
+    "synonymes": [
+      "dentiste a domicile",
+      "soins dentaires ehpad"
+    ],
+    "groupe": "Odontologie",
+    "specialites_sm": [],
+    "professions": [
+      "40"
+    ]
+  },
+  {
+    "libelle": "Neuropsychologie",
+    "synonymes": [
+      "bilan neuropsychologique",
+      "neuropsychologue",
+      "evaluation cognitive"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Psychothérapie de l'enfant et de l'adolescent",
+    "synonymes": [
+      "psychologue enfant",
+      "psychologue pour adolescents",
+      "therapie enfant"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Thérapie familiale et de couple",
+    "synonymes": [
+      "therapie de couple",
+      "therapie familiale",
+      "therapie systemique"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Bilans psychométriques",
+    "synonymes": [
+      "bilan psychometrique",
+      "test de qi",
+      "wisc",
+      "haut potentiel",
+      "hpi"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Souffrance au travail",
+    "synonymes": [
+      "risques psychosociaux",
+      "psychologue du travail",
+      "harcelement au travail"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Psycho-oncologie",
+    "synonymes": [
+      "psycho oncologie",
+      "soutien psychologique cancer"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Mon soutien psy",
+    "synonymes": [
+      "dispositif mon soutien psy",
+      "monpsy",
+      "seances remboursees"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Psychologie périnatale",
+    "synonymes": [
+      "soutien a la parentalite",
+      "psychologue perinatalite"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Psychologie du vieillissement",
+    "synonymes": [
+      "gerontopsychologie",
+      "psychologue personne agee"
+    ],
+    "groupe": "Psychologie",
+    "specialites_sm": [],
+    "professions": [
+      "93"
+    ]
+  },
+  {
+    "libelle": "Orthèses plantaires et orthoplasties",
+    "synonymes": [
+      "semelles orthopediques",
+      "semelles sur mesure",
+      "orthoplastie"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Podologie du sport",
+    "synonymes": [
+      "podologue du sport",
+      "analyse de la course",
+      "pied du sportif"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Podologie pédiatrique",
+    "synonymes": [
+      "pied de l enfant",
+      "podologue enfant",
+      "marche de l enfant"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Ongle incarné et orthonyxie",
+    "synonymes": [
+      "orthonyxie",
+      "onychocryptose",
+      "ongles incarnes"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Posturologie",
+    "synonymes": [
+      "posturologue",
+      "semelles posturales",
+      "examen postural"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Soins de pédicurie à domicile et en EHPAD",
+    "synonymes": [
+      "pedicurie a domicile",
+      "podologue a domicile",
+      "soins des pieds personnes agees"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Pied rhumatologique",
+    "synonymes": [
+      "pied rhumatoide",
+      "pied et polyarthrite"
+    ],
+    "groupe": "Podologie",
+    "specialites_sm": [],
+    "professions": [
+      "80"
+    ]
+  },
+  {
+    "libelle": "Accompagnement diététique de l'obésité",
+    "synonymes": [
+      "perte de poids",
+      "suivi bariatrique",
+      "regime obesite"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Diététique du diabète",
+    "synonymes": [
+      "dietetique diabete",
+      "comptage des glucides",
+      "insulinotherapie fonctionnelle"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Prise en charge de la dénutrition",
+    "synonymes": [
+      "denutrition personne agee",
+      "enrichissement alimentaire"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Nutrition pédiatrique",
+    "synonymes": [
+      "dietetique enfant",
+      "diversification alimentaire",
+      "obesite de l enfant"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Diététique de la maladie rénale",
+    "synonymes": [
+      "regime renal",
+      "regime pauvre en potassium",
+      "alimentation et dialyse"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Allergies et intolérances alimentaires",
+    "synonymes": [
+      "allergie alimentaire",
+      "intolerance alimentaire",
+      "regime sans gluten",
+      "maladie coeliaque"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Nutrition du sportif",
+    "synonymes": [
+      "dietetique du sport",
+      "alimentation du sportif"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Troubles digestifs et régime FODMAP",
+    "synonymes": [
+      "fodmap",
+      "colopathie fonctionnelle",
+      "syndrome de l intestin irritable"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Nutrition entérale et parentérale",
+    "synonymes": [
+      "nutrition enterale",
+      "sonde de gastrostomie",
+      "nutrition artificielle"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Diététique en cancérologie",
+    "synonymes": [
+      "nutrition et cancer",
+      "dietetique oncologie"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Diététique cardiovasculaire",
+    "synonymes": [
+      "cholesterol",
+      "regime hyposode",
+      "alimentation et hypertension"
+    ],
+    "groupe": "Diététique",
+    "specialites_sm": [],
+    "professions": [
+      "95"
+    ]
+  },
+  {
+    "libelle": "Psychomotricité du jeune enfant",
+    "synonymes": [
+      "eveil psychomoteur",
+      "retard psychomoteur",
+      "petite enfance"
+    ],
+    "groupe": "Psychomotricité",
+    "specialites_sm": [],
+    "professions": [
+      "96"
+    ]
+  },
+  {
+    "libelle": "Psychomotricité en gériatrie",
+    "synonymes": [
+      "psychomotricien ehpad",
+      "troubles de la marche",
+      "psychomotricite personne agee"
+    ],
+    "groupe": "Psychomotricité",
+    "specialites_sm": [],
+    "professions": [
+      "96"
+    ]
+  },
+  {
+    "libelle": "Relaxation et régulation tonico-émotionnelle",
+    "synonymes": [
+      "relaxation",
+      "gestion du stress",
+      "regulation emotionnelle"
+    ],
+    "groupe": "Psychomotricité",
+    "specialites_sm": [],
+    "professions": [
+      "96"
+    ]
+  },
+  {
+    "libelle": "Troubles de l'image du corps",
+    "synonymes": [
+      "image du corps",
+      "schema corporel"
+    ],
+    "groupe": "Psychomotricité",
+    "specialites_sm": [],
+    "professions": [
+      "96"
+    ]
+  },
+  {
+    "libelle": "Aménagement du domicile",
+    "synonymes": [
+      "adaptation du logement",
+      "amenagement du logement",
+      "visite a domicile ergotherapie"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Aides techniques et positionnement",
+    "synonymes": [
+      "aides techniques",
+      "positionnement au fauteuil",
+      "fauteuil electrique"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Ergothérapie pédiatrique",
+    "synonymes": [
+      "ergotherapeute enfant",
+      "ergotherapie enfant"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Ergonomie et maintien dans l'emploi",
+    "synonymes": [
+      "ergonomie",
+      "poste de travail",
+      "amenagement de poste"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Équipe spécialisée Alzheimer à domicile",
+    "synonymes": [
+      "esa",
+      "equipe specialisee alzheimer",
+      "rehabilitation a domicile"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Évaluation de la conduite automobile",
+    "synonymes": [
+      "conduite automobile et handicap",
+      "reprise de la conduite",
+      "evaluation conduite"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Outils numériques de compensation",
+    "synonymes": [
+      "outils numeriques",
+      "ordinateur pour dys",
+      "compensation numerique"
+    ],
+    "groupe": "Ergothérapie",
+    "specialites_sm": [],
+    "professions": [
+      "94"
+    ]
+  },
+  {
+    "libelle": "Rééducation orthoptique",
+    "synonymes": [
+      "reeducation orthoptique",
+      "insuffisance de convergence",
+      "vision binoculaire",
+      "fatigue visuelle"
+    ],
+    "groupe": "Orthoptie",
+    "specialites_sm": [],
+    "professions": [
+      "92"
+    ]
+  },
+  {
+    "libelle": "Basse vision",
+    "synonymes": [
+      "malvoyance",
+      "reeducation basse vision"
+    ],
+    "groupe": "Orthoptie",
+    "specialites_sm": [],
+    "professions": [
+      "92"
+    ]
+  },
+  {
+    "libelle": "Dépistage visuel de l'enfant",
+    "synonymes": [
+      "depistage visuel",
+      "bilan visuel enfant"
+    ],
+    "groupe": "Orthoptie",
+    "specialites_sm": [],
+    "professions": [
+      "92"
+    ]
+  },
+  {
+    "libelle": "Troubles neurovisuels",
+    "synonymes": [
+      "neurovisuel",
+      "troubles visuo attentionnels",
+      "dyspraxie visuo spatiale"
+    ],
+    "groupe": "Orthoptie",
+    "specialites_sm": [],
+    "professions": [
+      "92"
+    ]
+  },
+  {
+    "libelle": "Dépistage de la rétinopathie diabétique",
+    "synonymes": [
+      "retinopathie diabetique",
+      "retinographie",
+      "depistage retinopathie"
+    ],
+    "groupe": "Orthoptie",
+    "specialites_sm": [],
+    "professions": [
+      "92"
+    ]
+  },
+  {
+    "libelle": "Bilan orthoptique et explorations de la vision",
+    "synonymes": [
+      "bilan orthoptique",
+      "examens de la vue",
+      "refraction orthoptiste"
+    ],
+    "groupe": "Orthoptie",
+    "specialites_sm": [],
+    "professions": [
+      "92"
+    ]
   }
 ]

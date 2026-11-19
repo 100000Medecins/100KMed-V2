@@ -5,6 +5,43 @@
 
 ---
 
+## [2026-11-17] — Annuaire : l'application ouverte à toutes les professions de santé, catalogue par profession (sur dev)
+
+Consigne de la session messagerie (`docs/prompt-site-2026-11-17-toutes-professions.md` du dépôt messagerie), décisions de David du 17/11 : « 100 000 Messages » ouvert aux infirmiers, kinés, pharmaciens, sages-femmes, dentistes… ; fiches vues de tous les professionnels connectés par PSC depuis l'application, « Ma fiche » remplie depuis l'application ; **le site reste réservé aux médecins** (connexion PSC du site non touchée) ; fiches déjà publiées gardées sans nouvel accord ; « nouveaux patients » toujours pour les seuls généralistes. Contrat : « Ajout du 17/11 » de [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
+
+### Base — migration en deux étapes lancée par David (vérifiée)
+- **A** : `intitules.professions text[] not null default '{10}'` (contrôle : codes à deux chiffres) ; index unique du libellé limité aux compétences **validées** (une proposition d'une autre profession peut porter le libellé d'une compétence existante) ; `annuaire_portable_pour` accepte tout lecteur présent dans `identites_psc` (le site garde son contrôle « médecins » par `annuaire_lecteur_autorise`).
+- **B** : `annuaire_filtres`, `annuaire_rechercher` et `annuaire_fiche` rendent `code_profession` (profession de l'auteur d'une fiche). SQL généré à partir des définitions relues en base, comparé ligne à ligne ; après passage, les 4 définitions en base sont **identiques** au SQL prévu, droits inchangés (`authenticated` + `service_role`, rien pour `anon`). Anciennes définitions archivées en fin du doc (retour arrière).
+- Types régénérés : 5 lignes ajoutées, rien de retiré.
+
+### Code (`6c0211b`, `dev`)
+- **API de l'application** ([app-session.ts](src/lib/annuaire/app-session.ts), [fiche-serveur.ts](src/lib/annuaire/fiche-serveur.ts), `src/app/api/annuaire/app/*`) :
+  - plus de refus des non-médecins (`profession_non_admise` reste au contrat) ; `authentifierApp` rend la profession (vide = médecin) ;
+  - `GET /ma-fiche` : `code_profession`, catalogue = compétences validées **de sa profession** + ses propositions, chaque intitulé avec `professions` ;
+  - `PUT /ma-fiche` : une compétence ajoutée hors de ce catalogue → `422` ; une compétence déjà cochée reste acceptée (profession retirée plus tard par l'association) ;
+  - `POST /competences` : `existant` seulement dans son catalogue ; un libellé qui n'existe que pour d'autres professions devient une proposition, `professions` = celle du proposant ;
+  - `GET /fiches` : `code_profession` sur chaque fiche, `professions` sur chaque compétence, catalogue entier ;
+  - textes d'accord version **`2026-11-17`** (« professionnels de santé »).
+- **Site** : « Ma fiche » ne propose que les compétences des médecins ; recherche, carte et fiche d'un confrère affichent la profession d'une fiche non médecin à la place de la spécialité ([affichage.ts](src/lib/annuaire/affichage.ts)), « Dr » pour médecins, pharmaciens et chirurgiens-dentistes seulement (décision de David) ; la recherche par compétence du site utilise le catalogue entier ; quatre phrases devenues fausses corrigées (intro de « Ma fiche », mentions « déclarées par… »).
+- **Admin** ([/admin/intitules](src/app/admin/intitules/page.tsx)) : professions de chaque compétence (pastille, cases à cocher, filtre), choix des professions à l'ajout ; une proposition montre la profession de son auteur, et si une compétence validée porte le même nom, « Fusionner » est présélectionné : la fusion l'ouvre à cette profession (sans ajouter un synonyme identique au libellé). Message de refus d'« Accepter » sur un libellé déjà validé adapté.
+- **Catalogue** : [annuaire-catalogue-professions.ts](scripts/annuaire-catalogue-professions.ts) (dry-run, contrôle des doublons contre la base, backup, relecture), source `scripts/data/annuaire-catalogue-professions.json` (copie du fichier de la messagerie) ; catalogue reporté dans `annuaire-catalogue-initial.json` (330 entrées, `professions` sur chacune) et pris en compte par `annuaire-catalogue-initial.ts`.
+
+### Vérif
+- `tsc`, lint des fichiers touchés, `npm run build`.
+- **Essai local** (build de production, faux PSC, infirmière, médecin et pharmacienne fictifs, compte d'essai `example.com`, intitulés d'essai), **64 / 64** : sessions des trois professions ; catalogues séparés (infirmière sans les compétences des médecins, médecin sans celles des infirmières) ; `422` sur une compétence d'une autre profession ; `409` sur l'ancienne version d'accord ; fiches publiées ; propositions (« ecg » par l'infirmière → proposition pour 60 ; intitulé de sa profession → existant) ; `/fiches` lu par l'infirmière avec `code_profession` et le catalogue entier ; portable affiché par l'infirmière et tracé ; fonctions du site avec `code_profession` (fiche, recherche avec et sans position, compteur inchangé) ; navigateur : infirmière sans « Dr » avec « Infirmier », pharmacienne « Dr … / Pharmacien », « Ma fiche » du médecin sans compétence d'infirmière et avec le nouveau texte d'accord ; admin : accepter un libellé déjà validé refusé, fusion qui ouvre aux médecins, refus, filtre, retrait d'une profession (la fiche garde la compétence, plus proposée), ajout pour les orthophonistes ; aucune erreur JavaScript. Tout effacé ; requête indépendante : base revenue à 5 identités, 212 intitulés, 2 fiches, 2 compétences cochées.
+- **Non essayé** : le refus d'une infirmière par la connexion PSC du site (il faudrait un vrai échange avec PSC) ; fichier inchangé (`psc-callback`, refus des non-médecins).
+- Vercel `dev` `success` ; `dev.100000medecins.org` répond (`/fiches` sans jeton → `401`).
+
+### Catalogue versé (accord de David, après la mise en ligne sur `dev`)
+- Dry-run sans anomalie, puis `--execute` : backup `backups/annuaire-intitules-2026-11-17T17-10-24-878Z.json` ; **118 créées, 37 ouvertes à d'autres professions**, relecture conforme ; relancé : « Rien à faire ».
+- Requête indépendante : 330 compétences = 175 réservées aux médecins + 37 partagées + 118 des autres professions ; les médecins voient toujours 212 compétences ; par profession : infirmier 31, sage-femme 21, psychologue 25, kiné 23, pharmacien 18, orthophoniste 18, ergothérapeute 17, dentiste 15, diététicien 14, psychomotricien 12, podologue 10, orthoptiste 8.
+- Signalé, non bloquant : 24 synonymes déjà en double entre compétences des médecins (antérieurs au 17/11).
+
+### Reste
+- Essai de l'application contre `dev` (session messagerie) ; relecture du catalogue par David ; report sur `main` sur son « go » ; CGU et charte de l'annuaire avec David (TODO).
+
+---
+
 ## [2026-11-12] — Notes figées : un ancien avis re-noté remplace sa note de l'ancien site
 
 Question de David (« les nouvelles notes ne défigeaient pas la note historique ? ») ; décision : option 1, remplacer l'ancienne note par la nouvelle.
@@ -131,6 +168,24 @@ David, inscrit et vérifié par PSC, a reçu des relances « validez votre éval
 - En production avec les notes figées : **`e7c51f8`** sur `main` (voir l'entrée « Notes figées » pour le build et Vercel).
 - Admin → Emails en production : **125** évaluations relançables, soit les 130 en attente moins les 5 adresses de comptes vérifiés (Mercier, Francis, Sidorkiewicz, Longépé, Pineau) ; nouvelle phrase du bandeau présente. La relance du lundi 23/11 ne les vise plus.
 - Non vérifié : la tâche de relance elle-même (la lancer enverrait). À relire après son passage du 23/11 : `comptesVerifiesIgnores` dans sa réponse.
+
+---
+
+## [2026-11-13] — Studio Instagram en production, tonalités « Orange plein » et « Vert plein »
+
+Ordre de David (« possible d'ajouter les tonalités "orange plein" et "vert plein"… et passe le tout en prod en main »). Il essaiera lui-même en production.
+
+### Tonalités (`d6c73ae`)
+- [gabarit.ts](src/lib/reseaux/gabarit.ts) : **Orange plein** et **Vert plein** sur le modèle de « Violet plein » (brique de la couleur, voile de la même couleur, ombre noire) ; **texte noir sur l'orange** (l'orange clair de la charte rend le blanc illisible), blanc sur le vert. Essai préalable avec le vrai gabarit sur deux photos (voile de la couleur contre voile noir) : les deux se lisent, le voile noir fait ressortir l'orange davantage ; choix du modèle « Violet plein » demandé, l'autre reste possible.
+- Huit vignettes en **4 colonnes** : briques claires (Tricolore, Orange, Vert, Lavande), puis briques pleines (Orange plein, Vert plein, Violet plein) et Noir et blanc. Identifiants existants inchangés (ils sont enregistrés avec les visuels).
+- Tutoriel republié à la même adresse (huit tonalités, nouvelle capture).
+
+### Firefox (question de David : faut-il l'installer ?)
+- Non. Seul point propre à Firefox : il refuse de dessiner les logos SVG sans largeur ni hauteur, et le studio les recharge alors avec leurs dimensions. **Chemin simulé dans Chrome** (dessin des SVG d'origine refusé) : 4 refus, logos rechargés, JPEG à **3 pixels près sur 1,46 million** du téléchargement normal.
+
+### Mise en production — `dev` fusionné dans `main` (`2c9abe0`)
+- Fusion dans un worktree séparé. 4 conflits (`SocialPanel.tsx`, `admin.ts`, `posts-reseaux.ts`, `database.ts`), fichiers reçus par `main` en reports : aucune ligne propre à `main` hors anciennes versions (dans `database.ts`, d'anciennes colonnes de l'annuaire absentes de la base, types régénérés le 12/11) → version de `dev` partout ; **arbre fusionné identique à `dev`**, couvert par le build vérifié. Emporte aussi l'annuaire « nouveaux patients » (éteint) et l'espace Mon compte commun (extraction fidèle : même rendu tant que l'annuaire est éteint).
+- Vercel « Production » `success`. **Vérifié en production** (lecture seule) : accueil `200` ; `/api/annuaire/app/fiches` → `404 annuaire_ferme` (donc `ANNUAIRE_FORCER_ACTIF` n'est pas posé en production) ; `/annuaire` sans connexion → `307` vers la connexion ; `/admin/blog/studio` sans jeton → formulaire de connexion seul ; connecté : bouton « Studio Instagram », studio libre avec 8 tonalités, logos « petite taille » servis, studio d'un article ouvert (photo chargée, accroche demandée à Claude) ; aucune erreur.
 
 ---
 

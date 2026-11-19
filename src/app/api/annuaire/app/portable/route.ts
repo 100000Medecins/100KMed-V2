@@ -1,6 +1,7 @@
 /**
  * Annuaire — afficher le portable d'un confrère depuis l'application (tranche 3).
  * Même fonction de la base que le site : un seul plafond (10 confrères / 24 h) et un seul journal.
+ * Lecteur : tout professionnel de santé connecté (17/11) ; le site garde son contrôle « médecins ».
  * POST `{ "rpps": "…" }`, `Authorization: Bearer <jeton du site>`.
  * Contrat : docs/2026-10-10-annuaire-tranche-3.md
  */
@@ -27,7 +28,9 @@ export async function POST(request: Request) {
     if (error.hint === 'plafond') {
       return refus(429, 'plafond', 'Limite atteinte : 10 numéros de portable par 24 heures.')
     }
-    if (error.code === '42501') return refus(403, 'lecteur_non_admis', "L'annuaire est réservé aux médecins.")
+    if (error.code === '42501') {
+      return refus(403, 'lecteur_non_admis', "L'annuaire est réservé aux professionnels de santé connectés par Pro Santé Connect.")
+    }
     console.error('[annuaire app] portable :', error.message)
     return refus(500, 'erreur_serveur', 'Le numéro n’a pas pu être affiché. Réessayer.')
   }

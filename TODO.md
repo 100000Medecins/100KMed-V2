@@ -58,6 +58,13 @@ _(rien en cours)_
 - [ ] **Jour J, CGU et charte** (textes préparés dans le dépôt messagerie) : remplacer « vos disponibilités » (champ qui n'existe pas) par la réponse sur les nouveaux patients dans CGU art. 4 bis « Votre fiche », charte « Données traitées » et « Ce qui est visible » ; l'ajouter aux déclarations non vérifiées (CGU art. 5).
 - [x] ~~**Messagerie** : poser la question dans « Ma fiche » si `nouveaux_patients_possible`, l'afficher sur la fiche d'un confrère, filtre — selon le contrat~~ ✅ 16/10 : fait et essayé par David contre dev (rapporté par la session messagerie) ; en base, la vraie fiche enregistrée par l'application à 15 h 18, réponse finale « non renseigné ».
 
+**Application ouverte à toutes les professions de santé (17/11)** : décisions de David (fiches vues de tous les professionnels connectés, « Ma fiche » depuis l'application, site toujours réservé aux médecins, fiches déjà publiées gardées, catalogue par profession). Migration, code `6c0211b` sur `dev`, catalogue versé (330 compétences). Voir CHANGELOG du 17/11 et l'« Ajout du 17/11 » de `docs/2026-10-10-annuaire-tranche-3.md`.
+- [ ] **Messagerie** : essai de l'application contre `dev` (infirmière, kiné… : session, « Ma fiche » limitée à sa profession, fiches avec `code_profession`) ; signaler toute différence avec le faux site (`lot8/faux_site.py`).
+- [ ] **David** : relire le catalogue versé dans `/admin/intitules?onglet=catalogue` (filtre par profession). Points à regarder : les 37 compétences partagées gardent leur rubrique de médecin (ex. « Suivi de grossesse » dans « Médecine générale » pour les sages-femmes) ; 24 synonymes en double entre compétences des médecins, antérieurs au 17/11 (liste dans la sortie du script).
+- [ ] À emporter dans `main` au prochain report de l'annuaire, **sur le « go » de David** (base déjà migrée ; annuaire éteint en production).
+- [ ] **Jour J, CGU et charte** (avec David) : toutes professions dans l'application ; le site enregistre, pour un professionnel non membre qui se connecte depuis l'application, son RPPS, son nom, son prénom, sa profession et sa spécialité PSC (`identites_psc`). Aucun texte de l'annuaire n'est encore publié sur le site.
+- Note : une identité sans profession chez PSC compte comme médecin (catalogue des médecins dans « Ma fiche ») ; l'item « refuser quand PSC ne rend pas la profession » ci-dessus ne porte plus que sur ce cas.
+
 **Suite (à décider avec David)** :
 - **Avant l'ouverture** : sauvegardes limitées à 12 mois ; CGU et charte (item ci-dessous, avec « médecins seulement » et « compétences ») ; la preuve PSC n'est écrite qu'annuaire allumé → chaque médecin devra se reconnecter une fois par PSC (ou backfill à étudier) ; fiche masquée à 24 mois sans connexion, effacée à 36 (`identites_psc.derniere_connexion_psc` est là pour ça).
 
@@ -129,7 +136,7 @@ _(rien en cours)_
 
 **À savoir pour l'export des vidéos** : MP4 ou MOV, H.264 ou HEVC, option « démarrage rapide » (fast start) cochée, sinon Meta refuse le Reel ; Reel de 3 s à 15 min, 300 Mo au plus (référence de Meta) ; au-delà de ~90 s un Reel peut ne pas apparaître dans l'onglet Reels (non confirmé par Meta).
 
-### Studio des visuels Instagram — chantier fini sur `dev`, reste la mise en production (posé le 2026-11-12)
+### Studio des visuels Instagram — en production depuis le 13/11 (`2c9abe0`) (posé le 2026-11-12)
 
 **Contexte** : préparé dans le dépôt messagerie (`docs/studio-instagram/` : spécification, prompt, code de la maquette validée https://claude.ai/artifact/8onB9d4Q2ZhHR2Tv9hhDUq). Depuis la page d'un article de l'admin, recadrer la couverture en post 4:5 et story 9:16 avec l'habillage de la charte, choisir la tonalité, enregistrer ; le post Instagram de l'article part avec le visuel 4:5 (Make inchangé) ; la story se télécharge seulement.
 
@@ -142,9 +149,9 @@ _(rien en cours)_
 - [x] ~~Étape 5 : accroche proposée par Claude~~ ✅ 12/11 (`982d390`) : 3 accroches (Opus 5.5) quand le titre ne tient pas, 7 à 11 s, la meilleure remplace le titre.
 - [x] ~~Studio hors d'un article~~ ✅ 13/11 (`6360872`) : Admin → Blog → « Studio Instagram », photo importée + texte libre, téléchargement, rien d'enregistré.
 - [x] ~~Étape 6 : tutoriel de la community manager~~ ✅ 13/11 : https://claude.ai/artifact/4AFMFGPNq9189TUcGstamg (privé).
-- [ ] **David** : mise en production (fusion `dev` → `main`, sur son ordre, depuis un dossier séparé) ; elle emporte aussi l'annuaire, qui reste éteint (`annuaire_actif` absent) — vérifier ensuite que `/annuaire` répond 404 en production.
-- [ ] **David**, après la mise en production : partager le tutoriel avec la community manager (menu Partager de la page).
-- [ ] Non essayé : Firefox (logos rechargés avec une taille, Firefox n'étant pas installé sur le poste).
+- [x] ~~Mise en production~~ ✅ 13/11 (`2c9abe0`, `dev` fusionné dans `main`) : vérifiée en production, annuaire toujours éteint (`404 annuaire_ferme`). Tonalités « Orange plein » et « Vert plein » ajoutées avant (`d6c73ae`).
+- [ ] **David** : essai en production (studio d'un article, studio libre, sur ordinateur et sur téléphone) ; puis partager le tutoriel avec la community manager (menu Partager de la page).
+- [x] ~~Non essayé : Firefox~~ ✅ 13/11 : chemin des logos propre à Firefox simulé dans Chrome, JPEG identique à 3 pixels près ; pas besoin d'installer Firefox.
 
 ---
 

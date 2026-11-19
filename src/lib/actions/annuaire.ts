@@ -12,7 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase/server'
 import { getAnnuaireActif } from '@/lib/db/settings'
-import { nouveauxPatientsPossible, type MoyenContact } from '@/lib/constants/annuaire'
+import { PROFESSION_MEDECIN, nouveauxPatientsPossible, type MoyenContact } from '@/lib/constants/annuaire'
 import { codesSmDeSpecialite, afficherPortable } from '@/lib/annuaire/normaliser'
 import type { Commune } from '@/lib/annuaire/geocodage'
 import {
@@ -79,16 +79,18 @@ export async function getMaFicheAnnuaire(): Promise<MaFicheAnnuaire | null> {
   if (!compte) return null
   const { supabase, userId, rpps, specialiteCode } = compte
 
+  // Le site est réservé aux médecins : catalogue des médecins seulement (17/11)
   const [profil, fiche, catalogue, propositionsAns] = await Promise.all([
     supabase.from('users').select('specialite').eq('id', userId).maybeSingle(),
     rpps ? lireFiche(rpps) : null,
     rpps
-      ? catalogueDe(rpps)
+      ? catalogueDe(rpps, PROFESSION_MEDECIN)
       : supabase
           .from('intitules')
-          .select('id, libelle, synonymes, groupe, specialites_sm, statut')
+          .select('id, libelle, synonymes, groupe, specialites_sm, statut, professions')
           .eq('type', 'competence')
           .eq('statut', 'valide')
+          .contains('professions', [PROFESSION_MEDECIN])
           .order('libelle')
           .then((r) => r.data ?? []),
     rpps ? propositionsAnsPour(rpps) : null,

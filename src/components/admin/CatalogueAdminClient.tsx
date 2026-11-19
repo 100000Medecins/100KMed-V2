@@ -11,6 +11,7 @@ import Field from '@/components/ui/Field'
 import Badge from '@/components/ui/Badge'
 import { ajouterIntitule, modifierIntitule, supprimerIntitule } from '@/lib/actions/admin-intitules'
 import { normaliserRecherche } from '@/lib/annuaire/normaliser'
+import { PROFESSIONS_SANTE, PROFESSION_MEDECIN, libelleProfession } from '@/lib/constants/annuaire'
 
 export interface CompetenceCatalogue {
   id: string
@@ -18,13 +19,48 @@ export interface CompetenceCatalogue {
   synonymes: string[]
   groupe: string | null
   specialites_sm: string[]
+  /** Professions (codes RPPS) à qui la compétence est proposée dans « Ma fiche » */
+  professions: string[]
   nbFiches: number
 }
 
 const SANS_RUBRIQUE = '__sans__'
 const LISTE_RUBRIQUES = 'annuaire-rubriques'
+const CODES_PROFESSIONS = Object.keys(PROFESSIONS_SANTE)
 
 const enListe = (texte: string) => texte.split(',').map((s) => s.trim()).filter(Boolean)
+const nomsProfessions = (codes: string[]) => codes.map((c) => libelleProfession(c)).join(', ')
+
+/** Cases des professions à qui la compétence est proposée. */
+function ChoixProfessions({
+  id,
+  valeur,
+  onChange,
+}: {
+  id: string
+  valeur: string[]
+  onChange: (codes: string[]) => void
+}) {
+  return (
+    <fieldset className="md:col-span-2">
+      <legend className="text-sm font-medium text-navy mb-1.5">Proposée aux professions</legend>
+      <div className="grid gap-x-4 gap-y-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+        {CODES_PROFESSIONS.map((code) => (
+          <label key={code} htmlFor={`${id}-${code}`} className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              id={`${id}-${code}`}
+              type="checkbox"
+              className="rounded border-gray-300 text-accent-blue focus:ring-accent-blue"
+              checked={valeur.includes(code)}
+              onChange={(e) => onChange(e.target.checked ? [...valeur, code] : valeur.filter((c) => c !== code))}
+            />
+            {PROFESSIONS_SANTE[code]}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
 
 function LigneCompetence({ competence }: { competence: CompetenceCatalogue }) {
   const router = useRouter()
@@ -33,6 +69,7 @@ function LigneCompetence({ competence }: { competence: CompetenceCatalogue }) {
   const [groupe, setGroupe] = useState(competence.groupe ?? '')
   const [synonymes, setSynonymes] = useState(competence.synonymes.join(', '))
   const [codesSm, setCodesSm] = useState(competence.specialites_sm.join(', '))
+  const [professions, setProfessions] = useState(competence.professions)
   const [erreur, setErreur] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -41,6 +78,7 @@ function LigneCompetence({ competence }: { competence: CompetenceCatalogue }) {
     setGroupe(competence.groupe ?? '')
     setSynonymes(competence.synonymes.join(', '))
     setCodesSm(competence.specialites_sm.join(', '))
+    setProfessions(competence.professions)
     setErreur(null)
     setEdition(true)
   }
@@ -69,6 +107,11 @@ function LigneCompetence({ competence }: { competence: CompetenceCatalogue }) {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge variant="neutral" size="sm" title={nomsProfessions(competence.professions)}>
+            {competence.professions.length <= 2
+              ? nomsProfessions(competence.professions)
+              : `${competence.professions.length} professions`}
+          </Badge>
           {competence.specialites_sm.length > 0 && (
             <Badge variant="neutral" size="sm" title="Masquée pour les médecins de ces spécialités RPPS">
               masquée : {competence.specialites_sm.join(', ')}
@@ -104,7 +147,13 @@ function LigneCompetence({ competence }: { competence: CompetenceCatalogue }) {
         >
           <Input id={`sm-${competence.id}`} size="sm" value={codesSm} placeholder="SM57, SM62" onChange={(e) => setCodesSm(e.target.value)} />
         </Field>
+        <ChoixProfessions id={`pro-${competence.id}`} valeur={professions} onChange={setProfessions} />
       </div>
+      {competence.nbFiches > 0 && competence.professions.some((c) => !professions.includes(c)) && (
+        <p className="mt-2 text-xs text-gray-500">
+          Les fiches qui l&apos;ont déjà cochée la gardent ; elle ne sera simplement plus proposée à la profession retirée.
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button
           type="button"
@@ -118,6 +167,7 @@ function LigneCompetence({ competence }: { competence: CompetenceCatalogue }) {
                 synonymes: enListe(synonymes),
                 groupe: groupe || null,
                 specialitesSm: enListe(codesSm),
+                professions,
               }),
             )
           }
@@ -154,6 +204,7 @@ function AjoutCompetence() {
   const [libelle, setLibelle] = useState('')
   const [groupe, setGroupe] = useState('')
   const [synonymes, setSynonymes] = useState('')
+  const [professions, setProfessions] = useState<string[]>([PROFESSION_MEDECIN])
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -161,7 +212,7 @@ function AjoutCompetence() {
     setMessage(null)
     const nom = libelle.trim()
     startTransition(async () => {
-      const res = await ajouterIntitule({ libelle: nom, synonymes: enListe(synonymes), groupe: groupe || null })
+      const res = await ajouterIntitule({ libelle: nom, synonymes: enListe(synonymes), groupe: groupe || null, professions })
       if ('error' in res) {
         setMessage({ ok: false, texte: res.error })
         return
@@ -186,6 +237,9 @@ function AjoutCompetence() {
         <Field label="Synonymes" hint="Séparés par des virgules." htmlFor="ajout-synonymes">
           <Input id="ajout-synonymes" size="sm" value={synonymes} onChange={(e) => setSynonymes(e.target.value)} />
         </Field>
+        <div className="md:col-span-3">
+          <ChoixProfessions id="ajout-professions" valeur={professions} onChange={setProfessions} />
+        </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button
@@ -193,7 +247,7 @@ function AjoutCompetence() {
           variant="primary"
           size="sm"
           loading={pending}
-          disabled={libelle.trim().length < 2}
+          disabled={libelle.trim().length < 2 || professions.length === 0}
           leftIcon={<Plus className="w-4 h-4" />}
           onClick={ajouter}
         >
@@ -208,6 +262,7 @@ function AjoutCompetence() {
 export default function CatalogueAdminClient({ competences }: { competences: CompetenceCatalogue[] }) {
   const [recherche, setRecherche] = useState('')
   const [rubrique, setRubrique] = useState('')
+  const [profession, setProfession] = useState('')
 
   const rubriques = useMemo(
     () => Array.from(new Set(competences.map((c) => c.groupe).filter((g): g is string => !!g))).sort((a, b) => a.localeCompare(b, 'fr')),
@@ -220,12 +275,13 @@ export default function CatalogueAdminClient({ competences }: { competences: Com
       .filter((c) => {
         if (rubrique === SANS_RUBRIQUE && c.groupe) return false
         if (rubrique && rubrique !== SANS_RUBRIQUE && c.groupe !== rubrique) return false
+        if (profession && !c.professions.includes(profession)) return false
         if (mots.length === 0) return true
         const texte = normaliserRecherche([c.libelle, ...c.synonymes].join(' '))
         return mots.every((m) => texte.includes(m))
       })
       .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'))
-  }, [competences, recherche, rubrique])
+  }, [competences, recherche, rubrique, profession])
 
   return (
     <div className="space-y-6">
@@ -258,6 +314,20 @@ export default function CatalogueAdminClient({ competences }: { competences: Com
           ))}
           <option value={SANS_RUBRIQUE}>Sans rubrique</option>
         </Select>
+        <Select
+          size="sm"
+          fullWidth={false}
+          value={profession}
+          onChange={(e) => setProfession(e.target.value)}
+          aria-label="Filtrer par profession"
+        >
+          <option value="">Toutes les professions</option>
+          {CODES_PROFESSIONS.map((code) => (
+            <option key={code} value={code}>
+              {PROFESSIONS_SANTE[code]}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <Card padding="none">
@@ -266,7 +336,10 @@ export default function CatalogueAdminClient({ competences }: { competences: Com
         </p>
         <div className="divide-y divide-gray-100">
           {visibles.map((c) => (
-            <LigneCompetence key={`${c.id}-${c.libelle}-${c.groupe}-${c.synonymes.join()}-${c.specialites_sm.join()}`} competence={c} />
+            <LigneCompetence
+              key={`${c.id}-${c.libelle}-${c.groupe}-${c.synonymes.join()}-${c.specialites_sm.join()}-${c.professions.join()}`}
+              competence={c}
+            />
           ))}
           {visibles.length === 0 && <p className="px-5 py-6 text-sm text-gray-400 text-center">Aucune compétence ne correspond.</p>}
         </div>

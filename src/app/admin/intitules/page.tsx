@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { SM_SPECIALITES } from '@/lib/constants/profil'
+import { estMedecin, libelleProfession } from '@/lib/constants/annuaire'
+import { normaliserRecherche } from '@/lib/annuaire/normaliser'
 import IntitulesAdminClient from '@/components/admin/IntitulesAdminClient'
 import type { PropositionIntitule, IntituleValide } from '@/components/admin/IntitulesAdminClient'
 import CatalogueAdminClient from '@/components/admin/CatalogueAdminClient'
@@ -15,13 +17,13 @@ async function getData() {
   const [{ data: propositions }, { data: valides }, { data: oppositionsBrut }, { data: version }] = await Promise.all([
     admin
       .from('intitules')
-      .select('id, libelle, synonymes, groupe, propose_par_rpps, created_at, fiches_intitules(count)')
+      .select('id, libelle, synonymes, groupe, professions, propose_par_rpps, created_at, fiches_intitules(count)')
       .eq('type', 'competence')
       .eq('statut', 'propose')
       .order('created_at', { ascending: true }),
     admin
       .from('intitules')
-      .select('id, libelle, synonymes, groupe, specialites_sm, fiches_intitules(count)')
+      .select('id, libelle, synonymes, groupe, specialites_sm, professions, fiches_intitules(count)')
       .eq('type', 'competence')
       .eq('statut', 'valide')
       .order('libelle'),
@@ -47,37 +49,57 @@ async function getData() {
     nomAns: nomsAns.get(o.rpps) ?? null,
   }))
 
-  // Auteur d'une proposition : son identité PSC (nom, spécialité), à défaut son compte du site
+  // Auteur d'une proposition : son identité PSC (nom, spécialité d'un médecin ou profession d'un
+  // autre professionnel de santé), à défaut son compte du site
   const liste = propositions ?? []
   const auteurs = new Map<string, string>()
   const auteurRpps = Array.from(new Set(liste.map((p) => p.propose_par_rpps).filter((x): x is string => !!x)))
   if (auteurRpps.length > 0) {
     const { data: identites } = await admin
       .from('identites_psc')
-      .select('rpps, nom, prenom, specialite_code, compte:users(nom, prenom, specialite)')
+      .select('rpps, nom, prenom, specialite_code, code_profession, compte:users(nom, prenom, specialite)')
       .in('rpps', auteurRpps)
     for (const i of identites ?? []) {
-      const nom = [i.prenom ?? i.compte?.prenom, i.nom ?? i.compte?.nom].filter(Boolean).join(' ') || 'Médecin sans nom'
-      const specialite = (i.specialite_code && SM_SPECIALITES[i.specialite_code]) || i.compte?.specialite
-      auteurs.set(i.rpps, specialite ? `${nom} (${specialite})` : nom)
+      const nom = [i.prenom ?? i.compte?.prenom, i.nom ?? i.compte?.nom].filter(Boolean).join(' ') || 'Auteur sans nom'
+      const qualite = estMedecin(i.code_profession)
+        ? (i.specialite_code && SM_SPECIALITES[i.specialite_code]) || i.compte?.specialite || 'Médecin'
+        : libelleProfession(i.code_profession)
+      auteurs.set(i.rpps, `${nom} (${qualite})`)
     }
   }
 
-  const resultat: PropositionIntitule[] = liste.map((p) => ({
-    id: p.id,
-    libelle: p.libelle,
-    synonymes: p.synonymes,
-    groupe: p.groupe,
-    auteur: p.propose_par_rpps ? auteurs.get(p.propose_par_rpps) ?? null : null,
-    creeLe: p.created_at,
-    nbFiches: p.fiches_intitules[0]?.count ?? 0,
-  }))
-  const catalogue: CompetenceCatalogue[] = (valides ?? []).map((v) => ({
+  // Compétence validée de même libellé ou synonyme (souvent : proposée par une autre profession) :
+  // « Fusionner » avec elle l'ouvre à la profession de l'auteur.
+  const valideesListe = valides ?? []
+  const homonymeDe = (libelle: string) => {
+    const cle = normaliserRecherche(libelle)
+    return (
+      valideesListe.find((v) => normaliserRecherche(v.libelle) === cle) ??
+      valideesListe.find((v) => v.synonymes.some((s) => normaliserRecherche(s) === cle))
+    )
+  }
+
+  const resultat: PropositionIntitule[] = liste.map((p) => {
+    const homonyme = homonymeDe(p.libelle)
+    return {
+      id: p.id,
+      libelle: p.libelle,
+      synonymes: p.synonymes,
+      groupe: p.groupe,
+      professions: p.professions,
+      auteur: p.propose_par_rpps ? auteurs.get(p.propose_par_rpps) ?? null : null,
+      creeLe: p.created_at,
+      nbFiches: p.fiches_intitules[0]?.count ?? 0,
+      homonyme: homonyme ? { id: homonyme.id, libelle: homonyme.libelle, professions: homonyme.professions } : null,
+    }
+  })
+  const catalogue: CompetenceCatalogue[] = valideesListe.map((v) => ({
     id: v.id,
     libelle: v.libelle,
     synonymes: v.synonymes,
     groupe: v.groupe,
     specialites_sm: v.specialites_sm,
+    professions: v.professions,
     nbFiches: v.fiches_intitules[0]?.count ?? 0,
   }))
   const intitulesValides: IntituleValide[] = catalogue.map(({ id, libelle, groupe }) => ({ id, libelle, groupe }))
@@ -106,9 +128,9 @@ export default async function AdminIntitulesPage({ searchParams }: { searchParam
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-navy">Annuaire</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Catalogue commun des compétences que les médecins cochent sur leur fiche, propositions à valider, et
-          médecins qui ont refusé de figurer dans l&apos;annuaire. Chaque décision sur une proposition efface le lien
-          avec son auteur.
+          Catalogue commun des compétences que les professionnels de santé cochent sur leur fiche (chacune proposée
+          aux professions choisies), propositions à valider, et médecins qui ont refusé de figurer dans
+          l&apos;annuaire. Chaque décision sur une proposition efface le lien avec son auteur.
         </p>
       </div>
 

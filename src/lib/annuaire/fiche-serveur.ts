@@ -1,9 +1,10 @@
 import 'server-only'
 
 /**
- * Annuaire — la fiche d'un médecin, par RPPS, côté serveur (service role, après contrôle de
- * l'identité par l'appelant). Un seul code pour « Ma fiche » du site (identité : la session et
- * sa preuve PSC) et pour l'application (identité : son jeton PSC vérifié).
+ * Annuaire — la fiche d'un professionnel de santé, par RPPS, côté serveur (service role, après
+ * contrôle de l'identité par l'appelant). Un seul code pour « Ma fiche » du site (médecins ;
+ * identité : la session et sa preuve PSC) et pour l'application (toutes professions depuis le
+ * 17/11 ; identité : son jeton PSC vérifié).
  * Référence : docs/2026-10-10-annuaire-tranche-3.md
  */
 
@@ -15,6 +16,7 @@ import {
   MAX_PROPOSITIONS_EN_ATTENTE,
   MOYENS_CONTACT,
   nouveauxPatientsPossible,
+  professionDe,
   type MoyenContact,
 } from '@/lib/constants/annuaire'
 import {
@@ -28,9 +30,25 @@ import type { Commune } from '@/lib/annuaire/geocodage'
 import type { Database } from '@/types/database'
 
 type IntituleRow = Database['public']['Tables']['intitules']['Row']
-export type IntituleCatalogue = Pick<IntituleRow, 'id' | 'libelle' | 'synonymes' | 'groupe' | 'specialites_sm' | 'statut'>
+export type IntituleCatalogue = Pick<
+  IntituleRow,
+  'id' | 'libelle' | 'synonymes' | 'groupe' | 'specialites_sm' | 'statut' | 'professions'
+>
 
-const COLONNES_CATALOGUE = 'id, libelle, synonymes, groupe, specialites_sm, statut'
+const COLONNES_CATALOGUE = 'id, libelle, synonymes, groupe, specialites_sm, statut, professions'
+
+type Admin = ReturnType<typeof createServiceRoleClient>
+
+/** Profession (vide = médecin) et spécialité PSC du RPPS, relues dans sa preuve de connexion. */
+async function identiteDe(admin: Admin, rpps: string) {
+  const { data } = await admin.from('identites_psc').select('code_profession, specialite_code').eq('rpps', rpps).maybeSingle()
+  return { codeProfession: professionDe(data?.code_profession), specialiteCode: data?.specialite_code ?? null }
+}
+
+/** Ce qu'un professionnel peut cocher : intitulé validé de sa profession, ou sa propre proposition. */
+function cochable(i: Pick<IntituleRow, 'statut' | 'professions'>, codeProfession: string): boolean {
+  return i.statut !== 'valide' || i.professions.includes(codeProfession)
+}
 
 export interface FicheAnnuaire {
   moyenContact: MoyenContact | null
@@ -143,15 +161,18 @@ export async function lireFiche(rpps: string): Promise<FicheAnnuaire | null> {
   }
 }
 
-/** Catalogue visible du médecin : compétences validées et ses propres propositions en attente. */
-export async function catalogueDe(rpps: string): Promise<IntituleCatalogue[]> {
+/**
+ * Catalogue de « Ma fiche » : compétences validées de la profession du professionnel (17/11 : un
+ * médecin ne se voit pas proposer celles des infirmiers) et ses propres propositions en attente.
+ */
+export async function catalogueDe(rpps: string, codeProfession: string): Promise<IntituleCatalogue[]> {
   const { data } = await createServiceRoleClient()
     .from('intitules')
     .select(COLONNES_CATALOGUE)
     .eq('type', 'competence')
     .or(`statut.eq.valide,propose_par_rpps.eq.${rpps}`)
     .order('libelle')
-  return data ?? []
+  return (data ?? []).filter((i) => cochable(i, codeProfession))
 }
 
 /**
@@ -195,25 +216,33 @@ export async function enregistrerFiche(
   if (competences.length > MAX_COMPETENCES) return { error: `Une fiche compte au plus ${MAX_COMPETENCES} compétences.` }
 
   const admin = createServiceRoleClient()
-  // Compétences cochables : validées, ou proposées par ce médecin
-  if (competences.length > 0) {
+  const [identite, { data: liens, error: errLiens }] = await Promise.all([
+    identiteDe(admin, rpps),
+    admin.from('fiches_intitules').select('intitule_id').eq('rpps', rpps),
+  ])
+  if (errLiens) return { error: `Compétences non enregistrées : ${errLiens.message}` }
+  const actuelles = new Set((liens ?? []).map((l) => l.intitule_id))
+
+  // Compétences ajoutées : validées pour sa profession, ou proposées par lui. Celles déjà cochées
+  // restent acceptées (ex. profession retirée d'un intitulé par l'association depuis).
+  const nouvelles = competences.filter((id) => !actuelles.has(id))
+  if (nouvelles.length > 0) {
     const { data: permises } = await admin
       .from('intitules')
-      .select('id')
-      .in('id', competences)
+      .select('id, statut, professions')
+      .in('id', nouvelles)
       .or(`statut.eq.valide,propose_par_rpps.eq.${rpps}`)
-    if ((permises ?? []).length !== competences.length) return { error: 'Compétence inconnue : rechargez la page.' }
+    if ((permises ?? []).filter((i) => cochable(i, identite.codeProfession)).length !== nouvelles.length) {
+      return { error: 'Compétence inconnue : rechargez la page.' }
+    }
   }
 
   // Nouveaux patients : seulement pour un généraliste (spécialité PSC), sinon la réponse est ignorée
   let nouveauxPatients: { nouveaux_patients: boolean | null; nouveaux_patients_le: string | null } | null = null
-  if (saisie.nouveauxPatients !== undefined) {
-    const { data: identite } = await admin.from('identites_psc').select('specialite_code').eq('rpps', rpps).maybeSingle()
-    if (nouveauxPatientsPossible(identite?.specialite_code)) {
-      nouveauxPatients = {
-        nouveaux_patients: saisie.nouveauxPatients,
-        nouveaux_patients_le: saisie.nouveauxPatients === null ? null : new Date().toISOString(),
-      }
+  if (saisie.nouveauxPatients !== undefined && nouveauxPatientsPossible(identite.specialiteCode)) {
+    nouveauxPatients = {
+      nouveaux_patients: saisie.nouveauxPatients,
+      nouveaux_patients_le: saisie.nouveauxPatients === null ? null : new Date().toISOString(),
     }
   }
 
@@ -256,11 +285,8 @@ export async function enregistrerFiche(
     if (error) return { error: `Portable non effacé : ${error.message}` }
   }
 
-  const { data: liens, error: errLiens } = await admin.from('fiches_intitules').select('intitule_id').eq('rpps', rpps)
-  if (errLiens) return { error: `Compétences non enregistrées : ${errLiens.message}` }
-  const actuelles = new Set((liens ?? []).map((l) => l.intitule_id))
   const aRetirer = Array.from(actuelles).filter((id) => !competences.includes(id))
-  const aAjouter = competences.filter((id) => !actuelles.has(id))
+  const aAjouter = nouvelles
 
   if (aRetirer.length > 0) {
     const { error } = await admin.from('fiches_intitules').delete().eq('rpps', rpps).in('intitule_id', aRetirer)
@@ -285,9 +311,11 @@ export async function enregistrerFiche(
 }
 
 /**
- * Propose un intitulé manquant. Renvoie l'intitulé existant s'il y en a déjà un (même libellé
- * ou synonyme, accents et casse ignorés) ; sinon crée la proposition (statut `propose`) et la
- * coche sur la fiche du médecin (créée vide au besoin, non publiée).
+ * Propose un intitulé manquant. Renvoie l'intitulé existant s'il y en a déjà un dans le catalogue
+ * du professionnel (même libellé ou synonyme, accents et casse ignorés) ; sinon crée la proposition
+ * (statut `propose`, pour sa profession) et la coche sur sa fiche (créée vide au besoin, non publiée).
+ * Un intitulé de même nom qui n'existe que pour d'autres professions donne aussi une proposition :
+ * l'association la valide en ouvrant l'intitulé existant à cette profession (« Fusionner »).
  */
 export async function proposerCompetence(
   rpps: string,
@@ -297,20 +325,22 @@ export async function proposerCompetence(
   if (libelle.length < 2 || libelle.length > 120) return { error: 'Un intitulé compte de 2 à 120 caractères.' }
 
   const admin = createServiceRoleClient()
-  const { data: tous, error: errTous } = await admin
-    .from('intitules')
-    .select(`${COLONNES_CATALOGUE}, propose_par_rpps`)
-    .eq('type', 'competence')
+  const [{ codeProfession }, { data: tous, error: errTous }] = await Promise.all([
+    identiteDe(admin, rpps),
+    admin.from('intitules').select(`${COLONNES_CATALOGUE}, propose_par_rpps`).eq('type', 'competence'),
+  ])
   if (errTous) return { error: errTous.message }
 
   const cible = normaliserRecherche(libelle)
   const correspond = (i: Pick<IntituleRow, 'libelle' | 'synonymes'>) =>
     normaliserRecherche(i.libelle) === cible || i.synonymes.some((s) => normaliserRecherche(s) === cible)
 
-  const existant = tous.find((i) => (i.statut === 'valide' || i.propose_par_rpps === rpps) && correspond(i))
+  const existant = tous.find(
+    (i) => ((i.statut === 'valide' && i.professions.includes(codeProfession)) || i.propose_par_rpps === rpps) && correspond(i),
+  )
   if (existant) {
-    const { id, libelle: lib, synonymes, groupe, specialites_sm, statut } = existant
-    return { existant: { id, libelle: lib, synonymes, groupe, specialites_sm, statut } }
+    const { id, libelle: lib, synonymes, groupe, specialites_sm, statut, professions } = existant
+    return { existant: { id, libelle: lib, synonymes, groupe, specialites_sm, statut, professions } }
   }
   if (tous.some((i) => i.statut === 'propose' && correspond(i))) {
     return { error: 'Cet intitulé a déjà été proposé par un confrère et attend sa validation.' }
@@ -327,7 +357,7 @@ export async function proposerCompetence(
 
   const { data: cree, error: errCree } = await admin
     .from('intitules')
-    .insert({ type: 'competence', libelle, statut: 'propose', propose_par_rpps: rpps })
+    .insert({ type: 'competence', libelle, statut: 'propose', propose_par_rpps: rpps, professions: [codeProfession] })
     .select(COLONNES_CATALOGUE)
     .single()
   if (errCree) return { error: errCree.message }
