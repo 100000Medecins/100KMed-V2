@@ -14,6 +14,10 @@
 - Base : rien à faire, déjà migrée et catalogue déjà versé le 17/11 (base commune à `dev` et à la production).
 - Vercel « Production » `success`. **Vérifié en production** (lecture seule) : accueil `200` ; `/api/annuaire/app/fiches` et `/session` → `404 annuaire_ferme` (annuaire toujours éteint) ; `/annuaire` sans connexion → `307` vers la connexion ; `/admin/intitules` sans jeton → formulaire de connexion seul, aucune compétence dans la page.
 
+### CGU et charte de l'annuaire — version revue (proposition, rien de publié)
+- [docs/annuaire-textes/](docs/annuaire-textes/) (`cgu.html`, `charte.html`) : brouillons du 05/10 (dépôt messagerie) mis à jour d'après le code : médecins seuls sur le Site, toutes professions dans l'application, « compétences » par profession, « nouveaux patients » au lieu des « disponibilités », identité PSC enregistrée (y compris sans compte), données ANS limitées aux médecins, géocodage IGN et « Autour de moi », carte sans masquage, droits exercés aussi depuis l'application, date sur les CGU. `/cgu` et `/rgpd` inchangées en base depuis le 05/10.
+- Note : [docs/2026-11-19-annuaire-cgu-charte.md](docs/2026-11-19-annuaire-cgu-charte.md) (changements, promesses vérifiées, 4 points à trancher, conditions techniques non remplies : masquage 24 / effacement 36 mois, sauvegardes 12 mois).
+
 ---
 
 ## [2026-11-17] — Annuaire : l'application ouverte à toutes les professions de santé, catalogue par profession (en production le 19/11)
