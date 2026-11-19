@@ -5,7 +5,18 @@
 
 ---
 
-## [2026-11-17] — Annuaire : l'application ouverte à toutes les professions de santé, catalogue par profession (sur dev)
+## [2026-11-19] — Annuaire toutes professions en production
+
+« Go » de David (19/11). Les CGU et la charte de l'annuaire seront revues avec lui, puis relues par la juriste (pas de réponse d'elle à ce jour).
+
+### Mise en production — `dev` fusionné dans `main` (`a85e7a0`)
+- Fusion calculée sans copie de travail (`git merge-tree`, puis `commit-tree`) : le dossier partagé reste sur `dev`. **Sans conflit, arbre fusionné identique à `dev`** (`8e44eac`, build vérifié le 17/11, Vercel `dev` `success`). Emporte `6c0211b` (toutes professions) et la doc du studio Instagram (`8e28041`).
+- Base : rien à faire, déjà migrée et catalogue déjà versé le 17/11 (base commune à `dev` et à la production).
+- Vercel « Production » `success`. **Vérifié en production** (lecture seule) : accueil `200` ; `/api/annuaire/app/fiches` et `/session` → `404 annuaire_ferme` (annuaire toujours éteint) ; `/annuaire` sans connexion → `307` vers la connexion ; `/admin/intitules` sans jeton → formulaire de connexion seul, aucune compétence dans la page.
+
+---
+
+## [2026-11-17] — Annuaire : l'application ouverte à toutes les professions de santé, catalogue par profession (en production le 19/11)
 
 Consigne de la session messagerie (`docs/prompt-site-2026-11-17-toutes-professions.md` du dépôt messagerie), décisions de David du 17/11 : « 100 000 Messages » ouvert aux infirmiers, kinés, pharmaciens, sages-femmes, dentistes… ; fiches vues de tous les professionnels connectés par PSC depuis l'application, « Ma fiche » remplie depuis l'application ; **le site reste réservé aux médecins** (connexion PSC du site non touchée) ; fiches déjà publiées gardées sans nouvel accord ; « nouveaux patients » toujours pour les seuls généralistes. Contrat : « Ajout du 17/11 » de [docs/2026-10-10-annuaire-tranche-3.md](docs/2026-10-10-annuaire-tranche-3.md).
 
