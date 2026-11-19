@@ -20,6 +20,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
+  // Résultat surligné au clavier (flèches haut/bas) ou à la souris ; -1 = aucun
+  const [activeIndex, setActiveIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -38,12 +40,13 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
   }, [onClose])
 
   const search = useCallback(async (q: string) => {
-    if (q.length < 2) { setResults(null); return }
+    if (q.length < 2) { setResults(null); setActiveIndex(-1); return }
     setLoading(true)
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
       const data = await res.json()
       setResults(data)
+      setActiveIndex(-1)
     } finally {
       setLoading(false)
     }
@@ -52,6 +55,7 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const q = e.target.value
     setQuery(q)
+    setActiveIndex(-1)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => search(q), 250)
   }
@@ -76,6 +80,46 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
     results.acronymes.length > 0
   )
 
+  // Liens des résultats affichés, dans l'ordre de la liste (dernier : « Voir tous les résultats »).
+  // Chaque section démarre à un décalage dans cette liste.
+  const rechercheHref = `/recherche?q=${encodeURIComponent(query.trim())}`
+  const hrefs = !loading && results && hasResults ? [
+    ...results.solutions.map((s) => `/solutions/${s.categorie_slug}/${s.slug}`),
+    ...results.editeurs.map((e) => `/editeur/${e.slug}`),
+    ...results.categories.map((c) => `/solutions/${c.slug}`),
+    ...results.articles.map((a) => `/blog/${a.slug}`),
+    ...results.acronymes.map((a) => `/glossaire#${a.sigle}`),
+    rechercheHref,
+  ] : []
+  const offsetEditeurs = results ? results.solutions.length : 0
+  const offsetCategories = offsetEditeurs + (results ? results.editeurs.length : 0)
+  const offsetArticles = offsetCategories + (results ? results.categories.length : 0)
+  const offsetAcronymes = offsetArticles + (results ? results.articles.length : 0)
+  const indexVoirTout = hrefs.length - 1
+
+  // Flèches : on parcourt les résultats puis on revient au champ (-1) ; Entrée ouvre le résultat surligné
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.nativeEvent.isComposing || hrefs.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => (i + 1 >= hrefs.length ? -1 : i + 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => (i - 1 < -1 ? hrefs.length - 1 : i - 1))
+    } else if (e.key === 'Enter' && activeIndex >= 0 && activeIndex < hrefs.length) {
+      e.preventDefault()
+      navigate(hrefs[activeIndex])
+    }
+  }
+
+  function itemProps(index: number) {
+    return {
+      onClick: () => navigate(hrefs[index]),
+      onMouseEnter: () => setActiveIndex(index),
+      className: `flex items-center gap-3 w-full px-2 py-2 rounded-xl transition-colors text-left${index === activeIndex ? ' bg-surface-light' : ''}`,
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[200] flex flex-col items-center pt-[72px] px-4"
@@ -91,11 +135,12 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
             type="text"
             value={query}
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
             placeholder="Rechercher une solution, un article, une catégorie..."
             className="flex-1 text-base text-navy placeholder-gray-400 outline-none bg-transparent"
           />
           {query && (
-            <button type="button" onClick={() => { setQuery(''); setResults(null); inputRef.current?.focus() }}>
+            <button type="button" onClick={() => { setQuery(''); setResults(null); setActiveIndex(-1); inputRef.current?.focus() }}>
               <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
             </button>
           )}
@@ -123,12 +168,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                 {results.solutions.length > 0 && (
                   <div className="p-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Solutions</p>
-                    {results.solutions.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => navigate(`/solutions/${s.categorie_slug}/${s.slug}`)}
-                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
-                      >
+                    {results.solutions.map((s, i) => (
+                      <button key={s.id} {...itemProps(i)}>
                         <div className="w-8 h-8 rounded-lg bg-surface-light flex items-center justify-center shrink-0 overflow-hidden">
                           {s.logo_url
                             ? <img src={s.logo_url} alt={s.nom} className="w-full h-full object-contain p-1" />
@@ -149,12 +190,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                 {results.editeurs.length > 0 && (
                   <div className="p-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Éditeurs</p>
-                    {results.editeurs.map((e) => (
-                      <button
-                        key={e.id}
-                        onClick={() => navigate(`/editeur/${e.slug}`)}
-                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
-                      >
+                    {results.editeurs.map((e, i) => (
+                      <button key={e.id} {...itemProps(offsetEditeurs + i)}>
                         <div className="w-8 h-8 rounded-lg bg-surface-light flex items-center justify-center shrink-0 overflow-hidden">
                           {e.logo_url
                             ? <img src={e.logo_url} alt={e.nom_commercial || e.nom} className="w-full h-full object-contain p-1" />
@@ -174,12 +211,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                 {results.categories.length > 0 && (
                   <div className="p-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Comparatifs</p>
-                    {results.categories.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => navigate(`/solutions/${c.slug}`)}
-                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
-                      >
+                    {results.categories.map((c, i) => (
+                      <button key={c.id} {...itemProps(offsetCategories + i)}>
                         {c.icon && <span className="text-lg">{c.icon}</span>}
                         <p className="text-sm font-semibold text-navy">{c.nom}</p>
                         <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0 ml-auto" />
@@ -192,12 +225,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                 {results.articles.length > 0 && (
                   <div className="p-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Articles</p>
-                    {results.articles.map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => navigate(`/blog/${a.slug}`)}
-                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
-                      >
+                    {results.articles.map((a, i) => (
+                      <button key={a.id} {...itemProps(offsetArticles + i)}>
                         <div className="w-8 h-8 rounded-lg bg-surface-light shrink-0 overflow-hidden">
                           {a.image_couverture
                             ? <img src={a.image_couverture} alt={a.titre} className="w-full h-full object-cover" />
@@ -215,12 +244,8 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
                 {results.acronymes.length > 0 && (
                   <div className="p-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Glossaire</p>
-                    {results.acronymes.map((a) => (
-                      <button
-                        key={a.sigle}
-                        onClick={() => navigate(`/glossaire#${a.sigle}`)}
-                        className="flex items-center gap-3 w-full px-2 py-2 rounded-xl hover:bg-surface-light transition-colors text-left"
-                      >
+                    {results.acronymes.map((a, i) => (
+                      <button key={a.sigle} {...itemProps(offsetAcronymes + i)}>
                         <span className="text-xs font-extrabold text-accent-blue w-20 shrink-0">{a.sigle}</span>
                         <p className="text-sm text-gray-600 truncate flex-1">{a.definition}</p>
                         <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />
@@ -231,8 +256,9 @@ export default function SearchOverlay({ onClose }: SearchOverlayProps) {
 
                 {/* Lien voir tout */}
                 <button
-                  onClick={handleSubmit as unknown as React.MouseEventHandler}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-accent-blue hover:bg-surface-light transition-colors"
+                  onClick={() => navigate(rechercheHref)}
+                  onMouseEnter={() => setActiveIndex(indexVoirTout)}
+                  className={`flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-accent-blue transition-colors${indexVoirTout === activeIndex ? ' bg-surface-light' : ''}`}
                 >
                   Voir tous les résultats pour « {query} »
                   <ArrowRight className="w-4 h-4" />

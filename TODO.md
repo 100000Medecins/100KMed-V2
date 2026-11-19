@@ -54,15 +54,15 @@ _(rien en cours)_
 - [x] ~~Étape 4 : migration des fonctions `annuaire_filtres` / `rechercher` / `compter` / `fiche`~~ ✅ 16/10 (lancée par David, constat fait, essai 27 / 27, types régénérés).
 - [x] ~~Étape 5 : mention sur la fiche d'un confrère et filtre dans la recherche (site)~~ ✅ 16/10 (navigateur 18 / 18).
 - [x] ~~**David** : essai sur dev.100000medecins.org — Ma fiche annuaire, `/annuaire` (case, fiche d'un confrère)~~ ✅ 16/10 (« c'est bon »).
-- [ ] À emporter dans `main` au prochain report de l'annuaire (éteint en production ; base déjà migrée).
+- [x] ~~À emporter dans `main` au prochain report de l'annuaire~~ ✅ 13/11 avec `2c9abe0` (éteint en production).
 - [ ] **Jour J, CGU et charte** (textes préparés dans le dépôt messagerie) : remplacer « vos disponibilités » (champ qui n'existe pas) par la réponse sur les nouveaux patients dans CGU art. 4 bis « Votre fiche », charte « Données traitées » et « Ce qui est visible » ; l'ajouter aux déclarations non vérifiées (CGU art. 5).
 - [x] ~~**Messagerie** : poser la question dans « Ma fiche » si `nouveaux_patients_possible`, l'afficher sur la fiche d'un confrère, filtre — selon le contrat~~ ✅ 16/10 : fait et essayé par David contre dev (rapporté par la session messagerie) ; en base, la vraie fiche enregistrée par l'application à 15 h 18, réponse finale « non renseigné ».
 
 **Application ouverte à toutes les professions de santé (17/11)** : décisions de David (fiches vues de tous les professionnels connectés, « Ma fiche » depuis l'application, site toujours réservé aux médecins, fiches déjà publiées gardées, catalogue par profession). Migration, code `6c0211b` sur `dev`, catalogue versé (330 compétences). Voir CHANGELOG du 17/11 et l'« Ajout du 17/11 » de `docs/2026-10-10-annuaire-tranche-3.md`.
 - [ ] **Messagerie** : essai de l'application contre `dev` (infirmière, kiné… : session, « Ma fiche » limitée à sa profession, fiches avec `code_profession`) ; signaler toute différence avec le faux site (`lot8/faux_site.py`).
 - [ ] **David** : relire le catalogue versé dans `/admin/intitules?onglet=catalogue` (filtre par profession). Points à regarder : les 37 compétences partagées gardent leur rubrique de médecin (ex. « Suivi de grossesse » dans « Médecine générale » pour les sages-femmes) ; 24 synonymes en double entre compétences des médecins, antérieurs au 17/11 (liste dans la sortie du script).
-- [ ] À emporter dans `main` au prochain report de l'annuaire, **sur le « go » de David** (base déjà migrée ; annuaire éteint en production).
-- [ ] **Jour J, CGU et charte** (avec David) : toutes professions dans l'application ; le site enregistre, pour un professionnel non membre qui se connecte depuis l'application, son RPPS, son nom, son prénom, sa profession et sa spécialité PSC (`identites_psc`). Aucun texte de l'annuaire n'est encore publié sur le site.
+- [x] ~~À emporter dans `main` au prochain report de l'annuaire, sur le « go » de David~~ ✅ 19/11 : `a85e7a0` (annuaire toujours éteint en production).
+- [ ] **CGU et charte** (avec David, puis relecture de la juriste, sans réponse au 19/11) : version revue le 19/11, `docs/annuaire-textes/` (remplace les brouillons du 05/10 du dépôt messagerie) ; note `docs/2026-11-19-annuaire-cgu-charte.md`. **David** : 4 points à trancher (identité PSC 36 mois, carte sans masquage, sauvegardes 12 mois, règles d'usage dans l'application). Avant de coller : programmer masquage 24 / effacement 36 mois et sauvegardes 12 mois. Aucun texte de l'annuaire n'est encore publié sur le site.
 - Note : une identité sans profession chez PSC compte comme médecin (catalogue des médecins dans « Ma fiche ») ; l'item « refuser quand PSC ne rend pas la profession » ci-dessus ne porte plus que sur ce cas.
 
 **Suite (à décider avec David)** :
