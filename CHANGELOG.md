@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-11-19] — Recherche rapide pilotable au clavier (en production)
+
+Remontée d'utilisateurs : impossible de parcourir les résultats de la recherche (loupe du menu) avec les flèches.
+
+- [SearchOverlay.tsx](src/components/search/SearchOverlay.tsx) (`43c5612`) : flèches bas/haut parcourent tous les résultats dans l'ordre affiché (solutions, éditeurs, comparatifs, articles, glossaire, puis « Voir tous les résultats »), et reviennent au champ après le dernier ; flèche haut depuis le champ va sur « Voir tous ». Entrée ouvre le résultat surligné, ou `/recherche` si rien n'est surligné (comme avant). Le survol à la souris déplace le même surlignage (un seul élément en surbrillance). Surlignage remis à zéro à chaque frappe et à chaque nouvelle liste. Retrait du cast `handleSubmit as unknown as …` sur « Voir tous ».
+- Vérif : `tsc`, lint du fichier, `npm run build` ; essai Chrome sur le serveur local (« chaman » : 3 éléments, « agenda » : 12 éléments sur 3 sections) — parcours bas/haut, retour au champ, souris puis flèche, remise à zéro à la frappe, Entrée sur un résultat → bonne fiche, Entrée sans surlignage et sur « Voir tous » → `/recherche?q=…`, aucune erreur JavaScript.
+- Mise en production : fusion `dev` → `main` sans copie de travail (`merge-tree` + `commit-tree`), arbre identique à `dev` (`ba0d616`). Vercel « Production » `success` ; même essai Chrome rejoué sur `www.100000medecins.org` (« chaman ») : tout conforme, aucune erreur JavaScript.
+
+---
+
 ## [2026-11-19] — Annuaire toutes professions en production
 
 « Go » de David (19/11). Les CGU et la charte de l'annuaire seront revues avec lui, puis relues par la juriste (pas de réponse d'elle à ce jour).
